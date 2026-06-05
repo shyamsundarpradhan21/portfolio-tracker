@@ -89,6 +89,86 @@ export const STATIC = {
   loan: 750000,        // personal loan liability
 };
 
+// FD pipeline — committed but not yet deployed.
+export const FD_PIPELINE = [
+  { bank: 'SBI',   label: 'I',   deploy: '09 Jun 2026', maturity: '10 Jun 2028', tenure: '2y+1d',  amount: 150000, badge: 'NEXT · 4 DAYS' },
+  { bank: 'Slice', label: 'II',  deploy: '08 Sep 2026', maturity: '09 Mar 2028', tenure: '18m+1d', amount: 275000 },
+  { bank: 'ICICI', label: 'II',  deploy: '09 Dec 2026', maturity: '10 Dec 2028', tenure: '2y+1d',  amount: 165000 },
+  { bank: 'HDFC',  label: 'II',  deploy: '08 Mar 2027', maturity: '09 Sep 2028', tenure: '18m+1d', amount: 245000 },
+  { bank: 'SBI',   label: 'II',  deploy: '09 Jun 2027', maturity: '10 Jun 2029', tenure: '2y+1d',  amount: 155000 },
+  { bank: 'ICICI', label: 'III', deploy: '08 Sep 2027', maturity: '10 Sep 2029', tenure: '2y+1d',  amount: 170000 },
+  { bank: 'SBI',   label: 'III', deploy: '09 Dec 2027', maturity: '10 Dec 2029', tenure: '2y+1d',  amount: 165000 },
+];
+
+// Mutual funds (static).
+export const MF = {
+  jio: {
+    name: 'JioBLK Growth ProFolio',
+    desc: '₹50K lumpsum + ₹20K/mo SIP · JioBLK platform (BlackRock Aladdin powered)',
+    invested: 50500,
+    current: 51927,
+    ret: 2.83,
+    lumpsum: [
+      { name: 'Nifty 50',      amt: 11000, color: '#4F8FE8' },
+      { name: 'Flexi Cap',     amt: 20000, color: '#2DB87F' },
+      { name: 'Midcap 150',    amt: 8000,  color: '#E8A030' },
+      { name: 'Arbitrage',     amt: 5000,  color: '#8F7FE8' },
+      { name: 'Next 50',       amt: 3000,  color: '#06B6D4' },
+      { name: 'Smallcap 250',  amt: 3000,  color: '#E85F8F' },
+    ],
+  },
+  elss: {
+    name: 'Nifty LargeMidcap 250 Index Fund',
+    desc: 'Tax saver · Zerodha Coin',
+    invested: 500,
+    current: 596,
+    ret: 19.24,
+  },
+  sip: {
+    items: [
+      { label: 'JioBLK SIP',  val: '₹20,000/mo' },
+      { label: 'Vested US',   val: '$200/mo (~₹19K)' },
+      { label: 'Stock picks', val: '₹30K/trigger' },
+    ],
+    total: '₹39,000+/mo',
+  },
+};
+
+// Algo trading strategies (static, manually updated).
+export const ALGO = {
+  summary: {
+    deployed: '₹5.90L',
+    deployedNote: 'Jun 2026 → ₹6.9L total',
+    fy2526Take: '₹3,01,215',
+    fy2627Ytd: '+₹14,432',
+  },
+  s01: {
+    title: 'S01 — Credit Spreads',
+    badge: 'in recovery',
+    pool: 'Total ₹5.0L · Own ₹2.5L · Client ₹2.5L · 100% own + 50% client profit',
+    fy2526: { pl: '+₹1,56,397', take: '+₹1,17,298' },
+    fy2627: { pl: '−₹26,293', note: 'Own-half drag ~₹13,147 · expected to recover' },
+    scaling: { from: '₹2.5L', to: '₹3.9L' },
+  },
+  s02: {
+    title: 'S02 — Active F&O + Swing',
+    badge: 'profitable',
+    capital: 'Own ₹3.4L · F&O ₹3L + Swing ₹40K · user keeps 70%',
+    fy2526: { pl: '+₹2,54,339', take: '+₹1,83,917' },
+    fy2627: { realised: '+₹30,998', unrealised: '+₹8,400' },
+    swing: ['AVANTEL', 'BANKBARODA', 'TDPOWERSYS', 'HAPPSTMNDS', 'LAURUSLABS'],
+    scaling: { from: '₹3.4L', to: '₹3.0L' },
+  },
+  poolNote: 'Total algo pool ₹5.9L → ₹6.9L (June scaling)',
+  carryforward: 'F&O Loss Carryforward: ~₹4L from prior years — largely exhausted after FY2025-26',
+};
+
+// Donut allocation colors (Overview).
+export const ALLOC_COLORS = {
+  algo: '#E8A030', fd: '#4F8FE8', indian: '#2DB87F',
+  us: '#E84F40', mf: '#8F7FE8', elss: '#E85F8F',
+};
+
 // Retirement projections for 2055 (nominal future rupees, not in net worth).
 export const RETIREMENT = [
   { key: 'conservative', corpus: '₹8.70Cr',  pension: '₹2.37L/mo', color: 'var(--blu)' },
