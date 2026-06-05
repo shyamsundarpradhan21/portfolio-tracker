@@ -344,27 +344,17 @@ let livePrices={}, liveUsdInr=95, usSortCol=3, usSortDir=-1;
 let usLiveData=US.map(s=>({...s,livePrice:null,liveVal:null,livePl:null,livePct:null,dayPct:null}));
 
 // ═══ FETCHING ═══
-function withTO(p,ms){return Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timeout')),ms))]);}
-function parseYF(d){const o={};(d.quoteResponse?.result||[]).forEach(q=>{o[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,pct:q.regularMarketChangePercent,state:q.marketState||'CLOSED'};});return o;}
+const WORKER='https://yf-proxy.shyamsundar-pradhan21.workers.dev';
 
-const PROXIES=[
-  u=>'https://corsproxy.io/?'+encodeURIComponent(u),
-  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-  u=>'https://thingproxy.freeboard.io/fetch/'+u,
-  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
-  u=>'https://cors-anywhere.herokuapp.com/'+u,
-];
+function withTO(p,ms){return Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj(new Error('TO')),ms))]);}
+function parseYF(d){const o={};(d.quoteResponse?.result||[]).forEach(q=>{o[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,pct:q.regularMarketChangePercent,state:q.marketState||'CLOSED'};});return o;}
 
 async function yf(symbols){
   const base='https://query2.finance.yahoo.com/v7/finance/quote?symbols='+symbols.join(',');
-  // 1. try direct (works if YF relaxes CORS)
-  try{const r=await withTO(fetch(base),5000);if(r.ok){const d=await r.json();const o=parseYF(d);if(Object.keys(o).length>0)return o;}}catch(e){}
-  // 2. race all proxies — first valid response wins
-  const results=await Promise.allSettled(
-    PROXIES.map(fn=>withTO(fetch(fn(base)),9000).then(r=>{if(!r.ok)throw new Error('bad');return r.json();}).then(d=>{const o=parseYF(d);if(!Object.keys(o).length)throw new Error('empty');return o;}))
-  );
-  const winner=results.find(r=>r.status==='fulfilled');
-  return winner?winner.value:null;
+  const r=await withTO(fetch(WORKER+'?u='+encodeURIComponent(base)),12000);
+  if(!r.ok)throw new Error('Worker '+r.status);
+  const d=await r.json();
+  return parseYF(d);
 }
 
 async function doRefresh(){
