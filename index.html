@@ -344,26 +344,27 @@ let livePrices={}, liveUsdInr=95, usSortCol=3, usSortDir=-1;
 let usLiveData=US.map(s=>({...s,livePrice:null,liveVal:null,livePl:null,livePct:null,dayPct:null}));
 
 // ═══ FETCHING ═══
-const PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
-let proxyIdx=0;
+function withTO(p,ms){return Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timeout')),ms))]);}
+function parseYF(d){const o={};(d.quoteResponse?.result||[]).forEach(q=>{o[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,pct:q.regularMarketChangePercent,state:q.marketState||'CLOSED'};});return o;}
+
+const PROXIES=[
+  u=>'https://corsproxy.io/?'+encodeURIComponent(u),
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://thingproxy.freeboard.io/fetch/'+u,
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+  u=>'https://cors-anywhere.herokuapp.com/'+u,
+];
 
 async function yf(symbols){
-  const url='https://query1.finance.yahoo.com/v7/finance/quote?symbols='+symbols.join(',');
-  for(let i=0;i<PROXIES.length;i++){
-    try{
-      const p=PROXIES[(proxyIdx+i)%PROXIES.length];
-      const r=await fetch(p+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      const d=await r.json();
-      proxyIdx=(proxyIdx+i)%PROXIES.length;
-      const out={};
-      (d.quoteResponse?.result||[]).forEach(q=>{
-        out[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,pct:q.regularMarketChangePercent,state:q.marketState||'CLOSED'};
-      });
-      return out;
-    }catch(e){continue;}
-  }
-  return null;
+  const base='https://query2.finance.yahoo.com/v7/finance/quote?symbols='+symbols.join(',');
+  // 1. try direct (works if YF relaxes CORS)
+  try{const r=await withTO(fetch(base),5000);if(r.ok){const d=await r.json();const o=parseYF(d);if(Object.keys(o).length>0)return o;}}catch(e){}
+  // 2. race all proxies — first valid response wins
+  const results=await Promise.allSettled(
+    PROXIES.map(fn=>withTO(fetch(fn(base)),9000).then(r=>{if(!r.ok)throw new Error('bad');return r.json();}).then(d=>{const o=parseYF(d);if(!Object.keys(o).length)throw new Error('empty');return o;}))
+  );
+  const winner=results.find(r=>r.status==='fulfilled');
+  return winner?winner.value:null;
 }
 
 async function doRefresh(){
