@@ -1,7 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { INDIAN, US, FDS, STATIC, RETIREMENT, CAT_COLORS } from './portfolio';
+import {
+  INDIAN, US, FDS, FD_PIPELINE, MF, ALGO, STATIC, RETIREMENT,
+  CAT_COLORS, ALLOC_COLORS,
+} from './portfolio';
 
 // ─── formatting helpers ───
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
@@ -182,6 +185,17 @@ export default function Page() {
   }, [indian.val, usData.val, fxRate]);
 
   const fdInterest = FDS.reduce((s, f) => s + f.interest, 0);
+  const fdPipelineTotal = FD_PIPELINE.reduce((s, f) => s + f.amount, 0);
+
+  // Allocation donut segments — live values where available, else snapshot.
+  const donutSegs = [
+    { label: 'Algo Capitals',  value: STATIC.algo,        color: ALLOC_COLORS.algo },
+    { label: 'Fixed Deposits', value: STATIC.fdDeployed,  color: ALLOC_COLORS.fd },
+    { label: 'Indian Stocks',  value: indian.val || 471000, color: ALLOC_COLORS.indian },
+    { label: 'US Stocks',      value: ov.usInr || 443000, color: ALLOC_COLORS.us },
+    { label: 'Mutual Funds',   value: STATIC.jioMf,       color: ALLOC_COLORS.mf },
+    { label: 'ELSS',           value: STATIC.elss,        color: ALLOC_COLORS.elss },
+  ];
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
   const mktPill = (open) =>
@@ -229,7 +243,7 @@ export default function Page() {
 
       {/* TABS */}
       <div className="tabs">
-        {['Overview', 'Indian Stocks', 'Fixed Deposits', 'US Stocks', 'Algo', 'Retirement'].map(
+        {['Overview', 'Indian Stocks', 'Fixed Deposits', 'Mutual Funds', 'US Stocks', 'Algo', 'Retirement'].map(
           (t, i) => (
             <button key={t} className={'tab' + (tab === i ? ' on' : '')} onClick={() => setTab(i)}>
               {t}
@@ -241,24 +255,30 @@ export default function Page() {
       {/* OVERVIEW */}
       {tab === 0 && (
         <div>
-          <div className="g3 sec">
-            <div className="csm">
-              <div className="lbl">net worth</div>
-              <div className="vlg">{usdInr ? inrC(ov.nw) : <Skel />}</div>
-              <div className="sub">assets minus loan</div>
+          <div className="ov-top">
+            <div className="card ov-donut">
+              <div className="lbl" style={{ marginBottom: 8 }}>allocation</div>
+              <Donut segments={donutSegs} />
             </div>
-            <div className="csm">
-              <div className="lbl">total tracked assets</div>
-              <div className="vlg">{usdInr ? inrC(ov.totalAssets) : <Skel />}</div>
-              <div className="sub">6 asset classes</div>
-            </div>
-            <div className="csm">
-              <div className="lbl">liabilities</div>
-              <div className="vlg" style={{ color: 'var(--red)' }}>~₹7.50L</div>
-              <div className="sub">personal loan, est. outstanding</div>
-            </div>
-          </div>
-          <div className="g3 sec">
+            <div className="ov-cards">
+              <div className="g3">
+                <div className="csm">
+                  <div className="lbl">net worth</div>
+                  <div className="vlg">{usdInr ? inrC(ov.nw) : <Skel />}</div>
+                  <div className="sub">assets minus loan</div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">total tracked assets</div>
+                  <div className="vlg">{usdInr ? inrC(ov.totalAssets) : <Skel />}</div>
+                  <div className="sub">6 asset classes</div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">liabilities</div>
+                  <div className="vlg" style={{ color: 'var(--red)' }}>~₹7.50L</div>
+                  <div className="sub">personal loan, est. outstanding</div>
+                </div>
+              </div>
+              <div className="g3">
             <div className="csm">
               <div className="lbl">Indian equity live P&amp;L</div>
               <div className={'vmd ' + cl(indian.pl)}>
@@ -285,6 +305,8 @@ export default function Page() {
               <div className="lbl">algo + FDs + MF</div>
               <div className="vmd">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
               <div className="sub">static · update manually</div>
+            </div>
+              </div>
             </div>
           </div>
           <div className="card sec">
@@ -398,7 +420,7 @@ export default function Page() {
               <div className="sub">weighted by principal</div>
             </div>
           </div>
-          <div className="card">
+          <div className="card sec">
             <div className="lbl" style={{ marginBottom: 10 }}>active FDs</div>
             <table className="tbl">
               <thead>
@@ -428,12 +450,135 @@ export default function Page() {
               </tbody>
             </table>
           </div>
+          <div className="card">
+            <div className="fxc" style={{ marginBottom: 10 }}>
+              <div className="lbl" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
+              <div className="sub" style={{ margin: 0 }}>
+                Pipeline {inrC(fdPipelineTotal)} · Grand total {inrC(STATIC.fdDeployed + fdPipelineTotal)}
+              </div>
+            </div>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Bank</th><th>FD</th><th>Deploy date</th><th>Maturity</th>
+                  <th>Tenure</th><th className="ra">Amount</th><th />
+                </tr>
+              </thead>
+              <tbody>
+                {FD_PIPELINE.map((f) => (
+                  <tr key={f.bank + f.label}>
+                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                    <td className="mut">{f.label}</td>
+                    <td className="mut">{f.deploy}</td>
+                    <td className="mut">{f.maturity}</td>
+                    <td className="mut">{f.tenure}</td>
+                    <td className="ra mono">{inrC(f.amount)}</td>
+                    <td>{f.badge && <span className="badge ba">{f.badge}</span>}</td>
+                  </tr>
+                ))}
+                <tr className="tot">
+                  <td colSpan={5}>Total pipeline</td>
+                  <td className="ra">{inrC(fdPipelineTotal)}</td>
+                  <td />
+                </tr>
+              </tbody>
+            </table>
+            <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+              Strategy: ~₹30-32K annual interest per bank · Slice &amp; HDFC: 18m+1d · ICICI &amp; SBI: 2y+1d
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MUTUAL FUNDS */}
+      {tab === 3 && (
+        <div>
+          <div className="g2 sec">
+            <div className="csm">
+              <div className="lbl">total invested</div>
+              <div className="vmd">{inrFull(MF.jio.invested + MF.elss.invested)}</div>
+              <div className="sub">JioBLK + ELSS</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">current value</div>
+              <div className="vmd grn">{inrFull(MF.jio.current + MF.elss.current)}</div>
+              <div className="sub">
+                {(() => {
+                  const inv = MF.jio.invested + MF.elss.invested;
+                  const cur = MF.jio.current + MF.elss.current;
+                  return `+${(((cur - inv) / inv) * 100).toFixed(2)}% blended`;
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Section A — JioBLK */}
+          <div className="card sec card-accent" style={{ borderLeftColor: 'var(--blu)' }}>
+            <div className="fxc" style={{ marginBottom: 8 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{MF.jio.name}</div>
+                <div className="sub">{MF.jio.desc}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="vmd grn">+{MF.jio.ret.toFixed(2)}%</div>
+                <div className="sub">{inrFull(MF.jio.invested)} → {inrFull(MF.jio.current)}</div>
+              </div>
+            </div>
+            <div className="lbl" style={{ margin: '12px 0 8px' }}>lumpsum allocation (₹50K)</div>
+            {MF.jio.lumpsum.map((a) => {
+              const max = Math.max(...MF.jio.lumpsum.map((x) => x.amt));
+              return (
+                <div className="bar-row" key={a.name}>
+                  <span className="bar-lbl">{a.name}</span>
+                  <span className="bar-trk">
+                    <span className="bar-fil" style={{ width: (a.amt / max) * 100 + '%', background: a.color }} />
+                  </span>
+                  <span className="bar-val">{inrC(a.amt)}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Section B — Zerodha ELSS */}
+          <div className="card sec card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
+            <div className="fxc">
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Zerodha ELSS</div>
+                <div className="sub">{MF.elss.name} · {MF.elss.desc}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="vmd grn">+{MF.elss.ret.toFixed(2)}%</div>
+                <div className="sub">{inrFull(MF.elss.invested)} → {inrFull(MF.elss.current)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Monthly SIP summary */}
+          <div className="card">
+            <div className="lbl" style={{ marginBottom: 10 }}>monthly SIP summary</div>
+            <div className="g3" style={{ marginBottom: 10 }}>
+              {MF.sip.items.map((s) => (
+                <div className="mini" key={s.label}>
+                  <div className="sub" style={{ margin: 0 }}>{s.label}</div>
+                  <div className="vsm" style={{ marginTop: 3 }}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+            <div className="fxc" style={{ paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+              <span style={{ color: 'var(--txt2)' }}>Total fixed commitment</span>
+              <span className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</span>
+            </div>
+          </div>
         </div>
       )}
 
       {/* US STOCKS */}
-      {tab === 3 && (
+      {tab === 4 && (
         <div>
+          <div className="alert sec">
+            <strong>⚠ Concentration:</strong> QQQM + SCHD = 39% of portfolio ($1,834 of $4,666) ·
+            13 crypto/mining positions move together · INTU worst position at -51.8%
+          </div>
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
@@ -519,36 +664,109 @@ export default function Page() {
       )}
 
       {/* ALGO */}
-      {tab === 4 && (
+      {tab === 5 && (
         <div>
-          <div className="g2 sec">
+          <div className="g3 sec">
             <div className="csm">
-              <div className="lbl">capital deployed</div>
-              <div className="vmd" style={{ color: 'var(--acc)' }}>{inrC(STATIC.algo)}</div>
-              <div className="sub">active trading · manual updates</div>
+              <div className="lbl">own capital deployed</div>
+              <div className="vmd" style={{ color: 'var(--acc)' }}>{ALGO.summary.deployed}</div>
+              <div className="sub">{ALGO.summary.deployedNote}</div>
             </div>
             <div className="csm">
-              <div className="lbl">share of tracked assets</div>
-              <div className="vmd">{usdInr ? ((STATIC.algo / ov.totalAssets) * 100).toFixed(1) + '%' : '…'}</div>
-              <div className="sub">of total portfolio</div>
+              <div className="lbl">FY25-26 user take</div>
+              <div className="vmd grn">{ALGO.summary.fy2526Take}</div>
+              <div className="sub">realised income</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">FY26-27 YTD</div>
+              <div className="vmd" style={{ color: 'var(--acc)' }}>{ALGO.summary.fy2627Ytd}</div>
+              <div className="sub">S01 in recovery (−₹26,293 pool)</div>
             </div>
           </div>
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Algo Capitals</div>
-              <span className="badge ba">active</span>
+
+          <div className="g2 sec">
+            {/* S01 */}
+            <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s01.title}</div>
+                <span className="badge ba">{ALGO.s01.badge}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>pool</div>
+                  <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>FY2025-26</div>
+                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Net pool P&amp;L</span><span className="grn mono">{ALGO.s01.fy2526.pl}</span></div>
+                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>User take</span><span className="grn mono">{ALGO.s01.fy2526.take}</span></div>
+                </div>
+                <div className="mini danger">
+                  <div className="lbl" style={{ marginBottom: 4 }}>FY2026-27 YTD</div>
+                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Pool P&amp;L</span><span className="red mono">{ALGO.s01.fy2627.pl}</span></div>
+                  <div className="sub" style={{ marginTop: 3 }}>{ALGO.s01.fy2627.note}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
+                  <div className="fxc">
+                    <span style={{ color: 'var(--txt2)' }}>Own capital</span>
+                    <span className="mono" style={{ color: 'var(--acc)' }}>{ALGO.s01.scaling.from} → {ALGO.s01.scaling.to}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="sub" style={{ lineHeight: 1.8 }}>
-              ₹6.04L of own capital deployed across active algorithmic trading strategies.
-              This balance is updated manually — it is not driven by live market data here, and
-              is included in the net worth and asset-allocation totals on the Overview tab.
+
+            {/* S02 */}
+            <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s02.title}</div>
+                <span className="badge bg">{ALGO.s02.badge}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>capital</div>
+                  <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>FY2025-26</div>
+                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Active P&amp;L</span><span className="grn mono">{ALGO.s02.fy2526.pl}</span></div>
+                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>User take (70%)</span><span className="grn mono">{ALGO.s02.fy2526.take}</span></div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>FY2026-27 YTD</div>
+                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Realised</span><span className="grn mono">{ALGO.s02.fy2627.realised}</span></div>
+                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Unrealised swing</span><span className="grn mono">{ALGO.s02.fy2627.unrealised}</span></div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 6 }}>swing positions</div>
+                  <div style={{ marginLeft: -2 }}>
+                    {ALGO.s02.swing.map((p) => <span className="chip" key={p}>{p}</span>)}
+                  </div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
+                  <div className="fxc">
+                    <span style={{ color: 'var(--txt2)' }}>Own capital</span>
+                    <span className="mono" style={{ color: 'var(--acc)' }}>{ALGO.s02.scaling.from} → {ALGO.s02.scaling.to}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="fxc" style={{ marginBottom: 8 }}>
+              <span style={{ color: 'var(--txt2)' }}>{ALGO.poolNote}</span>
+            </div>
+            <div className="sub" style={{ margin: 0, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
+              {ALGO.carryforward}
             </div>
           </div>
         </div>
       )}
 
       {/* RETIREMENT */}
-      {tab === 5 && (
+      {tab === 6 && (
         <div>
           <div className="csm sec" style={{ borderColor: 'var(--blu)', background: 'var(--blu-bg)' }}>
             <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
@@ -595,6 +813,56 @@ function Stat({ label, val }) {
     <div className="csm" style={{ flex: 1, minWidth: 120, padding: '9px 12px' }}>
       <div className="lbl" style={{ marginBottom: 2 }}>{label}</div>
       <div className="vsm">{val}</div>
+    </div>
+  );
+}
+
+function Donut({ segments }) {
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  const size = 168, thick = 24, r = (size - thick) / 2, C = 2 * Math.PI * r;
+  let acc = 0;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          {segments.map((seg) => {
+            const frac = total ? seg.value / total : 0;
+            const dash = frac * C;
+            const el = (
+              <circle
+                key={seg.label} cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={seg.color} strokeWidth={thick}
+                strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-acc}
+              >
+                <title>{`${seg.label}: ₹${(seg.value / 1e5).toFixed(2)}L (${(frac * 100).toFixed(1)}%)`}</title>
+              </circle>
+            );
+            acc += dash;
+            return el;
+          })}
+        </g>
+        <text x={size / 2} y={size / 2 - 4} textAnchor="middle" fill="var(--txt3)"
+          fontSize="9" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>assets</text>
+        <text x={size / 2} y={size / 2 + 14} textAnchor="middle" fill="var(--txt)"
+          fontSize="17" fontWeight="700" fontFamily="var(--mono)">{inrC(total)}</text>
+      </svg>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 12px', width: '100%' }}>
+        {segments.map((seg) => (
+          <div key={seg.label} className="fxc" style={{ gap: 6 }}
+            title={`₹${(seg.value / 1e5).toFixed(2)}L`}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: seg.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {seg.label}
+              </span>
+            </span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--txt)' }}>
+              {total ? ((seg.value / total) * 100).toFixed(1) : '0'}%
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
