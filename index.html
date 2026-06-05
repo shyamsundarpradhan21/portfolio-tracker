@@ -340,21 +340,27 @@ const US=[
 
 const STATIC_FD=495000, STATIC_ALGO=604432, STATIC_JIO=51927, STATIC_ELSS=596;
 const LOAN=750000;
+const TD_KEY='58bac2d9154b4e5681fd66894d13fe78';
 let livePrices={}, liveUsdInr=95, usSortCol=3, usSortDir=-1;
 let usLiveData=US.map(s=>({...s,livePrice:null,liveVal:null,livePl:null,livePct:null,dayPct:null}));
 
 // ═══ FETCHING ═══
-const WORKER='https://yf-proxy.shyamsundar-pradhan21.workers.dev';
-
 function withTO(p,ms){return Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj(new Error('TO')),ms))]);}
-function parseYF(d){const o={};(d.quoteResponse?.result||[]).forEach(q=>{o[q.symbol]={price:q.regularMarketPrice,change:q.regularMarketChange,pct:q.regularMarketChangePercent,state:q.marketState||'CLOSED'};});return o;}
 
 async function yf(symbols){
-  const base='https://query2.finance.yahoo.com/v7/finance/quote?symbols='+symbols.join(',');
-  const r=await withTO(fetch(WORKER+'?u='+encodeURIComponent(base)),12000);
-  if(!r.ok)throw new Error('Worker '+r.status);
+  const td=symbols.map(s=>s.endsWith('.NS')?s.replace('.NS',':NSE'):s==='USDINR=X'?'USD/INR':s);
+  const r=await withTO(fetch('https://api.twelvedata.com/quote?symbol='+encodeURIComponent(td.join(','))+'&apikey='+TD_KEY),12000);
+  if(!r.ok)throw new Error('TD '+r.status);
   const d=await r.json();
-  return parseYF(d);
+  const items=d.symbol?{[td[0]]:d}:d;
+  const o={};
+  symbols.forEach((s,i)=>{
+    const q=items[td[i]];
+    if(q&&!q.code&&q.close){
+      o[s]={price:parseFloat(q.close),change:parseFloat(q.change||0),pct:parseFloat(q.percent_change||0),state:q.is_market_open?'REGULAR':'CLOSED'};
+    }
+  });
+  return o;
 }
 
 async function doRefresh(){
