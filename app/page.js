@@ -132,7 +132,7 @@ function buildInsightPayload(prices, fx) {
       `FY25-26 net F&O ${sFull(FY.combined2526.net)} (S01 ${sFull(FY.s01.fy2526.total.net)}, S02 ${sFull(FY.s02.fy2526.total.net)}). ` +
       `FY26-27 YTD: S01 ${sFull(FY.s01.fy2627.net)} (Dhan), S02 ${sFull(FY.s02.fy2627.net)} (Fyers) realised` +
       (swPl != null ? `, swing unrealised ${sFull(swPl)}` : '') +
-      `. Loss CF pool entering FY26-27 ₹5.97L (non-spec ₹5.13L + spec ₹84,307; STCG ₹4,700 consumed). Realised F&O +₹98,012 absorbing oldest non-spec tranche (equity swing is STCG, does not offset F&O CF). Own capital deployed ₹5.90L (S01 ₹2.5L + S02 ₹3.4L).`,
+      `. Loss CF pool entering FY26-27 ₹5.97L (non-spec ₹5.13L + spec ₹84,307; STCG ₹4,700 consumed). Realised F&O +₹98,012 absorbing oldest non-spec tranche (equity swing is STCG — does not offset F&O CF). Own capital ₹7.30L (S01 ₹3.9L + S02 ₹3.4L).`,
   };
 }
 
@@ -533,9 +533,8 @@ export default function Page() {
             rows={[
               { label: 'Non-spec F&O', val: sFull(-FY.cf.nonSpec), sub: 'Sec 72 · 8-yr · offsets future F&O profit only' },
               { label: 'Speculative (intraday)', val: sFull(-FY.cf.speculative), sub: 'Sec 73 · 4-yr · ₹16,958 expires AY28-29 first' },
-              { label: 'Pool entering FY26-27', val: sFull(-FY.cf.poolEnteringFY2627), color: 'var(--acc)', accent: true, sub: `−${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
+              { label: 'Pool entering FY26-27', val: sFull(-FY.cf.poolEnteringFY2627), accent: true, sub: `−${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
             ]}
-            foot={`Frozen tax asset: usable only against future F&O / intraday profit — never salary, capital gains or interest. FY26-27 realised F&O (+${inrFull(FY.cf.fy2627Realised)}) is absorbing the oldest non-spec tranche first (~${inrFull(FY.cf.taxSavingRealised)} tax saved). STCG ₹4,700 already consumed in FY25-26.`}
           />
         </div>
       )}
@@ -614,7 +613,6 @@ export default function Page() {
               { label: 'FY25-26 domestic STCG', val: '+₹1,476', color: 'var(--grn)', sub: FY.cf.cg2526.indianStcgNote },
               { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="Short-term gains @20% (Sec 111A), long-term @12.5% above ₹1.25L. The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset equity capital gains."
           />
         </div>
       )}
@@ -783,7 +781,6 @@ export default function Page() {
               { label: 'FY25-26 MF redemptions', val: 'Nil', color: 'var(--txt2)', sub: FY.cf.cg2526.mfStcgNote },
               { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="Equity MF: STCG @20%, LTCG @12.5% above ₹1.25L (held >12m). ELSS has 3-yr lock-in. Debt MF gains at slab. The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset MF capital gains."
           />
         </div>
       )}
@@ -879,7 +876,6 @@ export default function Page() {
               { label: 'FY25-26 foreign STCG', val: '+₹27,694', color: 'var(--grn)', sub: FY.cf.cg2526.foreignStcgNote },
               { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="US shares held <24m → STCG at slab rate (no 111A); ≥24m → LTCG @12.5%. Dividends carry 25% US WHT, partly relieved via Form 67 FTC (~₹279 in FY25-26). The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset these gains. Schedule FA required for all US holdings."
           />
         </div>
       )}
@@ -892,7 +888,7 @@ export default function Page() {
           {/* SUMMARY */}
           <div className="g3 sec">
             <div className="csm">
-              <div className="lbl">own capital deployed</div>
+              <div className="lbl">own capital</div>
               <div className="vmd" style={{ color: 'var(--acc)' }}>{ALGO.summary.deployed}</div>
               <div className="sub">{ALGO.summary.deployedNote}</div>
             </div>
@@ -926,7 +922,7 @@ export default function Page() {
                 <div className="mini">
                   <div className="fxc" style={{ marginBottom: 4 }}>
                     <div className="lbl" style={{ margin: 0 }}>pool</div>
-                    <div className="mono" style={{ fontSize: 12, color: 'var(--acc)' }}>{ALGO.s01.deployed} deployed</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s01.deployed}</div>
                   </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                 </div>
@@ -951,10 +947,7 @@ export default function Page() {
                   </div>
                   <div className="fxc" style={{ marginTop: 10, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
                     <span style={{ color: 'var(--txt2)' }}>CF remaining</span>
-                    <span className="mono" style={{ color: 'var(--acc)' }}>{sFull(-cfAfterRealised)}</span>
-                  </div>
-                  <div className="sub" style={{ marginTop: 'auto', paddingTop: 10, borderTop: '.5px solid var(--brd)', lineHeight: 1.6 }}>
-                    Only realised F&amp;O income absorbs the non-spec business CF. Equity swing gains are capital gains (STCG) and cannot offset this pool.
+                    <span className="red mono">{sFull(-cfAfterRealised)}</span>
                   </div>
                 </div>
               </div>
@@ -973,7 +966,7 @@ export default function Page() {
                 <div className="mini">
                   <div className="fxc" style={{ marginBottom: 4 }}>
                     <div className="lbl" style={{ margin: 0 }}>capital</div>
-                    <div className="mono" style={{ fontSize: 12, color: 'var(--acc)' }}>{ALGO.s02.deployed} deployed</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s02.deployed}</div>
                   </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                 </div>
@@ -1028,7 +1021,7 @@ export default function Page() {
           {/* BOTTOM STRIP */}
           <div className="csm sec">
             <span style={{ color: 'var(--txt2)' }}>
-              Own capital deployed: <strong style={{ color: 'var(--txt)' }}>₹5.90L</strong> <span className="mut">(S01 ₹2.5L · S02 ₹3.4L)</span>
+              Own capital: <strong style={{ color: 'var(--txt)' }}>{ALGO.summary.deployed}</strong> <span className="mut">({ALGO.summary.deployedNote})</span>
               {'  ·  '}
               FY25-26 combined — Gross: <span className="grn">{sFull(FY.combined2526.gross)}</span> ·
               Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
@@ -1047,15 +1040,12 @@ export default function Page() {
               {FY.carryforward.map((c) => (
                 <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
                   <div className="sub" style={{ margin: 0 }}>{c.label}</div>
-                  <div className="vsm" style={{ marginTop: 4, color: c.accent ? 'var(--acc)' : c.consumed ? 'var(--grn)' : 'var(--red)' }}>
+                  <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
                     {c.consumed ? '₹0' : sFull(c.val)}
                   </div>
                   <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
                 </div>
               ))}
-            </div>
-            <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)', lineHeight: 1.6 }}>
-              {FY.cfNote}
             </div>
           </div>
         </div>
