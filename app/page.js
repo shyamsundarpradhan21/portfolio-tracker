@@ -132,7 +132,7 @@ function buildInsightPayload(prices, fx) {
       `FY25-26 net F&O ${sFull(FY.combined2526.net)} (S01 ${sFull(FY.s01.fy2526.total.net)}, S02 ${sFull(FY.s02.fy2526.total.net)}). ` +
       `FY26-27 YTD: S01 ${sFull(FY.s01.fy2627.net)} (Dhan), S02 ${sFull(FY.s02.fy2627.net)} (Fyers) realised` +
       (swPl != null ? `, swing unrealised ${sFull(swPl)}` : '') +
-      `. Loss CF pool entering FY26-27 ₹5.97L (non-spec ₹5.13L + spec ₹84,307; STCG ₹4,700 consumed). Realised +₹98,012 absorbing oldest non-spec tranche. Capital ₹5.9L→₹6.9L June scaling.`,
+      `. Loss CF pool entering FY26-27 ₹5.97L (non-spec ₹5.13L + spec ₹84,307; STCG ₹4,700 consumed). Realised F&O +₹98,012 absorbing oldest non-spec tranche (equity swing is STCG, does not offset F&O CF). Own capital deployed ₹5.90L (S01 ₹2.5L + S02 ₹3.4L).`,
   };
 }
 
@@ -360,11 +360,11 @@ export default function Page() {
   const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
   const ytdTotal = swing.valued ? ytdRealised + swing.pl : null;
 
-  // CF absorption: FY26-27 realised F&O eats into the loss carryforward pool.
-  // (Swing is unrealised — it only absorbs CF once booked.)
-  const cfEntering = Math.abs(FY.carryforward.find((c) => c.accent).val); // 6,01,979
-  const cfAfterRealised = cfEntering - ytdRealised;                       // 5,03,967
-  const cfProjected = swing.valued ? cfAfterRealised - swing.pl : null;   // incl. live swing
+  // CF absorption: only realised F&O income eats into the non-spec *business*
+  // loss carryforward. Equity swing P&L is capital gains (STCG) — it can never
+  // offset the F&O business CF, so it is intentionally excluded here.
+  const cfEntering = Math.abs(FY.carryforward.find((c) => c.accent).val); // 5,97,318
+  const cfAfterRealised = cfEntering - ytdRealised;                       // 4,99,306
 
   // ─── derived: overview / net worth ───
   const ov = useMemo(() => {
@@ -914,7 +914,7 @@ export default function Page() {
 
           <div className="g2 sec">
             {/* S01 */}
-            <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)' }}>
+            <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)', display: 'flex', flexDirection: 'column' }}>
               <div className="fxc" style={{ marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s01.title}</div>
@@ -922,9 +922,12 @@ export default function Page() {
                 </div>
                 <span className="badge ba">{ALGO.s01.badge}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>pool</div>
+                  <div className="fxc" style={{ marginBottom: 4 }}>
+                    <div className="lbl" style={{ margin: 0 }}>pool</div>
+                    <div className="mono" style={{ fontSize: 12, color: 'var(--acc)' }}>{ALGO.s01.deployed} deployed</div>
+                  </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                 </div>
                 <div className="mini">
@@ -934,14 +937,7 @@ export default function Page() {
                   <BrokerTable data={FY.s01.fy2526} />
                 </div>
                 <YtdFno label={`FY2026-27 YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
-                  <div className="fxc">
-                    <span style={{ color: 'var(--txt2)' }}>Own capital</span>
-                    <span className="mono" style={{ color: 'var(--acc)' }}>{ALGO.s01.scaling.from} → {ALGO.s01.scaling.to}</span>
-                  </div>
-                </div>
-                <div className="mini">
+                <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                     CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 9 }}>ITR</span>
                   </div>
@@ -949,33 +945,23 @@ export default function Page() {
                     <span style={{ color: 'var(--txt2)' }}>CF entering FY26-27</span>
                     <span className="red mono">{sFull(-cfEntering)}</span>
                   </div>
-                  <div className="fxc" style={{ marginTop: 3 }}>
-                    <span style={{ color: 'var(--txt2)' }}>Realised YTD (S01 + S02)</span>
+                  <div className="fxc" style={{ marginTop: 8 }}>
+                    <span style={{ color: 'var(--txt2)' }}>Realised F&amp;O YTD (S01 + S02)</span>
                     <span className="grn mono">{sFull(ytdRealised)}</span>
                   </div>
-                  <div className="fxc" style={{ marginTop: 5, paddingTop: 5, borderTop: '.5px solid var(--brd)' }}>
-                    <span style={{ color: 'var(--txt2)' }}>CF after realised</span>
+                  <div className="fxc" style={{ marginTop: 10, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
+                    <span style={{ color: 'var(--txt2)' }}>CF remaining</span>
                     <span className="mono" style={{ color: 'var(--acc)' }}>{sFull(-cfAfterRealised)}</span>
                   </div>
-                  <div className="fxc" style={{ marginTop: 5 }}>
-                    <span style={{ color: 'var(--txt2)' }}>+ live swing (on realisation)</span>
-                    {swing.valued
-                      ? <span className={'mono ' + cl(swing.pl)}>{sFull(swing.pl)}</span>
-                      : <Skel w={56} h={11} />}
-                  </div>
-                  <div className="fxc" style={{ marginTop: 5, paddingTop: 5, borderTop: '.5px solid var(--brd)' }}>
-                    <span style={{ color: 'var(--txt2)' }}>Projected CF remaining</span>
-                    <span className="mono" style={{ color: 'var(--acc)' }}>{cfProjected != null ? sFull(-cfProjected) : '…'}</span>
-                  </div>
-                  <div className="sub" style={{ marginTop: 7 }}>
-                    Only realised F&amp;O absorbs the non-spec business CF; live swing reduces it further once booked.
+                  <div className="sub" style={{ marginTop: 'auto', paddingTop: 10, borderTop: '.5px solid var(--brd)', lineHeight: 1.6 }}>
+                    Only realised F&amp;O income absorbs the non-spec business CF. Equity swing gains are capital gains (STCG) and cannot offset this pool.
                   </div>
                 </div>
               </div>
             </div>
 
             {/* S02 */}
-            <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
+            <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)', display: 'flex', flexDirection: 'column' }}>
               <div className="fxc" style={{ marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s02.title}</div>
@@ -983,9 +969,12 @@ export default function Page() {
                 </div>
                 <span className="badge bg">{ALGO.s02.badge}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>capital</div>
+                  <div className="fxc" style={{ marginBottom: 4 }}>
+                    <div className="lbl" style={{ margin: 0 }}>capital</div>
+                    <div className="mono" style={{ fontSize: 12, color: 'var(--acc)' }}>{ALGO.s02.deployed} deployed</div>
+                  </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                 </div>
                 <div className="mini">
@@ -994,16 +983,7 @@ export default function Page() {
                   </div>
                   <BrokerTable data={FY.s02.fy2526} />
                 </div>
-                <YtdFno
-                  label={`FY2026-27 YTD — ${FY.s02.fy2627.label}`}
-                  data={FY.s02.fy2627}
-                  extra={{
-                    label: 'Unrealised swing',
-                    node: swing.valued
-                      ? <span className={'mono ' + cl(swing.pl)}>{sFull(swing.pl)}</span>
-                      : <Skel w={60} h={11} />,
-                  }}
-                />
+                <YtdFno label={`FY2026-27 YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                     Swing positions <span className="badge bg" style={{ fontSize: 9 }}>Live</span>
@@ -1041,13 +1021,6 @@ export default function Page() {
                     </tbody>
                   </table>
                 </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
-                  <div className="fxc">
-                    <span style={{ color: 'var(--txt2)' }}>Own capital</span>
-                    <span className="mono" style={{ color: 'var(--acc)' }}>{ALGO.s02.scaling.from} → {ALGO.s02.scaling.to}</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1055,7 +1028,7 @@ export default function Page() {
           {/* BOTTOM STRIP */}
           <div className="csm sec">
             <span style={{ color: 'var(--txt2)' }}>
-              Total algo pool: <strong style={{ color: 'var(--txt)' }}>₹5.9L</strong> → <span style={{ color: 'var(--acc)' }}>₹6.9L</span> (June scaling)
+              Own capital deployed: <strong style={{ color: 'var(--txt)' }}>₹5.90L</strong> <span className="mut">(S01 ₹2.5L · S02 ₹3.4L)</span>
               {'  ·  '}
               FY25-26 combined — Gross: <span className="grn">{sFull(FY.combined2526.gross)}</span> ·
               Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
