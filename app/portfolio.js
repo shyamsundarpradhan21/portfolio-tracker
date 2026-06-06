@@ -109,12 +109,12 @@ export const MF = {
     current: 51927,
     ret: 2.83,
     lumpsum: [
-      { name: 'Nifty 50',      amt: 11000, color: '#4F8FE8' },
-      { name: 'Flexi Cap',     amt: 20000, color: '#2DB87F' },
-      { name: 'Midcap 150',    amt: 8000,  color: '#E8A030' },
-      { name: 'Arbitrage',     amt: 5000,  color: '#8F7FE8' },
-      { name: 'Next 50',       amt: 3000,  color: '#06B6D4' },
-      { name: 'Smallcap 250',  amt: 3000,  color: '#E85F8F' },
+      { name: 'Nifty 50',     amt: 11000, cat: 'large cap' },
+      { name: 'Flexi Cap',    amt: 20000, cat: 'multi cap' },
+      { name: 'Midcap 150',   amt: 8000,  cat: 'mid cap' },
+      { name: 'Arbitrage',    amt: 5000,  cat: 'hedged' },
+      { name: 'Next 50',      amt: 3000,  cat: 'large-mid' },
+      { name: 'Smallcap 250', amt: 3000,  cat: 'small cap' },
     ],
   },
   elss: {

@@ -36,6 +36,61 @@ const US_COLS = [
   { key: 'dayPct', label: 'Day %', num: true },
 ];
 
+// Distil live state into a compact payload for the /api/insights route.
+function buildInsightPayload(prices, fx) {
+  const rate = fx || 88;
+  const r2 = (n) => (n == null ? null : +n.toFixed(2));
+
+  let inInv = 0, inVal = 0;
+  const indian = INDIAN.map((s) => {
+    const q = prices[s.ns];
+    const lp = q && !q.error ? q.price : null;
+    const v = lp != null ? s.qty * lp : null;
+    const pl = v != null ? v - s.inv : null;
+    inInv += s.inv;
+    if (v != null) inVal += v;
+    return {
+      sym: s.sym, qty: s.qty, avgCost: s.cost, livePrice: r2(lp),
+      plPct: pl != null ? r2((pl / s.inv) * 100) : null,
+      dayPct: q && !q.error ? r2(q.pct) : null,
+    };
+  });
+
+  let usInv = 0, usVal = 0;
+  const us = US.map((s) => {
+    const q = prices[s.sym];
+    const lp = q && !q.error ? q.price : null;
+    const v = lp != null ? s.qty * lp : null;
+    const pl = v != null ? v - s.inv : null;
+    usInv += s.inv;
+    if (v != null) usVal += v;
+    return {
+      sym: s.sym, qty: +s.qty.toFixed(4), avgCost: s.cost, livePrice: r2(lp),
+      plPct: pl != null && s.inv ? r2((pl / s.inv) * 100) : null,
+      dayPct: q && !q.error ? r2(q.pct) : null,
+    };
+  });
+
+  const usInr = usVal * rate;
+  const totalAssets = inVal + usInr + STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss;
+  const nw = totalAssets - STATIC.loan;
+
+  return {
+    timestamp: new Date().toISOString(),
+    overview: {
+      netWorthL: +(nw / 1e5).toFixed(2),
+      totalAssetsL: +(totalAssets / 1e5).toFixed(2),
+      indianPlPct: inInv && inVal ? r2(((inVal - inInv) / inInv) * 100) : null,
+      usPlPct: usInv && usVal ? r2(((usVal - usInv) / usInv) * 100) : null,
+    },
+    indian,
+    us,
+    usdInr: r2(rate),
+    mutualFunds: `JioBLK ₹${MF.jio.current.toLocaleString('en-IN')} (+${MF.jio.ret}%), ELSS ₹${MF.elss.current} (+${MF.elss.ret}%)`,
+    algo: 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized',
+  };
+}
+
 export default function Page() {
   const [tab, setTab] = useState(0);
   const [prices, setPrices] = useState({});
@@ -45,7 +100,12 @@ export default function Page() {
   const [markets, setMarkets] = useState({ nse: null, nyse: null });
   const [loading, setLoading] = useState(false);
   const [usSort, setUsSort] = useState({ col: 'liveVal', dir: -1 });
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
   const timer = useRef(null);
+
+  // Show the loading shimmer only until the first set of insights arrives.
+  const insightsFirstLoad = insightsLoading && insights == null;
 
   const fxRate = usdInr || 88; // fallback only for display before first load
 
@@ -57,6 +117,29 @@ export default function Page() {
     const data = await res.json();
     return data.quotes || {};
   };
+
+  // Ask Claude for tab-specific insights from the freshly-fetched data.
+  const fetchInsights = useCallback(async (pricesArg, fxArg) => {
+    const payload = buildInsightPayload(pricesArg, fxArg);
+    // No live data yet → nothing worth analysing; skip the call.
+    if (payload.overview.indianPlPct == null && payload.overview.usPlPct == null) return;
+    setInsightsLoading(true);
+    try {
+      const res = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.insights) setInsights(data.insights);
+      }
+    } catch {
+      // leave any prior insights in place
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, []);
 
   const doRefresh = useCallback(async () => {
     setLoading(true);
@@ -95,12 +178,15 @@ export default function Page() {
           JSON.stringify({ ts: Date.now(), prices: merged, usdInr: fx || usdInr }),
         );
       } catch {}
+
+      // Refresh AI insights from the new prices (fire-and-forget).
+      fetchInsights(merged, fx || usdInr);
     } catch (e) {
       setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' });
     } finally {
       setLoading(false);
     }
-  }, [usdInr]);
+  }, [usdInr, fetchInsights]);
 
   // ─── boot: hydrate from cache, then refresh + interval ───
   useEffect(() => {
@@ -114,6 +200,8 @@ export default function Page() {
         setStatus({ msg: `Cached prices (${age}m ago)`, type: 'stale' });
         setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
+        // Generate insights from the cached snapshot too.
+        fetchInsights(c.prices || {}, c.usdInr);
       }
     } catch {}
     if (!hydrated) doRefresh();
@@ -255,6 +343,7 @@ export default function Page() {
       {/* OVERVIEW */}
       {tab === 0 && (
         <div>
+          <InsightBanner text={insights?.overview} loading={insightsFirstLoad} />
           <div className="ov-top">
             <div className="card ov-donut">
               <div className="lbl" style={{ marginBottom: 8 }}>allocation</div>
@@ -302,30 +391,14 @@ export default function Page() {
               </div>
             </div>
             <div className="csm">
-              <div className="lbl">algo + FDs + MF</div>
-              <div className="vmd">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
-              <div className="sub">static · update manually</div>
+              <div className="lbl">monthly SIP</div>
+              <div className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</div>
+              <div className="sub">
+                {MF.sip.items.map((s) => `${s.label} ${s.val.replace(/\s*\(.*\)/, '')}`).join(' · ')}
+              </div>
             </div>
               </div>
             </div>
-          </div>
-          <div className="card sec">
-            <div className="lbl" style={{ marginBottom: 10 }}>asset allocation</div>
-            <table className="tbl">
-              <tbody>
-                <AllocRow label="Indian equities (NSE)" val={indian.val} total={ov.totalAssets} color="var(--grn)" loading={!indian.valued} />
-                <AllocRow label="US equities (Vested)" val={ov.usInr} total={ov.totalAssets} color="var(--blu)" loading={!usdInr} />
-                <AllocRow label="Fixed deposits" val={STATIC.fdDeployed} total={ov.totalAssets} color="var(--acc)" />
-                <AllocRow label="Algo capital" val={STATIC.algo} total={ov.totalAssets} color="var(--pur)" />
-                <AllocRow label="JioBlackRock MF" val={STATIC.jioMf} total={ov.totalAssets} color="var(--cyn)" />
-                <AllocRow label="ELSS" val={STATIC.elss} total={ov.totalAssets} color="var(--pnk)" />
-                <tr className="tot">
-                  <td>Total tracked assets</td>
-                  <td className="ra">{usdInr ? inrC(ov.totalAssets) : '…'}</td>
-                  <td className="ra">100%</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       )}
@@ -333,6 +406,7 @@ export default function Page() {
       {/* INDIAN STOCKS */}
       {tab === 1 && (
         <div>
+          <InsightBanner text={insights?.indian_stocks} loading={insightsFirstLoad} />
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
@@ -493,6 +567,7 @@ export default function Page() {
       {/* MUTUAL FUNDS */}
       {tab === 3 && (
         <div>
+          <InsightBanner text={insights?.mutual_funds} loading={insightsFirstLoad} />
           <div className="g2 sec">
             <div className="csm">
               <div className="lbl">total invested</div>
@@ -513,7 +588,7 @@ export default function Page() {
           </div>
 
           {/* Section A — JioBLK */}
-          <div className="card sec card-accent" style={{ borderLeftColor: 'var(--blu)' }}>
+          <div className="card card-accent" style={{ borderLeftColor: 'var(--blu)', marginBottom: 22 }}>
             <div className="fxc" style={{ marginBottom: 8 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{MF.jio.name}</div>
@@ -524,23 +599,27 @@ export default function Page() {
                 <div className="sub">{inrFull(MF.jio.invested)} → {inrFull(MF.jio.current)}</div>
               </div>
             </div>
-            <div className="lbl" style={{ margin: '12px 0 8px' }}>lumpsum allocation (₹50K)</div>
-            {MF.jio.lumpsum.map((a) => {
+            <div className="lbl" style={{ margin: '14px 0 10px' }}>lumpsum allocation (₹50K)</div>
+            {(() => {
               const max = Math.max(...MF.jio.lumpsum.map((x) => x.amt));
-              return (
+              return MF.jio.lumpsum.map((a) => (
                 <div className="bar-row" key={a.name}>
                   <span className="bar-lbl">{a.name}</span>
                   <span className="bar-trk">
-                    <span className="bar-fil" style={{ width: (a.amt / max) * 100 + '%', background: a.color }} />
+                    <span className="bar-fil" style={{ width: (a.amt / max) * 100 + '%', background: '#8F7FE8' }} />
                   </span>
                   <span className="bar-val">{inrC(a.amt)}</span>
+                  <span className="bar-cat">{a.cat}</span>
                 </div>
-              );
-            })}
+              ));
+            })()}
+            <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+              ₹20K/mo SIP flows into Growth ProFolio — Aladdin allocates proportionally
+            </div>
           </div>
 
           {/* Section B — Zerodha ELSS */}
-          <div className="card sec card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
+          <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
             <div className="fxc">
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>Zerodha ELSS</div>
@@ -552,33 +631,13 @@ export default function Page() {
               </div>
             </div>
           </div>
-
-          {/* Monthly SIP summary */}
-          <div className="card">
-            <div className="lbl" style={{ marginBottom: 10 }}>monthly SIP summary</div>
-            <div className="g3" style={{ marginBottom: 10 }}>
-              {MF.sip.items.map((s) => (
-                <div className="mini" key={s.label}>
-                  <div className="sub" style={{ margin: 0 }}>{s.label}</div>
-                  <div className="vsm" style={{ marginTop: 3 }}>{s.val}</div>
-                </div>
-              ))}
-            </div>
-            <div className="fxc" style={{ paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
-              <span style={{ color: 'var(--txt2)' }}>Total fixed commitment</span>
-              <span className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</span>
-            </div>
-          </div>
         </div>
       )}
 
       {/* US STOCKS */}
       {tab === 4 && (
         <div>
-          <div className="alert sec">
-            <strong>⚠ Concentration:</strong> QQQM + SCHD = 39% of portfolio ($1,834 of $4,666) ·
-            13 crypto/mining positions move together · INTU worst position at -51.8%
-          </div>
+          <InsightBanner text={insights?.us_stocks} loading={insightsFirstLoad} />
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
@@ -666,6 +725,7 @@ export default function Page() {
       {/* ALGO */}
       {tab === 5 && (
         <div>
+          <InsightBanner text={insights?.algo} loading={insightsFirstLoad} />
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">own capital deployed</div>
@@ -867,16 +927,28 @@ function Donut({ segments }) {
   );
 }
 
-function AllocRow({ label, val, total, color, loading }) {
-  const pct = total ? (val / total) * 100 : 0;
+// Amber AI-insight banner — renders a shimmer while loading, nothing if the
+// tab has no insight worth flagging.
+function InsightBanner({ text, loading }) {
+  if (loading) {
+    return (
+      <div className="alert sec insight">
+        <div className="insight-body" style={{ flex: 1 }}>
+          <span>⚠</span>
+          <span className="insight-shimmer" />
+        </div>
+        <span className="insight-tag">AI insight</span>
+      </div>
+    );
+  }
+  if (!text) return null;
   return (
-    <tr>
-      <td style={{ color: 'var(--txt2)', width: '40%' }}>
-        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: color, marginRight: 8 }} />
-        {label}
-      </td>
-      <td className="ra mono" style={{ color: 'var(--txt)' }}>{loading ? '…' : inrC(val)}</td>
-      <td className="ra mono mut">{loading || !total ? '…' : pct.toFixed(1) + '%'}</td>
-    </tr>
+    <div className="alert sec insight">
+      <div className="insight-body">
+        <span>⚠</span>
+        <span>{text}</span>
+      </div>
+      <span className="insight-tag">AI insight</span>
+    </div>
   );
 }
