@@ -920,11 +920,13 @@ export default function Page() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                 <div className="mini">
-                  <div className="fxc" style={{ marginBottom: 4 }}>
-                    <div className="lbl" style={{ margin: 0 }}>pool</div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s01.deployed}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
+                      <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{ALGO.s01.deployed}</div>
                   </div>
-                  <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                 </div>
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
@@ -964,11 +966,13 @@ export default function Page() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                 <div className="mini">
-                  <div className="fxc" style={{ marginBottom: 4 }}>
-                    <div className="lbl" style={{ margin: 0 }}>capital</div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s02.deployed}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
+                      <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{ALGO.s02.deployed}</div>
                   </div>
-                  <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                 </div>
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
