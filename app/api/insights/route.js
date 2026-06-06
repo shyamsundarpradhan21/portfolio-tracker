@@ -29,6 +29,7 @@ const EMPTY = {
   indian_stocks: null,
   us_stocks: null,
   mutual_funds: null,
+  fixed_deposits: null,
   algo: null,
 };
 
@@ -51,6 +52,7 @@ function buildUserMessage(d) {
     `US STOCKS (live prices):\n${fmtRows(d.us)}\n` +
     `USD/INR: ${d.usdInr ?? '?'}\n\n` +
     `MUTUAL FUNDS: ${d.mutualFunds || 'JioBLK ₹51,927 (+2.83%), ELSS ₹596 (+19.24%)'}\n\n` +
+    `FIXED DEPOSITS: ${d.fixedDeposits || 'none'}\n\n` +
     `ALGO: ${d.algo || 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized'}\n\n` +
     `Return JSON:\n` +
     `{\n` +
@@ -58,6 +60,7 @@ function buildUserMessage(d) {
     `  indian_stocks: string | null,\n` +
     `  us_stocks: string | null,\n` +
     `  mutual_funds: string | null,\n` +
+    `  fixed_deposits: string | null,\n` +
     `  algo: string | null\n` +
     `}`
   );
@@ -79,6 +82,7 @@ function parseInsights(text) {
       indian_stocks: obj.indian_stocks ?? null,
       us_stocks: obj.us_stocks ?? null,
       mutual_funds: obj.mutual_funds ?? null,
+      fixed_deposits: obj.fixed_deposits ?? null,
       algo: obj.algo ?? null,
     };
   } catch {
