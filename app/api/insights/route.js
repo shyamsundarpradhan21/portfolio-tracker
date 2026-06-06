@@ -48,8 +48,8 @@ function buildUserMessage(d) {
     `Current portfolio data as of ${d.timestamp || new Date().toISOString()}:\n\n` +
     `OVERVIEW: Net worth ₹${ov.netWorthL ?? '?'}L, Total assets ₹${ov.totalAssetsL ?? '?'}L, Loan ₹7.5L\n` +
     `Indian equity P&L: ${ov.indianPlPct ?? '?'}%, US portfolio P&L: ${ov.usPlPct ?? '?'}%\n\n` +
-    `INDIAN STOCKS (live prices):\n${fmtRows(d.indian)}\n\n` +
-    `US STOCKS (live prices):\n${fmtRows(d.us)}\n` +
+    `INDIAN STOCKS (live prices, ${d.indianSummary || 'all positions'}):\n${fmtRows(d.indian)}\n\n` +
+    `US STOCKS (live prices, ${d.usSummary || 'all positions'}):\n${fmtRows(d.us)}\n` +
     `USD/INR: ${d.usdInr ?? '?'}\n\n` +
     `MUTUAL FUNDS: ${d.mutualFunds || 'JioBLK ₹51,927 (+2.83%), ELSS ₹596 (+19.24%)'}\n\n` +
     `FIXED DEPOSITS: ${d.fixedDeposits || 'none'}\n\n` +

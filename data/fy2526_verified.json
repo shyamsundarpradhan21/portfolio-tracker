@@ -1,0 +1,31 @@
+{
+  "_note": "Static, ITR-verified F&O figures. INR. Net = Gross - Charges. Update manually from broker statements / ITR.",
+  "s01": {
+    "fy2526": {
+      "rows": [
+        { "broker": "Dhan",    "gross": 186496, "charges": 29364, "net": 157132 },
+        { "broker": "Zerodha", "gross": 23029,  "charges": 716,   "net": 22313 }
+      ],
+      "total": { "gross": 209524, "charges": 30079, "net": 179445 }
+    },
+    "fy2627": { "label": "Dhan F&O", "gross": 14586, "charges": 9086, "net": 5500 }
+  },
+  "s02": {
+    "fy2526": {
+      "rows": [
+        { "broker": "Upstox", "gross": 277072,  "charges": 22733, "net": 254339 },
+        { "broker": "Fyers",  "gross": -405615, "charges": 40788, "net": -446403 }
+      ],
+      "total": { "gross": -128544, "charges": 63520, "net": -192064 }
+    },
+    "fy2627": { "label": "Fyers F&O", "gross": 101267, "charges": 8756, "net": 92512 }
+  },
+  "combined2526": { "gross": 80980, "charges": 93600, "net": -12619 },
+  "carryforward": [
+    { "label": "Non-spec business",      "val": -513011, "sub": "AY24-25: ₹1,41,206 · AY25-26: ₹3,71,805" },
+    { "label": "Speculative (intraday)", "val": -84268,  "sub": "AY24-25: ₹16,958 · AY25-26: ₹67,310" },
+    { "label": "STCG loss",              "val": -4700,   "sub": "AY25-26 equity · short-term net" },
+    { "label": "CF entering AY26-27",    "val": -601979, "sub": "Full CF intact — no set-off in FY25-26 (net F&O loss)", "accent": true }
+  ],
+  "cfNote": "FY25-26 F&O resulted in a net loss (−₹12,619) — zero CF absorption occurred. The full ₹6,01,979 pool enters FY26-27 intact. FY26-27 YTD S02 realised (+₹92,512) will begin absorbing the non-spec CF. Speculative CF (₹84,268) absorbs only intraday profit — not credit spread or stock F&O income. STCG CF (₹4,700) to be absorbed by FY26-27 equity gains."
+}
