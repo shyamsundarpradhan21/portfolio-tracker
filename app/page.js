@@ -922,7 +922,7 @@ export default function Page() {
                 <div className="mini">
                   <div className="fxc" style={{ marginBottom: 4 }}>
                     <div className="lbl" style={{ margin: 0 }}>pool</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s01.deployed}</div>
+                    <div style={{ fontSize: 11, color: 'var(--acc)', fontFamily: 'var(--mono)', letterSpacing: '.3px' }}>{ALGO.s01.deployed}</div>
                   </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                 </div>
@@ -966,7 +966,7 @@ export default function Page() {
                 <div className="mini">
                   <div className="fxc" style={{ marginBottom: 4 }}>
                     <div className="lbl" style={{ margin: 0 }}>capital</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--acc)', fontFamily: 'var(--mono)' }}>{ALGO.s02.deployed}</div>
+                    <div style={{ fontSize: 11, color: 'var(--acc)', fontFamily: 'var(--mono)', letterSpacing: '.3px' }}>{ALGO.s02.deployed}</div>
                   </div>
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                 </div>
