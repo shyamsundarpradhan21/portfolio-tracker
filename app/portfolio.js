@@ -138,15 +138,15 @@ export const MF = {
 // (static, ITR-verified). Swing positions below carry live NSE prices.
 export const ALGO = {
   summary: {
-    deployed: '₹5.90L',
-    deployedNote: 'S01 ₹2.5L + S02 ₹3.4L · own capital, live',
+    deployed: '₹7.30L',
+    deployedNote: 'S01 ₹3.9L + S02 ₹3.4L · own capital, live',
   },
   s01: {
     title: 'S01 — Credit Spreads',
     broker: 'Dhan · Zerodha',
     badge: 'Steady income',
-    deployed: '₹2.5L',
-    pool: 'Total ₹5.0L · Own ₹2.5L · Client ₹2.5L · 100% own + 50% client profit',
+    deployed: '₹3.9L',
+    pool: 'Total ₹6.4L · Own ₹3.9L · Client ₹2.5L · 100% own + 50% client profit',
   },
   s02: {
     title: 'S02 — Active F&O + Swing',
@@ -155,7 +155,7 @@ export const ALGO = {
     deployed: '₹3.4L',
     capital: 'Own ₹3.4L · F&O ₹3L + Swing ₹40K · user keeps 70%',
   },
-  poolNote: 'Own capital deployed ₹5.90L (S01 ₹2.5L · S02 ₹3.4L)',
+  poolNote: 'Own capital ₹7.30L (S01 ₹3.9L · S02 ₹3.4L)',
 };
 
 // S02 swing book — live NSE prices via /api/quotes (.NS suffix), refreshed on
