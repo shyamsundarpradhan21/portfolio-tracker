@@ -139,23 +139,23 @@ export const MF = {
 export const ALGO = {
   summary: {
     deployed: '₹5.90L',
-    deployedNote: 'Jun 2026 → ₹6.9L total',
+    deployedNote: 'S01 ₹2.5L + S02 ₹3.4L · own capital, live',
   },
   s01: {
     title: 'S01 — Credit Spreads',
     broker: 'Dhan · Zerodha',
     badge: 'Steady income',
+    deployed: '₹2.5L',
     pool: 'Total ₹5.0L · Own ₹2.5L · Client ₹2.5L · 100% own + 50% client profit',
-    scaling: { from: '₹2.5L', to: '₹3.9L' },
   },
   s02: {
     title: 'S02 — Active F&O + Swing',
     broker: 'Upstox · Fyers',
     badge: 'Profitable',
+    deployed: '₹3.4L',
     capital: 'Own ₹3.4L · F&O ₹3L + Swing ₹40K · user keeps 70%',
-    scaling: { from: '₹3.4L', to: '₹3.0L' },
   },
-  poolNote: 'Total algo pool ₹5.9L → ₹6.9L (June scaling)',
+  poolNote: 'Own capital deployed ₹5.90L (S01 ₹2.5L · S02 ₹3.4L)',
 };
 
 // S02 swing book — live NSE prices via /api/quotes (.NS suffix), refreshed on
