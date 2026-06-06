@@ -132,7 +132,7 @@ function buildInsightPayload(prices, fx) {
       `FY25-26 net F&O ${sFull(FY.combined2526.net)} (S01 ${sFull(FY.s01.fy2526.total.net)}, S02 ${sFull(FY.s02.fy2526.total.net)}). ` +
       `FY26-27 YTD: S01 ${sFull(FY.s01.fy2627.net)} (Dhan), S02 ${sFull(FY.s02.fy2627.net)} (Fyers) realised` +
       (swPl != null ? `, swing unrealised ${sFull(swPl)}` : '') +
-      `. F&O loss carryforward ₹6.02L intact (no FY25-26 set-off). Pool ₹5.9L→₹6.9L June scaling.`,
+      `. Loss CF pool entering FY26-27 ₹5.97L (non-spec ₹5.13L + spec ₹84,307; STCG ₹4,700 consumed). Realised +₹98,012 absorbing oldest non-spec tranche. Capital ₹5.9L→₹6.9L June scaling.`,
   };
 }
 
@@ -528,6 +528,15 @@ export default function Page() {
               </div>
             </div>
           </div>
+          <CFMemo
+            title="Loss Carryforward — Tax Asset"
+            rows={[
+              { label: 'Non-spec F&O', val: sFull(-FY.cf.nonSpec), sub: 'Sec 72 · 8-yr · offsets future F&O profit only' },
+              { label: 'Speculative (intraday)', val: sFull(-FY.cf.speculative), sub: 'Sec 73 · 4-yr · ₹16,958 expires AY28-29 first' },
+              { label: 'Pool entering FY26-27', val: sFull(-FY.cf.poolEnteringFY2627), color: 'var(--acc)', accent: true, sub: `−${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
+            ]}
+            foot={`Frozen tax asset: usable only against future F&O / intraday profit — never salary, capital gains or interest. FY26-27 realised F&O (+${inrFull(FY.cf.fy2627Realised)}) is absorbing the oldest non-spec tranche first (~${inrFull(FY.cf.taxSavingRealised)} tax saved). STCG ₹4,700 already consumed in FY25-26.`}
+          />
         </div>
       )}
 
@@ -599,6 +608,14 @@ export default function Page() {
               </tbody>
             </table>
           </div>
+          <CFMemo
+            title="Equity Tax — Carryforward Status"
+            rows={[
+              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
+              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset equity capital gains' },
+            ]}
+            foot="Short-term gains taxed @20% (Sec 111A), long-term @12.5% above the ₹1.25L exemption. The ₹5.97L F&O / speculative loss pool can only shelter future F&O / intraday profit — it cannot offset equity gains. New regime: no Chapter VI-A relief."
+          />
         </div>
       )}
 
@@ -760,6 +777,14 @@ export default function Page() {
               </div>
             </div>
           </div>
+          <CFMemo
+            title="MF Redemption Tax — Carryforward Status"
+            rows={[
+              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
+              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset MF capital gains' },
+            ]}
+            foot="Equity MF: STCG @20%, LTCG @12.5% over ₹1.25L (units held >12m). ELSS carries a 3-yr lock-in. Debt / non-equity MF gains are taxed at slab. None of the ₹5.97L F&O / speculative loss pool can shelter these gains."
+          />
         </div>
       )}
 
@@ -848,6 +873,15 @@ export default function Page() {
               Click headers to sort · Prices live from Yahoo Finance, converted at live USD/INR
             </div>
           </div>
+          <CFMemo
+            title="Foreign Equity Tax — Carryforward Status"
+            rows={[
+              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
+              { label: 'FY25-26 foreign STCG', val: '+₹27,694', color: 'var(--grn)', sub: 'Slab rate · held <24m · Sch CG + FSI' },
+              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset foreign capital gains' },
+            ]}
+            foot="US shares held <24m → STCG at slab rate (no 111A); ≥24m → LTCG 12.5%. Dividends carry 25% US WHT, partly relieved via Form 67 FTC (~₹279). The F&O / speculative loss pool cannot offset these gains. Schedule FA disclosure is required for all US holdings."
+          />
         </div>
       )}
 
@@ -913,7 +947,7 @@ export default function Page() {
                     CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 9 }}>ITR</span>
                   </div>
                   <div className="fxc">
-                    <span style={{ color: 'var(--txt2)' }}>CF entering AY26-27</span>
+                    <span style={{ color: 'var(--txt2)' }}>CF entering FY26-27</span>
                     <span className="red mono">{sFull(-cfEntering)}</span>
                   </div>
                   <div className="fxc" style={{ marginTop: 3 }}>
@@ -1035,13 +1069,15 @@ export default function Page() {
           {/* CF PANEL */}
           <div className="card">
             <div className="lbl" style={{ marginBottom: 10, display: 'flex', gap: 6 }}>
-              F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified · AY26-27</span>
+              F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified · entering FY26-27</span>
             </div>
             <div className="g4">
               {FY.carryforward.map((c) => (
                 <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
                   <div className="sub" style={{ margin: 0 }}>{c.label}</div>
-                  <div className="vsm" style={{ marginTop: 4, color: c.accent ? 'var(--acc)' : 'var(--red)' }}>{sFull(c.val)}</div>
+                  <div className="vsm" style={{ marginTop: 4, color: c.accent ? 'var(--acc)' : c.consumed ? 'var(--grn)' : 'var(--red)' }}>
+                    {c.consumed ? '₹0' : sFull(c.val)}
+                  </div>
                   <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
                 </div>
               ))}
@@ -1101,6 +1137,31 @@ function Stat({ label, val }) {
     <div className="csm" style={{ flex: 1, minWidth: 120, padding: '9px 12px' }}>
       <div className="lbl" style={{ marginBottom: 2 }}>{label}</div>
       <div className="vsm">{val}</div>
+    </div>
+  );
+}
+
+// Reusable loss-carryforward memo — surfaced on every tab where a loss type
+// actually applies. Single source of truth: data/fy2526_verified.json → cf.
+function CFMemo({ title, lead, rows, foot }) {
+  return (
+    <div className="card sec">
+      <div className="lbl" style={{ marginBottom: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
+        {title} <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified</span>
+      </div>
+      {lead && <div className="sub" style={{ marginTop: 0, marginBottom: rows ? 12 : 0, lineHeight: 1.6 }}>{lead}</div>}
+      {rows && (
+        <div className="g3">
+          {rows.map((r) => (
+            <div className="csm" key={r.label} style={r.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
+              <div className="sub" style={{ margin: 0 }}>{r.label}</div>
+              <div className="vsm" style={{ marginTop: 4, color: r.color || 'var(--red)' }}>{r.val}</div>
+              {r.sub && <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{r.sub}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {foot && <div className="sub" style={{ marginTop: rows ? 12 : 0, paddingTop: rows ? 10 : 0, borderTop: rows ? '.5px solid var(--brd)' : 'none', lineHeight: 1.6 }}>{foot}</div>}
     </div>
   );
 }
