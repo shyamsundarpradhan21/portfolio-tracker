@@ -134,34 +134,39 @@ export const MF = {
   },
 };
 
-// Algo trading strategies (static, manually updated).
+// Algo trading strategies. FY financials live in data/fy2526_verified.json
+// (static, ITR-verified). Swing positions below carry live NSE prices.
 export const ALGO = {
   summary: {
     deployed: '₹5.90L',
     deployedNote: 'Jun 2026 → ₹6.9L total',
-    fy2526Take: '₹3,01,215',
-    fy2627Ytd: '+₹14,432',
   },
   s01: {
     title: 'S01 — Credit Spreads',
-    badge: 'in recovery',
+    broker: 'Dhan · Zerodha',
+    badge: 'In Recovery',
     pool: 'Total ₹5.0L · Own ₹2.5L · Client ₹2.5L · 100% own + 50% client profit',
-    fy2526: { pl: '+₹1,56,397', take: '+₹1,17,298' },
-    fy2627: { pl: '−₹26,293', note: 'Own-half drag ~₹13,147 · expected to recover' },
     scaling: { from: '₹2.5L', to: '₹3.9L' },
   },
   s02: {
     title: 'S02 — Active F&O + Swing',
-    badge: 'profitable',
+    broker: 'Upstox · Fyers',
+    badge: 'Profitable',
     capital: 'Own ₹3.4L · F&O ₹3L + Swing ₹40K · user keeps 70%',
-    fy2526: { pl: '+₹2,54,339', take: '+₹1,83,917' },
-    fy2627: { realised: '+₹30,998', unrealised: '+₹8,400' },
-    swing: ['AVANTEL', 'BANKBARODA', 'TDPOWERSYS', 'HAPPSTMNDS', 'LAURUSLABS'],
     scaling: { from: '₹3.4L', to: '₹3.0L' },
   },
   poolNote: 'Total algo pool ₹5.9L → ₹6.9L (June scaling)',
-  carryforward: 'F&O Loss Carryforward: ~₹4L from prior years — largely exhausted after FY2025-26',
 };
+
+// S02 swing book — live NSE prices via /api/quotes (.NS suffix), refreshed on
+// the same 15-min cycle. `cost` = average buy price.
+export const SWING = [
+  { sym: 'TDPOWERSYS', qty: 10, cost: 796.43 },
+  { sym: 'LAURUSLABS', qty: 8,  cost: 986.86 },
+  { sym: 'AVANTEL',    qty: 52, cost: 153.04 },
+  { sym: 'HAPPSTMNDS', qty: 20, cost: 393.50 },
+  { sym: 'BANKBARODA', qty: 28, cost: 291.80 },
+].map((s) => ({ ...s, ns: `${s.sym}.NS`, inv: +(s.qty * s.cost).toFixed(2) }));
 
 // Donut allocation colors (Overview).
 export const ALLOC_COLORS = {

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INDIAN, US, FDS, FD_PIPELINE, MF, ALGO, STATIC, RETIREMENT,
+  INDIAN, US, FDS, FD_PIPELINE, MF, ALGO, SWING, STATIC, RETIREMENT,
   CAT_COLORS, ALLOC_COLORS,
 } from './portfolio';
+import FY from '../data/fy2526_verified.json';
 
 // ─── formatting helpers ───
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
@@ -21,6 +22,9 @@ function inrC(n) {
 }
 const usd = (n) => (n < 0 ? '-$' : '$') + Math.abs(n).toFixed(2);
 const pctS = (n) => sg(n) + Math.abs(n).toFixed(2) + '%';
+// Signed full-rupee with grouping, e.g. -₹12,619 / +₹1,06,376
+const sFull = (n) => sg(n) + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+const numC = (n) => Math.round(n).toLocaleString('en-IN'); // plain grouped (charges)
 
 const FETCH_TS_KEY = 'nwTracker.cache';
 const INSIGHTS_KEY = 'nwTracker.insights';
@@ -38,12 +42,13 @@ const US_COLS = [
 ];
 
 // Distil live state into a compact payload for the /api/insights route.
+// Only outlier holdings are sent to reduce prompt tokens by ~40%.
 function buildInsightPayload(prices, fx) {
   const rate = fx || 88;
   const r2 = (n) => (n == null ? null : +n.toFixed(2));
 
   let inInv = 0, inVal = 0;
-  const indian = INDIAN.map((s) => {
+  const allIndian = INDIAN.map((s) => {
     const q = prices[s.ns];
     const lp = q && !q.error ? q.price : null;
     const v = lp != null ? s.qty * lp : null;
@@ -56,9 +61,24 @@ function buildInsightPayload(prices, fx) {
       dayPct: q && !q.error ? r2(q.pct) : null,
     };
   });
+  // Send only positions with significant P&L or intraday moves
+  const indian = allIndian.filter(
+    (r) => (r.plPct != null && Math.abs(r.plPct) > 10) ||
+            (r.dayPct != null && Math.abs(r.dayPct) > 2),
+  );
+
+  // S02 swing book live unrealised P&L (for the algo insight).
+  let swInv = 0, swVal = 0, swValued = true;
+  SWING.forEach((s) => {
+    const q = prices[s.ns];
+    const lp = q && !q.error ? q.price : null;
+    swInv += s.inv;
+    if (lp != null) swVal += s.qty * lp; else swValued = false;
+  });
+  const swPl = swValued ? swVal - swInv : null;
 
   let usInv = 0, usVal = 0;
-  const us = US.map((s) => {
+  const allUs = US.map((s) => {
     const q = prices[s.sym];
     const lp = q && !q.error ? q.price : null;
     const v = lp != null ? s.qty * lp : null;
@@ -69,8 +89,21 @@ function buildInsightPayload(prices, fx) {
       sym: s.sym, qty: +s.qty.toFixed(4), avgCost: s.cost, livePrice: r2(lp),
       plPct: pl != null && s.inv ? r2((pl / s.inv) * 100) : null,
       dayPct: q && !q.error ? r2(q.pct) : null,
+      _val: v,
     };
   });
+  // Always include top 3 holdings by value (concentration context) + outliers
+  const top3Syms = new Set(
+    [...allUs].filter((r) => r._val != null)
+      .sort((a, b) => b._val - a._val).slice(0, 3).map((r) => r.sym),
+  );
+  const us = allUs
+    .filter(
+      (r) => top3Syms.has(r.sym) ||
+              (r.plPct != null && Math.abs(r.plPct) > 15) ||
+              (r.dayPct != null && Math.abs(r.dayPct) > 3),
+    )
+    .map(({ _val, ...rest }) => rest);
 
   const usInr = usVal * rate;
   const totalAssets = inVal + usInr + STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss;
@@ -85,7 +118,9 @@ function buildInsightPayload(prices, fx) {
       usPlPct: usInv && usVal ? r2(((usVal - usInv) / usInv) * 100) : null,
     },
     indian,
+    indianSummary: `${indian.length}/${INDIAN.length} shown (|P&L|>10% or |day|>2%)`,
     us,
+    usSummary: `${us.length}/${US.length} shown (top 3 by value + |P&L|>15% or |day|>3%)`,
     usdInr: r2(rate),
     mutualFunds: `JioBLK ₹${MF.jio.current.toLocaleString('en-IN')} (+${MF.jio.ret}%), ELSS ₹${MF.elss.current} (+${MF.elss.ret}%)`,
     fixedDeposits:
@@ -93,7 +128,11 @@ function buildInsightPayload(prices, fx) {
       FDS.map((f) => `${f.bank} ${inrC(f.principal)} @${f.rate}% matures ${f.matures}`).join('; ') +
       `. Pipeline (${inrC(FD_PIPELINE.reduce((s, f) => s + f.amount, 0))}), next: ${FD_PIPELINE[0].bank} ${inrC(FD_PIPELINE[0].amount)} on ${FD_PIPELINE[0].deploy}` +
       `. Today is ${new Date().toISOString().slice(0, 10)}.`,
-    algo: 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized',
+    algo:
+      `FY25-26 net F&O ${sFull(FY.combined2526.net)} (S01 ${sFull(FY.s01.fy2526.total.net)}, S02 ${sFull(FY.s02.fy2526.total.net)}). ` +
+      `FY26-27 YTD: S01 ${sFull(FY.s01.fy2627.net)} (Dhan), S02 ${sFull(FY.s02.fy2627.net)} (Fyers) realised` +
+      (swPl != null ? `, swing unrealised ${sFull(swPl)}` : '') +
+      `. F&O loss carryforward ₹6.02L intact (no FY25-26 set-off). Pool ₹5.9L→₹6.9L June scaling.`,
   };
 }
 
@@ -108,6 +147,15 @@ export default function Page() {
   const [usSort, setUsSort] = useState({ col: 'liveVal', dir: -1 });
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsOn, setInsightsOn] = useState(() => {
+    try { return localStorage.getItem('nwTracker.insightsOn') !== 'false'; } catch { return true; }
+  });
+  const toggleInsights = () =>
+    setInsightsOn((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {}
+      return next;
+    });
   const timer = useRef(null);
 
   // Show the loading shimmer only until the first set of insights arrives.
@@ -156,7 +204,9 @@ export default function Page() {
     setLoading(true);
     setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
-      const inSyms = INDIAN.map((s) => s.ns).concat(['INR=X']);
+      const inSyms = INDIAN.map((s) => s.ns)
+        .concat(SWING.map((s) => s.ns))
+        .concat(['INR=X']);
       const usSyms = US.map((s) => s.sym);
       const [inData, usData] = await Promise.all([
         fetchBatch(inSyms),
@@ -192,13 +242,14 @@ export default function Page() {
 
       // Generate AI insights only on explicit request (manual refresh / first
       // load) — never on the 15-min auto-refresh, to keep API spend minimal.
-      if (opts.insights) fetchInsights(merged, fx || usdInr);
+      // Also respects the per-session insights toggle.
+      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr);
     } catch (e) {
       setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' });
     } finally {
       setLoading(false);
     }
-  }, [usdInr, fetchInsights]);
+  }, [usdInr, fetchInsights, insightsOn]);
 
   // ─── boot: hydrate from cache, then refresh + interval ───
   useEffect(() => {
@@ -223,12 +274,12 @@ export default function Page() {
         setStatus({ msg: `Cached prices (${age}m ago)`, type: 'stale' });
         setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
-        // Only call the API if we don't already have insights this session.
-        if (!haveInsights) fetchInsights(c.prices || {}, c.usdInr);
+        // Only call the API if we don't already have insights and the toggle is on.
+        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr);
       }
     } catch {}
     // Fresh load with no cached prices: fetch prices + one set of insights.
-    if (!hydrated) doRefresh({ insights: !haveInsights });
+    if (!hydrated) doRefresh({ insights: !haveInsights && insightsOn });
     // Auto-refresh keeps prices live but does NOT regenerate insights.
     timer.current = setInterval(doRefresh, REFRESH_MS);
     return () => clearInterval(timer.current);
@@ -288,6 +339,27 @@ export default function Page() {
       s.col === col ? { col, dir: -s.dir } : { col, dir: col === 'sym' || col === 'name' ? 1 : -1 },
     );
 
+  // ─── derived: S02 swing book (live NSE) ───
+  const swing = useMemo(() => {
+    let inv = 0, val = 0, valued = true;
+    const rows = SWING.map((s) => {
+      const q = prices[s.ns];
+      const ltp = q && !q.error ? q.price : null;
+      const v = ltp != null ? s.qty * ltp : null;
+      const pl = v != null ? v - s.inv : null;
+      const pct = pl != null ? (pl / s.inv) * 100 : null;
+      inv += s.inv;
+      if (v != null) val += v; else valued = false;
+      return { ...s, ltp, val: v, pl, pct };
+    });
+    const pl = val - inv;
+    return { rows, inv, val, pl, pct: inv ? (pl / inv) * 100 : 0, valued };
+  }, [prices]);
+
+  // FY26-27 algo YTD = S01 net + S02 net + live swing unrealised
+  const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
+  const ytdTotal = swing.valued ? ytdRealised + swing.pl : null;
+
   // ─── derived: overview / net worth ───
   const ov = useMemo(() => {
     const usInr = usData.val * fxRate;
@@ -332,6 +404,14 @@ export default function Page() {
           <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
         </div>
         <button
+          className="refresh-btn"
+          onClick={toggleInsights}
+          title={insightsOn ? 'AI insights ON — click to disable' : 'AI insights OFF — click to enable'}
+          style={{ opacity: insightsOn ? 1 : 0.4 }}
+        >
+          ✨ AI {insightsOn ? 'ON' : 'OFF'}
+        </button>
+        <button
           className={'refresh-btn' + (loading ? ' loading' : '')}
           onClick={() => doRefresh({ insights: true })}
           title="Refresh prices and regenerate AI insights"
@@ -369,7 +449,7 @@ export default function Page() {
       {/* OVERVIEW */}
       {tab === 0 && (
         <div>
-          <InsightBanner text={insights?.overview} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
           <div className="ov-top">
             <div className="card ov-donut">
               <div className="lbl" style={{ marginBottom: 8 }}>allocation</div>
@@ -394,33 +474,33 @@ export default function Page() {
                 </div>
               </div>
               <div className="g3">
-            <div className="csm">
-              <div className="lbl">Indian equity live P&amp;L</div>
-              <div className={'vmd ' + cl(indian.pl)}>
-                {indian.valued ? sg(indian.pl) + inrC(Math.abs(indian.pl)) : <Skel w={70} h={15} />}
-              </div>
-              <div className="sub">
-                {indian.valued
-                  ? `${pctS(indian.pct)} · ${inrC(indian.inv)} → ${inrC(indian.val)}`
-                  : `${INDIAN.length} stocks`}
-              </div>
-            </div>
-            <div className="csm">
-              <div className="lbl">US portfolio live P&amp;L</div>
-              <div className={'vmd ' + cl(usData.pl)}>
-                {usData.val ? sg(usData.pl) + '$' + Math.abs(usData.pl).toFixed(2) : <Skel w={70} h={15} />}
-              </div>
-              <div className="sub">
-                {usData.val
-                  ? `${pctS(usData.pct)} · ${inrC(ov.usInr)} @₹${fxRate.toFixed(0)}`
-                  : `${US.length} holdings in USD`}
-              </div>
-            </div>
-            <div className="csm">
-              <div className="lbl">algo + FDs + MF</div>
-              <div className="vmd">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
-              <div className="sub">static · update manually</div>
-            </div>
+                <div className="csm">
+                  <div className="lbl">Indian equity live P&amp;L</div>
+                  <div className={'vlg ' + cl(indian.pl)}>
+                    {indian.valued ? sg(indian.pl) + inrC(Math.abs(indian.pl)) : <Skel w={70} h={20} />}
+                  </div>
+                  <div className="sub">
+                    {indian.valued
+                      ? `${pctS(indian.pct)} · ${inrC(indian.inv)} → ${inrC(indian.val)}`
+                      : `${INDIAN.length} stocks`}
+                  </div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">US portfolio live P&amp;L</div>
+                  <div className={'vlg ' + cl(usData.pl)}>
+                    {usData.val ? sg(usData.pl) + '$' + Math.abs(usData.pl).toFixed(2) : <Skel w={70} h={20} />}
+                  </div>
+                  <div className="sub">
+                    {usData.val
+                      ? `${pctS(usData.pct)} · ${inrC(ov.usInr)} @₹${fxRate.toFixed(0)}`
+                      : `${US.length} holdings in USD`}
+                  </div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">algo + FDs + MF</div>
+                  <div className="vlg">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
+                  <div className="sub">static · update manually</div>
+                </div>
               </div>
               {/* Monthly SIP summary — fills the space beside the donut */}
               <div className="card ov-fill">
@@ -448,7 +528,7 @@ export default function Page() {
       {/* INDIAN STOCKS */}
       {tab === 1 && (
         <div>
-          <InsightBanner text={insights?.indian_stocks} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.indian_stocks : null} loading={insightsOn && insightsFirstLoad} />
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
@@ -519,7 +599,7 @@ export default function Page() {
       {/* FIXED DEPOSITS */}
       {tab === 2 && (
         <div>
-          <InsightBanner text={insights?.fixed_deposits} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">active deployed</div>
@@ -610,7 +690,7 @@ export default function Page() {
       {/* MUTUAL FUNDS */}
       {tab === 3 && (
         <div>
-          <InsightBanner text={insights?.mutual_funds} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.mutual_funds : null} loading={insightsOn && insightsFirstLoad} />
           <div className="g2 sec">
             <div className="csm">
               <div className="lbl">total invested</div>
@@ -680,7 +760,7 @@ export default function Page() {
       {/* US STOCKS */}
       {tab === 4 && (
         <div>
-          <InsightBanner text={insights?.us_stocks} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
@@ -768,7 +848,9 @@ export default function Page() {
       {/* ALGO */}
       {tab === 5 && (
         <div>
-          <InsightBanner text={insights?.algo} loading={insightsFirstLoad} />
+          <InsightBanner text={insightsOn ? insights?.algo : null} loading={insightsOn && insightsFirstLoad} />
+
+          {/* SUMMARY */}
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">own capital deployed</div>
@@ -776,22 +858,29 @@ export default function Page() {
               <div className="sub">{ALGO.summary.deployedNote}</div>
             </div>
             <div className="csm">
-              <div className="lbl">FY25-26 user take</div>
-              <div className="vmd grn">{ALGO.summary.fy2526Take}</div>
-              <div className="sub">realised income</div>
+              <div className="lbl">FY 2025-26</div>
+              <div className={'vmd ' + cl(FY.combined2526.net)}>{sFull(FY.combined2526.net)}</div>
+              <div className="sub">realised value</div>
             </div>
             <div className="csm">
               <div className="lbl">FY26-27 YTD</div>
-              <div className="vmd" style={{ color: 'var(--acc)' }}>{ALGO.summary.fy2627Ytd}</div>
-              <div className="sub">S01 in recovery (−₹26,293 pool)</div>
+              <div className="vmd grn">{ytdTotal != null ? sFull(ytdTotal) : <Skel w={90} h={15} />}</div>
+              <div className="sub">
+                <span className="grn">S01 {sFull(FY.s01.fy2627.net)}</span> ·{' '}
+                <span className="grn">S02 {sFull(FY.s02.fy2627.net)}</span> ·{' '}
+                swing {swing.valued ? <span className={cl(swing.pl)}>{sFull(swing.pl)}</span> : '…'}
+              </div>
             </div>
           </div>
 
           <div className="g2 sec">
             {/* S01 */}
             <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s01.title}</div>
+              <div className="fxc" style={{ marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s01.title}</div>
+                  <div className="sub" style={{ margin: 0 }}>{ALGO.s01.broker}</div>
+                </div>
                 <span className="badge ba">{ALGO.s01.badge}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -800,15 +889,12 @@ export default function Page() {
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                 </div>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>FY2025-26</div>
-                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Net pool P&amp;L</span><span className="grn mono">{ALGO.s01.fy2526.pl}</span></div>
-                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>User take</span><span className="grn mono">{ALGO.s01.fy2526.take}</span></div>
+                  <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
+                    FY2025-26 <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified</span>
+                  </div>
+                  <BrokerTable data={FY.s01.fy2526} />
                 </div>
-                <div className="mini danger">
-                  <div className="lbl" style={{ marginBottom: 4 }}>FY2026-27 YTD</div>
-                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Pool P&amp;L</span><span className="red mono">{ALGO.s01.fy2627.pl}</span></div>
-                  <div className="sub" style={{ marginTop: 3 }}>{ALGO.s01.fy2627.note}</div>
-                </div>
+                <YtdFno label={`FY2026-27 YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
                   <div className="fxc">
@@ -821,8 +907,11 @@ export default function Page() {
 
             {/* S02 */}
             <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s02.title}</div>
+              <div className="fxc" style={{ marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{ALGO.s02.title}</div>
+                  <div className="sub" style={{ margin: 0 }}>{ALGO.s02.broker}</div>
+                </div>
                 <span className="badge bg">{ALGO.s02.badge}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -831,20 +920,57 @@ export default function Page() {
                   <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                 </div>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>FY2025-26</div>
-                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Active P&amp;L</span><span className="grn mono">{ALGO.s02.fy2526.pl}</span></div>
-                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>User take (70%)</span><span className="grn mono">{ALGO.s02.fy2526.take}</span></div>
-                </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>FY2026-27 YTD</div>
-                  <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Realised</span><span className="grn mono">{ALGO.s02.fy2627.realised}</span></div>
-                  <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Unrealised swing</span><span className="grn mono">{ALGO.s02.fy2627.unrealised}</span></div>
-                </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 6 }}>swing positions</div>
-                  <div style={{ marginLeft: -2 }}>
-                    {ALGO.s02.swing.map((p) => <span className="chip" key={p}>{p}</span>)}
+                  <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
+                    FY2025-26 <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified</span>
                   </div>
+                  <BrokerTable data={FY.s02.fy2526} />
+                </div>
+                <YtdFno
+                  label={`FY2026-27 YTD — ${FY.s02.fy2627.label}`}
+                  data={FY.s02.fy2627}
+                  extra={{
+                    label: 'Unrealised swing',
+                    node: swing.valued
+                      ? <span className={'mono ' + cl(swing.pl)}>{sFull(swing.pl)}</span>
+                      : <Skel w={60} h={11} />,
+                  }}
+                />
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
+                    Swing positions <span className="badge bg" style={{ fontSize: 9 }}>Live</span>
+                  </div>
+                  <table className="tbl">
+                    <thead>
+                      <tr>
+                        <th>Symbol</th><th className="ra">Qty</th><th className="ra">Avg</th>
+                        <th className="ra">LTP</th><th className="ra">P&amp;L</th><th className="ra">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {swing.rows.map((r) => (
+                        <tr key={r.sym}>
+                          <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{r.sym}</td>
+                          <td className="ra mut">{r.qty}</td>
+                          <td className="ra mut mono">{r.cost.toFixed(2)}</td>
+                          <td className="ra mono">{r.ltp != null ? r.ltp.toFixed(2) : <Skel w={42} h={11} />}</td>
+                          <td className={'ra mono ' + (r.pl != null ? cl(r.pl) : 'mut')}>
+                            {r.pl != null ? sFull(r.pl) : '—'}
+                          </td>
+                          <td className={'ra mono ' + (r.pct != null ? cl(r.pct) : 'mut')}>
+                            {r.pct != null ? pctS(r.pct) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="tot">
+                        <td>Total</td>
+                        <td />
+                        <td className="ra">{inrFull(swing.inv)}</td>
+                        <td className="ra">{swing.valued ? inrFull(swing.val) : '…'}</td>
+                        <td className={'ra ' + cl(swing.pl)}>{swing.valued ? sFull(swing.pl) : '…'}</td>
+                        <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>June scaling</div>
@@ -857,12 +983,35 @@ export default function Page() {
             </div>
           </div>
 
+          {/* BOTTOM STRIP */}
+          <div className="csm sec">
+            <span style={{ color: 'var(--txt2)' }}>
+              Total algo pool: <strong style={{ color: 'var(--txt)' }}>₹5.9L</strong> → <span style={{ color: 'var(--acc)' }}>₹6.9L</span> (June scaling)
+              {'  ·  '}
+              FY25-26 combined — Gross: <span className="grn">{sFull(FY.combined2526.gross)}</span> ·
+              Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
+              Net F&amp;O (Sch BP): <span className="red">{sFull(FY.combined2526.net)}</span>
+              {'  '}
+              <span className="mut">(S01 {sFull(FY.s01.fy2526.total.net)} · S02 {sFull(FY.s02.fy2526.total.net)})</span>
+            </span>
+          </div>
+
+          {/* CF PANEL */}
           <div className="card">
-            <div className="fxc" style={{ marginBottom: 8 }}>
-              <span style={{ color: 'var(--txt2)' }}>{ALGO.poolNote}</span>
+            <div className="lbl" style={{ marginBottom: 10, display: 'flex', gap: 6 }}>
+              F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 9 }}>ITR-verified · AY26-27</span>
             </div>
-            <div className="sub" style={{ margin: 0, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
-              {ALGO.carryforward}
+            <div className="g4">
+              {FY.carryforward.map((c) => (
+                <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
+                  <div className="sub" style={{ margin: 0 }}>{c.label}</div>
+                  <div className="vsm" style={{ marginTop: 4, color: c.accent ? 'var(--acc)' : 'var(--red)' }}>{sFull(c.val)}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)', lineHeight: 1.6 }}>
+              {FY.cfNote}
             </div>
           </div>
         </div>
@@ -916,6 +1065,53 @@ function Stat({ label, val }) {
     <div className="csm" style={{ flex: 1, minWidth: 120, padding: '9px 12px' }}>
       <div className="lbl" style={{ marginBottom: 2 }}>{label}</div>
       <div className="vsm">{val}</div>
+    </div>
+  );
+}
+
+// Static FY broker breakdown (Gross / Charges / Net) — ITR-verified figures.
+function BrokerTable({ data }) {
+  const { rows, total } = data;
+  return (
+    <table className="tbl">
+      <thead>
+        <tr>
+          <th>Broker</th><th className="ra">Gross</th><th className="ra">Charges</th><th className="ra">Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.broker}>
+            <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{r.broker}</td>
+            <td className={'ra mono ' + cl(r.gross)}>{sFull(r.gross)}</td>
+            <td className="ra mono mut">{numC(r.charges)}</td>
+            <td className={'ra mono ' + cl(r.net)}>{sFull(r.net)}</td>
+          </tr>
+        ))}
+        <tr className="tot">
+          <td>Total</td>
+          <td className={'ra ' + cl(total.gross)}>{sFull(total.gross)}</td>
+          <td className="ra mut">{numC(total.charges)}</td>
+          <td className={'ra ' + cl(total.net)}>{sFull(total.net)}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+// Current-year YTD realised F&O (Gross / Charges / Net) + optional extra row.
+function YtdFno({ label, data, extra }) {
+  return (
+    <div className="mini">
+      <div className="lbl" style={{ marginBottom: 6 }}>{label}</div>
+      <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Gross</span><span className={'mono ' + cl(data.gross)}>{sFull(data.gross)}</span></div>
+      <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Charges</span><span className="mono mut">{numC(data.charges)}</span></div>
+      <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Net realised</span><span className={'mono ' + cl(data.net)}>{sFull(data.net)}</span></div>
+      {extra && (
+        <div className="fxc" style={{ marginTop: 3 }}>
+          <span style={{ color: 'var(--txt2)' }}>{extra.label}</span>{extra.node}
+        </div>
+      )}
     </div>
   );
 }
