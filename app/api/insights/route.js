@@ -14,9 +14,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// Claude Sonnet 4. NOTE: this dated ID is deprecated (retires 2026-06-15) —
-// switch to "claude-sonnet-4-6" here when convenient; no other change needed.
-const MODEL = 'claude-sonnet-4-20250514';
+// Claude Sonnet 4.6 — best speed/intelligence balance. Isolated here so the
+// model is a one-line change.
+const MODEL = 'claude-sonnet-4-6';
 
 const SYSTEM_PROMPT =
   'You are a portfolio analyst. Analyze the portfolio data provided and return ' +
