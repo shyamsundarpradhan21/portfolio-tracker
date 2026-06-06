@@ -36,7 +36,15 @@
     "fy2627Swing": 8364,
     "stcgNote": "₹4,700 brought-forward STCG loss was fully consumed against FY25-26 short-term gains — nil carried into FY26-27.",
     "equityBlock": "The ₹5.97L F&O + speculative loss pool can only offset future F&O / intraday profit — never capital gains. New gains here are taxed in full.",
-    "taxSavingRealised": 15290
+    "taxSavingRealised": 15290,
+    "cg2526": {
+      "indianStcg": 1476,
+      "indianStcgNote": "STT-paid delivery · Sec 111A @20% · fully absorbed in-year vs F&O loss (s71)",
+      "foreignStcg": 27694,
+      "foreignStcgNote": "Slab rate · US shares held <24m · Sch CG + Sch FSI",
+      "mfStcg": 0,
+      "mfStcgNote": "No MF redemptions in FY25-26"
+    }
   },
   "cfNote": "FY25-26 F&O resulted in a net loss (−₹12,619) — set off in-year vs STCG/OS (s71), so it was NOT added to the pool. The ₹5,97,318 pool (non-spec ₹5,13,011 + speculative ₹84,307) enters FY26-27 intact; the ₹4,700 STCG loss was consumed against FY25-26 short-term gains. FY26-27 YTD realised F&O (+₹98,012) is absorbing the non-spec CF first (oldest AY2024-25 tranche). Speculative CF absorbs only intraday profit — not credit spread or stock F&O income."
 }
