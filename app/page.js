@@ -360,6 +360,12 @@ export default function Page() {
   const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
   const ytdTotal = swing.valued ? ytdRealised + swing.pl : null;
 
+  // CF absorption: FY26-27 realised F&O eats into the loss carryforward pool.
+  // (Swing is unrealised — it only absorbs CF once booked.)
+  const cfEntering = Math.abs(FY.carryforward.find((c) => c.accent).val); // 6,01,979
+  const cfAfterRealised = cfEntering - ytdRealised;                       // 5,03,967
+  const cfProjected = swing.valued ? cfAfterRealised - swing.pl : null;   // incl. live swing
+
   // ─── derived: overview / net worth ───
   const ov = useMemo(() => {
     const usInr = usData.val * fxRate;
@@ -900,6 +906,36 @@ export default function Page() {
                   <div className="fxc">
                     <span style={{ color: 'var(--txt2)' }}>Own capital</span>
                     <span className="mono" style={{ color: 'var(--acc)' }}>{ALGO.s01.scaling.from} → {ALGO.s01.scaling.to}</span>
+                  </div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
+                    CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 9 }}>ITR</span>
+                  </div>
+                  <div className="fxc">
+                    <span style={{ color: 'var(--txt2)' }}>CF entering AY26-27</span>
+                    <span className="red mono">{sFull(-cfEntering)}</span>
+                  </div>
+                  <div className="fxc" style={{ marginTop: 3 }}>
+                    <span style={{ color: 'var(--txt2)' }}>Realised YTD (S01 + S02)</span>
+                    <span className="grn mono">{sFull(ytdRealised)}</span>
+                  </div>
+                  <div className="fxc" style={{ marginTop: 5, paddingTop: 5, borderTop: '.5px solid var(--brd)' }}>
+                    <span style={{ color: 'var(--txt2)' }}>CF after realised</span>
+                    <span className="mono" style={{ color: 'var(--acc)' }}>{sFull(-cfAfterRealised)}</span>
+                  </div>
+                  <div className="fxc" style={{ marginTop: 5 }}>
+                    <span style={{ color: 'var(--txt2)' }}>+ live swing (on realisation)</span>
+                    {swing.valued
+                      ? <span className={'mono ' + cl(swing.pl)}>{sFull(swing.pl)}</span>
+                      : <Skel w={56} h={11} />}
+                  </div>
+                  <div className="fxc" style={{ marginTop: 5, paddingTop: 5, borderTop: '.5px solid var(--brd)' }}>
+                    <span style={{ color: 'var(--txt2)' }}>Projected CF remaining</span>
+                    <span className="mono" style={{ color: 'var(--acc)' }}>{cfProjected != null ? sFull(-cfProjected) : '…'}</span>
+                  </div>
+                  <div className="sub" style={{ marginTop: 7 }}>
+                    Only realised F&amp;O absorbs the non-spec business CF; live swing reduces it further once booked.
                   </div>
                 </div>
               </div>
