@@ -925,7 +925,7 @@ export default function Page() {
                       <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
                       <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{ALGO.s01.deployed}</div>
+                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}>{ALGO.s01.deployed}</div>
                   </div>
                 </div>
                 <div className="mini">
@@ -971,7 +971,7 @@ export default function Page() {
                       <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
                       <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{ALGO.s02.deployed}</div>
+                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}>{ALGO.s02.deployed}</div>
                   </div>
                 </div>
                 <div className="mini">
