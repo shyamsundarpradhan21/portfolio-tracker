@@ -144,7 +144,7 @@ export const ALGO = {
   s01: {
     title: 'S01 — Credit Spreads',
     broker: 'Dhan · Zerodha',
-    badge: 'In Recovery',
+    badge: 'Steady income',
     pool: 'Total ₹5.0L · Own ₹2.5L · Client ₹2.5L · 100% own + 50% client profit',
     scaling: { from: '₹2.5L', to: '₹3.9L' },
   },
