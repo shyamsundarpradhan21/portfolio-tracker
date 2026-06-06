@@ -609,12 +609,12 @@ export default function Page() {
             </table>
           </div>
           <CFMemo
-            title="Equity Tax — Carryforward Status"
+            title="Equity Tax — FY25-26 Capital Gains"
             rows={[
-              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
-              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset equity capital gains' },
+              { label: 'FY25-26 domestic STCG', val: '+₹1,476', color: 'var(--grn)', sub: FY.cf.cg2526.indianStcgNote },
+              { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="Short-term gains taxed @20% (Sec 111A), long-term @12.5% above the ₹1.25L exemption. The ₹5.97L F&O / speculative loss pool can only shelter future F&O / intraday profit — it cannot offset equity gains. New regime: no Chapter VI-A relief."
+            foot="Short-term gains @20% (Sec 111A), long-term @12.5% above ₹1.25L. The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset equity capital gains."
           />
         </div>
       )}
@@ -778,12 +778,12 @@ export default function Page() {
             </div>
           </div>
           <CFMemo
-            title="MF Redemption Tax — Carryforward Status"
+            title="MF Redemption Tax — FY25-26 Capital Gains"
             rows={[
-              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
-              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset MF capital gains' },
+              { label: 'FY25-26 MF redemptions', val: 'Nil', color: 'var(--txt2)', sub: FY.cf.cg2526.mfStcgNote },
+              { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="Equity MF: STCG @20%, LTCG @12.5% over ₹1.25L (units held >12m). ELSS carries a 3-yr lock-in. Debt / non-equity MF gains are taxed at slab. None of the ₹5.97L F&O / speculative loss pool can shelter these gains."
+            foot="Equity MF: STCG @20%, LTCG @12.5% above ₹1.25L (held >12m). ELSS has 3-yr lock-in. Debt MF gains at slab. The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset MF capital gains."
           />
         </div>
       )}
@@ -874,13 +874,12 @@ export default function Page() {
             </div>
           </div>
           <CFMemo
-            title="Foreign Equity Tax — Carryforward Status"
+            title="Foreign Equity Tax — FY25-26 Capital Gains"
             rows={[
-              { label: 'STCG loss carried', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
-              { label: 'FY25-26 foreign STCG', val: '+₹27,694', color: 'var(--grn)', sub: 'Slab rate · held <24m · Sch CG + FSI' },
-              { label: 'F&O / speculative pool', val: sFull(-FY.cf.poolEnteringFY2627), sub: 'Cannot offset foreign capital gains' },
+              { label: 'FY25-26 foreign STCG', val: '+₹27,694', color: 'var(--grn)', sub: FY.cf.cg2526.foreignStcgNote },
+              { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
             ]}
-            foot="US shares held <24m → STCG at slab rate (no 111A); ≥24m → LTCG 12.5%. Dividends carry 25% US WHT, partly relieved via Form 67 FTC (~₹279). The F&O / speculative loss pool cannot offset these gains. Schedule FA disclosure is required for all US holdings."
+            foot="US shares held <24m → STCG at slab rate (no 111A); ≥24m → LTCG @12.5%. Dividends carry 25% US WHT, partly relieved via Form 67 FTC (~₹279 in FY25-26). The F&O / speculative loss pool is ring-fenced to future F&O / intraday profit only — it cannot offset these gains. Schedule FA required for all US holdings."
           />
         </div>
       )}
