@@ -317,7 +317,7 @@ export default function Page() {
       {/* HEADER */}
       <div className="hdr">
         <div>
-          <div className="hdr-lbl">Net worth — live</div>
+          <div className="hdr-lbl">Net worth — live<span className="spark">✦</span></div>
           <div className="hdr-val">{indian.valued && usdInr ? inrC(ov.nw) : <Skel w={130} h={24} />}</div>
           <div className="hdr-sub">
             Tracked assets {inrC(ov.totalAssets)} · Loan ~₹7.50L · excl. savings
@@ -391,12 +391,28 @@ export default function Page() {
               </div>
             </div>
             <div className="csm">
-              <div className="lbl">monthly SIP</div>
-              <div className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</div>
-              <div className="sub">
-                {MF.sip.items.map((s) => `${s.label} ${s.val.replace(/\s*\(.*\)/, '')}`).join(' · ')}
-              </div>
+              <div className="lbl">algo + FDs + MF</div>
+              <div className="vmd">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
+              <div className="sub">static · update manually</div>
             </div>
+              </div>
+              {/* Monthly SIP summary — fills the space beside the donut */}
+              <div className="card ov-fill">
+                <div className="fxc" style={{ marginBottom: 12 }}>
+                  <div className="lbl" style={{ margin: 0 }}>monthly SIP commitment</div>
+                  <div className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</div>
+                </div>
+                <div className="g3">
+                  {MF.sip.items.map((s, i) => (
+                    <div className="mini" key={s.label} style={{ borderLeft: `3px solid ${['var(--blu)','var(--grn)','var(--acc)'][i] || 'var(--brd2)'}` }}>
+                      <div className="sub" style={{ margin: 0 }}>{s.label}</div>
+                      <div className="vsm" style={{ marginTop: 4 }}>{s.val}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+                  ✦ Auto-deployed every month · {MF.sip.items.length} streams feeding equities, US SIP &amp; conviction picks
+                </div>
               </div>
             </div>
           </div>
