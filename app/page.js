@@ -23,6 +23,7 @@ const usd = (n) => (n < 0 ? '-$' : '$') + Math.abs(n).toFixed(2);
 const pctS = (n) => sg(n) + Math.abs(n).toFixed(2) + '%';
 
 const FETCH_TS_KEY = 'nwTracker.cache';
+const INSIGHTS_KEY = 'nwTracker.insights';
 const REFRESH_MS = 15 * 60 * 1000;
 
 const US_COLS = [
@@ -87,6 +88,11 @@ function buildInsightPayload(prices, fx) {
     us,
     usdInr: r2(rate),
     mutualFunds: `JioBLK ₹${MF.jio.current.toLocaleString('en-IN')} (+${MF.jio.ret}%), ELSS ₹${MF.elss.current} (+${MF.elss.ret}%)`,
+    fixedDeposits:
+      `Active (${inrC(STATIC.fdDeployed)}, ~₹${FDS.reduce((s, f) => s + f.interest, 0).toLocaleString('en-IN')}/yr): ` +
+      FDS.map((f) => `${f.bank} ${inrC(f.principal)} @${f.rate}% matures ${f.matures}`).join('; ') +
+      `. Pipeline (${inrC(FD_PIPELINE.reduce((s, f) => s + f.amount, 0))}), next: ${FD_PIPELINE[0].bank} ${inrC(FD_PIPELINE[0].amount)} on ${FD_PIPELINE[0].deploy}` +
+      `. Today is ${new Date().toISOString().slice(0, 10)}.`,
     algo: 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized',
   };
 }
@@ -132,7 +138,12 @@ export default function Page() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.insights) setInsights(data.insights);
+        if (data.insights) {
+          setInsights(data.insights);
+          try {
+            sessionStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts: Date.now(), insights: data.insights }));
+          } catch {}
+        }
       }
     } catch {
       // leave any prior insights in place
@@ -141,7 +152,7 @@ export default function Page() {
     }
   }, []);
 
-  const doRefresh = useCallback(async () => {
+  const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true);
     setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
@@ -179,8 +190,9 @@ export default function Page() {
         );
       } catch {}
 
-      // Refresh AI insights from the new prices (fire-and-forget).
-      fetchInsights(merged, fx || usdInr);
+      // Generate AI insights only on explicit request (manual refresh / first
+      // load) — never on the 15-min auto-refresh, to keep API spend minimal.
+      if (opts.insights) fetchInsights(merged, fx || usdInr);
     } catch (e) {
       setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' });
     } finally {
@@ -190,6 +202,17 @@ export default function Page() {
 
   // ─── boot: hydrate from cache, then refresh + interval ───
   useEffect(() => {
+    // Reuse insights cached for this tab session (avoids a fresh API call on
+    // every reload). They only refresh when the user clicks ↻ Refresh.
+    let haveInsights = false;
+    try {
+      const ic = JSON.parse(sessionStorage.getItem(INSIGHTS_KEY) || 'null');
+      if (ic && ic.insights) {
+        setInsights(ic.insights);
+        haveInsights = true;
+      }
+    } catch {}
+
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -200,11 +223,13 @@ export default function Page() {
         setStatus({ msg: `Cached prices (${age}m ago)`, type: 'stale' });
         setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
-        // Generate insights from the cached snapshot too.
-        fetchInsights(c.prices || {}, c.usdInr);
+        // Only call the API if we don't already have insights this session.
+        if (!haveInsights) fetchInsights(c.prices || {}, c.usdInr);
       }
     } catch {}
-    if (!hydrated) doRefresh();
+    // Fresh load with no cached prices: fetch prices + one set of insights.
+    if (!hydrated) doRefresh({ insights: !haveInsights });
+    // Auto-refresh keeps prices live but does NOT regenerate insights.
     timer.current = setInterval(doRefresh, REFRESH_MS);
     return () => clearInterval(timer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -308,7 +333,8 @@ export default function Page() {
         </div>
         <button
           className={'refresh-btn' + (loading ? ' loading' : '')}
-          onClick={doRefresh}
+          onClick={() => doRefresh({ insights: true })}
+          title="Refresh prices and regenerate AI insights"
         >
           ↻ {loading ? 'Updating…' : 'Refresh'}
         </button>
@@ -493,6 +519,7 @@ export default function Page() {
       {/* FIXED DEPOSITS */}
       {tab === 2 && (
         <div>
+          <InsightBanner text={insights?.fixed_deposits} loading={insightsFirstLoad} />
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">active deployed</div>
