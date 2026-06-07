@@ -2,23 +2,74 @@
 // runtime via /api/quotes. `inv` = invested amount (qty * avg cost) in the
 // holding's native currency (INR for NSE, USD for US).
 
-// Indian equities — NSE. Yahoo symbols use the ".NS" suffix.
+// Indian equities — NSE. Yahoo symbols use the ".NS" suffix. Holdings are
+// reconciled against the Zerodha tradebook (14 positions; SUPRIYA 36 post-
+// booking; POWERGRID held; TCS/NATCOPHARM exited). GVT&D/GVTD (net-zero closed,
+// dual-spelling) and any net-negative/exited symbol (OIL, FORTIS) are
+// deliberately absent — do not reintroduce them anywhere.
 export const INDIAN = [
-  { sym: 'COFORGE',    qty: 21,  cost: 1398, matures: 'Jun 2027' },
-  { sym: 'CUB',        qty: 141, cost: 212 },
-  { sym: 'FEDERALBNK', qty: 155, cost: 192 },
-  { sym: 'GODREJCP',   qty: 30,  cost: 999 },
-  { sym: 'LT',         qty: 8,   cost: 3617 },
-  { sym: 'MARKSANS',   qty: 135, cost: 218 },
-  { sym: 'NH',         qty: 17,  cost: 1674 },
-  { sym: 'PITTIENG',   qty: 38,  cost: 772 },
-  { sym: 'POWERGRID',  qty: 102, cost: 289, tag: 'RED' },
-  { sym: 'PRICOLLTD',  qty: 56,  cost: 529 },
-  { sym: 'STYRENIX',   qty: 15,  cost: 1927 },
-  { sym: 'SUPRIYA',    qty: 36,  cost: 587 },
-  { sym: 'TECHNOE',    qty: 33,  cost: 908 },
-  { sym: 'ZYDUSLIFE',  qty: 33,  cost: 894 },
+  { sym: 'COFORGE',    name: 'Coforge Ltd',              qty: 21,  cost: 1398.14, sector: 'Technology',  cap: 'Large' },
+  { sym: 'CUB',        name: 'City Union Bank',          qty: 141, cost: 212.12,  sector: 'Banking',     cap: 'Small' },
+  { sym: 'FEDERALBNK', name: 'Federal Bank',             qty: 155, cost: 193.69,  sector: 'Banking',     cap: 'Mid'   },
+  { sym: 'GODREJCP',   name: 'Godrej Consumer Products', qty: 30,  cost: 999.00,  sector: 'FMCG',        cap: 'Large' },
+  { sym: 'LT',         name: 'Larsen & Toubro',          qty: 8,   cost: 3616.60, sector: 'Industrials', cap: 'Large' },
+  { sym: 'MARKSANS',   name: 'Marksans Pharma',          qty: 135, cost: 217.80,  sector: 'Pharma',      cap: 'Small' },
+  { sym: 'NH',         name: 'Narayana Hrudayalaya',     qty: 17,  cost: 1743.33, sector: 'Healthcare',  cap: 'Mid'   },
+  { sym: 'PITTIENG',   name: 'Pitti Engineering',        qty: 38,  cost: 772.26,  sector: 'Industrials', cap: 'Small' },
+  { sym: 'POWERGRID',  name: 'Power Grid Corp',          qty: 102, cost: 289.45,  sector: 'Utilities',   cap: 'Large' },
+  { sym: 'PRICOLLTD',  name: 'Pricol Ltd',               qty: 56,  cost: 503.48,  sector: 'Auto',        cap: 'Mid'   },
+  { sym: 'STYRENIX',   name: 'Styrenix Performance',     qty: 15,  cost: 1927.00, sector: 'Materials',   cap: 'Small' },
+  { sym: 'SUPRIYA',    name: 'Supriya Lifescience',      qty: 36,  cost: 586.97,  sector: 'Pharma',      cap: 'Small' },
+  { sym: 'TECHNOE',    name: 'Techno Electric & Engg',   qty: 33,  cost: 907.80,  sector: 'Industrials', cap: 'Mid'   },
+  { sym: 'ZYDUSLIFE',  name: 'Zydus Lifesciences',       qty: 33,  cost: 894.25,  sector: 'Pharma',      cap: 'Large' },
 ].map((s) => ({ ...s, ns: `${s.sym}.NS`, inv: +(s.qty * s.cost).toFixed(2) }));
+
+// Per-stock invested capital at each stock's buy-amount-weighted average date
+// (from the Zerodha tradebook). Drives XIRR/CAGR — one outflow per row on its
+// date, one inflow today (+current value). Σinvested ties to ~₹4.04L.
+export const TRANSACTIONS = [
+  { sym: 'COFORGE',    date: '2026-05-25', invested: 29361 },
+  { sym: 'CUB',        date: '2025-09-28', invested: 29909 },
+  { sym: 'FEDERALBNK', date: '2025-10-01', invested: 30022 },
+  { sym: 'GODREJCP',   date: '2025-11-25', invested: 29970 },
+  { sym: 'LT',         date: '2026-04-06', invested: 28933 },
+  { sym: 'MARKSANS',   date: '2026-05-25', invested: 29403 },
+  { sym: 'NH',         date: '2026-03-05', invested: 29637 },
+  { sym: 'PITTIENG',   date: '2026-01-30', invested: 29346 },
+  { sym: 'POWERGRID',  date: '2026-02-04', invested: 29524 },
+  { sym: 'PRICOLLTD',  date: '2025-10-03', invested: 28195 },
+  { sym: 'STYRENIX',   date: '2026-01-14', invested: 28905 },
+  { sym: 'SUPRIYA',    date: '2026-03-09', invested: 21131 },
+  { sym: 'TECHNOE',    date: '2026-01-21', invested: 29957 },
+  { sym: 'ZYDUSLIFE',  date: '2025-09-22', invested: 29510 },
+];
+
+// Realised equity P&L — authoritative constant from the Zerodha tax P&L
+// statement (NOT reconstructed from the tradebook: a FORTIS corporate-action
+// artifact makes raw reconstruction wrong). Σ FY22→FY27 equity realised:
+// short-term −25,786 + intraday −4,864 + long-term +2,789. Update after exits.
+export const REALIZED_PNL = -27862;
+
+// Corporate actions on CURRENT holdings (manual array, maintained like the FD
+// tab until a broker/market feed is wired). Upcoming (ex ≥ today) populate the
+// panel; executed (ex < today) move to the footline. Bonus ratios are applied
+// to holdings automatically once the ex-date passes (see applyCorpActions).
+export const CORPORATE_ACTIONS = [
+  { type: 'bonus',    sym: 'CUB',      name: 'City Union Bank',          ex: '2026-06-12', ratio: '1:3' },
+  { type: 'dividend', sym: 'LT',       name: 'Larsen & Toubro',          ex: '2026-05-22', perShare: 38 },
+  { type: 'dividend', sym: 'GODREJCP', name: 'Godrej Consumer Products', ex: '2026-05-12', perShare: 5 },
+];
+
+// Less-correlated benchmark set (the old Nifty 50/500/MidSmall trio was ~0.9+
+// correlated; Nifty 500 contains Nifty 50). Large-cap market / the portfolio's
+// mid-small tilt / a low-correlation opportunity-cost asset. Yahoo tickers for
+// Indian indices are flaky — the history route logs raw responses and the UI
+// falls back to "—" when a series doesn't resolve.
+export const INDIAN_BENCHMARKS = [
+  { key: 'nifty50',  label: 'Nifty 50',         yahooSym: '^NSEI',                color: 'var(--blu)' },
+  { key: 'midsml',   label: 'Nifty MidSml 400', yahooSym: 'NIFTYMIDSML400.NS',    color: 'var(--pur)' },
+  { key: 'gold',     label: 'Gold',             yahooSym: 'GOLDBEES.NS',          color: 'var(--acc)' },
+];
 
 // US holdings — Vested (fractional shares). Priced in USD.
 export const US = [
@@ -194,10 +245,10 @@ export const SWING = [
   { sym: 'BANKBARODA', qty: 28, cost: 291.80 },
 ].map((s) => ({ ...s, ns: `${s.sym}.NS`, inv: +(s.qty * s.cost).toFixed(2) }));
 
-// Donut allocation colors (Overview).
+// Donut allocation colors (Overview) — aligned to the shared theme palette.
 export const ALLOC_COLORS = {
-  algo: '#E8A030', fd: '#4F8FE8', indian: '#2DB87F',
-  us: '#E84F40', mf: '#8F7FE8', elss: '#E85F8F',
+  algo: '#E8A857', fd: '#5B9BE8', indian: '#34D399',
+  us: '#F87171', mf: '#9B8AFB', elss: '#E85F8F',
 };
 
 // Retirement projections for 2055 (nominal future rupees, not in net worth).
