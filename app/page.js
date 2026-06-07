@@ -73,6 +73,61 @@ function deriveMf(mfNav) {
   };
 }
 
+// ─── fixed-deposit derivations (pure; no external feed — driven by the system
+// clock only). Indian cumulative FDs compound quarterly: A = P(1 + r/400)^4t.
+// Recomputed on mount and hourly so accrued interest and the deploy countdown
+// tick on their own. Simple interest (P×r×t) is intentionally never used. ───
+const DAY_MS = 86400000;
+const YEAR_MS = 365.25 * DAY_MS;
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+const compound = (P, ratePct, years) => P * Math.pow(1 + ratePct / 400, 4 * years);
+
+function deriveFds(now) {
+  const t = now.getTime();
+  let principal = 0, accrued = 0, maturity = 0, weightedRate = 0;
+  const rows = FDS.map((f) => {
+    const openT = new Date(f.open).getTime();
+    const matT = new Date(f.matures).getTime();
+    const totalYears = (matT - openT) / YEAR_MS;
+    const elapsedYears = clamp((t - openT) / YEAR_MS, 0, totalYears);
+    const maturityValue = compound(f.principal, f.rate, totalYears);
+    const accruedSoFar = compound(f.principal, f.rate, elapsedYears) - f.principal;
+    principal += f.principal;
+    accrued += accruedSoFar;
+    maturity += maturityValue;
+    weightedRate += f.principal * f.rate;
+    return {
+      ...f, totalYears, elapsedYears, maturityValue,
+      maturityInterest: maturityValue - f.principal,
+      accruedSoFar, progress: totalYears ? (elapsedYears / totalYears) * 100 : 0,
+    };
+  });
+
+  // Countdown badge on the nearest FUTURE deploy only.
+  const pipeline = FD_PIPELINE.map((f) => ({
+    ...f, days: Math.ceil((new Date(f.deploy).getTime() - t) / DAY_MS),
+  }));
+  let nextIdx = -1;
+  pipeline.forEach((f, i) => {
+    if (f.days >= 0 && (nextIdx === -1 || f.days < pipeline[nextIdx].days)) nextIdx = i;
+  });
+  if (nextIdx >= 0) {
+    const d = pipeline[nextIdx].days;
+    pipeline[nextIdx] = {
+      ...pipeline[nextIdx],
+      badge: d === 0 ? 'NEXT · TODAY' : d === 1 ? 'NEXT · 1 DAY' : `NEXT · ${d} DAYS`,
+    };
+  }
+
+  return {
+    rows, principal, accrued, maturity,
+    blendedRate: principal ? weightedRate / principal : 0,
+    pipeline,
+    pipelineTotal: FD_PIPELINE.reduce((s, f) => s + f.amount, 0),
+    nextPipeline: nextIdx >= 0 ? pipeline[nextIdx] : null,
+  };
+}
+
 // XIRR via Newton-Raphson, bisection fallback. cfs: [{ date: Date, amount }].
 function xirr(cfs) {
   if (!cfs || cfs.length < 2) return null;
@@ -134,6 +189,10 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct
 function fmtNavDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
   return m ? `${m[3]} ${MON[+m[2] - 1]} ${m[1]}` : null;
+}
+// Date → "07 Jun 2026"
+function fmtDateObj(d) {
+  return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 const US_COLS = [
@@ -214,7 +273,8 @@ function buildInsightPayload(prices, fx, mfNav) {
   const usInr = usVal * rate;
   const mfd = deriveMf(mfNav);
   const mx = mfXirr(mfd, mfNav);
-  const totalAssets = inVal + usInr + STATIC.fdDeployed + STATIC.algo + mfd.totVal;
+  const fds = deriveFds(new Date());
+  const totalAssets = inVal + usInr + fds.principal + fds.accrued + STATIC.algo + mfd.totVal;
   const nw = totalAssets - STATIC.loan;
 
   // Largest position + worst drag, for the MF insight.
@@ -256,9 +316,15 @@ function buildInsightPayload(prices, fx, mfNav) {
     usdInr: r2(rate),
     mutualFunds: mfSignal,
     fixedDeposits:
-      `Active (${inrC(STATIC.fdDeployed)}, ~₹${FDS.reduce((s, f) => s + f.interest, 0).toLocaleString('en-IN')}/yr): ` +
-      FDS.map((f) => `${f.bank} ${inrC(f.principal)} @${f.rate}% matures ${f.matures}`).join('; ') +
-      `. Pipeline (${inrC(FD_PIPELINE.reduce((s, f) => s + f.amount, 0))}), next: ${FD_PIPELINE[0].bank} ${inrC(FD_PIPELINE[0].amount)} on ${FD_PIPELINE[0].deploy}` +
+      `Active: ${fds.rows.length} FDs, ${inrC(fds.principal)} principal + ${inrC(fds.accrued)} accrued so far ` +
+      `(quarterly compounding, never simple interest), value at maturity ${inrC(fds.maturity)}. ` +
+      `Blended rate ${fds.blendedRate.toFixed(2)}% vs ~6% retail CPI inflation — ${fds.blendedRate > 6 ? 'real return positive' : 'barely keeping pace with inflation'}. ` +
+      `Holdings: ` + fds.rows.map((f) => `${f.bank} ${inrC(f.principal)} @${f.rate}% (${f.progress.toFixed(0)}% to maturity ${fmtNavDate(f.matures)})`).join('; ') + '. ' +
+      `Laddered across Slice/ICICI/HDFC/SBI with staggered quarterly maturities — spreads reinvestment risk and keeps each bank's annual interest below the ₹40,000 Sec 194A TDS-deduction threshold. ` +
+      `Pipeline ${inrC(fds.pipelineTotal)} (${FD_PIPELINE.length} FDs, excluded from net worth until deployed)` +
+      (fds.nextPipeline
+        ? `, next deployment: ${fds.nextPipeline.bank} ${inrC(fds.nextPipeline.amount)} ${fds.nextPipeline.days <= 0 ? 'today' : `in ${fds.nextPipeline.days}d`} (${fmtNavDate(fds.nextPipeline.deploy)})`
+        : '') +
       `. Today is ${new Date().toISOString().slice(0, 10)}.`,
     algo:
       `FY25-26 net F&O ${sFull(FY.combined2526.net)} (S01 ${sFull(FY.s01.fy2526.total.net)}, S02 ${sFull(FY.s02.fy2526.total.net)}). ` +
@@ -279,6 +345,13 @@ export default function Page() {
   const [usSort, setUsSort] = useState({ col: 'liveVal', dir: -1 });
   const [mfNav, setMfNav] = useState(null);
   const [mfSort, setMfSort] = useState({ key: 'value', dir: -1 });
+  // FD tab has no external feed — accrued interest & deploy countdown are pure
+  // functions of the system clock. Recompute on mount and hourly.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsOn, setInsightsOn] = useState(() => {
@@ -528,6 +601,9 @@ export default function Page() {
   const mf = useMemo(() => deriveMf(mfNav), [mfNav]);
   const mfx = useMemo(() => mfXirr(mf, mfNav), [mf, mfNav]);
 
+  // ─── derived: fixed deposits (system clock only — no external feed) ───
+  const fds = useMemo(() => deriveFds(now), [now]);
+
   // Sort the holdings DATA (never the DOM); re-sorts on every render so the
   // chosen order survives a NAV refresh. Header onClick is bound by React.
   const mfSorted = useMemo(() => {
@@ -549,21 +625,21 @@ export default function Page() {
     );
 
   // ─── derived: overview / net worth ───
+  // FD contribution is principal + accrued interest (quarterly compounding,
+  // recomputed live) — pipeline FDs are excluded until their deploy date.
   const ov = useMemo(() => {
     const usInr = usData.val * fxRate;
+    const fdValue = fds.principal + fds.accrued;
     const totalAssets =
-      indian.val + usInr + STATIC.fdDeployed + STATIC.algo + mf.totVal;
+      indian.val + usInr + fdValue + STATIC.algo + mf.totVal;
     const nw = totalAssets - STATIC.loan;
-    return { usInr, totalAssets, nw };
-  }, [indian.val, usData.val, fxRate, mf.totVal]);
-
-  const fdInterest = FDS.reduce((s, f) => s + f.interest, 0);
-  const fdPipelineTotal = FD_PIPELINE.reduce((s, f) => s + f.amount, 0);
+    return { usInr, fdValue, totalAssets, nw };
+  }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
 
   // Allocation donut segments — live values where available, else snapshot.
   const donutSegs = [
     { label: 'Algo Capitals',  value: STATIC.algo,        color: ALLOC_COLORS.algo },
-    { label: 'Fixed Deposits', value: STATIC.fdDeployed,  color: ALLOC_COLORS.fd },
+    { label: 'Fixed Deposits', value: ov.fdValue,         color: ALLOC_COLORS.fd },
     { label: 'Indian Stocks',  value: indian.val || 471000, color: ALLOC_COLORS.indian },
     { label: 'US Stocks',      value: ov.usInr || 443000, color: ALLOC_COLORS.us },
     { label: 'Mutual Funds',   value: mf.jio.value,       color: ALLOC_COLORS.mf },
@@ -686,7 +762,7 @@ export default function Page() {
                 </div>
                 <div className="csm">
                   <div className="lbl">algo + FDs + MF</div>
-                  <div className="vlg">{inrC(STATIC.fdDeployed + STATIC.algo + mf.totVal)}</div>
+                  <div className="vlg">{inrC(ov.fdValue + STATIC.algo + mf.totVal)}</div>
                   <div className="sub">MF live NAV · algo &amp; FDs manual</div>
                 </div>
               </div>
@@ -800,95 +876,121 @@ export default function Page() {
         </div>
       )}
 
-      {/* FIXED DEPOSITS */}
+      {/* FIXED DEPOSITS — no external feed; everything below is a pure
+          function of the system clock (recomputed on mount + hourly). */}
       {tab === 2 && (
         <div>
           <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
           <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <FreshnessTag mode="manual" date="05 Jun 2026" />
+            <FreshnessTag mode="manual" date={`${fmtDateObj(now)} · accrued recalculated daily`} />
           </div>
-          <div className="g3 sec">
+          <div className="g4 sec">
             <div className="csm">
               <div className="lbl">active deployed</div>
-              <div className="vmd">{inrC(STATIC.fdDeployed)}</div>
+              <div className="vmd">{inrC(fds.principal)}</div>
               <div className="sub">{FDS.length} FDs · Slice, ICICI, HDFC</div>
             </div>
             <div className="csm">
-              <div className="lbl">annual interest</div>
-              <div className="vmd grn">{inrFull(fdInterest)}</div>
-              <div className="sub">simple interest estimate</div>
+              <div className="lbl">accrued interest</div>
+              <div className="vmd grn">{inrFull(fds.accrued)}</div>
+              <div className="sub">compounding quarterly · live</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">value at maturity</div>
+              <div className="vmd">{inrC(fds.maturity)}</div>
+              <div className="sub">+{inrFull(fds.maturity - fds.principal)} total interest</div>
             </div>
             <div className="csm">
               <div className="lbl">blended rate</div>
-              <div className="vmd">{((fdInterest / STATIC.fdDeployed) * 100).toFixed(2)}%</div>
+              <div className="vmd">{fds.blendedRate.toFixed(2)}%</div>
               <div className="sub">weighted by principal</div>
             </div>
           </div>
           <div className="card sec">
             <div className="lbl" style={{ marginBottom: 10 }}>active FDs</div>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Bank</th><th>FD</th><th>Matures</th>
-                  <th className="ra">Principal</th><th className="ra">Rate</th>
-                  <th className="ra">Ann. interest</th>
-                </tr>
-              </thead>
-              <tbody>
-                {FDS.map((f) => (
-                  <tr key={f.bank + f.label}>
-                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
-                    <td className="mut">{f.label}</td>
-                    <td className="mut">{f.matures}</td>
-                    <td className="ra mono">{inrC(f.principal)}</td>
-                    <td className="ra grn mono">{f.rate.toFixed(2)}%</td>
-                    <td className="ra mono">{inrFull(f.interest)}</td>
+            <div className="ovx">
+              <table className="tbl" style={{ minWidth: 760 }}>
+                <thead>
+                  <tr>
+                    <th>Bank</th><th>FD</th><th>Matures</th>
+                    <th className="ra">Principal</th><th className="ra">Rate</th>
+                    <th className="ra">Accrued</th><th className="ra">At maturity</th>
                   </tr>
-                ))}
-                <tr className="tot">
-                  <td colSpan={3}>Total deployed</td>
-                  <td className="ra">{inrC(STATIC.fdDeployed)}</td>
-                  <td />
-                  <td className="ra">{inrFull(fdInterest)}/yr</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {fds.rows.map((f) => (
+                    <tr key={f.bank + f.label}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                      <td className="mut">{f.label}</td>
+                      <td style={{ minWidth: 140 }}>
+                        <div className="mut" style={{ marginBottom: 4 }}>{fmtNavDate(f.matures)}</div>
+                        <span className="bar-trk" style={{ display: 'block', height: 4 }}>
+                          <span
+                            className="bar-fil"
+                            style={{ width: f.progress.toFixed(1) + '%', height: 4, background: 'linear-gradient(90deg, var(--grn), #5FE3B0)' }}
+                          />
+                        </span>
+                        <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 3 }}>{f.progress.toFixed(0)}% elapsed</div>
+                      </td>
+                      <td className="ra mono">{inrC(f.principal)}</td>
+                      <td className="ra grn mono">{f.rate.toFixed(2)}%</td>
+                      <td className="ra grn mono">{inrFull(f.accruedSoFar)}</td>
+                      <td className="ra">
+                        <div className="mono">{inrC(f.maturityValue)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--txt3)' }}>+{inrFull(f.maturityInterest)}</div>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="tot">
+                    <td colSpan={3}>Total — {fds.rows.length} FDs</td>
+                    <td className="ra">{inrC(fds.principal)}</td>
+                    <td className="ra">{fds.blendedRate.toFixed(2)}%</td>
+                    <td className="ra grn">{inrFull(fds.accrued)}</td>
+                    <td className="ra">{inrC(fds.maturity)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
           <div className="card">
             <div className="fxc" style={{ marginBottom: 10 }}>
               <div className="lbl" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
               <div className="sub" style={{ margin: 0 }}>
-                Pipeline {inrC(fdPipelineTotal)} · Grand total {inrC(STATIC.fdDeployed + fdPipelineTotal)}
+                Pipeline {inrC(fds.pipelineTotal)} · Grand total {inrC(fds.principal + fds.pipelineTotal)}
               </div>
             </div>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Bank</th><th>FD</th><th>Deploy date</th><th>Maturity</th>
-                  <th>Tenure</th><th className="ra">Amount</th><th />
-                </tr>
-              </thead>
-              <tbody>
-                {FD_PIPELINE.map((f) => (
-                  <tr key={f.bank + f.label}>
-                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
-                    <td className="mut">{f.label}</td>
-                    <td className="mut">{f.deploy}</td>
-                    <td className="mut">{f.maturity}</td>
-                    <td className="mut">{f.tenure}</td>
-                    <td className="ra mono">{inrC(f.amount)}</td>
-                    <td>{f.badge && <span className="badge ba">{f.badge}</span>}</td>
+            <div className="ovx">
+              <table className="tbl" style={{ minWidth: 760 }}>
+                <thead>
+                  <tr>
+                    <th>Bank</th><th>FD</th><th>Deploy date</th><th>Maturity</th>
+                    <th>Tenure</th><th className="ra">Amount</th><th />
                   </tr>
-                ))}
-                <tr className="tot">
-                  <td colSpan={5}>Total pipeline</td>
-                  <td className="ra">{inrC(fdPipelineTotal)}</td>
-                  <td />
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {fds.pipeline.map((f) => (
+                    <tr key={f.bank + f.label}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                      <td className="mut">{f.label}</td>
+                      <td className="mut">{fmtNavDate(f.deploy)}</td>
+                      <td className="mut">{fmtNavDate(f.maturity)}</td>
+                      <td className="mut">{f.tenure}</td>
+                      <td className="ra mono">{inrC(f.amount)}</td>
+                      <td>{f.badge && <span className="badge ba">{f.badge}</span>}</td>
+                    </tr>
+                  ))}
+                  <tr className="tot">
+                    <td colSpan={5}>Total pipeline</td>
+                    <td className="ra">{inrC(fds.pipelineTotal)}</td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
-              Strategy: ~₹30-32K annual interest per bank · Slice &amp; HDFC: 18m+1d · ICICI &amp; SBI: 2y+1d
+              Strategy: maturities laddered quarterly across 4 banks (Slice, ICICI, HDFC, SBI) — spreads reinvestment risk and
+              keeps each bank's annual interest below the ₹40,000 Sec 194A TDS-deduction threshold. All figures compound
+              quarterly from each FD's open date; pipeline stays out of net worth and "deployed" totals until its deploy date arrives.
             </div>
           </div>
         </div>
