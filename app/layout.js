@@ -1,5 +1,10 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
+import { Inter, DM_Serif_Display, JetBrains_Mono } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const serif = DM_Serif_Display({ subsets: ['latin'], weight: '400', variable: '--font-title', display: 'swap' });
+const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata = {
   title: 'Net Worth — Live',
@@ -14,7 +19,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable}`}>
       <body>{children}<Analytics /></body>
     </html>
   );
