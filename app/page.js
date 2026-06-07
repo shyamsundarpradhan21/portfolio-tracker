@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
+  TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -22,6 +23,22 @@ function inrC(n) {
 }
 const usd = (n) => (n < 0 ? '-$' : '$') + Math.abs(n).toFixed(2);
 const pctS = (n) => sg(n) + Math.abs(n).toFixed(2) + '%';
+
+// ─── rupee-safe currency (Section 0f) — render ₹ inside a sized span so the
+// monospace fallback glyph isn't oversized. Digit-only helpers + JSX wrappers. ───
+const Rs = () => <span className="rs">₹</span>;
+function inrCd(n) {                       // compact digits, no ₹
+  const a = Math.abs(n);
+  if (a >= 1e7) return (n / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) return (n / 1e5).toFixed(2) + 'L';
+  if (a >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return '' + Math.round(n);
+}
+const inrFd = (n) => Math.round(n).toLocaleString('en-IN'); // full digits, no ₹
+const InrC = ({ n }) => (<><Rs />{inrCd(n)}</>);            // ₹4.04L
+const InrF = ({ n }) => (<><Rs />{inrFd(n)}</>);            // ₹4,03,803
+const SInrC = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrCd(Math.abs(n))}</>);
+const SInrF = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrFd(Math.abs(n))}</>);
 // Signed full-rupee with grouping, e.g. -₹12,619 / +₹1,06,376
 const sFull = (n) => sg(n) + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 const numC = (n) => Math.round(n).toLocaleString('en-IN'); // plain grouped (charges)
@@ -29,6 +46,7 @@ const numC = (n) => Math.round(n).toLocaleString('en-IN'); // plain grouped (cha
 const FETCH_TS_KEY = 'nwTracker.cache';
 const INSIGHTS_KEY = 'nwTracker.insights';
 const MFNAV_KEY = 'nwTracker.mfnav';
+const HIST_KEY = 'nwTracker.hist';
 const REFRESH_MS = 15 * 60 * 1000;
 
 // ─── mutual-fund derivations (pure; shared by the MF tab + insight payload) ───
@@ -194,6 +212,77 @@ function fmtNavDate(iso) {
 function fmtDateObj(d) {
   return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`;
 }
+const isoOf = (d) => d.toISOString().slice(0, 10);
+const daysBetween = (fromIso, now) =>
+  Math.ceil((new Date(fromIso).getTime() - now.getTime()) / DAY_MS);
+
+// Apply any bonus corporate action whose ex-date has passed to the holdings, so
+// quantities/avg-cost adjust automatically once the date arrives (cost basis is
+// unchanged). Dividends don't change qty. Pure — keyed off `now`.
+function applyCorpActions(holdings, now) {
+  const today = isoOf(now);
+  return holdings.map((h) => {
+    let qty = h.qty, cost = h.cost;
+    CORPORATE_ACTIONS.forEach((a) => {
+      if (a.type === 'bonus' && a.sym === h.sym && a.ex <= today) {
+        const [num, den] = a.ratio.split(':').map(Number); // '1:3' → 1 per 3 held
+        const bonus = Math.floor((qty * num) / den);
+        const newQty = qty + bonus;
+        if (newQty > 0) { cost = (qty * cost) / newQty; qty = newQty; }
+      }
+    });
+    return { ...h, qty, cost }; // h.inv (original cost basis) is preserved
+  });
+}
+
+// CAGR over the invested-WEIGHTED average holding period.
+// Y = years from Σ(invested·date)/Σinvested to today; (value/Σinv)^(1/Y) − 1.
+function weightedCagr(transactions, currentValue, now) {
+  let sumInv = 0, sumWeightedT = 0;
+  transactions.forEach((t) => {
+    const tms = new Date(t.date).getTime();
+    sumInv += t.invested;
+    sumWeightedT += t.invested * tms;
+  });
+  if (!sumInv) return { cagr: null, years: null };
+  const avgT = sumWeightedT / sumInv;
+  const years = (now.getTime() - avgT) / YEAR_MS;
+  if (years <= 0) return { cagr: null, years };
+  const cagr = Math.pow(currentValue / sumInv, 1 / years) - 1;
+  return { cagr: isFinite(cagr) ? cagr * 100 : null, years };
+}
+
+// Same-dated-rupees counterfactual for one benchmark series. For each
+// transaction, buy units at the index level on-or-before its date; value the
+// units at today's level. Returns { value, xirr, ret } or null if unresolved.
+function benchCounterfactual(series, transactions, now) {
+  if (!series || !Array.isArray(series.closes) || !series.closes.length) return null;
+  const closes = [...series.closes].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const levelOnOrBefore = (iso) => {
+    let lvl = null;
+    for (const c of closes) { if (c.date <= iso) lvl = c.close; else break; }
+    return lvl ?? closes[0].close;
+  };
+  const latest = isFinite(series.latest) ? series.latest : closes[closes.length - 1].close;
+  let units = 0, invested = 0, ok = true;
+  const cfs = [];
+  transactions.forEach((t) => {
+    const lvl = levelOnOrBefore(t.date);
+    if (!isFinite(lvl) || lvl <= 0) { ok = false; return; }
+    units += t.invested / lvl;
+    invested += t.invested;
+    cfs.push({ date: new Date(t.date), amount: -t.invested });
+  });
+  if (!ok || !units) return null;
+  const value = units * latest;
+  cfs.push({ date: now, amount: value });
+  const x = xirr(cfs);
+  return {
+    value,
+    xirr: x != null ? x * 100 : null,
+    ret: invested ? ((value - invested) / invested) * 100 : null,
+  };
+}
 
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
@@ -208,21 +297,24 @@ const US_COLS = [
 
 // Distil live state into a compact payload for the /api/insights route.
 // Only outlier holdings are sent to reduce prompt tokens by ~40%.
-function buildInsightPayload(prices, fx, mfNav) {
+function buildInsightPayload(prices, fx, mfNav, hist) {
   const rate = fx || 88;
   const r2 = (n) => (n == null ? null : +n.toFixed(2));
 
+  const now = new Date();
+  const heldIndian = applyCorpActions(INDIAN, now);
   let inInv = 0, inVal = 0;
-  const allIndian = INDIAN.map((s) => {
+  const sectorVal = {};
+  const allIndian = heldIndian.map((s) => {
     const q = prices[s.ns];
     const lp = q && !q.error ? q.price : null;
     const v = lp != null ? s.qty * lp : null;
     const pl = v != null ? v - s.inv : null;
     inInv += s.inv;
-    if (v != null) inVal += v;
+    if (v != null) { inVal += v; sectorVal[s.sector] = (sectorVal[s.sector] || 0) + v; }
     return {
-      sym: s.sym, qty: s.qty, avgCost: s.cost, livePrice: r2(lp),
-      plPct: pl != null ? r2((pl / s.inv) * 100) : null,
+      sym: s.sym, sector: s.sector, cap: s.cap, qty: s.qty, avgCost: s.cost, livePrice: r2(lp),
+      val: v, plPct: pl != null ? r2((pl / s.inv) * 100) : null,
       dayPct: q && !q.error ? r2(q.pct) : null,
     };
   });
@@ -231,6 +323,16 @@ function buildInsightPayload(prices, fx, mfNav) {
     (r) => (r.plPct != null && Math.abs(r.plPct) > 10) ||
             (r.dayPct != null && Math.abs(r.dayPct) > 2),
   );
+  // Structured Indian-equity signals for the indian_stocks insight key.
+  const inValuedRows = allIndian.filter((r) => r.plPct != null);
+  const inWinner = inValuedRows.length ? inValuedRows.reduce((a, b) => (b.plPct > a.plPct ? b : a)) : null;
+  const inLaggard = inValuedRows.length ? inValuedRows.reduce((a, b) => (b.plPct < a.plPct ? b : a)) : null;
+  const inTopPos = inValuedRows.length && inVal ? inValuedRows.reduce((a, b) => ((b.val || 0) > (a.val || 0) ? b : a)) : null;
+  const inTopSectorEntry = Object.entries(sectorVal).sort((a, b) => b[1] - a[1])[0] || null;
+  const inXirrCf = TRANSACTIONS.map((t) => ({ date: new Date(t.date), amount: -t.invested }));
+  const inTotInv = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+  const inXirr = inVal ? xirr([...inXirrCf, { date: now, amount: inVal }]) : null;
+  const inPlPct = inInv && inVal ? ((inVal - inInv) / inInv) * 100 : null;
 
   // S02 swing book live unrealised P&L (for the algo insight).
   let swInv = 0, swVal = 0, swValued = true;
@@ -311,6 +413,28 @@ function buildInsightPayload(prices, fx, mfNav) {
     },
     indian,
     indianSummary: `${indian.length}/${INDIAN.length} shown (|P&L|>10% or |day|>2%)`,
+    indianStocks: (() => {
+      const todayIso = isoOf(now);
+      const heldSet = new Set(INDIAN.map((h) => h.sym));
+      const inBench = INDIAN_BENCHMARKS.map((b) => {
+        const series = hist && hist.series ? hist.series[b.yahooSym] : null;
+        const cf = inVal ? benchCounterfactual(series, TRANSACTIONS, now) : null;
+        return `${b.label} XIRR ${cf && cf.xirr != null ? cf.xirr.toFixed(1) + '%' : '—'} / return ${cf && cf.ret != null ? cf.ret.toFixed(1) + '%' : '—'}`;
+      }).join('; ');
+      const caUp = CORPORATE_ACTIONS.filter((a) => heldSet.has(a.sym) && a.ex >= todayIso)
+        .map((a) => `${a.sym} ${a.type === 'bonus' ? 'bonus ' + a.ratio : 'dividend ₹' + a.perShare + '/sh'} ex ${a.ex}`).join('; ');
+      const caDone = CORPORATE_ACTIONS.filter((a) => heldSet.has(a.sym) && a.ex < todayIso)
+        .map((a) => `${a.sym} ${a.type === 'dividend' ? 'dividend ₹' + a.perShare + '/sh' : 'bonus ' + a.ratio} (ex ${a.ex})`).join('; ');
+      return (
+        `Invested ₹${Math.round(inInv)}, value ₹${Math.round(inVal)}, unrealized ${inPlPct != null ? (inPlPct >= 0 ? '+' : '') + inPlPct.toFixed(1) + '%' : '?'} (${sFull(inVal - inInv)}). ` +
+        `Realized trading P&L ${sFull(REALIZED_PNL)} booked since 2022 — churn has ${REALIZED_PNL < 0 ? 'UNDERperformed' : 'beaten'} buy-and-hold; surface this realized-vs-unrealized divergence as a strategy signal. ` +
+        `Portfolio XIRR ${inXirr != null ? (inXirr * 100).toFixed(1) + '%' : '?'} annualised. Benchmarks (same dated rupees): ${inBench || 'unresolved'}. ` +
+        `Top sector ${inTopSectorEntry ? inTopSectorEntry[0] + ' ' + (inVal ? (inTopSectorEntry[1] / inVal * 100).toFixed(0) : '?') + '%' : '?'}; largest position ${inTopPos ? inTopPos.sym + ' ' + (inVal && inTopPos.val ? (inTopPos.val / inVal * 100).toFixed(0) : '?') + '%' : '?'}. ` +
+        `Winner ${inWinner ? inWinner.sym + ' ' + (inWinner.plPct >= 0 ? '+' : '') + inWinner.plPct + '%' : '?'}; laggard ${inLaggard ? inLaggard.sym + ' ' + inLaggard.plPct + '%' : '?'}. ` +
+        `Corporate actions — upcoming: ${caUp || 'none'}; recently executed: ${caDone || 'none'} (mention executed actions here in the live tab). ` +
+        `CAVEATS (must respect): XIRR is annualised over a ~5-month average holding — a short window, indicative not proven edge; index benchmark returns are price-only (ex-dividend); do not call short-window outperformance skill.`
+      );
+    })(),
     us,
     usSummary: `${us.length}/${US.length} shown (top 3 by value + |P&L|>15% or |day|>3%)`,
     usdInr: r2(rate),
@@ -345,6 +469,14 @@ export default function Page() {
   const [usSort, setUsSort] = useState({ col: 'liveVal', dir: -1 });
   const [mfNav, setMfNav] = useState(null);
   const [mfSort, setMfSort] = useState({ key: 'value', dir: -1 });
+  // Indian holdings sort (sorts the DATA array; header listeners bound once via
+  // JSX at mount — never re-bound on refresh).
+  const [inSort, setInSort] = useState({ key: 'val', dir: -1 });
+  // Benchmark weekly history (2y) for the same-dated-rupees counterfactual.
+  const [hist, setHist] = useState(null);
+  // LTP flash: per-symbol last price + tick direction, recomputed on each fetch.
+  const [flash, setFlash] = useState({});
+  const prevPrices = useRef({});
   // FD tab has no external feed — accrued interest & deploy countdown are pure
   // functions of the system clock. Recompute on mount and hourly.
   const [now, setNow] = useState(() => new Date());
@@ -391,9 +523,22 @@ export default function Page() {
     }
   };
 
+  // Benchmark weekly history (2y, server-cached 1h). Null on failure → the
+  // Indian tab shows "—" for any series that doesn't resolve.
+  const fetchHistory = async () => {
+    try {
+      const syms = INDIAN_BENCHMARKS.map((b) => b.yahooSym).join(',');
+      const res = await fetch('/api/history?symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
   // Ask Claude for tab-specific insights from the freshly-fetched data.
-  const fetchInsights = useCallback(async (pricesArg, fxArg, mfArg) => {
-    const payload = buildInsightPayload(pricesArg, fxArg, mfArg);
+  const fetchInsights = useCallback(async (pricesArg, fxArg, mfArg, histArg) => {
+    const payload = buildInsightPayload(pricesArg, fxArg, mfArg, histArg);
     // No live data yet → nothing worth analysing; skip the call.
     if (payload.overview.indianPlPct == null && payload.overview.usPlPct == null) return;
     setInsightsLoading(true);
@@ -427,13 +572,27 @@ export default function Page() {
         .concat(SWING.map((s) => s.ns))
         .concat(['INR=X']);
       const usSyms = US.map((s) => s.sym);
-      const [inData, usData, mfData] = await Promise.all([
+      const [inData, usData, mfData, histData] = await Promise.all([
         fetchBatch(inSyms),
         fetchBatch(usSyms),
         fetchMfNav(),
+        fetchHistory(),
       ]);
       const merged = { ...inData, ...usData };
+      // LTP flash: compare new prices against the last seen; mark up/down ticks.
+      const tick = {};
+      Object.keys(merged).forEach((k) => {
+        const np = merged[k] && !merged[k].error ? merged[k].price : null;
+        const op = prevPrices.current[k];
+        if (np != null && op != null && np !== op) tick[k] = np > op ? 'up' : 'down';
+        if (np != null) prevPrices.current[k] = np;
+      });
+      if (Object.keys(tick).length) setFlash(tick);
       setPrices(merged);
+      if (histData) {
+        setHist(histData);
+        try { sessionStorage.setItem(HIST_KEY, JSON.stringify({ ts: Date.now(), hist: histData })); } catch {}
+      }
       if (mfData) {
         setMfNav(mfData);
         try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {}
@@ -467,7 +626,7 @@ export default function Page() {
       // Generate AI insights only on explicit request (manual refresh / first
       // load) — never on the 15-min auto-refresh, to keep API spend minimal.
       // Called once both equities AND NAV have resolved. Respects the toggle.
-      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr, mfData || mfNav);
+      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr, mfData || mfNav, histData || hist);
     } catch (e) {
       setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' });
     } finally {
@@ -495,6 +654,13 @@ export default function Page() {
       if (mc && mc.mfNav) { cachedMfNav = mc.mfNav; setMfNav(mc.mfNav); }
     } catch {}
 
+    // Benchmark history is cached 1h server-side; reuse any session copy.
+    let cachedHist = null;
+    try {
+      const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null');
+      if (hc && hc.hist) { cachedHist = hc.hist; setHist(hc.hist); }
+    } catch {}
+
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -506,7 +672,7 @@ export default function Page() {
         setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
         // Only call the API if we don't already have insights and the toggle is on.
-        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr, cachedMfNav);
+        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr, cachedMfNav, cachedHist);
       }
     } catch {}
     // Fresh load with no cached prices: fetch prices + one set of insights.
@@ -518,9 +684,12 @@ export default function Page() {
   }, []);
 
   // ─── derived: Indian ───
+  // Holdings auto-adjust for bonus corporate actions once the ex-date passes
+  // (keyed off `now`); invested (h.inv) is the original cost basis, preserved.
+  const heldIndian = useMemo(() => applyCorpActions(INDIAN, now), [now]);
   const indian = useMemo(() => {
     let inv = 0, val = 0, valued = true;
-    const rows = INDIAN.map((s) => {
+    const rows = heldIndian.map((s) => {
       const q = prices[s.ns];
       const ltp = q && !q.error ? q.price : null;
       const v = ltp != null ? s.qty * ltp : null;
@@ -528,11 +697,112 @@ export default function Page() {
       const pct = pl != null ? (pl / s.inv) * 100 : null;
       inv += s.inv;
       if (v != null) val += v; else valued = false;
-      return { ...s, ltp, val: v, pl, pct, day: q && !q.error ? q.pct : null };
+      return { ...s, ltp, val: v, pl, pct, day: q && !q.error ? q.pct : null, ns: `${s.sym}.NS` };
     });
     const pl = val - inv;
     return { rows, inv, val, pl, pct: inv ? (pl / inv) * 100 : 0, valued };
-  }, [prices]);
+  }, [prices, heldIndian]);
+
+  // Sort the holdings DATA (header onClick bound once via JSX; survives refresh).
+  const inSorted = useMemo(() => {
+    const arr = [...indian.rows];
+    const { key, dir } = inSort;
+    arr.sort((a, b) => {
+      const av = a[key], bv = b[key];
+      if (typeof av === 'string') return dir * String(av).localeCompare(String(bv));
+      return dir * ((av ?? -Infinity) - (bv ?? -Infinity));
+    });
+    return arr;
+  }, [indian, inSort]);
+  const sortIn = (key) =>
+    setInSort((s) =>
+      s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'sym' || key === 'name' ? 1 : -1 },
+    );
+
+  // ─── derived: Indian analytics (XIRR / CAGR / benchmarks / sectors / movers) ───
+  const inStats = useMemo(() => {
+    const value = indian.val;
+    const totalInvested = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+    let portXirr = null, cagr = null, years = null;
+    if (indian.valued && value) {
+      const cfs = TRANSACTIONS.map((t) => ({ date: new Date(t.date), amount: -t.invested }));
+      const x = xirr([...cfs, { date: now, amount: value }]);
+      portXirr = x != null ? x * 100 : null;
+      const c = weightedCagr(TRANSACTIONS, value, now);
+      cagr = c.cagr; years = c.years;
+    }
+    // sector / cap concentration (by live value)
+    const sectorMap = {}, capMap = {};
+    indian.rows.forEach((r) => {
+      if (r.val == null) return;
+      sectorMap[r.sector] = (sectorMap[r.sector] || 0) + r.val;
+      capMap[r.cap] = (capMap[r.cap] || 0) + r.val;
+    });
+    const sectors = Object.entries(sectorMap)
+      .map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 }))
+      .sort((a, b) => b.val - a.val);
+    const caps = ['Large', 'Mid', 'Small']
+      .map((label) => ({ label, val: capMap[label] || 0, pct: value ? ((capMap[label] || 0) / value) * 100 : 0 }));
+    // movers + concentration
+    const valued = indian.rows.filter((r) => r.pct != null);
+    const winner = valued.length ? valued.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
+    const laggard = valued.length ? valued.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
+    const topPos = valued.length && value ? valued.reduce((a, b) => (b.val > a.val ? b : a)) : null;
+    // benchmark counterfactuals (same dated rupees)
+    const benchmarks = INDIAN_BENCHMARKS.map((b) => {
+      const series = hist && hist.series ? hist.series[b.yahooSym] : null;
+      const cf = indian.valued && value ? benchCounterfactual(series, TRANSACTIONS, now) : null;
+      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
+    });
+    return {
+      value, totalInvested, portXirr, cagr, years, sectors, caps,
+      winner, laggard, topPos, benchmarks,
+      topSector: sectors[0] || null,
+    };
+  }, [indian, hist, now]);
+
+  // Corporate actions: upcoming (ex ≥ today) populate the panel; executed go to
+  // the footline. Impact is computed against the current held quantity.
+  const corp = useMemo(() => {
+    const today = isoOf(now);
+    const held = new Set(INDIAN.map((h) => h.sym));
+    const list = CORPORATE_ACTIONS.filter((a) => held.has(a.sym));
+    const upcoming = list
+      .filter((a) => a.ex >= today)
+      .sort((a, b) => (a.ex < b.ex ? -1 : 1))
+      .map((a) => {
+        const orig = INDIAN.find((x) => x.sym === a.sym);
+        const qty = orig ? orig.qty : 0;
+        const days = daysBetween(a.ex, now);
+        let impact;
+        if (a.type === 'dividend') {
+          impact = { kind: 'dividend', amount: a.perShare * qty };
+        } else {
+          const [num, den] = a.ratio.split(':').map(Number);
+          const bonus = Math.floor((qty * num) / den);
+          const newQty = qty + bonus;
+          impact = { kind: 'bonus', bonus, newQty, newCost: newQty ? (qty * orig.cost) / newQty : orig.cost };
+        }
+        return { ...a, days, qty, impact };
+      });
+    const executed = list.filter((a) => a.ex < today).sort((a, b) => (a.ex < b.ex ? 1 : -1));
+    return { upcoming, executed };
+  }, [now]);
+
+  // Day change in rupees: Σ qty·(ltp − prevClose), derived from each stock's
+  // day % and live value (prevClose = val / (1 + day%/100)).
+  const indianDay = useMemo(() => {
+    let dayPl = 0, prevTot = 0;
+    indian.rows.forEach((r) => {
+      if (r.val == null || r.day == null) return;
+      const prev = r.val / (1 + r.day / 100);
+      dayPl += r.val - prev;
+      prevTot += prev;
+    });
+    return { dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0 };
+  }, [indian]);
+  const indianDayPl = indianDay.dayPl;
+  const indianDayPct = indianDay.dayPct;
 
   // ─── derived: US ───
   const usData = useMemo(() => {
@@ -737,33 +1007,39 @@ export default function Page() {
                   <div className="sub">personal loan, est. outstanding</div>
                 </div>
               </div>
-              <div className="g3">
+              {/* Dense per-sleeve grid — every asset class at a glance (0g). */}
+              <div className="g5">
                 <div className="csm">
-                  <div className="lbl">Indian equity live P&amp;L</div>
-                  <div className={'vlg ' + cl(indian.pl)}>
-                    {indian.valued ? sg(indian.pl) + inrC(Math.abs(indian.pl)) : <Skel w={70} h={20} />}
-                  </div>
-                  <div className="sub">
-                    {indian.valued
-                      ? `${pctS(indian.pct)} · ${inrC(indian.inv)} → ${inrC(indian.val)}`
-                      : `${INDIAN.length} stocks`}
+                  <div className="lbl">Indian equity</div>
+                  <div className="vmd">{indian.valued ? <InrC n={indian.val} /> : <Skel w={64} h={18} />}</div>
+                  <div className={'sub ' + (indian.valued ? cl(indian.pl) : '')}>
+                    {indian.valued ? <SInrC n={indian.pl} /> : `${INDIAN.length} stocks`}
+                    {indian.valued ? ` · ${pctS(indian.pct)}` : ''}
                   </div>
                 </div>
                 <div className="csm">
-                  <div className="lbl">US portfolio live P&amp;L</div>
-                  <div className={'vlg ' + cl(usData.pl)}>
-                    {usData.val ? sg(usData.pl) + '$' + Math.abs(usData.pl).toFixed(2) : <Skel w={70} h={20} />}
-                  </div>
-                  <div className="sub">
-                    {usData.val
-                      ? `${pctS(usData.pct)} · ${inrC(ov.usInr)} @₹${fxRate.toFixed(0)}`
-                      : `${US.length} holdings in USD`}
+                  <div className="lbl">Mutual funds</div>
+                  <div className="vmd"><InrC n={mf.totVal} /></div>
+                  <div className={'sub ' + cl(mf.totRet)}>{pctS(mf.totRet)} · live NAV</div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">Fixed deposits</div>
+                  <div className="vmd"><InrC n={ov.fdValue} /></div>
+                  <div className="sub grn">+<InrF n={fds.accrued} /> accrued</div>
+                </div>
+                <div className="csm">
+                  <div className="lbl">US equity</div>
+                  <div className="vmd">{usData.val ? <InrC n={ov.usInr} /> : <Skel w={64} h={18} />}</div>
+                  <div className={'sub ' + (usData.val ? cl(usData.pl) : '')}>
+                    {usData.val ? `${pctS(usData.pct)} @₹${fxRate.toFixed(0)}` : `${US.length} holdings`}
                   </div>
                 </div>
                 <div className="csm">
-                  <div className="lbl">algo + FDs + MF</div>
-                  <div className="vlg">{inrC(ov.fdValue + STATIC.algo + mf.totVal)}</div>
-                  <div className="sub">MF live NAV · algo &amp; FDs manual</div>
+                  <div className="lbl">Algo capital</div>
+                  <div className="vmd"><InrC n={STATIC.algo} /></div>
+                  <div className={'sub ' + (ytdTotal != null ? cl(ytdTotal) : '')}>
+                    {ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /></> : 'own capital'}
+                  </div>
                 </div>
               </div>
               {/* Monthly SIP summary — fills the space beside the donut */}
@@ -797,75 +1073,241 @@ export default function Page() {
         </div>
       )}
 
-      {/* INDIAN STOCKS */}
-      {tab === 1 && (
+      {/* INDIAN STOCKS — live NSE; sortable holdings, XIRR/CAGR vs a low-
+          correlation benchmark set, corporate-actions window. */}
+      {tab === 1 && (() => {
+        const IN_COLS = [
+          { key: 'sym', label: 'Stock', num: false },
+          { key: 'qty', label: 'Qty', num: true },
+          { key: 'cost', label: 'Avg cost', num: true },
+          { key: 'ltp', label: 'LTP', num: true },
+          { key: 'inv', label: 'Invested', num: true },
+          { key: 'val', label: 'Value', num: true },
+          { key: 'pl', label: 'P&L', num: true },
+          { key: 'pct', label: 'Return %', num: true },
+          { key: 'day', label: 'Day %', num: true },
+        ];
+        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--grn)' };
+        const secColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
+        return (
         <div>
           <InsightBanner text={insightsOn ? insights?.indian_stocks : null} loading={insightsOn && insightsFirstLoad} />
-          <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
-            <div className="fxc">
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  Indian Equities
-                  <FreshnessTag mode="live" marketState={{ open: markets.nse, label: markets.nse ? 'NSE open' : 'NSE closed' }} />
-                </div>
-                <div className="sub">{INDIAN.length} stocks · ~₹30K equal-weight</div>
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` }} />
+          </div>
+
+          {/* SECTION 3 — six summary cards + realized P&L */}
+          <div className="g3 sec">
+            <div className="csm">
+              <div className="lbl">invested</div>
+              <div className="vmd"><InrC n={indian.inv} /></div>
+              <div className="sub">{INDIAN.length} positions · ~₹30K equal-weight</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">current value</div>
+              <div className="vmd">{indian.valued ? <InrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
+              <div className="sub">live NSE LTP</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">unrealized P&amp;L</div>
+              <div className={'vmd ' + (indian.valued ? cl(indian.pl) : '')}>
+                {indian.valued ? <SInrC n={indian.pl} /> : <Skel w={80} h={20} />}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(indian.pl)}>
-                  {indian.valued ? sg(indian.pl) + inrC(Math.abs(indian.pl)) : <Skel w={70} h={15} />}
-                </div>
-                <div className="sub">
-                  {indian.valued
-                    ? `${pctS(indian.pct)} · ${inrC(indian.inv)} → ${inrC(indian.val)}`
-                    : 'loading…'}
-                </div>
-              </div>
+              <div className="sub">{indian.valued ? pctS(indian.pct) + ' · value − invested' : 'value − invested'}</div>
             </div>
           </div>
-          <div className="card">
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Stock</th><th>Qty</th><th className="ra">Avg cost</th>
-                  <th className="ra">LTP</th><th className="ra">Invested</th>
-                  <th className="ra">Value</th><th className="ra">P&amp;L</th>
-                  <th className="ra">Return %</th><th className="ra">Day %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {indian.rows.map((s) => (
-                  <tr key={s.sym}>
-                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
-                      {s.sym}
-                      {s.tag === 'RED' && <span className="badge br" style={{ fontSize: 9, marginLeft: 4 }}>▼</span>}
-                    </td>
-                    <td className="mut">{s.qty}</td>
-                    <td className="ra mut mono">₹{s.cost.toLocaleString('en-IN')}</td>
-                    <td className="ra mono">{s.ltp != null ? '₹' + s.ltp.toFixed(2) : <Skel w={48} h={11} />}</td>
-                    <td className="ra mono">{inrC(s.inv)}</td>
-                    <td className="ra mono">{s.val != null ? inrC(s.val) : '—'}</td>
-                    <td className={'ra mono ' + (s.pl != null ? cl(s.pl) : 'mut')}>
-                      {s.pl != null ? sg(s.pl) + inrFull(Math.abs(s.pl)) : '—'}
-                    </td>
-                    <td className={'ra mono ' + (s.pct != null ? cl(s.pct) : 'mut')}>
-                      {s.pct != null ? pctS(s.pct) : '—'}
-                    </td>
-                    <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>
-                      {s.day != null ? pctS(s.day) : '—'}
-                    </td>
-                  </tr>
-                ))}
-                <tr className="tot">
-                  <td colSpan={4}>Total — {INDIAN.length} positions</td>
-                  <td className="ra">{inrC(indian.inv)}</td>
-                  <td className="ra">{indian.valued ? inrC(indian.val) : '…'}</td>
-                  <td className={'ra ' + cl(indian.pl)}>{indian.valued ? sg(indian.pl) + inrC(Math.abs(indian.pl)) : '…'}</td>
-                  <td className={'ra ' + cl(indian.pl)}>{indian.valued ? pctS(indian.pct) : '…'}</td>
-                  <td />
-                </tr>
-              </tbody>
-            </table>
+          <div className="g3 sec">
+            <div className="csm">
+              <div className="lbl">day change</div>
+              <div className={'vmd ' + (indian.valued ? cl(indianDayPl) : '')}>
+                {indian.valued ? <SInrC n={indianDayPl} /> : <Skel w={80} h={20} />}
+              </div>
+              <div className="sub">{indian.valued ? `${pctS(indianDayPct)} since prev close` : 'intraday move'}</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">XIRR</div>
+              <div className={'vmd ' + (inStats.portXirr != null ? cl(inStats.portXirr) : '')}>
+                {inStats.portXirr != null ? fmtX(inStats.portXirr) : <Skel w={70} h={20} />}
+              </div>
+              <div className="sub">annualised · ~5mo window</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">realized P&amp;L</div>
+              <div className={'vmd ' + cl(REALIZED_PNL)}><SInrF n={REALIZED_PNL} /></div>
+              <div className="sub">booked since 2022 · tax P&amp;L</div>
+            </div>
           </div>
+
+          {/* SECTION 2 — benchmark + SECTION concentration (single 2-col grid) */}
+          <div className="g2 sec">
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
+              <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your ₹{inrCd(inStats.totalInvested)} deployed into each instead.</div>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Instrument</th><th className="ra">XIRR</th><th className="ra">Return</th><th className="ra">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
+                    <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{fmtX(inStats.portXirr)}</td>
+                    <td className={'ra mono ' + (indian.valued ? cl(indian.pct) : 'mut')}>{indian.valued ? pctS(indian.pct) : '—'}</td>
+                    <td className="ra mono">{indian.valued ? <InrC n={indian.val} /> : '—'}</td>
+                  </tr>
+                  {inStats.benchmarks.map((b) => (
+                    <tr key={b.key}>
+                      <td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />
+                          {b.label}
+                        </span>
+                      </td>
+                      <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
+                      <td className={'ra mono ' + (b.ret != null ? cl(b.ret) : 'mut')}>{b.ret != null ? pctS(b.ret) : '—'}</td>
+                      <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="sub" style={{ marginTop: 12 }}>
+                CAGR {inStats.cagr != null ? (inStats.cagr >= 0 ? '+' : '') + inStats.cagr.toFixed(1) + '%' : '—'}
+                {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
+              </div>
+              <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
+                Annualised over a ~5-month average holding — a short window; indicative, not proven edge.
+                Index returns are price-only (ex-dividend).
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
+              {inStats.sectors.map((s, i) => (
+                <div key={s.label} className="seg-row">
+                  <span className="seg-lbl">{s.label}</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, s.pct) + '%', background: secColors[i % secColors.length] }} /></span>
+                  <span className="seg-val"><InrC n={s.val} /> · {s.pct.toFixed(0)}%</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              {inStats.caps.map((c) => (
+                <div key={c.label} className="seg-row">
+                  <span className="seg-lbl">{c.label} cap</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: capColor[c.label] }} /></span>
+                  <span className="seg-val"><InrC n={c.val} /> · {c.pct.toFixed(0)}%</span>
+                </div>
+              ))}
+              {inStats.topSector && (
+                <div className="sub" style={{ marginTop: 12 }}>
+                  Top sector: <strong style={{ color: 'var(--txt)' }}>{inStats.topSector.label}</strong> at {inStats.topSector.pct.toFixed(0)}% of the book.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 5 — sortable holdings (sorts the DATA array; LTP flash) */}
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <div className="ctitle">Holdings</div>
+              <div className="sub" style={{ margin: 0 }}>
+                {indian.valued
+                  ? <><InrC n={indian.inv} /> → <InrC n={indian.val} /> · <span className={cl(indian.pl)}><SInrC n={indian.pl} /> ({pctS(indian.pct)})</span></>
+                  : 'loading live prices…'}
+              </div>
+            </div>
+            <div className="ovx">
+              <table className="tbl" style={{ minWidth: 860 }}>
+                <thead>
+                  <tr>
+                    {IN_COLS.map((c) => (
+                      <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortIn(c.key)}>
+                        {c.label} {inSort.key === c.key ? (inSort.dir < 0 ? '↓' : '↑') : '↕'}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {inSorted.map((s) => (
+                    <tr key={s.sym}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
+                        {s.sym}
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>
+                          {s.sector} · {s.cap}
+                        </div>
+                      </td>
+                      <td className="ra mut mono">{s.qty}</td>
+                      <td className="ra mut mono"><InrF n={s.cost} /></td>
+                      <td className="ra mono">
+                        {s.ltp != null
+                          ? <span key={s.sym + '-' + s.ltp} className={flash[s.ns] ? 'flash-' + flash[s.ns] : ''}><InrF n={s.ltp} /></span>
+                          : <Skel w={48} h={11} />}
+                      </td>
+                      <td className="ra mono"><InrC n={s.inv} /></td>
+                      <td className="ra mono">{s.val != null ? <InrC n={s.val} /> : '—'}</td>
+                      <td className={'ra mono ' + (s.pl != null ? cl(s.pl) : 'mut')}>
+                        {s.pl != null ? <SInrF n={s.pl} /> : '—'}
+                      </td>
+                      <td className={'ra mono ' + (s.pct != null ? cl(s.pct) : 'mut')}>
+                        {s.pct != null ? pctS(s.pct) : '—'}
+                      </td>
+                      <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>
+                        {s.day != null ? pctS(s.day) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="tot">
+                    <td colSpan={4}>Total — {INDIAN.length} positions</td>
+                    <td className="ra"><InrC n={indian.inv} /></td>
+                    <td className="ra">{indian.valued ? <InrC n={indian.val} /> : '…'}</td>
+                    <td className={'ra ' + cl(indian.pl)}>{indian.valued ? <SInrC n={indian.pl} /> : '…'}</td>
+                    <td className={'ra ' + cl(indian.pl)}>{indian.valued ? pctS(indian.pct) : '…'}</td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
+          </div>
+
+          {/* SECTION 4 — corporate actions window */}
+          <div className="card sec">
+            <div className="ctitle" style={{ marginBottom: 4 }}>Corporate Actions</div>
+            <div className="sub" style={{ marginBottom: 6 }}>Upcoming actions on current holdings, soonest first.</div>
+            {corp.upcoming.length === 0 && (
+              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions on current holdings.</div>
+            )}
+            {corp.upcoming.map((a) => (
+              <div className="ca-row" key={a.sym + a.ex}>
+                <span className="ca-ico">{a.type === 'bonus' ? '🎁' : '💵'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>
+                    {a.name} <span className="mut" style={{ fontWeight: 400 }}>· {a.sym}</span>
+                  </div>
+                  <div className="sub" style={{ margin: 0 }}>
+                    {a.type === 'bonus' ? `Bonus ${a.ratio}` : `Dividend ₹${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  {a.impact.kind === 'dividend'
+                    ? <div className="mono grn"><SInrF n={a.impact.amount} /></div>
+                    : <div className="mono" style={{ color: 'var(--txt)' }}>+{a.impact.bonus} sh → {a.impact.newQty} @ <InrF n={a.impact.newCost} /></div>}
+                  <div style={{ marginTop: 4 }}>
+                    <span className="badge ba" style={{ fontSize: 9 }}>
+                      {a.days <= 0 ? 'TODAY' : a.days === 1 ? 'IN 1 DAY' : `IN ${a.days} DAYS`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {corp.executed.length > 0 && (
+              <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)', color: 'var(--txt3)', lineHeight: 1.6 }}>
+                Recently executed — {corp.executed.map((a) => `${a.sym} ${a.type === 'dividend' ? `dividend ₹${a.perShare}/sh` : `bonus ${a.ratio}`} (ex ${fmtNavDate(a.ex)})`).join(' · ')} · dividends credit ~30–45 days after ex-date.
+              </div>
+            )}
+          </div>
+
           <CFMemo
             title="Equity Tax — FY25-26 Capital Gains"
             rows={[
@@ -874,7 +1316,8 @@ export default function Page() {
             ]}
           />
         </div>
-      )}
+        );
+      })()}
 
       {/* FIXED DEPOSITS — no external feed; everything below is a pure
           function of the system clock (recomputed on mount + hourly). */}
@@ -1215,7 +1658,7 @@ export default function Page() {
               <Stat label="USD/INR live" val={usdInr ? '₹' + usdInr.toFixed(2) : '…'} />
             </div>
             <div className="scroll-tbl">
-              <table className="tbl">
+              <table className="tbl" style={{ minWidth: 760 }}>
                 <thead>
                   <tr>
                     {US_COLS.map((c) => (
@@ -1388,7 +1831,8 @@ export default function Page() {
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                     Swing positions <span className="badge bg" style={{ fontSize: 9 }}>Live</span>
                   </div>
-                  <table className="tbl">
+                  <div className="ovx">
+                  <table className="tbl" style={{ minWidth: 360 }}>
                     <thead>
                       <tr>
                         <th>Symbol</th><th className="ra">Qty</th><th className="ra">Avg</th>
@@ -1420,6 +1864,7 @@ export default function Page() {
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1486,6 +1931,7 @@ export default function Page() {
           </div>
           <div className="card">
             <div className="lbl" style={{ marginBottom: 10 }}>structure</div>
+            <div className="ovx">
             <table className="tbl">
               <tbody>
                 <tr><td style={{ color: 'var(--txt2)', width: 200 }}>Retirement year</td><td style={{ color: 'var(--txt)', fontWeight: 600 }}>2055</td></tr>
@@ -1493,6 +1939,7 @@ export default function Page() {
                 <tr><td style={{ color: 'var(--txt2)' }}>Pension</td><td style={{ color: 'var(--txt)', fontWeight: 600 }}>defined benefit · monthly · for life</td></tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -1566,6 +2013,7 @@ function CFMemo({ title, lead, rows, foot }) {
 function BrokerTable({ data }) {
   const { rows, total } = data;
   return (
+    <div className="ovx">
     <table className="tbl">
       <thead>
         <tr>
@@ -1589,6 +2037,7 @@ function BrokerTable({ data }) {
         </tr>
       </tbody>
     </table>
+    </div>
   );
 }
 
