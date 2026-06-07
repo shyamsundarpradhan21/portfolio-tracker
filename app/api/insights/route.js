@@ -19,10 +19,10 @@ export const maxDuration = 30;
 const MODEL = 'claude-sonnet-4-6';
 
 const SYSTEM_PROMPT =
-  'You are a portfolio analyst. Analyze the portfolio data provided and return ' +
-  'a JSON object with tab-specific insights. Each insight should be 1-2 sentences ' +
-  'max, direct, and only flag genuine concerns or notable patterns worth acting ' +
-  'on. If a tab looks fine, return null for it. Return ONLY valid JSON, no other text.';
+  'You are a portfolio analyst. Return ONLY valid JSON. Each value 1-2 sentences, ' +
+  'direct, flag only genuine concerns or notable patterns. Respect the provided ' +
+  'caveats — do not overstate short-window or benchmark-flattered results. Null ' +
+  'any tab that looks fine.';
 
 const EMPTY = {
   overview: null,
@@ -32,6 +32,24 @@ const EMPTY = {
   fixed_deposits: null,
   algo: null,
 };
+
+// The MF signal arrives as a structured object; flatten it into prose the model
+// can reason over, keeping the guardrail caveats explicit so it can't over-claim.
+function fmtMf(mf) {
+  if (!mf) return 'JioBLK + ELSS (no live detail)';
+  if (typeof mf === 'string') return mf;
+  const funds = (mf.perFund || [])
+    .map((f) => `${f.name} ${f.ret ?? '?'}% (${f.sharePct ?? '?'}% of MF)`)
+    .join('; ');
+  return (
+    `Invested ₹${mf.invested}, value ₹${mf.value}, return ${mf.returnPct}%. ` +
+    `XIRR ${mf.xirrPct}% vs Nifty 50 ${mf.benchmarkXirrPct}% (delta ${mf.xirrDeltaPct} pts). ` +
+    `Asset mix: ${mf.mix}. Market-cap tilt: ${mf.capTilt}. ` +
+    `Largest: ${mf.largest}. Biggest drag: ${mf.drag}. ` +
+    `Per fund: ${funds}. SIP: ${mf.sip}.\n` +
+    `CAVEATS (must respect, do not over-claim): ${mf.caveats}`
+  );
+}
 
 function buildUserMessage(d) {
   const ov = d.overview || {};
@@ -51,7 +69,7 @@ function buildUserMessage(d) {
     `INDIAN STOCKS (live prices, ${d.indianSummary || 'all positions'}):\n${fmtRows(d.indian)}\n\n` +
     `US STOCKS (live prices, ${d.usSummary || 'all positions'}):\n${fmtRows(d.us)}\n` +
     `USD/INR: ${d.usdInr ?? '?'}\n\n` +
-    `MUTUAL FUNDS: ${d.mutualFunds || 'JioBLK ₹51,927 (+2.83%), ELSS ₹596 (+19.24%)'}\n\n` +
+    `MUTUAL FUNDS: ${fmtMf(d.mutualFunds)}\n\n` +
     `FIXED DEPOSITS: ${d.fixedDeposits || 'none'}\n\n` +
     `ALGO: ${d.algo || 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized'}\n\n` +
     `Return JSON:\n` +

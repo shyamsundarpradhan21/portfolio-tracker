@@ -84,9 +84,8 @@ export const FDS = [
 export const STATIC = {
   fdDeployed: FDS.reduce((s, f) => s + f.principal, 0), // 4.95L
   algo: 604000,        // active algo trading capital deployed
-  jioMf: 51927,        // JioBlackRock mutual fund current value
-  elss: 596,           // ELSS
   loan: 750000,        // personal loan liability
+  // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
 };
 
 // FD pipeline — committed but not yet deployed.
@@ -100,30 +99,52 @@ export const FD_PIPELINE = [
   { bank: 'SBI',   label: 'III', deploy: '09 Dec 2027', maturity: '10 Dec 2029', tenure: '2y+1d',  amount: 165000 },
 ];
 
-// Mutual funds (static).
+// Mutual funds. Units / cost / casNav are AUTHORITATIVE from the CAS statement
+// (consolidated account statement) dated 05-Jun-2026. NAV is fetched live once
+// daily via /api/mf-nav; casNav is the last-known fallback. AMFI scheme codes
+// are resolved at runtime by name (inc = required terms, exc = rejected terms),
+// so no brittle hardcoded codes.
+//
+// UNITS_AS_OF — units go stale the moment a new SIP installment executes; update
+// them from the next CAS.
+export const UNITS_AS_OF = '05-Jun-2026';
+
+// Always resolve to the Direct-Growth plan, never Regular / IDCW / dividend.
+const MF_EXC_BASE = ['regular', 'idcw', 'dividend'];
+
+export const MF_FUNDS = [
+  // JioBlackRock — Folio 2088065, Direct Growth
+  { id: 'flexi',   platform: 'JioBLK',  name: 'Flexi Cap',          cat: 'Multi Cap',         units: 2097.894, cost: 20000, casNav: 9.5724,  q: 'JioBlackRock Flexi Cap',          inc: ['flexi cap', 'direct', 'growth'],      exc: [] },
+  { id: 'nifty50', platform: 'JioBLK',  name: 'Nifty 50 Index',     cat: 'Large Cap · Index', units: 1134.852, cost: 11000, casNav: 9.4283,  q: 'JioBlackRock Nifty 50 Index',     inc: ['nifty 50 index', 'direct', 'growth'], exc: ['next', 'value', 'midcap', 'smallcap'] },
+  { id: 'midcap',  platform: 'JioBLK',  name: 'Nifty Midcap 150',   cat: 'Mid Cap · Index',   units: 815.370,  cost: 8000,  casNav: 10.4744, q: 'JioBlackRock Nifty Midcap 150',   inc: ['midcap 150', 'direct', 'growth'],     exc: [] },
+  { id: 'arb',     platform: 'JioBLK',  name: 'Arbitrage',          cat: 'Arbitrage · Hedged',units: 493.038,  cost: 5000,  casNav: 10.3087, q: 'JioBlackRock Arbitrage',          inc: ['arbitrage', 'direct', 'growth'],      exc: [] },
+  { id: 'next50',  platform: 'JioBLK',  name: 'Nifty Next 50',      cat: 'Large Cap · Index', units: 307.856,  cost: 3000,  casNav: 10.4525, q: 'JioBlackRock Nifty Next 50',      inc: ['next 50', 'direct', 'growth'],        exc: [] },
+  { id: 'small',   platform: 'JioBLK',  name: 'Nifty Smallcap 250', cat: 'Small Cap · Index', units: 330.775,  cost: 3000,  casNav: 10.0992, q: 'JioBlackRock Nifty Smallcap 250', inc: ['smallcap 250', 'direct', 'growth'],   exc: [] },
+  // Zerodha
+  { id: 'elss',    platform: 'Zerodha', name: 'ELSS Tax Saver',     cat: 'ELSS',              units: 42.390,   cost: 500,   casNav: 13.9096, q: 'Zerodha ELSS Tax Saver',          inc: ['elss', 'direct', 'growth'],           exc: [] },
+].map((f) => ({ ...f, exc: [...MF_EXC_BASE, ...f.exc] }));
+
+// Dated cashflows for XIRR (rupees out are negative). ELSS seed, then the two
+// JioBlackRock lumpsum contributions. Today's cashflow (+current value) is
+// appended at render time.
+export const MF_CASHFLOWS = [
+  { date: '2024-02-26', amount: -500 },
+  { date: '2026-01-13', amount: -20000 },
+  { date: '2026-03-20', amount: -30000 },
+];
+
+// Long-history Nifty 50 index fund used as the XIRR benchmark counterfactual.
+export const MF_BENCHMARK = {
+  name: 'Nifty 50 Index',
+  q: 'UTI Nifty 50 Index Fund',
+  inc: ['uti', 'nifty 50 index', 'direct', 'growth'],
+  exc: ['next', 'value', 'regular', 'idcw'],
+  // Proxy NAVs used only when the live history fetch fails.
+  proxy: { '2024-02-26': 10.3449, '2026-01-13': 10.3449, '2026-03-20': 9.3013 },
+};
+
+// SIP commitments shown on the Overview tab.
 export const MF = {
-  jio: {
-    name: 'JioBLK Growth ProFolio',
-    desc: '₹50K lumpsum + ₹20K/mo SIP · JioBLK platform (BlackRock Aladdin powered)',
-    invested: 50500,
-    current: 51927,
-    ret: 2.83,
-    lumpsum: [
-      { name: 'Nifty 50',     amt: 11000, cat: 'large cap' },
-      { name: 'Flexi Cap',    amt: 20000, cat: 'multi cap' },
-      { name: 'Midcap 150',   amt: 8000,  cat: 'mid cap' },
-      { name: 'Arbitrage',    amt: 5000,  cat: 'hedged' },
-      { name: 'Next 50',      amt: 3000,  cat: 'large-mid' },
-      { name: 'Smallcap 250', amt: 3000,  cat: 'small cap' },
-    ],
-  },
-  elss: {
-    name: 'Nifty LargeMidcap 250 Index Fund',
-    desc: 'Tax saver · Zerodha Coin',
-    invested: 500,
-    current: 596,
-    ret: 19.24,
-  },
   sip: {
     items: [
       { label: 'JioBLK SIP',  val: '₹20,000/mo' },

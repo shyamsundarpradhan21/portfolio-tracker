@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INDIAN, US, FDS, FD_PIPELINE, MF, ALGO, SWING, STATIC, RETIREMENT,
-  CAT_COLORS, ALLOC_COLORS,
+  INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
+  ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -28,7 +28,113 @@ const numC = (n) => Math.round(n).toLocaleString('en-IN'); // plain grouped (cha
 
 const FETCH_TS_KEY = 'nwTracker.cache';
 const INSIGHTS_KEY = 'nwTracker.insights';
+const MFNAV_KEY = 'nwTracker.mfnav';
 const REFRESH_MS = 15 * 60 * 1000;
+
+// ─── mutual-fund derivations (pure; shared by the MF tab + insight payload) ───
+// Layers live NAV (from /api/mf-nav) over the static units/cost; falls back to
+// casNav per fund when a NAV hasn't resolved.
+function deriveMf(mfNav) {
+  const fundsNav = (mfNav && mfNav.funds) || {};
+  let totVal = 0, totCost = 0;
+  const rows = MF_FUNDS.map((f) => {
+    const info = fundsNav[f.id];
+    const nav = info && isFinite(info.nav) ? info.nav : f.casNav;
+    const value = f.units * nav;
+    const ret = f.cost ? ((value - f.cost) / f.cost) * 100 : 0;
+    totVal += value; totCost += f.cost;
+    return { ...f, nav, value, ret, fresh: info ? !!info.fresh : false, navDate: info ? info.date : null };
+  });
+  rows.forEach((r) => { r.share = totVal ? (r.value / totVal) * 100 : 0; });
+  const sub = (pred) => {
+    const a = rows.filter(pred);
+    const v = a.reduce((s, r) => s + r.value, 0);
+    const c = a.reduce((s, r) => s + r.cost, 0);
+    return { value: v, cost: c, ret: c ? ((v - c) / c) * 100 : 0 };
+  };
+  const v = (id) => { const r = rows.find((x) => x.id === id); return r ? r.value : 0; };
+  const alloc = {
+    equity: v('flexi') + v('nifty50') + v('midcap') + v('next50') + v('small') + v('elss'),
+    arbitrage: v('arb'),
+    debt: 0,
+  };
+  const cap = {
+    large: v('nifty50') + v('next50') + v('elss') * 0.5 + v('flexi') * 0.70,
+    mid: v('midcap') + v('elss') * 0.5 + v('flexi') * 0.20,
+    small: v('small') + v('flexi') * 0.10,
+    hedged: v('arb'),
+  };
+  return {
+    rows, totVal, totCost,
+    totRet: totCost ? ((totVal - totCost) / totCost) * 100 : 0,
+    jio: sub((r) => r.platform === 'JioBLK'),
+    elss: sub((r) => r.platform === 'Zerodha'),
+    alloc, cap, v,
+  };
+}
+
+// XIRR via Newton-Raphson, bisection fallback. cfs: [{ date: Date, amount }].
+function xirr(cfs) {
+  if (!cfs || cfs.length < 2) return null;
+  const t0 = cfs[0].date.getTime();
+  const yr = cfs.map((c) => (c.date.getTime() - t0) / (365 * 864e5));
+  const npv = (r) => cfs.reduce((s, c, i) => s + c.amount / Math.pow(1 + r, yr[i]), 0);
+  const dnpv = (r) => cfs.reduce((s, c, i) => s - (yr[i] * c.amount) / Math.pow(1 + r, yr[i] + 1), 0);
+  let r = 0.1;
+  for (let i = 0; i < 60; i++) {
+    const f = npv(r), d = dnpv(r);
+    if (!isFinite(f) || !isFinite(d) || d === 0) break;
+    let nr = r - f / d;
+    if (nr <= -0.9999) nr = -0.9999;
+    if (Math.abs(nr - r) < 1e-8) { r = nr; break; }
+    r = nr;
+  }
+  if (isFinite(r) && Math.abs(npv(r)) < 1) return r;
+  // bisection fallback over a wide bracket
+  let lo = -0.9999, hi = 100, flo = npv(lo);
+  if (!isFinite(flo)) return null;
+  for (let i = 0; i < 300; i++) {
+    const mid = (lo + hi) / 2, fm = npv(mid);
+    if (!isFinite(fm)) return null;
+    if (Math.abs(fm) < 1e-6) return mid;
+    if ((flo < 0) === (fm < 0)) { lo = mid; flo = fm; } else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Portfolio XIRR vs the Nifty-50 counterfactual (same dated rupees, benchmark NAVs).
+function mfXirr(mf, mfNav) {
+  const today = new Date();
+  const base = MF_CASHFLOWS.map((c) => ({ date: new Date(c.date), amount: c.amount }));
+  const port = xirr([...base, { date: today, amount: mf.totVal }]);
+  let benchRet = null, benchVal = null;
+  const bench = mfNav && mfNav.benchmark;
+  if (bench && bench.navByDate && isFinite(bench.latestNav)) {
+    let units = 0, ok = true;
+    for (const c of MF_CASHFLOWS) {
+      const nav = bench.navByDate[c.date];
+      if (!isFinite(nav) || nav <= 0) { ok = false; break; }
+      units += (-c.amount) / nav;
+    }
+    if (ok) {
+      benchVal = units * bench.latestNav;
+      benchRet = xirr([...base, { date: today, amount: benchVal }]);
+    }
+  }
+  return {
+    port: port != null ? port * 100 : null,
+    bench: benchRet != null ? benchRet * 100 : null,
+    benchVal,
+    benchName: (bench && bench.name) || 'Nifty 50 Index',
+  };
+}
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "2026-06-05" → "05 Jun 2026"
+function fmtNavDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${m[3]} ${MON[+m[2] - 1]} ${m[1]}` : null;
+}
 
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
@@ -43,7 +149,7 @@ const US_COLS = [
 
 // Distil live state into a compact payload for the /api/insights route.
 // Only outlier holdings are sent to reduce prompt tokens by ~40%.
-function buildInsightPayload(prices, fx) {
+function buildInsightPayload(prices, fx, mfNav) {
   const rate = fx || 88;
   const r2 = (n) => (n == null ? null : +n.toFixed(2));
 
@@ -106,8 +212,34 @@ function buildInsightPayload(prices, fx) {
     .map(({ _val, ...rest }) => rest);
 
   const usInr = usVal * rate;
-  const totalAssets = inVal + usInr + STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss;
+  const mfd = deriveMf(mfNav);
+  const mx = mfXirr(mfd, mfNav);
+  const totalAssets = inVal + usInr + STATIC.fdDeployed + STATIC.algo + mfd.totVal;
   const nw = totalAssets - STATIC.loan;
+
+  // Largest position + worst drag, for the MF insight.
+  const mfSorted = [...mfd.rows].sort((a, b) => b.value - a.value);
+  const largest = mfSorted[0];
+  const drag = [...mfd.rows].sort((a, b) => a.ret - b.ret)[0];
+  const capTotal = mfd.cap.large + mfd.cap.mid + mfd.cap.small + mfd.cap.hedged || 1;
+  const mfSignal = {
+    invested: Math.round(mfd.totCost),
+    value: Math.round(mfd.totVal),
+    returnPct: r2(mfd.totRet),
+    xirrPct: r2(mx.port),
+    benchmarkXirrPct: r2(mx.bench),
+    xirrDeltaPct: mx.port != null && mx.bench != null ? r2(mx.port - mx.bench) : null,
+    perFund: mfd.rows.map((f) => ({ name: f.name, ret: r2(f.ret), sharePct: r2(f.share) })),
+    drag: drag ? `${drag.name} ${r2(drag.ret)}%` : null,
+    largest: largest ? `${largest.name} (${r2(largest.share)}% of MF)` : null,
+    mix: `equity ${r2((mfd.alloc.equity / (mfd.totVal || 1)) * 100)}%, arbitrage ${r2((mfd.alloc.arbitrage / (mfd.totVal || 1)) * 100)}%`,
+    capTilt: `large ${r2((mfd.cap.large / capTotal) * 100)}%, mid ${r2((mfd.cap.mid / capTotal) * 100)}%, small ${r2((mfd.cap.small / capTotal) * 100)}%, hedged ${r2((mfd.cap.hedged / capTotal) * 100)}%`,
+    sip: '₹20K/mo JioBlackRock SIP registered, first installment pending; seeded ₹20K (13-Jan-26) + ₹30K (20-Mar-26); ELSS 3-yr lock-in to 26-Feb-2027',
+    caveats:
+      'Short ~4-month window for the JioBlackRock contributions — XIRR is highly sensitive and not indicative of skill. ' +
+      'Benchmark is a pure Nifty 50 index, so the portfolio\'s midcap/smallcap tilt flatters the comparison. ' +
+      'Do not over-claim outperformance.',
+  };
 
   return {
     timestamp: new Date().toISOString(),
@@ -122,7 +254,7 @@ function buildInsightPayload(prices, fx) {
     us,
     usSummary: `${us.length}/${US.length} shown (top 3 by value + |P&L|>15% or |day|>3%)`,
     usdInr: r2(rate),
-    mutualFunds: `JioBLK ₹${MF.jio.current.toLocaleString('en-IN')} (+${MF.jio.ret}%), ELSS ₹${MF.elss.current} (+${MF.elss.ret}%)`,
+    mutualFunds: mfSignal,
     fixedDeposits:
       `Active (${inrC(STATIC.fdDeployed)}, ~₹${FDS.reduce((s, f) => s + f.interest, 0).toLocaleString('en-IN')}/yr): ` +
       FDS.map((f) => `${f.bank} ${inrC(f.principal)} @${f.rate}% matures ${f.matures}`).join('; ') +
@@ -145,6 +277,8 @@ export default function Page() {
   const [markets, setMarkets] = useState({ nse: null, nyse: null });
   const [loading, setLoading] = useState(false);
   const [usSort, setUsSort] = useState({ col: 'liveVal', dir: -1 });
+  const [mfNav, setMfNav] = useState(null);
+  const [mfSort, setMfSort] = useState({ key: 'value', dir: -1 });
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsOn, setInsightsOn] = useState(() => {
@@ -172,9 +306,21 @@ export default function Page() {
     return data.quotes || {};
   };
 
+  // Mutual-fund NAV (once-daily, server-cached 24h). Returns null on failure;
+  // the UI then falls back to per-fund casNav.
+  const fetchMfNav = async () => {
+    try {
+      const res = await fetch('/api/mf-nav', { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
+
   // Ask Claude for tab-specific insights from the freshly-fetched data.
-  const fetchInsights = useCallback(async (pricesArg, fxArg) => {
-    const payload = buildInsightPayload(pricesArg, fxArg);
+  const fetchInsights = useCallback(async (pricesArg, fxArg, mfArg) => {
+    const payload = buildInsightPayload(pricesArg, fxArg, mfArg);
     // No live data yet → nothing worth analysing; skip the call.
     if (payload.overview.indianPlPct == null && payload.overview.usPlPct == null) return;
     setInsightsLoading(true);
@@ -208,12 +354,17 @@ export default function Page() {
         .concat(SWING.map((s) => s.ns))
         .concat(['INR=X']);
       const usSyms = US.map((s) => s.sym);
-      const [inData, usData] = await Promise.all([
+      const [inData, usData, mfData] = await Promise.all([
         fetchBatch(inSyms),
         fetchBatch(usSyms),
+        fetchMfNav(),
       ]);
       const merged = { ...inData, ...usData };
       setPrices(merged);
+      if (mfData) {
+        setMfNav(mfData);
+        try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {}
+      }
 
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
@@ -242,8 +393,8 @@ export default function Page() {
 
       // Generate AI insights only on explicit request (manual refresh / first
       // load) — never on the 15-min auto-refresh, to keep API spend minimal.
-      // Also respects the per-session insights toggle.
-      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr);
+      // Called once both equities AND NAV have resolved. Respects the toggle.
+      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr, mfData || mfNav);
     } catch (e) {
       setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' });
     } finally {
@@ -264,6 +415,13 @@ export default function Page() {
       }
     } catch {}
 
+    // Mutual-fund NAV is cached 24h server-side; reuse any session copy too.
+    let cachedMfNav = null;
+    try {
+      const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null');
+      if (mc && mc.mfNav) { cachedMfNav = mc.mfNav; setMfNav(mc.mfNav); }
+    } catch {}
+
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -275,7 +433,7 @@ export default function Page() {
         setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
         // Only call the API if we don't already have insights and the toggle is on.
-        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr);
+        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr, cachedMfNav);
       }
     } catch {}
     // Fresh load with no cached prices: fetch prices + one set of insights.
@@ -366,14 +524,38 @@ export default function Page() {
   const cfEntering = Math.abs(FY.carryforward.find((c) => c.accent).val); // 5,97,318
   const cfAfterRealised = cfEntering - ytdRealised;                       // 4,99,306
 
+  // ─── derived: mutual funds (live NAV layered over CAS units) ───
+  const mf = useMemo(() => deriveMf(mfNav), [mfNav]);
+  const mfx = useMemo(() => mfXirr(mf, mfNav), [mf, mfNav]);
+
+  // Sort the holdings DATA (never the DOM); re-sorts on every render so the
+  // chosen order survives a NAV refresh. Header onClick is bound by React.
+  const mfSorted = useMemo(() => {
+    const arr = [...mf.rows];
+    const { key, dir } = mfSort;
+    arr.sort((a, b) => {
+      const av = a[key], bv = b[key];
+      if (typeof av === 'string') return dir * String(av).localeCompare(String(bv));
+      return dir * ((av ?? -Infinity) - (bv ?? -Infinity));
+    });
+    return arr;
+  }, [mf, mfSort]);
+
+  const sortMf = (key) =>
+    setMfSort((s) =>
+      s.key === key
+        ? { key, dir: -s.dir }
+        : { key, dir: key === 'name' || key === 'platform' ? 1 : -1 },
+    );
+
   // ─── derived: overview / net worth ───
   const ov = useMemo(() => {
     const usInr = usData.val * fxRate;
     const totalAssets =
-      indian.val + usInr + STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss;
+      indian.val + usInr + STATIC.fdDeployed + STATIC.algo + mf.totVal;
     const nw = totalAssets - STATIC.loan;
     return { usInr, totalAssets, nw };
-  }, [indian.val, usData.val, fxRate]);
+  }, [indian.val, usData.val, fxRate, mf.totVal]);
 
   const fdInterest = FDS.reduce((s, f) => s + f.interest, 0);
   const fdPipelineTotal = FD_PIPELINE.reduce((s, f) => s + f.amount, 0);
@@ -384,8 +566,8 @@ export default function Page() {
     { label: 'Fixed Deposits', value: STATIC.fdDeployed,  color: ALLOC_COLORS.fd },
     { label: 'Indian Stocks',  value: indian.val || 471000, color: ALLOC_COLORS.indian },
     { label: 'US Stocks',      value: ov.usInr || 443000, color: ALLOC_COLORS.us },
-    { label: 'Mutual Funds',   value: STATIC.jioMf,       color: ALLOC_COLORS.mf },
-    { label: 'ELSS',           value: STATIC.elss,        color: ALLOC_COLORS.elss },
+    { label: 'Mutual Funds',   value: mf.jio.value,       color: ALLOC_COLORS.mf },
+    { label: 'ELSS',           value: mf.elss.value,      color: ALLOC_COLORS.elss },
   ];
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
@@ -504,8 +686,8 @@ export default function Page() {
                 </div>
                 <div className="csm">
                   <div className="lbl">algo + FDs + MF</div>
-                  <div className="vlg">{inrC(STATIC.fdDeployed + STATIC.algo + STATIC.jioMf + STATIC.elss)}</div>
-                  <div className="sub">static · update manually</div>
+                  <div className="vlg">{inrC(STATIC.fdDeployed + STATIC.algo + mf.totVal)}</div>
+                  <div className="sub">MF live NAV · algo &amp; FDs manual</div>
                 </div>
               </div>
               {/* Monthly SIP summary — fills the space beside the donut */}
@@ -546,8 +728,9 @@ export default function Page() {
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
-                  Indian Equities — Live (NSE)
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  Indian Equities
+                  <FreshnessTag mode="live" marketState={{ open: markets.nse, label: markets.nse ? 'NSE open' : 'NSE closed' }} />
                 </div>
                 <div className="sub">{INDIAN.length} stocks · ~₹30K equal-weight</div>
               </div>
@@ -621,6 +804,9 @@ export default function Page() {
       {tab === 2 && (
         <div>
           <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="manual" date="05 Jun 2026" />
+          </div>
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">active deployed</div>
@@ -709,72 +895,182 @@ export default function Page() {
       )}
 
       {/* MUTUAL FUNDS */}
-      {tab === 3 && (
+      {tab === 3 && (() => {
+        const mfDate = (mf.rows.find((r) => r.navDate) || {}).navDate || null;
+        const allocSegs = [
+          { label: 'Equity',    val: mf.alloc.equity,    color: 'var(--pur)' },
+          { label: 'Arbitrage', val: mf.alloc.arbitrage, color: 'var(--blu)' },
+          { label: 'Debt',      val: mf.alloc.debt,      color: 'var(--txt3)' },
+        ];
+        const capSegs = [
+          { label: 'Large',  val: mf.cap.large,  color: 'var(--blu)' },
+          { label: 'Mid',    val: mf.cap.mid,    color: 'var(--pur)' },
+          { label: 'Small',  val: mf.cap.small,  color: 'var(--grn)' },
+          { label: 'Hedged', val: mf.cap.hedged, color: 'var(--acc)' },
+        ];
+        const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
+        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const delta = mfx.port != null && mfx.bench != null ? mfx.port - mfx.bench : null;
+        const platStyle = (p) => p === 'JioBLK'
+          ? { background: 'rgba(155,138,251,.16)', color: '#BCAEFF' }
+          : { background: 'rgba(52,211,153,.16)', color: '#6EE7B7' };
+        const MF_COLS = [
+          { key: 'name', label: 'Fund · share', num: false },
+          { key: 'platform', label: 'Platform', num: false },
+          { key: 'units', label: 'Units', num: true },
+          { key: 'nav', label: 'NAV', num: true },
+          { key: 'value', label: 'Value', num: true },
+          { key: 'cost', label: 'Cost', num: true },
+          { key: 'ret', label: 'Return', num: true },
+        ];
+        return (
         <div>
           <InsightBanner text={insightsOn ? insights?.mutual_funds : null} loading={insightsOn && insightsFirstLoad} />
-          <div className="g2 sec">
+
+          {/* Summary strip */}
+          <div className="g3 sec">
             <div className="csm">
               <div className="lbl">total invested</div>
-              <div className="vmd">{inrFull(MF.jio.invested + MF.elss.invested)}</div>
-              <div className="sub">JioBLK + ELSS</div>
+              <div className="vmd">{inrFull(mf.totCost)}</div>
+              <div className="sub">{MF_FUNDS.length} funds · 2 platforms</div>
             </div>
             <div className="csm">
-              <div className="lbl">current value</div>
-              <div className="vmd grn">{inrFull(MF.jio.current + MF.elss.current)}</div>
-              <div className="sub">
-                {(() => {
-                  const inv = MF.jio.invested + MF.elss.invested;
-                  const cur = MF.jio.current + MF.elss.current;
-                  return `+${(((cur - inv) / inv) * 100).toFixed(2)}% blended`;
-                })()}
+              <div className="fxc">
+                <div className="lbl" style={{ margin: 0 }}>current value</div>
+                <FreshnessTag mode="nav" date={mfDate} />
               </div>
+              <div className="vmd grn" style={{ marginTop: 6 }}>{inrFull(mf.totVal)}</div>
+              <div className="sub">live NAV × CAS units ({UNITS_AS_OF})</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">total return</div>
+              <div className={'vmd ' + cl(mf.totRet)}>{pctS(mf.totRet)}</div>
+              <div className="sub">{sFull(mf.totVal - mf.totCost)} abs</div>
             </div>
           </div>
 
-          {/* Section A — JioBLK */}
-          <div className="card card-accent" style={{ borderLeftColor: 'var(--blu)', marginBottom: 22 }}>
-            <div className="fxc" style={{ marginBottom: 8 }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{MF.jio.name}</div>
-                <div className="sub">{MF.jio.desc}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="vmd grn">+{MF.jio.ret.toFixed(2)}%</div>
-                <div className="sub">{inrFull(MF.jio.invested)} → {inrFull(MF.jio.current)}</div>
-              </div>
-            </div>
-            <div className="lbl" style={{ margin: '14px 0 10px' }}>lumpsum allocation (₹50K)</div>
-            {(() => {
-              const max = Math.max(...MF.jio.lumpsum.map((x) => x.amt));
-              return MF.jio.lumpsum.map((a) => (
-                <div className="bar-row" key={a.name}>
-                  <span className="bar-lbl">{a.name}</span>
-                  <span className="bar-trk">
-                    <span className="bar-fil" style={{ width: (a.amt / max) * 100 + '%', background: '#8F7FE8' }} />
-                  </span>
-                  <span className="bar-val">{inrC(a.amt)}</span>
-                  <span className="bar-cat">{a.cat}</span>
+          {/* 3-up analytics */}
+          <div className="mf-g3">
+            {/* XIRR vs Nifty 50 */}
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 12 }}>XIRR vs Nifty 50</div>
+              <div className="g2">
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Your portfolio</div>
+                  <div className={'vmd ' + (mfx.port != null ? cl(mfx.port) : '')}>{fmtX(mfx.port)}</div>
+                  <div className="sub">annualised</div>
                 </div>
-              ));
-            })()}
-            <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
-              ₹20K/mo SIP flows into Growth ProFolio — Aladdin allocates proportionally
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Nifty 50</div>
+                  <div className={'vmd ' + (mfx.bench != null ? cl(mfx.bench) : '')}>{fmtX(mfx.bench)}</div>
+                  <div className="sub">same dated rupees</div>
+                </div>
+              </div>
+              {delta != null && (
+                <div style={{ marginTop: 12 }}>
+                  <span className="verdict" style={delta >= 0
+                    ? { background: 'var(--grn-bg)', color: 'var(--grn)' }
+                    : { background: 'var(--red-bg)', color: 'var(--red)' }}>
+                    {delta >= 0 ? '▲ Ahead' : '▼ Behind'} by {Math.abs(delta).toFixed(1)} pts
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Asset allocation */}
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 12 }}>Asset Allocation</div>
+              {allocSegs.map((s) => {
+                const pct = mf.totVal ? (s.val / mf.totVal) * 100 : 0;
+                return (
+                  <div key={s.label} style={{ marginBottom: 10 }}>
+                    <div className="fxc" style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: 'var(--txt2)' }}>{s.label}</span>
+                      <span className="mono" style={{ fontSize: 12 }}>{inrC(s.val)} · {pct.toFixed(1)}%</span>
+                    </div>
+                    <span className="bar-trk" style={{ display: 'block' }}>
+                      <span className="bar-fil" style={{ width: pct + '%', background: s.color }} />
+                    </span>
+                  </div>
+                );
+              })}
+              <div className="sub" style={{ marginTop: 10 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
+            </div>
+
+            {/* Market cap */}
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 4 }}>Market Cap</div>
+              <div className="sub" style={{ marginBottom: 12 }}>Flexi Cap split is estimated 70 / 20 / 10; the rest is mandate-fixed.</div>
+              <div className="mf-stack">
+                {capSegs.map((s) => (
+                  <span key={s.label} style={{ width: (s.val / capTot) * 100 + '%', background: s.color }} />
+                ))}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                {capSegs.map((s) => (
+                  <div key={s.label} className="fxc" style={{ marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                      <span className="mf-dot" style={{ background: s.color }} />{s.label}
+                    </span>
+                    <span className="mono" style={{ fontSize: 12 }}>{inrC(s.val)} · {((s.val / capTot) * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Section B — Zerodha ELSS */}
-          <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)' }}>
-            <div className="fxc">
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Zerodha ELSS</div>
-                <div className="sub">{MF.elss.name} · {MF.elss.desc}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="vmd grn">+{MF.elss.ret.toFixed(2)}%</div>
-                <div className="sub">{inrFull(MF.elss.invested)} → {inrFull(MF.elss.current)}</div>
+          {/* Holdings */}
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <div className="ctitle">Holdings</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className="mf-chip"><span className="mf-dot" style={{ background: '#BCAEFF' }} />JioBlackRock {inrFull(mf.jio.value)} <span className={cl(mf.jio.ret)} style={{ marginLeft: 2 }}>{pctS(mf.jio.ret)}</span></span>
+                <span className="mf-chip"><span className="mf-dot" style={{ background: '#6EE7B7' }} />Zerodha ELSS {inrFull(mf.elss.value)} <span className={cl(mf.elss.ret)} style={{ marginLeft: 2 }}>{pctS(mf.elss.ret)}</span></span>
               </div>
             </div>
+            <div className="ovx">
+              <table className="tbl" style={{ minWidth: 640 }}>
+                <thead>
+                  <tr>
+                    {MF_COLS.map((c) => (
+                      <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortMf(c.key)}>
+                        {c.label} {mfSort.key === c.key ? (mfSort.dir < 0 ? '↓' : '↑') : '↕'}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {mfSorted.map((f) => (
+                    <tr key={f.id}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
+                        {f.name}
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>
+                          {f.cat} · {f.share.toFixed(1)}%
+                        </div>
+                      </td>
+                      <td><span className="mf-pill" style={platStyle(f.platform)}>{f.platform}</span></td>
+                      <td className="ra mono mut">{f.units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
+                      <td className="ra mono">{f.nav.toFixed(4)}</td>
+                      <td className="ra mono">{inrFull(f.value)}</td>
+                      <td className="ra mono mut">{inrFull(f.cost)}</td>
+                      <td className={'ra mono ' + cl(f.ret)}>{pctS(f.ret)}</td>
+                    </tr>
+                  ))}
+                  <tr className="tot">
+                    <td colSpan={4}>Total — {MF_FUNDS.length} funds</td>
+                    <td className="ra">{inrFull(mf.totVal)}</td>
+                    <td className="ra">{inrFull(mf.totCost)}</td>
+                    <td className={'ra ' + cl(mf.totRet)}>{pctS(mf.totRet)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
+              JioBlackRock: ₹20K/mo SIP active, first installment pending — seeded ₹20K (13-Jan-26) + ₹30K (20-Mar-26).
+              Zerodha ELSS: 3-yr lock-in, unlocks 26-Feb-2027.
+            </div>
           </div>
+
           <CFMemo
             title="MF Redemption Tax — FY25-26 Capital Gains"
             rows={[
@@ -783,7 +1079,8 @@ export default function Page() {
             ]}
           />
         </div>
-      )}
+        );
+      })()}
 
       {/* US STOCKS */}
       {tab === 4 && (
@@ -792,8 +1089,9 @@ export default function Page() {
           <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
             <div className="fxc">
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
-                  US Portfolio — Live (Vested)
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  US Portfolio (Vested)
+                  <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: markets.nyse ? 'NYSE open' : 'NYSE closed' }} />
                 </div>
                 <div className="sub">{US.length} holdings · fractional shares · USD + INR converted</div>
               </div>
@@ -884,6 +1182,9 @@ export default function Page() {
       {tab === 5 && (
         <div>
           <InsightBanner text={insightsOn ? insights?.algo : null} loading={insightsOn && insightsFirstLoad} />
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="manual" date="FY25-26 ITR-verified · swing live" />
+          </div>
 
           {/* SUMMARY */}
           <div className="g3 sec">
@@ -1058,6 +1359,9 @@ export default function Page() {
       {/* RETIREMENT */}
       {tab === 6 && (
         <div>
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="manual" date="2055 projection · assumptions-based" />
+          </div>
           <div className="csm sec" style={{ borderColor: 'var(--blu)', background: 'var(--blu-bg)' }}>
             <div style={{ fontSize: 12, color: 'var(--txt2)' }}>
               <strong style={{ color: 'var(--blu)' }}>2055 projections only</strong> — not included
@@ -1104,6 +1408,30 @@ function Stat({ label, val }) {
       <div className="lbl" style={{ marginBottom: 2 }}>{label}</div>
       <div className="vsm">{val}</div>
     </div>
+  );
+}
+
+// One freshness indicator for the whole dashboard — same dot+text grammar, copy
+// differs by asset class. mode: 'live' (intraday equities, the only "LIVE"),
+// 'nav' (once-daily mutual funds), 'manual' (FDs / algo / retirement).
+function FreshnessTag({ mode, date, marketState }) {
+  let dot = 'var(--txt3)', text = '';
+  if (mode === 'live') {
+    const open = marketState && marketState.open;
+    dot = open ? 'var(--grn)' : 'var(--acc)';
+    text = `LIVE · ${marketState ? marketState.label : ''}`;
+  } else if (mode === 'nav') {
+    const f = fmtNavDate(date);
+    if (f) { dot = 'var(--grn)'; text = `NAV as of ${f}`; }
+    else { dot = 'var(--acc)'; text = 'Showing last-known NAV (CAS 05 Jun 2026)'; }
+  } else {
+    dot = 'var(--txt3)'; text = `as of ${date || 'manual'}`;
+  }
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--txt2)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+      {text}
+    </span>
   );
 }
 
