@@ -73,30 +73,35 @@ export const US = [
   { sym: 'PDBC', name: 'Invesco Optm Commodity',cat: 'Commodity',  qty: 2.19651956,  cost: 17.43 },
 ].map((s) => ({ ...s, inv: +(s.qty * s.cost).toFixed(2) }));
 
-// Fixed deposits (static, no live data).
+// Fixed deposits — quarterly-compounding cumulative FDs, no external feed.
+// `open`/`matures` are ISO dates; accrued interest, value-at-maturity and
+// progress are derived live from the system clock (see deriveFds in page.js —
+// quarterly compounding only, simple interest is never used).
 export const FDS = [
-  { bank: 'Slice', label: 'I', principal: 125000, rate: 7.75, matures: 'Jun 2027' },
-  { bank: 'ICICI', label: 'I', principal: 135000, rate: 6.60, matures: 'Dec 2027' },
-  { bank: 'HDFC',  label: 'I', principal: 235000, rate: 6.45, matures: 'Sep 2027' },
-].map((f) => ({ ...f, interest: Math.round((f.principal * f.rate) / 100) }));
+  { bank: 'Slice', label: 'I', principal: 125000, rate: 7.75, open: '2025-12-08', matures: '2027-06-09' },
+  { bank: 'ICICI', label: 'I', principal: 135000, rate: 6.60, open: '2025-12-09', matures: '2027-12-10' },
+  { bank: 'HDFC',  label: 'I', principal: 235000, rate: 6.45, open: '2026-03-08', matures: '2027-09-09' },
+];
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
-  fdDeployed: FDS.reduce((s, f) => s + f.principal, 0), // 4.95L
   algo: 604000,        // active algo trading capital deployed
   loan: 750000,        // personal loan liability
   // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
+  // FD value (principal + accrued interest) is now computed live — see deriveFds.
 };
 
-// FD pipeline — committed but not yet deployed.
+// FD pipeline — committed but not yet deployed; excluded from net worth and
+// "deployed" totals until the deploy date arrives. The countdown badge on the
+// nearest upcoming deploy is derived live (see deriveFds).
 export const FD_PIPELINE = [
-  { bank: 'SBI',   label: 'I',   deploy: '09 Jun 2026', maturity: '10 Jun 2028', tenure: '2y+1d',  amount: 150000, badge: 'NEXT · 4 DAYS' },
-  { bank: 'Slice', label: 'II',  deploy: '08 Sep 2026', maturity: '09 Mar 2028', tenure: '18m+1d', amount: 275000 },
-  { bank: 'ICICI', label: 'II',  deploy: '09 Dec 2026', maturity: '10 Dec 2028', tenure: '2y+1d',  amount: 165000 },
-  { bank: 'HDFC',  label: 'II',  deploy: '08 Mar 2027', maturity: '09 Sep 2028', tenure: '18m+1d', amount: 245000 },
-  { bank: 'SBI',   label: 'II',  deploy: '09 Jun 2027', maturity: '10 Jun 2029', tenure: '2y+1d',  amount: 155000 },
-  { bank: 'ICICI', label: 'III', deploy: '08 Sep 2027', maturity: '10 Sep 2029', tenure: '2y+1d',  amount: 170000 },
-  { bank: 'SBI',   label: 'III', deploy: '09 Dec 2027', maturity: '10 Dec 2029', tenure: '2y+1d',  amount: 165000 },
+  { bank: 'SBI',   label: 'I',   deploy: '2026-06-09', maturity: '2028-06-10', tenure: '2y+1d',  amount: 150000 },
+  { bank: 'Slice', label: 'II',  deploy: '2026-09-08', maturity: '2028-03-09', tenure: '18m+1d', amount: 275000 },
+  { bank: 'ICICI', label: 'II',  deploy: '2026-12-09', maturity: '2028-12-10', tenure: '2y+1d',  amount: 165000 },
+  { bank: 'HDFC',  label: 'II',  deploy: '2027-03-08', maturity: '2028-09-09', tenure: '18m+1d', amount: 245000 },
+  { bank: 'SBI',   label: 'II',  deploy: '2027-06-09', maturity: '2029-06-10', tenure: '2y+1d',  amount: 155000 },
+  { bank: 'ICICI', label: 'III', deploy: '2027-09-08', maturity: '2029-09-10', tenure: '2y+1d',  amount: 170000 },
+  { bank: 'SBI',   label: 'III', deploy: '2027-12-09', maturity: '2029-12-10', tenure: '2y+1d',  amount: 165000 },
 ];
 
 // Mutual funds. Units / cost / casNav are AUTHORITATIVE from the CAS statement
