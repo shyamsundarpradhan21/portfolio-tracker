@@ -14,9 +14,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// Claude Sonnet 4.6 — best speed/intelligence balance. Isolated here so the
-// model is a one-line change.
-const MODEL = 'claude-sonnet-4-6';
+// Claude Opus 4.8 — most capable model, for the sharpest portfolio analysis.
+// Isolated here so the model is a one-line change.
+const MODEL = 'claude-opus-4-8';
 
 const SYSTEM_PROMPT =
   'You are a portfolio analyst. Return ONLY valid JSON. Each value 1-2 sentences, ' +
