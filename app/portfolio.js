@@ -377,12 +377,17 @@ export const ALLOC_COLORS = {
   us: '#F87171', mf: '#9B8AFB', elss: '#E85F8F',
 };
 
-// Retirement projections for 2055 (nominal future rupees, not in net worth).
-export const RETIREMENT = [
-  { key: 'conservative', corpus: '₹8.70Cr',  pension: '₹2.37L/mo', color: 'var(--blu)' },
-  { key: 'base case',    corpus: '₹11.20Cr', pension: '₹4.08L/mo', color: 'var(--acc)' },
-  { key: 'optimistic',   corpus: '₹14.80Cr', pension: '₹6.94L/mo', color: 'var(--grn)' },
-];
+// Forward net-worth projection inputs (rolling horizons — no fixed target year).
+// Compounds the live net worth + monthly contribution at each scenario rate.
+export const PROJECTION = {
+  monthly: 39000,        // total monthly contribution (SIP + recurring) — update as it changes
+  inflation: 0.06,       // for the "today's money" real-value deflator
+  scenarios: [
+    { key: 'cons', label: 'Conservative', rate: 0.09 },
+    { key: 'base', label: 'Base case',    rate: 0.12 },
+    { key: 'opt',  label: 'Optimistic',   rate: 0.15 },
+  ],
+};
 
 export const CAT_COLORS = {
   ETF: '#4F8FE8', Crypto: '#F59E0B', Bond: '#9090A8', Tech: '#8F7FE8',
