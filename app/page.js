@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
-  ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
+  ALGO, SWING, STATIC, RETIREMENT, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS,
 } from './portfolio';
@@ -231,17 +231,25 @@ function fmtDateObj(d) {
 }
 const isoOf = (d) => d.toISOString().slice(0, 10);
 
-// Map the US holding's asset `cat` to a GICS-style sector for the sector chart
-// (the Category column keeps the raw `cat`). Per-symbol overrides where the
-// asset type and sector differ.
+// Map the US holding's asset `cat` to a GICS sector for the sector chart (the
+// Category column keeps the raw `cat`). Names match Vested's sector split.
 const US_SECTOR = {
-  ETF: 'Diversified ETF', Crypto: 'Crypto & Mining', Bond: 'Fixed Income',
-  Commodity: 'Commodity', Tech: 'Technology', Financial: 'Financials',
+  ETF: 'Diversified ETF', Crypto: 'Crypto', Bond: 'Fixed Income',
+  Commodity: 'Commodity', Tech: 'Information Technology', Financial: 'Financials',
   Fintech: 'Financials', Consumer: 'Consumer Staples', Industrial: 'Industrials',
-  Healthcare: 'Healthcare',
+  Healthcare: 'Health Care',
 };
-const US_SECTOR_OVERRIDE = { SHW: 'Materials', DIS: 'Communication', GOOG: 'Communication', META: 'Communication' };
+const US_SECTOR_OVERRIDE = {
+  SHW: 'Materials', AMZN: 'Consumer Discretionary',
+  GOOG: 'Communication Services', META: 'Communication Services', DIS: 'Communication Services',
+};
 const usSectorOf = (s) => US_SECTOR_OVERRIDE[s.sym] || US_SECTOR[s.cat] || s.cat;
+
+// Shared categorical palette for ALL allocation visuals (Indian sector & cap,
+// US sector, MF market-cap) — uniform slice colours across tabs. These are
+// category hues, NOT the semantic green/red used for gains/losses.
+const SECTOR_PALETTE = ['var(--blu)', 'var(--pur)', 'var(--cyn)', 'var(--grn)', 'var(--pnk)', 'var(--acc)', '#7A8CA8'];
+const OTHERS_COLOR = 'var(--txt3)';
 
 // Market open/closed by the exchange's own wall clock — deterministic, unlike
 // Yahoo's marketState which lagged and mislabelled sessions. Mon–Fri only;
@@ -446,15 +454,17 @@ function AreaChart({ points, height = 240 }) {
   );
 }
 
+// Mirrors the Indian holdings columns, plus the extra Category column. USD.
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
-  { key: 'name', label: 'Name', num: false },
   { key: 'cat', label: 'Category', num: false },
-  { key: 'livePrice', label: 'Live $', num: true },
-  { key: 'liveVal', label: 'Value $', num: true },
-  { key: 'inv', label: 'Invested $', num: true },
-  { key: 'livePl', label: 'P&L $', num: true },
-  { key: 'livePct', label: 'P&L %', num: true },
+  { key: 'qty', label: 'Qty', num: true },
+  { key: 'cost', label: 'Avg cost', num: true },
+  { key: 'livePrice', label: 'LTP', num: true },
+  { key: 'inv', label: 'Invested', num: true },
+  { key: 'liveVal', label: 'Value', num: true },
+  { key: 'livePl', label: 'P&L', num: true },
+  { key: 'livePct', label: 'Return %', num: true },
   { key: 'dayPct', label: 'Day %', num: true },
 ];
 
@@ -1067,9 +1077,15 @@ export default function Page() {
     const value = usData.val;
     const secMap = {};
     usData.rows.forEach((r) => { if (r.liveVal != null) { const k = usSectorOf(r); secMap[k] = (secMap[k] || 0) + r.liveVal; } });
-    const sectors = Object.entries(secMap)
+    let sectors = Object.entries(secMap)
       .map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 }))
       .sort((a, b) => b.val - a.val);
+    // Top 6 + "All Others", like the Vested sector split.
+    if (sectors.length > 7) {
+      const head = sectors.slice(0, 6);
+      const restVal = sectors.slice(6).reduce((s, x) => s + x.val, 0);
+      sectors = [...head, { label: 'All Others', val: restVal, pct: value ? (restVal / value) * 100 : 0, other: true }];
+    }
     const valued = usData.rows.filter((r) => r.livePct != null);
     const winner = valued.length ? valued.reduce((a, b) => (b.livePct > a.livePct ? b : a)) : null;
     const laggard = valued.length ? valued.reduce((a, b) => (b.livePct < a.livePct ? b : a)) : null;
@@ -1411,8 +1427,8 @@ export default function Page() {
           { key: 'day', label: 'Day %', num: true },
         ];
         const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
-        const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--grn)' };
-        const secColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
+        const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' };
+        const secColors = SECTOR_PALETTE;
         return (
         <div>
           <InsightBanner text={insightsOn ? insights?.indian_stocks : null} loading={insightsOn && insightsFirstLoad} />
@@ -1522,11 +1538,24 @@ export default function Page() {
                   <span className="seg-val"><InrC n={c.val} /> · {c.pct.toFixed(0)}%</span>
                 </div>
               ))}
-              {inStats.topSector && (
-                <div className="sub" style={{ marginTop: 12 }}>
-                  Top sector: <strong style={{ color: 'var(--txt)' }}>{inStats.topSector.label}</strong> at {inStats.topSector.pct.toFixed(0)}% of the book.
+              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              <div className="g3">
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
+                  <div className="vsm grn">{inStats.winner ? inStats.winner.sym : '—'}</div>
+                  <div className={'sub ' + (inStats.winner ? cl(inStats.winner.pct) : '')}>{inStats.winner ? pctS(inStats.winner.pct) : 'live'}</div>
                 </div>
-              )}
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Drag</div>
+                  <div className="vsm red">{inStats.laggard ? inStats.laggard.sym : '—'}</div>
+                  <div className={'sub ' + (inStats.laggard ? cl(inStats.laggard.pct) : '')}>{inStats.laggard ? pctS(inStats.laggard.pct) : 'live'}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Largest</div>
+                  <div className="vsm">{inStats.topPos ? inStats.topPos.sym : '—'}</div>
+                  <div className="sub">{inStats.topPos && indian.val ? ((inStats.topPos.val / indian.val) * 100).toFixed(0) + '% of book' : 'by value'}</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2001,10 +2030,9 @@ export default function Page() {
         );
       })()}
 
-      {/* US STOCKS — live NYSE; mirrors the Indian tab structure (Vested SIP has
-          no dated tradebook, so category mix/movers replace XIRR/CAGR). */}
+      {/* US STOCKS — live NYSE; mirrors the Indian tab (XIRR/CAGR/benchmarks
+          from US_CASHFLOWS, sector allocation, sortable holdings + Category). */}
       {tab === 4 && (() => {
-        const catColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
         const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
         return (
         <div>
@@ -2097,7 +2125,7 @@ export default function Page() {
               {usStats.sectors.map((c, i) => (
                 <div key={c.label} className="seg-row">
                   <span className="seg-lbl" style={{ width: 120 }}>{c.label}</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: catColors[i % catColors.length] }} /></span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: c.other ? OTHERS_COLOR : SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} /></span>
                   <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
                 </div>
               ))}
@@ -2106,12 +2134,12 @@ export default function Page() {
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
                   <div className="vsm grn">{usStats.winner ? usStats.winner.sym : '—'}</div>
-                  <div className="sub">{usStats.winner ? pctS(usStats.winner.livePct) : 'live'}</div>
+                  <div className={'sub ' + (usStats.winner ? cl(usStats.winner.livePct) : '')}>{usStats.winner ? pctS(usStats.winner.livePct) : 'live'}</div>
                 </div>
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Drag</div>
                   <div className="vsm red">{usStats.laggard ? usStats.laggard.sym : '—'}</div>
-                  <div className="sub">{usStats.laggard ? pctS(usStats.laggard.livePct) : 'live'}</div>
+                  <div className={'sub ' + (usStats.laggard ? cl(usStats.laggard.livePct) : '')}>{usStats.laggard ? pctS(usStats.laggard.livePct) : 'live'}</div>
                 </div>
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Largest</div>
@@ -2145,25 +2173,20 @@ export default function Page() {
                 <tbody>
                   {usSorted.map((s) => (
                     <tr key={s.sym}>
-                      <td style={{ color: 'var(--txt)', fontWeight: 700 }} className="mono">
-                        <span style={{
-                          display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
-                          background: CAT_COLORS[s.cat] || 'var(--txt3)', marginRight: 6,
-                        }} />
+                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
                         {s.sym}
-                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
-                          {s.name} · {s.cat}
-                        </div>
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{s.name}</div>
                       </td>
-                      <td style={{ color: 'var(--txt2)', fontSize: 11 }}>{s.name}</td>
                       <td><span className="mf-pill" style={{ background: 'var(--sur2)', color: 'var(--txt2)' }}>{s.cat}</span></td>
+                      <td className="ra mut mono">{s.qty.toFixed(4)}</td>
+                      <td className="ra mut mono">${s.cost.toFixed(2)}</td>
                       <td className="ra mono">
                         {s.livePrice != null
                           ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}>${s.livePrice.toFixed(2)}</span>
                           : <Skel w={40} h={11} />}
                       </td>
+                      <td className="ra mono">${s.inv.toFixed(2)}</td>
                       <td className="ra mono">{s.liveVal != null ? usd(s.liveVal) : '—'}</td>
-                      <td className="ra mono mut">${s.inv.toFixed(2)}</td>
                       <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>
                         {s.livePl != null ? usd(s.livePl) : '—'}
                       </td>
@@ -2176,10 +2199,9 @@ export default function Page() {
                     </tr>
                   ))}
                   <tr className="tot">
-                    <td colSpan={3}>Total — {US.length} holdings</td>
-                    <td />
-                    <td className="ra">{usData.val ? '$' + usData.val.toFixed(2) : '…'}</td>
+                    <td colSpan={5}>Total — {US.length} holdings</td>
                     <td className="ra">${usData.inv.toFixed(2)}</td>
+                    <td className="ra">{usData.val ? '$' + usData.val.toFixed(2) : '…'}</td>
                     <td className={'ra ' + cl(usData.pl)}>{usData.val ? usd(usData.pl) : '…'}</td>
                     <td className={'ra ' + cl(usData.pl)}>{usData.val ? pctS(usData.pct) : '…'}</td>
                     <td />
@@ -2245,7 +2267,7 @@ export default function Page() {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {US_DIVIDENDS.top.map((t) => (
-                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: CAT_COLORS[(US.find((u) => u.sym === t.sym) || {}).cat] || 'var(--grn)' }} />{t.sym} ${t.amt.toFixed(2)}</span>
+                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{t.sym} <span className="grn" style={{ marginLeft: 2 }}>${t.amt.toFixed(2)}</span></span>
               ))}
             </div>
             <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source (shown above); creditable against Indian tax via the DTAA.</div>
@@ -2621,7 +2643,7 @@ function CFMemo({ title, lead, rows, foot }) {
           {rows.map((r) => (
             <div className="csm" key={r.label} style={r.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
               <div className="sub" style={{ margin: 0 }}>{r.label}</div>
-              <div className="vsm" style={{ marginTop: 4, color: r.color || 'var(--red)' }}><RsText>{r.val}</RsText></div>
+              <div className="vsm" style={{ marginTop: 4, color: r.color || 'var(--red)' }}><RsText>{String(r.val).replace(/^[+\-−]/, '')}</RsText></div>
               {r.sub && <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}><RsText>{r.sub}</RsText></div>}
             </div>
           ))}
