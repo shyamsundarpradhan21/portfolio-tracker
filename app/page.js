@@ -3,9 +3,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
-  ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
+  ALGO, SWING, STATIC, RETIREMENT, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
-  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS,
+  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS, US_REALIZED,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -255,13 +255,24 @@ const ETF_LOOKTHROUGH = {
   EFA:  { 'Financials': 0.21, 'Industrials': 0.17, 'Health Care': 0.12, 'Consumer Discretionary': 0.11, 'Information Technology': 0.09, 'Consumer Staples': 0.09, 'Materials': 0.07, 'Communication Services': 0.04, 'All Others': 0.10 },
   EEM:  { 'Information Technology': 0.24, 'Financials': 0.23, 'Consumer Discretionary': 0.13, 'Communication Services': 0.09, 'Materials': 0.07, 'Consumer Staples': 0.05, 'Industrials': 0.06, 'All Others': 0.13 },
 };
-// US market-cap buckets (direct stocks). ETFs/bonds/commodity sit in "Other".
+// US market-cap buckets (direct stocks) — Mega / Large / Mid / Small, matching
+// Vested's tiers. Bonds/commodity are excluded from the cap split (equity only).
 const US_CAP = {
-  AAPL: 'Large', MSFT: 'Large', NVDA: 'Large', AVGO: 'Large', GOOG: 'Large', AMZN: 'Large', META: 'Large',
-  TSM: 'Large', ASML: 'Large', JPM: 'Large', V: 'Large', MA: 'Large', KO: 'Large', PEP: 'Large', PG: 'Large',
-  ADBE: 'Large', CRM: 'Large', INTU: 'Large', MCO: 'Large', DE: 'Large', TMO: 'Large', COIN: 'Large', DIS: 'Large',
-  FTNT: 'Mid', CPRT: 'Mid', SHW: 'Mid', HOOD: 'Mid', PYPL: 'Mid', MARA: 'Mid', RIOT: 'Mid', IREN: 'Mid', CORZ: 'Mid', CLSK: 'Mid',
+  AAPL: 'Mega', MSFT: 'Mega', NVDA: 'Mega', GOOG: 'Mega', AMZN: 'Mega', META: 'Mega', AVGO: 'Mega',
+  TSM: 'Mega', JPM: 'Mega', V: 'Mega', MA: 'Mega', ASML: 'Mega', CRM: 'Mega', ADBE: 'Mega',
+  KO: 'Mega', PG: 'Mega', PEP: 'Mega', TMO: 'Mega',
+  MCO: 'Large', INTU: 'Large', DE: 'Large', DIS: 'Large', COIN: 'Large', HOOD: 'Large',
+  FTNT: 'Large', CPRT: 'Large', SHW: 'Large', PYPL: 'Large',
+  MARA: 'Mid', RIOT: 'Mid', CORZ: 'Mid', CLSK: 'Mid', IREN: 'Mid',
   HUT: 'Small', KEEL: 'Small', CIFR: 'Small', WULF: 'Small', APLD: 'Small', BTDR: 'Small', GLXY: 'Small',
+};
+// Cap look-through for equity ETFs (approx), so the split follows Vested.
+const ETF_CAP = {
+  QQQM: { Mega: 0.62, Large: 0.30, Mid: 0.08 },
+  IVV:  { Mega: 0.50, Large: 0.38, Mid: 0.12 },
+  SCHD: { Mega: 0.38, Large: 0.47, Mid: 0.15 },
+  EFA:  { Mega: 0.28, Large: 0.52, Mid: 0.20 },
+  EEM:  { Mega: 0.22, Large: 0.48, Mid: 0.25, Small: 0.05 },
 };
 
 // Shared categorical palette for ALL allocation visuals (Indian sector & cap,
@@ -1109,14 +1120,18 @@ export default function Page() {
       const restVal = value - head.reduce((s, x) => s + x.val, 0);
       sectors = [...head, { label: 'All Others', val: restVal, pct: value ? (restVal / value) * 100 : 0, other: true }];
     }
-    // Market-cap split (direct stocks; ETFs/bonds/commodity → Other).
-    const capMap = { Large: 0, Mid: 0, Small: 0, Other: 0 };
+    // Market-cap split (equity only, Vested tiers) — equity ETFs use cap look-
+    // through; bonds/commodity are excluded from the denominator.
+    const capMap = { Mega: 0, Large: 0, Mid: 0, Small: 0 };
+    let equityVal = 0;
     usData.rows.forEach((r) => {
       if (r.liveVal == null) return;
-      const k = US_CAP[r.sym] || (['ETF', 'Bond', 'Commodity'].includes(r.cat) ? 'Other' : 'Large');
-      capMap[k] += r.liveVal;
+      const lt = ETF_CAP[r.sym];
+      if (lt) { Object.entries(lt).forEach(([k, w]) => { capMap[k] += r.liveVal * w; }); equityVal += r.liveVal; }
+      else if (['Bond', 'Commodity', 'ETF'].includes(r.cat)) { /* non-equity / non-looked-through ETF: skip */ }
+      else { capMap[US_CAP[r.sym] || 'Large'] += r.liveVal; equityVal += r.liveVal; }
     });
-    const caps = ['Large', 'Mid', 'Small', 'Other'].map((label) => ({ label, val: capMap[label], pct: value ? (capMap[label] / value) * 100 : 0 }));
+    const caps = ['Mega', 'Large', 'Mid', 'Small'].map((label) => ({ label, val: capMap[label], pct: equityVal ? (capMap[label] / equityVal) * 100 : 0 }));
     const valued = usData.rows.filter((r) => r.livePct != null);
     const winner = valued.length ? valued.reduce((a, b) => (b.livePct > a.livePct ? b : a)) : null;
     const laggard = valued.length ? valued.reduce((a, b) => (b.livePct < a.livePct ? b : a)) : null;
@@ -2151,13 +2166,13 @@ export default function Page() {
               <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
               {usStats.caps.filter((c) => c.val > 0).map((c) => (
                 <div key={c.label} className="seg-row">
-                  <span className="seg-lbl" style={{ width: 120 }}>{c.label === 'Other' ? 'ETF / Other' : c.label + ' cap'}</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: c.label === 'Other' ? OTHERS_COLOR : { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' }[c.label] }} /></span>
+                  <span className="seg-lbl" style={{ width: 120 }}>{c.label} cap</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: { Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }[c.label] }} /></span>
                   <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
                 </div>
               ))}
               <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
-              <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginBottom: 10, lineHeight: 1.5 }}>Sectors use ETF look-through to align with Vested; direct stocks by GICS.</div>
+              <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginBottom: 10, lineHeight: 1.5 }}>Sector &amp; cap use ETF look-through to align with Vested (equity only); direct stocks by GICS.</div>
               <div className="g3">
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
@@ -2262,42 +2277,35 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)' }}>Ex-dates projected from each fund's payout history (last ex-date + typical interval) — confirm against the Nasdaq dividend calendar.</div>
           </div>
 
-          {/* Dividend income (from the Vested statement) */}
+          {/* Realized P&L (from the Vested trade ledger) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Dividend Income</div>
-                <div className="sub" style={{ margin: 0 }}>From the Vested statement · as of {US_DIVIDENDS.asOf}</div>
+                <div className="ctitle">Realized P&amp;L</div>
+                <div className="sub" style={{ margin: 0 }}>From the Vested trade ledger · avg-cost · as of {US_REALIZED.asOf}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
-                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+                <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
+                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
               </div>
             </div>
-            <div className="g4 sec">
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div>
-                <div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div>
-                <div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div>
-                <div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
-                <div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {US_DIVIDENDS.top.map((t) => (
-                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: CAT_COLORS[(US.find((u) => u.sym === t.sym) || {}).cat] || 'var(--grn)' }} />{t.sym} ${t.amt.toFixed(2)}</span>
+            <div className="g3 sec">
+              {US_REALIZED.fy.map((f) => (
+                <div className="mini" key={f.label}>
+                  <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
+                  <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
+                </div>
               ))}
             </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source (shown above); creditable against Indian tax via the DTAA.</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {US_REALIZED.winners.map((w) => (
+                <span key={w.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{w.sym} <span className="grn">${w.amt.toFixed(2)}</span></span>
+              ))}
+              {US_REALIZED.losers.map((l) => (
+                <span key={l.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--red)' }} />{l.sym} <span className="red">${Math.abs(l.amt).toFixed(2)}</span></span>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Average-cost realised gains/losses on US sells (gross of tax). Net dividend income is the summary card above.</div>
           </div>
 
           <CFMemo

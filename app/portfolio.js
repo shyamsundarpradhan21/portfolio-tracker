@@ -105,6 +105,18 @@ export const US_CASHFLOWS = [
   { date: '2026-02-17', invested: -140 }, // withdrawal
 ];
 
+// Realised US equity P&L from the Vested Trades ledger (average-cost method):
+// proceeds − running average cost on every sell. USD. Refresh monthly.
+export const US_REALIZED = {
+  asOf: '08 Jun 2026',
+  total: 171.38,
+  fy: [
+    { label: 'FY24-25', amt: -344.29 }, { label: 'FY25-26', amt: 506.97 }, { label: 'FY26-27', amt: 8.70 },
+  ],
+  winners: [{ sym: 'MSTR', amt: 345.52 }, { sym: 'HOOD', amt: 60.98 }, { sym: 'MU', amt: 36.44 }],
+  losers: [{ sym: 'NFLX', amt: -344.75 }, { sym: 'NOW', amt: -49.45 }, { sym: 'BTBT', amt: -21.02 }],
+};
+
 // US dividend income from the Vested/DriveWealth statement (Income sheet).
 // All-time and FY breakdowns in USD; tax is the withholding deducted at source.
 // Refresh from the monthly Vested export.
