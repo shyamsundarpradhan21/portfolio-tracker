@@ -630,7 +630,7 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
         .map((a) => `${a.sym} ${a.type === 'dividend' ? 'dividend ₹' + a.perShare + '/sh' : 'bonus ' + a.ratio} (ex ${a.ex})`).join('; ');
       return (
         `Invested ₹${Math.round(inInv)}, value ₹${Math.round(inVal)}, unrealized ${inPlPct != null ? (inPlPct >= 0 ? '+' : '') + inPlPct.toFixed(1) + '%' : '?'} (${sFull(inVal - inInv)}). ` +
-        `Realized trading P&L ${sFull(REALIZED_PNL)} booked since 2022 — churn has ${REALIZED_PNL < 0 ? 'UNDERperformed' : 'beaten'} buy-and-hold; surface this realized-vs-unrealized divergence as a strategy signal. ` +
+        `NOTE: these large-cap holdings are tracked but held OUTSIDE the personal ITR account, so they generate no personal realised P&L/CG; the only domestic equity gains in the ITR are small delivery STCG (FY25-26 +₹1,476). Do not frame these as the user's taxable trades. ` +
         `Portfolio XIRR ${inXirr != null ? (inXirr * 100).toFixed(1) + '%' : '?'} annualised. Benchmarks (same dated rupees): ${inBench || 'unresolved'}. ` +
         `Top sector ${inTopSectorEntry ? inTopSectorEntry[0] + ' ' + (inVal ? (inTopSectorEntry[1] / inVal * 100).toFixed(0) : '?') + '%' : '?'}; largest position ${inTopPos ? inTopPos.sym + ' ' + (inVal && inTopPos.val ? (inTopPos.val / inVal * 100).toFixed(0) : '?') + '%' : '?'}. ` +
         `Winner ${inWinner ? inWinner.sym + ' ' + (inWinner.plPct >= 0 ? '+' : '') + inWinner.plPct + '%' : '?'}; laggard ${inLaggard ? inLaggard.sym + ' ' + inLaggard.plPct + '%' : '?'}. ` +
@@ -1010,42 +1010,6 @@ export default function Page() {
 
   // Corporate actions: upcoming (ex ≥ today) populate the panel; executed go to
   // the footline. Impact is computed against the current held quantity.
-  const corp = useMemo(() => {
-    const today = isoOf(now);
-    const held = new Set(INDIAN.map((h) => h.sym));
-    const list = CORPORATE_ACTIONS.filter((a) => held.has(a.sym));
-    const upcoming = list
-      .filter((a) => a.ex >= today)
-      .sort((a, b) => (a.ex < b.ex ? -1 : 1))
-      .map((a) => {
-        const orig = INDIAN.find((x) => x.sym === a.sym);
-        const qty = orig ? orig.qty : 0;
-        const days = daysBetween(a.ex, now);
-        let impact;
-        if (a.type === 'dividend') {
-          impact = { kind: 'dividend', amount: a.perShare * qty };
-        } else {
-          const [num, den] = a.ratio.split(':').map(Number);
-          const bonus = Math.floor((qty * num) / den);
-          const newQty = qty + bonus;
-          impact = { kind: 'bonus', bonus, newQty, newCost: newQty ? (qty * orig.cost) / newQty : orig.cost };
-        }
-        return { ...a, days, qty, impact };
-      });
-    const executed = list.filter((a) => a.ex < today).sort((a, b) => (a.ex < b.ex ? 1 : -1));
-    // Dividend income on current holdings: ₹/share × held qty.
-    const dividends = list
-      .filter((a) => a.type === 'dividend')
-      .map((a) => {
-        const orig = INDIAN.find((x) => x.sym === a.sym);
-        const qty = orig ? orig.qty : 0;
-        return { ...a, qty, amount: a.perShare * qty, done: a.ex < today };
-      })
-      .sort((a, b) => (a.ex < b.ex ? 1 : -1));
-    const dividendTotal = dividends.reduce((s, d) => s + d.amount, 0);
-    return { upcoming, executed, dividends, dividendTotal };
-  }, [now]);
-
   // Day change in rupees: Σ qty·(ltp − prevClose), derived from each stock's
   // day % and live value (prevClose = val / (1 + day%/100)).
   const indianDay = useMemo(() => {
@@ -1498,9 +1462,9 @@ export default function Page() {
               <div className="sub">annualised · ~5mo window</div>
             </div>
             <div className="csm">
-              <div className="lbl">realized P&amp;L</div>
-              <div className={'vmd ' + cl(REALIZED_PNL)}><SInrF n={REALIZED_PNL} /></div>
-              <div className="sub">booked since 2022 · tax P&amp;L</div>
+              <div className="lbl">realized P&amp;L · YTD</div>
+              <div className={'vmd ' + cl(INDIAN_REALIZED.ytd)}><SInrF n={INDIAN_REALIZED.ytd} /></div>
+              <div className="sub">{INDIAN_REALIZED.ytdLabel} · overall below</div>
             </div>
           </div>
 
@@ -1647,76 +1611,35 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* Realized P&L (Zerodha tax P&L — ITR-verified) */}
+          {/* Realized P&L — overall (ITR-verified) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
-                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source} · {INDIAN_REALIZED.period}</div>
+                <div className="ctitle">Realized P&amp;L · Overall <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
+                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(INDIAN_REALIZED.total)}><SInrF n={INDIAN_REALIZED.total} /></div>
-                <div className="sub" style={{ margin: 0 }}>net booked</div>
+                <div className={'vmd ' + cl(INDIAN_REALIZED.overall)}><SInrF n={INDIAN_REALIZED.overall} /></div>
+                <div className="sub" style={{ margin: 0 }}>net booked, all years</div>
               </div>
             </div>
             <div className="g3 sec">
-              {INDIAN_REALIZED.breakdown.map((b) => (
+              {INDIAN_REALIZED.fy.map((b) => (
                 <div className="mini" key={b.label}>
                   <div className="lbl" style={{ marginBottom: 4 }}>{b.label}</div>
                   <div className={'vsm ' + cl(b.amt)}><SInrF n={b.amt} /></div>
                 </div>
               ))}
             </div>
-            <div className="sub" style={{ color: 'var(--txt3)' }}>Booked equity gains/losses from the Zerodha tax P&amp;L — the figures that flow into the ITR.</div>
-          </div>
-
-          {/* Dividend income */}
-          <div className="card sec">
-            <div className="fxc" style={{ marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div className="ctitle">Dividend Income</div>
-                <div className="sub" style={{ margin: 0 }}>Cash dividends on current holdings · ₹/share × qty</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="vmd grn"><InrF n={corp.dividendTotal} /></div>
-                <div className="sub" style={{ margin: 0 }}>declared total</div>
-              </div>
-            </div>
-            <div className="g4 sec">
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>credited</div>
-                <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.done).reduce((s, d) => s + d.amount, 0)} /></div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>upcoming</div>
-                <div className="vsm"><InrF n={corp.dividends.filter((d) => !d.done).reduce((s, d) => s + d.amount, 0)} /></div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
-                <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.ex >= '2026-04-01').reduce((s, d) => s + d.amount, 0)} /></div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 4 }}>payers</div>
-                <div className="vsm">{corp.dividends.length}</div>
-              </div>
-            </div>
-            {corp.dividends.length === 0 ? (
-              <div className="sub" style={{ color: 'var(--txt3)' }}>No dividends declared on current holdings.</div>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {corp.dividends.map((d, i) => (
-                  <span key={d.sym + d.ex} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{d.sym} <RsText>{inrFull(d.amount)}</RsText></span>
-                ))}
-              </div>
-            )}
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Indian dividends are tax-free in hand up to ₹10L/yr (taxed at slab above); credited ~30–45 days after ex-date.</div>
+            <div className="sub" style={{ color: 'var(--txt3)', lineHeight: 1.6 }}>{INDIAN_REALIZED.note}</div>
           </div>
 
           <CFMemo
             title="Equity Tax — FY25-26 Capital Gains"
+            lead="The large-cap holdings above are tracked but held outside your personal trading/ITR account. The only domestic equity capital gains in your ITR are small STT-paid delivery STCG (Fyers/Dhan), shown below; F&O is on the Algo tab, mutual-fund gains on the MF tab."
             rows={[
-              { label: 'FY25-26 domestic STCG', val: '+₹1,476', color: 'var(--grn)', sub: FY.cf.cg2526.indianStcgNote },
-              { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
+              { label: 'FY25-26 domestic delivery STCG', val: '₹1,476', color: 'var(--grn)', sub: '111A @20%, STT-paid · set off against current-yr F&O loss' },
+              { label: 'b/f STCG loss claimed (Sec 74)', val: '₹4,700', color: 'var(--grn)', sub: 'from AY2025-26, used this year · saves ~₹730' },
             ]}
           />
         </div>
@@ -2079,9 +2002,9 @@ export default function Page() {
               <div className="sub">annualised · USD · since Mar 2024</div>
             </div>
             <div className="csm">
-              <div className="lbl">realized P&amp;L</div>
-              <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
-              <div className="sub">avg-cost · computed</div>
+              <div className="lbl">realized P&amp;L · YTD</div>
+              <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}>${Math.abs(US_REALIZED.ytdUsd).toFixed(2)}</div>
+              <div className="sub">{US_REALIZED.ytdLabel} · computed · overall below</div>
             </div>
           </div>
 
@@ -2219,35 +2142,27 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
           </div>
 
-          {/* Realized P&L (from the Vested trade ledger) */}
+          {/* Realized P&L — overall (ITR-verified foreign STCG) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
-                <div className="sub" style={{ margin: 0 }}>{US_REALIZED.source} · as of {US_REALIZED.asOf}</div>
+                <div className="ctitle">Realized P&amp;L · Overall <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
+                <div className="sub" style={{ margin: 0 }}>{US_REALIZED.source}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
-                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
+                <div className={'vmd ' + cl(US_REALIZED.overall)}><SInrF n={US_REALIZED.overall} /></div>
+                <div className="sub" style={{ margin: 0 }}>foreign STCG, slab rate</div>
               </div>
             </div>
             <div className="g3 sec">
               {US_REALIZED.fy.map((f) => (
                 <div className="mini" key={f.label}>
                   <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
-                  <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
+                  <div className={'vsm ' + cl(f.amt)}><SInrF n={f.amt} /></div>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {US_REALIZED.winners.map((w) => (
-                <span key={w.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{w.sym} <span className="grn">${w.amt.toFixed(2)}</span></span>
-              ))}
-              {US_REALIZED.losers.map((l) => (
-                <span key={l.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--red)' }} />{l.sym} <span className="red">${Math.abs(l.amt).toFixed(2)}</span></span>
-              ))}
-            </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Average-cost realised gains/losses computed from the Vested trade ledger — an estimate, not a filed tax figure (Indian foreign-CG rules differ; per-lot FIFO in INR). Upload your foreign capital-gains tax statement to make this ITR-verified.</div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Filed foreign short-term capital gain on US shares (held &lt;24m, taxed at slab — no 111A). The YTD card above is the current-FY figure computed live from the trade ledger until that year is filed.</div>
           </div>
 
           {/* Dividend income (from the Vested statement) */}
