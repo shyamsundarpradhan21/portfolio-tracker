@@ -1611,15 +1611,15 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* Realized P&L — overall, as on date */}
+          {/* Realized P&L — overall, as on date (Zerodha tradebook) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <div className="ctitle">Realized P&amp;L · Overall</div>
-                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source}</div>
+                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source} · as on {INDIAN_REALIZED.asOf}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(INDIAN_REALIZED.overall)}><SInrF n={INDIAN_REALIZED.overall} /></div>
+                <div className={'vmd ' + cl(INDIAN_REALIZED.total)}><SInrF n={INDIAN_REALIZED.total} /></div>
                 <div className="sub" style={{ margin: 0 }}>net booked, all years</div>
               </div>
             </div>
@@ -1631,7 +1631,12 @@ export default function Page() {
                 </div>
               ))}
             </div>
-            <div className="sub" style={{ color: 'var(--txt3)', lineHeight: 1.6 }}>{INDIAN_REALIZED.note}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[...INDIAN_REALIZED.winners, ...INDIAN_REALIZED.losers].map((m, i) => (
+                <span key={m.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{m.sym} <span className={cl(m.amt)}><SInrF n={m.amt} /></span></span>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Avg-cost realised gains/losses booked across all exits (overall, as on date). The filed ITR capital-gains figure is in the card below.</div>
           </div>
 
           <CFMemo
@@ -1966,45 +1971,45 @@ export default function Page() {
             <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` }} />
           </div>
 
-          {/* Summary cards */}
+          {/* Summary cards — USD headline, subtle ₹ equivalent in the sub-line */}
           <div className="g3 sec">
             <div className="csm">
-              <div className="lbl">cost basis</div>
+              <div className="lbl">Invested (cost)</div>
               <div className="vmd">${usData.inv.toFixed(2)}</div>
-              <div className="sub">{US.length} holdings · fractional</div>
+              <div className="sub">≈<span className="mut"><InrC n={usData.inv * fxRate} /></span> · {US.length} holdings</div>
             </div>
             <div className="csm">
-              <div className="lbl">current value</div>
+              <div className="lbl">Current value</div>
               <div className="vmd">{usData.val ? '$' + usData.val.toFixed(2) : <Skel w={90} h={20} />}</div>
-              <div className="sub">{usData.val && usdInr ? <><InrC n={ov.usInr} /> @ <Rs />{usdInr.toFixed(2)}</> : 'live NYSE'}</div>
+              <div className="sub">{usData.val && usdInr ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{usdInr.toFixed(2)}</> : 'live NYSE'}</div>
             </div>
             <div className="csm">
-              <div className="lbl">unrealized P&amp;L</div>
+              <div className="lbl">Unrealized P&amp;L</div>
               <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>
                 {usData.val ? usd(usData.pl) : <Skel w={80} h={20} />}
               </div>
-              <div className="sub">{usData.val ? `${pctS(usData.pct)} · value − cost` : 'value − cost'}</div>
+              <div className="sub">{usData.val ? <>{pctS(usData.pct)} · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
             </div>
           </div>
           <div className="g3 sec">
             <div className="csm">
-              <div className="lbl">day change</div>
+              <div className="lbl">Day change</div>
               <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>
                 {usData.val ? usd(usStats.dayPl) : <Skel w={80} h={20} />}
               </div>
-              <div className="sub">{usData.val ? `${pctS(usStats.dayPct)} since prev close` : 'intraday move'}</div>
+              <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'since prev close'}</div>
             </div>
             <div className="csm">
-              <div className="lbl">CAGR</div>
+              <div className="lbl">CAGR (annualised)</div>
               <div className={'vmd ' + (usStats.cagr != null ? cl(usStats.cagr) : '')}>
                 {usStats.cagr != null ? fmtX(usStats.cagr) : <Skel w={70} h={20} />}
               </div>
-              <div className="sub">annualised · USD · since Mar 2024</div>
+              <div className="sub">money-weighted · since Mar 2024</div>
             </div>
             <div className="csm">
-              <div className="lbl">realized P&amp;L · YTD</div>
+              <div className="lbl">Realized P&amp;L (YTD)</div>
               <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}>${Math.abs(US_REALIZED.ytdUsd).toFixed(2)}</div>
-              <div className="sub">{US_REALIZED.ytdLabel} · computed · overall below</div>
+              <div className="sub">{US_REALIZED.ytdLabel} · ≈<span className="mut"><InrC n={Math.abs(US_REALIZED.ytdUsd) * fxRate} /></span> · overall below</div>
             </div>
           </div>
 
@@ -2012,7 +2017,7 @@ export default function Page() {
           <div className="g2 sec">
             <div className="card">
               <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
-              <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} deployed into each instead.</div>
+              <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
               <table className="tbl">
                 <thead>
                   <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
@@ -2148,7 +2153,7 @@ export default function Page() {
             <div className="card">
               <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div className="ctitle">Realized P&amp;L <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
+                  <div className="ctitle">Realized P&amp;L</div>
                   <div className="sub" style={{ margin: 0 }}>avg-cost · as on {US_REALIZED.asOf}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
