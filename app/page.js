@@ -5,7 +5,7 @@ import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
-  US_CASHFLOWS, US_BENCHMARKS,
+  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -86,10 +86,14 @@ function deriveMf(mfNav) {
     arbitrage: v('arb'),
     debt: 0,
   };
+  // Categorise each fund wholly by its stated mandate — no fabricated splits.
+  // Flexi Cap and ELSS are genuinely multi-cap, so they get their own "Multi"
+  // bucket rather than a guessed 70/20/10 / 50-50 allocation across caps.
   const cap = {
-    large: v('nifty50') + v('next50') + v('elss') * 0.5 + v('flexi') * 0.70,
-    mid: v('midcap') + v('elss') * 0.5 + v('flexi') * 0.20,
-    small: v('small') + v('flexi') * 0.10,
+    large: v('nifty50') + v('next50'),
+    mid: v('midcap'),
+    small: v('small'),
+    multi: v('flexi') + v('elss'),
     hedged: v('arb'),
   };
   return {
@@ -223,6 +227,26 @@ function fmtDateObj(d) {
   return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`;
 }
 const isoOf = (d) => d.toISOString().slice(0, 10);
+
+// Market open/closed by the exchange's own wall clock — deterministic, unlike
+// Yahoo's marketState which lagged and mislabelled sessions. Mon–Fri only;
+// holidays are not modelled (acceptable for a personal tracker).
+function marketOpenByClock(timeZone, startMin, endMin) {
+  try {
+    const p = new Intl.DateTimeFormat('en-US', {
+      timeZone, weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const get = (t) => p.find((x) => x.type === t)?.value;
+    const wd = get('weekday');
+    if (wd === 'Sat' || wd === 'Sun') return false;
+    let hh = parseInt(get('hour'), 10); if (hh === 24) hh = 0;
+    const mins = hh * 60 + parseInt(get('minute'), 10);
+    return mins >= startMin && mins < endMin;
+  } catch { return null; }
+}
+// NSE 09:15–15:30 IST · NYSE 09:30–16:00 ET
+const nseOpenNow = () => marketOpenByClock('Asia/Kolkata', 555, 930);
+const nyseOpenNow = () => marketOpenByClock('America/New_York', 570, 960);
 const daysBetween = (fromIso, now) =>
   Math.ceil((new Date(fromIso).getTime() - now.getTime()) / DAY_MS);
 
@@ -292,9 +316,11 @@ function benchCounterfactual(series, transactions, now) {
   const value = units * latest;
   cfs.push({ date: now, amount: value });
   const x = xirr(cfs);
+  const c = weightedCagr(transactions, value, now);
   return {
     value,
     xirr: x != null ? x * 100 : null,
+    cagr: c.cagr,
     ret: invested ? ((value - invested) / invested) * 100 : null,
   };
 }
@@ -504,7 +530,7 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
   const mfSorted = [...mfd.rows].sort((a, b) => b.value - a.value);
   const largest = mfSorted[0];
   const drag = [...mfd.rows].sort((a, b) => a.ret - b.ret)[0];
-  const capTotal = mfd.cap.large + mfd.cap.mid + mfd.cap.small + mfd.cap.hedged || 1;
+  const capTotal = mfd.cap.large + mfd.cap.mid + mfd.cap.small + mfd.cap.multi + mfd.cap.hedged || 1;
   const mfSignal = {
     invested: Math.round(mfd.totCost),
     value: Math.round(mfd.totVal),
@@ -516,7 +542,7 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
     drag: drag ? `${drag.name} ${r2(drag.ret)}%` : null,
     largest: largest ? `${largest.name} (${r2(largest.share)}% of MF)` : null,
     mix: `equity ${r2((mfd.alloc.equity / (mfd.totVal || 1)) * 100)}%, arbitrage ${r2((mfd.alloc.arbitrage / (mfd.totVal || 1)) * 100)}%`,
-    capTilt: `large ${r2((mfd.cap.large / capTotal) * 100)}%, mid ${r2((mfd.cap.mid / capTotal) * 100)}%, small ${r2((mfd.cap.small / capTotal) * 100)}%, hedged ${r2((mfd.cap.hedged / capTotal) * 100)}%`,
+    capTilt: `large ${r2((mfd.cap.large / capTotal) * 100)}%, mid ${r2((mfd.cap.mid / capTotal) * 100)}%, small ${r2((mfd.cap.small / capTotal) * 100)}%, multi/flexi ${r2((mfd.cap.multi / capTotal) * 100)}%, hedged ${r2((mfd.cap.hedged / capTotal) * 100)}%`,
     sip: '₹20K/mo JioBlackRock SIP registered, first installment pending; seeded ₹20K (13-Jan-26) + ₹30K (20-Mar-26); ELSS 3-yr lock-in to 26-Feb-2027',
     caveats:
       'Short ~4-month window for the JioBlackRock contributions — XIRR is highly sensitive and not indicative of skill. ' +
@@ -609,6 +635,15 @@ export default function Page() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Market open/closed driven by the exchange clock, refreshed each minute — so
+  // the pills are correct even on a cached load and flip exactly at the bell.
+  useEffect(() => {
+    const upd = () => setMarkets({ nse: nseOpenNow(), nyse: nyseOpenNow() });
+    upd();
+    const id = setInterval(upd, 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -757,15 +792,8 @@ export default function Page() {
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
 
-      // market state from a representative quote of each exchange
-      const nseQ = Object.entries(inData).find(
-        ([k, v]) => k.endsWith('.NS') && v.state,
-      )?.[1];
-      const nyseQ = Object.values(usData).find((v) => v.state);
-      setMarkets({
-        nse: nseQ ? nseQ.state === 'REGULAR' : null,
-        nyse: nyseQ ? nyseQ.state === 'REGULAR' : null,
-      });
+      // Market open/closed is derived from the exchange clock (see the effect
+      // above), not from Yahoo's marketState — so it stays correct here.
 
       const t = new Date().toLocaleTimeString('en-IN', {
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -916,7 +944,7 @@ export default function Page() {
     };
     const benchmarks = INDIAN_BENCHMARKS.map((b) => {
       const cf = cfFor(b);
-      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
+      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, cagr: cf ? cf.cagr : null, ret: cf ? cf.ret : null };
     });
     return {
       value, totalInvested, portXirr, cagr, years, sectors, caps,
@@ -950,7 +978,17 @@ export default function Page() {
         return { ...a, days, qty, impact };
       });
     const executed = list.filter((a) => a.ex < today).sort((a, b) => (a.ex < b.ex ? 1 : -1));
-    return { upcoming, executed };
+    // Dividend income on current holdings: ₹/share × held qty.
+    const dividends = list
+      .filter((a) => a.type === 'dividend')
+      .map((a) => {
+        const orig = INDIAN.find((x) => x.sym === a.sym);
+        const qty = orig ? orig.qty : 0;
+        return { ...a, qty, amount: a.perShare * qty, done: a.ex < today };
+      })
+      .sort((a, b) => (a.ex < b.ex ? 1 : -1));
+    const dividendTotal = dividends.reduce((s, d) => s + d.amount, 0);
+    return { upcoming, executed, dividends, dividendTotal };
   }, [now]);
 
   // Day change in rupees: Σ qty·(ltp − prevClose), derived from each stock's
@@ -1045,7 +1083,7 @@ export default function Page() {
     };
     const benchmarks = US_BENCHMARKS.map((b) => {
       const cf = cfFor(b);
-      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
+      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, cagr: cf ? cf.cagr : null, ret: cf ? cf.ret : null };
     });
     return {
       value, cats, winner, laggard, topPos, topCat: cats[0] || null,
@@ -1381,14 +1419,14 @@ export default function Page() {
               <table className="tbl">
                 <thead>
                   <tr>
-                    <th>Instrument</th><th className="ra">XIRR</th><th className="ra">Return</th><th className="ra">Value</th>
+                    <th>Instrument</th><th className="ra">XIRR</th><th className="ra">CAGR</th><th className="ra">Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
                     <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{fmtX(inStats.portXirr)}</td>
-                    <td className={'ra mono ' + (indian.valued ? cl(indian.pct) : 'mut')}>{indian.valued ? pctS(indian.pct) : '—'}</td>
+                    <td className={'ra mono ' + (inStats.cagr != null ? cl(inStats.cagr) : 'mut')}>{fmtX(inStats.cagr)}</td>
                     <td className="ra mono">{indian.valued ? <InrC n={indian.val} /> : '—'}</td>
                   </tr>
                   {inStats.benchmarks.map((b) => (
@@ -1400,7 +1438,7 @@ export default function Page() {
                         </span>
                       </td>
                       <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
-                      <td className={'ra mono ' + (b.ret != null ? cl(b.ret) : 'mut')}>{b.ret != null ? pctS(b.ret) : '—'}</td>
+                      <td className={'ra mono ' + (b.cagr != null ? cl(b.cagr) : 'mut')}>{fmtX(b.cagr)}</td>
                       <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
                     </tr>
                   ))}
@@ -1540,6 +1578,36 @@ export default function Page() {
                 Recently executed — {corp.executed.map((a) => `${a.sym} ${a.type === 'dividend' ? `dividend ₹${a.perShare}/sh` : `bonus ${a.ratio}`} (ex ${fmtNavDate(a.ex)})`).join(' · ')} · dividends credit ~30–45 days after ex-date.
               </div>
             )}
+          </div>
+
+          {/* Dividend income */}
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <div className="ctitle">Dividend Income</div>
+                <div className="sub" style={{ margin: 0 }}>Cash dividends on current holdings · ₹/share × qty</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="vmd grn"><InrF n={corp.dividendTotal} /></div>
+                <div className="sub" style={{ margin: 0 }}>declared total</div>
+              </div>
+            </div>
+            {corp.dividends.length === 0 ? (
+              <div className="sub" style={{ color: 'var(--txt3)' }}>No dividends declared on current holdings.</div>
+            ) : corp.dividends.map((d) => (
+              <div className="ca-row" key={d.sym + d.ex}>
+                <span className="ca-ico">💵</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>{d.name} <span className="mut" style={{ fontWeight: 400 }}>· {d.sym}</span></div>
+                  <div className="sub" style={{ margin: 0 }}>₹{d.perShare}/sh × {d.qty} · ex {fmtNavDate(d.ex)}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div className="mono grn"><InrF n={d.amount} /></div>
+                  <span className="badge" style={{ fontSize: 9, background: d.done ? 'var(--grn-bg)' : 'var(--acc-bg)', color: d.done ? 'var(--grn)' : 'var(--acc)' }}>{d.done ? 'CREDITED' : 'UPCOMING'}</span>
+                </div>
+              </div>
+            ))}
+            <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)' }}>Indian dividends are tax-free in hand up to ₹10L/yr (taxed at slab above); credited ~30–45 days after ex-date.</div>
           </div>
 
           <CFMemo
@@ -1682,10 +1750,11 @@ export default function Page() {
           { label: 'Debt',      val: mf.alloc.debt,      color: 'var(--txt3)' },
         ];
         const capSegs = [
-          { label: 'Large',  val: mf.cap.large,  color: 'var(--blu)' },
-          { label: 'Mid',    val: mf.cap.mid,    color: 'var(--pur)' },
-          { label: 'Small',  val: mf.cap.small,  color: 'var(--grn)' },
-          { label: 'Hedged', val: mf.cap.hedged, color: 'var(--acc)' },
+          { label: 'Large',       val: mf.cap.large,  color: 'var(--blu)' },
+          { label: 'Mid',         val: mf.cap.mid,    color: 'var(--pur)' },
+          { label: 'Small',       val: mf.cap.small,  color: 'var(--grn)' },
+          { label: 'Multi/Flexi', val: mf.cap.multi,  color: 'var(--pnk)' },
+          { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
         ];
         const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
         const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
@@ -1779,7 +1848,7 @@ export default function Page() {
             {/* Market cap */}
             <div className="card">
               <div className="ctitle" style={{ marginBottom: 4 }}>Market Cap</div>
-              <div className="sub" style={{ marginBottom: 12 }}>Flexi Cap split is estimated 70 / 20 / 10; the rest is mandate-fixed.</div>
+              <div className="sub" style={{ marginBottom: 12 }}>Each fund is bucketed wholly by its mandate; Flexi Cap &amp; ELSS are multi-cap (no fabricated cap split).</div>
               <div className="mf-stack">
                 {capSegs.map((s) => (
                   <span key={s.label} style={{ width: (s.val / capTot) * 100 + '%', background: s.color }} />
@@ -1866,7 +1935,6 @@ export default function Page() {
       {tab === 4 && (() => {
         const catColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
         const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
-        const usRetCap = usStats.netInvested ? ((usData.val - usStats.netInvested) / usStats.netInvested) * 100 : 0;
         return (
         <div>
           <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
@@ -1923,13 +1991,13 @@ export default function Page() {
               <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} deployed into each instead.</div>
               <table className="tbl">
                 <thead>
-                  <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Return</th><th className="ra">Value</th></tr>
+                  <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">CAGR</th><th className="ra">Value</th></tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
                     <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{fmtX(usStats.xirr)}</td>
-                    <td className={'ra mono ' + (usData.val ? cl(usRetCap) : 'mut')}>{usData.val ? pctS(usRetCap) : '—'}</td>
+                    <td className={'ra mono ' + (usStats.cagr != null ? cl(usStats.cagr) : 'mut')}>{fmtX(usStats.cagr)}</td>
                     <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
                   </tr>
                   {usStats.benchmarks.map((b) => (
@@ -1938,7 +2006,7 @@ export default function Page() {
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
                       </span></td>
                       <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
-                      <td className={'ra mono ' + (b.ret != null ? cl(b.ret) : 'mut')}>{b.ret != null ? pctS(b.ret) : '—'}</td>
+                      <td className={'ra mono ' + (b.cagr != null ? cl(b.cagr) : 'mut')}>{fmtX(b.cagr)}</td>
                       <td className="ra mono mut">{b.value != null ? '$' + b.value.toFixed(0) : '—'}</td>
                     </tr>
                   ))}
@@ -2048,6 +2116,44 @@ export default function Page() {
               </table>
             </div>
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
+          </div>
+
+          {/* Dividend income (from the Vested statement) */}
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <div className="ctitle">Dividend Income</div>
+                <div className="sub" style={{ margin: 0 }}>From the Vested statement · as of {US_DIVIDENDS.asOf}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+              </div>
+            </div>
+            <div className="g4 sec">
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div>
+                <div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div>
+              </div>
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div>
+                <div className="vsm red">−${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
+              </div>
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div>
+                <div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div>
+              </div>
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
+                <div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {US_DIVIDENDS.top.map((t) => (
+                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: CAT_COLORS[(US.find((u) => u.sym === t.sym) || {}).cat] || 'var(--grn)' }} />{t.sym} ${t.amt.toFixed(2)}</span>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source (shown above); creditable against Indian tax via the DTAA.</div>
           </div>
 
           <CFMemo
