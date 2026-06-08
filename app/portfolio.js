@@ -105,6 +105,24 @@ export const US_CASHFLOWS = [
   { date: '2026-02-17', invested: -140 }, // withdrawal
 ];
 
+// US dividend income from the Vested/DriveWealth statement (Income sheet).
+// All-time and FY breakdowns in USD; tax is the withholding deducted at source.
+// Refresh from the monthly Vested export.
+export const US_DIVIDENDS = {
+  asOf: '08 Jun 2026',
+  grossAllTime: 61.52,
+  taxAllTime: 15.89,
+  netAllTime: 45.63,
+  last12Gross: 43.21,
+  top: [
+    { sym: 'SCHD', amt: 26.34 }, { sym: 'BITO', amt: 5.43 }, { sym: 'EFA', amt: 3.85 },
+    { sym: 'QQQM', amt: 3.79 }, { sym: 'IUSB', amt: 3.03 }, { sym: 'IVV', amt: 2.64 },
+  ],
+  fy: [
+    { label: 'FY24-25', amt: 13.02 }, { label: 'FY25-26', amt: 45.46 }, { label: 'FY26-27', amt: 2.86 },
+  ],
+};
+
 // US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
 // market / growth tilt / low-correlation gold. Yahoo carries these reliably.
 export const US_BENCHMARKS = [
@@ -176,7 +194,7 @@ export const FDS = [
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
-  algo: 604000,        // active algo trading capital deployed
+  algo: 730000,        // own algo capital deployed = S01 ₹3.9L + S02 ₹3.4L (reconciled with the Algo tab)
   loan: 750000,        // personal loan liability
   // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
   // FD value (principal + accrued interest) is now computed live — see deriveFds.
