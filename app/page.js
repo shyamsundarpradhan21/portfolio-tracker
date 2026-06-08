@@ -4,8 +4,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, ALLOC_COLORS,
-  TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
-  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS, US_REALIZED,
+  TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_REALIZED, INDIAN_BENCHMARKS,
+  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -1171,26 +1171,6 @@ export default function Page() {
     };
   }, [usData, hist, now]);
 
-  // US corporate actions (upcoming) on current holdings — mirrors the Indian panel.
-  const corpUS = useMemo(() => {
-    const today = isoOf(now);
-    const held = new Set(US.map((h) => h.sym));
-    const list = US_CORP_ACTIONS.filter((a) => held.has(a.sym));
-    const upcoming = list
-      .filter((a) => a.ex >= today)
-      .sort((a, b) => (a.ex < b.ex ? -1 : 1))
-      .map((a) => {
-        const h = US.find((x) => x.sym === a.sym);
-        const qty = h ? h.qty : 0;
-        const days = daysBetween(a.ex, now);
-        const impact = a.type === 'dividend'
-          ? { kind: 'dividend', amount: a.perShare * qty }
-          : { kind: 'split', ratio: a.ratio };
-        return { ...a, days, qty, impact };
-      });
-    return { upcoming };
-  }, [now]);
-
   // ─── derived: S02 swing book (live NSE) ───
   const swing = useMemo(() => {
     let inv = 0, val = 0, valued = true;
@@ -1667,41 +1647,27 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* SECTION 4 — corporate actions window */}
+          {/* Realized P&L (Zerodha tax P&L — ITR-verified) */}
           <div className="card sec">
-            <div className="ctitle" style={{ marginBottom: 4 }}>Corporate Actions</div>
-            <div className="sub" style={{ marginBottom: 6 }}>Upcoming actions on current holdings, soonest first.</div>
-            {corp.upcoming.length === 0 && (
-              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions on current holdings.</div>
-            )}
-            {corp.upcoming.map((a) => (
-              <div className="ca-row" key={a.sym + a.ex}>
-                <span className="ca-ico">{a.type === 'bonus' ? '🎁' : '💵'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>
-                    {a.name} <span className="mut" style={{ fontWeight: 400 }}>· {a.sym}</span>
-                  </div>
-                  <div className="sub" style={{ margin: 0 }}>
-                    {a.type === 'bonus' ? `Bonus ${a.ratio}` : `Dividend ₹${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  {a.impact.kind === 'dividend'
-                    ? <div className="mono grn"><SInrF n={a.impact.amount} /></div>
-                    : <div className="mono" style={{ color: 'var(--txt)' }}>+{a.impact.bonus} sh → {a.impact.newQty} @ <InrF n={a.impact.newCost} /></div>}
-                  <div style={{ marginTop: 4 }}>
-                    <span className="badge ba" style={{ fontSize: 9 }}>
-                      {a.days <= 0 ? 'TODAY' : a.days === 1 ? 'IN 1 DAY' : `IN ${a.days} DAYS`}
-                    </span>
-                  </div>
-                </div>
+            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <div className="ctitle">Realized P&amp;L <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
+                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source} · {INDIAN_REALIZED.period}</div>
               </div>
-            ))}
-            {corp.executed.length > 0 && (
-              <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)', color: 'var(--txt3)', lineHeight: 1.6 }}>
-                Recently executed — {corp.executed.map((a) => `${a.sym} ${a.type === 'dividend' ? `dividend ₹${a.perShare}/sh` : `bonus ${a.ratio}`} (ex ${fmtNavDate(a.ex)})`).join(' · ')} · dividends credit ~30–45 days after ex-date.
+              <div style={{ textAlign: 'right' }}>
+                <div className={'vmd ' + cl(INDIAN_REALIZED.total)}><SInrF n={INDIAN_REALIZED.total} /></div>
+                <div className="sub" style={{ margin: 0 }}>net booked</div>
               </div>
-            )}
+            </div>
+            <div className="g3 sec">
+              {INDIAN_REALIZED.breakdown.map((b) => (
+                <div className="mini" key={b.label}>
+                  <div className="lbl" style={{ marginBottom: 4 }}>{b.label}</div>
+                  <div className={'vsm ' + cl(b.amt)}><SInrF n={b.amt} /></div>
+                </div>
+              ))}
+            </div>
+            <div className="sub" style={{ color: 'var(--txt3)' }}>Booked equity gains/losses from the Zerodha tax P&amp;L — the figures that flow into the ITR.</div>
           </div>
 
           {/* Dividend income */}
@@ -2113,9 +2079,9 @@ export default function Page() {
               <div className="sub">annualised · USD · since Mar 2024</div>
             </div>
             <div className="csm">
-              <div className="lbl">dividend income</div>
-              <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
-              <div className="sub">net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+              <div className="lbl">realized P&amp;L</div>
+              <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
+              <div className="sub">avg-cost · computed</div>
             </div>
           </div>
 
@@ -2253,36 +2219,12 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
           </div>
 
-          {/* Corporate actions (upcoming) */}
-          <div className="card sec">
-            <div className="ctitle" style={{ marginBottom: 4 }}>Corporate Actions</div>
-            <div className="sub" style={{ marginBottom: 6 }}>Upcoming dividends &amp; splits on current holdings, soonest first.</div>
-            {corpUS.upcoming.length === 0 ? (
-              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions logged.</div>
-            ) : corpUS.upcoming.map((a) => (
-              <div className="ca-row" key={a.sym + a.ex}>
-                <span className="ca-ico">{a.type === 'split' ? '🔀' : '💵'}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>{a.name} <span className="mut" style={{ fontWeight: 400 }}>· {a.sym}</span></div>
-                  <div className="sub" style={{ margin: 0 }}>{a.type === 'split' ? `Split ${a.ratio}` : `Dividend ~$${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}{a.projected ? ' · projected' : ''}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  {a.impact.kind === 'dividend' && <div className="mono grn">${a.impact.amount.toFixed(2)}</div>}
-                  <div style={{ marginTop: 4 }}>
-                    <span className="badge ba" style={{ fontSize: 9 }}>{a.days <= 0 ? 'TODAY' : a.days === 1 ? 'IN 1 DAY' : `IN ${a.days} DAYS`}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-            <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)' }}>Ex-dates projected from each fund's payout history (last ex-date + typical interval) — confirm against the Nasdaq dividend calendar.</div>
-          </div>
-
           {/* Realized P&L (from the Vested trade ledger) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L</div>
-                <div className="sub" style={{ margin: 0 }}>From the Vested trade ledger · avg-cost · as of {US_REALIZED.asOf}</div>
+                <div className="ctitle">Realized P&amp;L <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
+                <div className="sub" style={{ margin: 0 }}>{US_REALIZED.source} · as of {US_REALIZED.asOf}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
@@ -2305,7 +2247,33 @@ export default function Page() {
                 <span key={l.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--red)' }} />{l.sym} <span className="red">${Math.abs(l.amt).toFixed(2)}</span></span>
               ))}
             </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Average-cost realised gains/losses on US sells (gross of tax). Net dividend income is the summary card above.</div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Average-cost realised gains/losses computed from the Vested trade ledger — an estimate, not a filed tax figure (Indian foreign-CG rules differ; per-lot FIFO in INR). Upload your foreign capital-gains tax statement to make this ITR-verified.</div>
+          </div>
+
+          {/* Dividend income (from the Vested statement) */}
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <div className="ctitle">Dividend Income</div>
+                <div className="sub" style={{ margin: 0 }}>From the Vested statement · as of {US_DIVIDENDS.asOf}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+              </div>
+            </div>
+            <div className="g4 sec">
+              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div><div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div></div>
+              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div><div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div></div>
+              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div><div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div></div>
+              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div><div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div></div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {US_DIVIDENDS.top.map((t, i) => (
+                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} ${t.amt.toFixed(2)}</span>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source; creditable against Indian tax via the DTAA.</div>
           </div>
 
           <CFMemo

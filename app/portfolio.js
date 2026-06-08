@@ -50,6 +50,20 @@ export const TRANSACTIONS = [
 // short-term −25,786 + intraday −4,864 + long-term +2,789. Update after exits.
 export const REALIZED_PNL = -27862;
 
+// Indian realised P&L — from the Zerodha tax P&L statement, i.e. the figure that
+// flows into the ITR, so it is tax/ITR-verified. Update after new exits.
+export const INDIAN_REALIZED = {
+  total: -27862,
+  verified: true,
+  source: 'Zerodha tax P&L · ITR',
+  period: 'FY22 → FY26',
+  breakdown: [
+    { label: 'Short-term', amt: -25786 },
+    { label: 'Intraday', amt: -4864 },
+    { label: 'Long-term', amt: 2789 },
+  ],
+};
+
 // Corporate actions on CURRENT holdings (manual array, maintained like the FD
 // tab until a broker/market feed is wired). Upcoming (ex ≥ today) populate the
 // panel; executed (ex < today) move to the footline. Bonus ratios are applied
@@ -110,6 +124,8 @@ export const US_CASHFLOWS = [
 export const US_REALIZED = {
   asOf: '08 Jun 2026',
   total: 171.38,
+  verified: false, // computed avg-cost from the trade ledger, NOT a filed tax figure
+  source: 'Vested trade ledger · avg-cost (computed)',
   fy: [
     { label: 'FY24-25', amt: -344.29 }, { label: 'FY25-26', amt: 506.97 }, { label: 'FY26-27', amt: 8.70 },
   ],
