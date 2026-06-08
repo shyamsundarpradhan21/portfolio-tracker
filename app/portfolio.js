@@ -123,6 +123,14 @@ export const US_DIVIDENDS = {
   ],
 };
 
+// Upcoming US corporate actions (dividends / splits) on current holdings —
+// maintained manually like the Indian array, since the Vested statement only
+// carries *executed* income, and there's no reliable free upcoming-ex-date feed.
+// Add the next ex-dates from the Nasdaq dividend calendar during the monthly
+// update. `perShare` in USD. Same shape as CORPORATE_ACTIONS.
+//   { type: 'dividend', sym: 'SCHD', name: 'Schwab US Dividend', ex: '2026-06-25', perShare: 0.27 }
+export const US_CORP_ACTIONS = [];
+
 // US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
 // market / growth tilt / low-correlation gold. Yahoo carries these reliably.
 export const US_BENCHMARKS = [
