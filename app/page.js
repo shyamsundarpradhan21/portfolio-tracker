@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, ALLOC_COLORS,
-  TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_REALIZED, INDIAN_BENCHMARKS,
+  TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
@@ -1611,11 +1611,11 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* Realized P&L — overall (ITR-verified) */}
+          {/* Realized P&L — overall, as on date */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L · Overall <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
+                <div className="ctitle">Realized P&amp;L · Overall</div>
                 <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -1635,11 +1635,11 @@ export default function Page() {
           </div>
 
           <CFMemo
-            title="Equity Tax — FY25-26 Capital Gains"
-            lead="The large-cap holdings above are tracked but held outside your personal trading/ITR account. The only domestic equity capital gains in your ITR are small STT-paid delivery STCG (Fyers/Dhan), shown below; F&O is on the Algo tab, mutual-fund gains on the MF tab."
+            title="Equity Tax — FY24-25 Capital Gains (Tulasi Pradhan a/c)"
+            lead="These holdings sit in a family member's (Tulasi Pradhan) account, not your personal ITR. Last filed year's equity capital gains in that account:"
             rows={[
-              { label: 'FY25-26 domestic delivery STCG', val: '₹1,476', color: 'var(--grn)', sub: '111A @20%, STT-paid · set off against current-yr F&O loss' },
-              { label: 'b/f STCG loss claimed (Sec 74)', val: '₹4,700', color: 'var(--grn)', sub: 'from AY2025-26, used this year · saves ~₹730' },
+              { label: 'FY24-25 LTCG (Sec 112A)', val: '₹2,789', color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
+              { label: 'FY24-25 STCG (equity MF)', val: '₹1,083', color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
             ]}
           />
         </div>
@@ -2142,27 +2142,35 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
           </div>
 
-          {/* Realized P&L — overall (ITR-verified foreign STCG) */}
+          {/* Realized P&L — overall, as on date (computed avg-cost) */}
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L · Overall <span className="badge bb" style={{ fontSize: 9, marginLeft: 4 }}>ITR-VERIFIED</span></div>
-                <div className="sub" style={{ margin: 0 }}>{US_REALIZED.source}</div>
+                <div className="ctitle">Realized P&amp;L · Overall <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
+                <div className="sub" style={{ margin: 0 }}>Vested trade ledger · avg-cost · as on {US_REALIZED.asOf}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(US_REALIZED.overall)}><SInrF n={US_REALIZED.overall} /></div>
-                <div className="sub" style={{ margin: 0 }}>foreign STCG, slab rate</div>
+                <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
+                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
               </div>
             </div>
             <div className="g3 sec">
               {US_REALIZED.fy.map((f) => (
                 <div className="mini" key={f.label}>
                   <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
-                  <div className={'vsm ' + cl(f.amt)}><SInrF n={f.amt} /></div>
+                  <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
                 </div>
               ))}
             </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Filed foreign short-term capital gain on US shares (held &lt;24m, taxed at slab — no 111A). The YTD card above is the current-FY figure computed live from the trade ledger until that year is filed.</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {US_REALIZED.winners.map((w) => (
+                <span key={w.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{w.sym} <span className="grn">${w.amt.toFixed(2)}</span></span>
+              ))}
+              {US_REALIZED.losers.map((l) => (
+                <span key={l.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--red)' }} />{l.sym} <span className="red">${Math.abs(l.amt).toFixed(2)}</span></span>
+              ))}
+            </div>
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Average-cost realised gains/losses from the Vested trade ledger (overall, as on date). The filed foreign-STCG tax figure is in the ITR-verified card below.</div>
           </div>
 
           {/* Dividend income (from the Vested statement) */}
