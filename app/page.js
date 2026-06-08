@@ -36,10 +36,10 @@ function inrCd(n) {                       // compact digits, no ₹
   return '' + Math.round(n);
 }
 const inrFd = (n) => Math.round(n).toLocaleString('en-IN'); // full digits, no ₹
-const InrC = ({ n }) => (<><Rs />{inrCd(n)}</>);            // ₹4.04L
-const InrF = ({ n }) => (<><Rs />{inrFd(n)}</>);            // ₹4,03,803
-const SInrC = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrCd(Math.abs(n))}</>);
-const SInrF = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrFd(Math.abs(n))}</>);
+const InrC = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(n)}</span>);            // ₹4.04L
+const InrF = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(n)}</span>);            // ₹4,03,803
+const SInrC = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}>{n >= 0 ? '+' : '−'}<Rs />{inrCd(Math.abs(n))}</span>);
+const SInrF = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}>{n >= 0 ? '+' : '−'}<Rs />{inrFd(Math.abs(n))}</span>);
 // Render any string that contains ₹ with each glyph sized via .rs (Section 0f).
 // Lets pre-formatted strings (CFMemo values, data labels, subs) render safely.
 function RsText({ children }) {
@@ -86,16 +86,17 @@ function deriveMf(mfNav) {
     arbitrage: v('arb'),
     debt: 0,
   };
-  // Categorise each fund wholly by its stated mandate — no fabricated splits.
-  // Flexi Cap and ELSS are genuinely multi-cap, so they get their own "Multi"
-  // bucket rather than a guessed 70/20/10 / 50-50 allocation across caps.
-  const cap = {
-    large: v('nifty50') + v('next50'),
-    mid: v('midcap'),
-    small: v('small'),
-    multi: v('flexi') + v('elss'),
-    hedged: v('arb'),
-  };
+  // Real market-cap allocation from each fund's `mcap` weights (index funds are
+  // exact by mandate; ELSS = LargeMidcap 250 50/50). Funds without `mcap`
+  // (actively-managed Flexi Cap) fall into an honest "Multi" bucket until a
+  // factsheet split is supplied. No fabricated 70/20/10.
+  const cap = { large: 0, mid: 0, small: 0, multi: 0, hedged: 0 };
+  rows.forEach((r) => {
+    if (!r.mcap) { cap.multi += r.value; return; }
+    ['large', 'mid', 'small', 'multi', 'hedged'].forEach((k) => {
+      if (r.mcap[k]) cap[k] += r.value * r.mcap[k];
+    });
+  });
   return {
     rows, totVal, totCost,
     totRet: totCost ? ((totVal - totCost) / totCost) * 100 : 0,
@@ -621,6 +622,7 @@ export default function Page() {
   // Indian holdings sort (sorts the DATA array; header listeners bound once via
   // JSX at mount — never re-bound on refresh).
   const [inSort, setInSort] = useState({ key: 'val', dir: -1 });
+  const [swSort, setSwSort] = useState({ key: 'pl', dir: -1 });
   // Benchmark weekly history (2y) for the same-dated-rupees counterfactual.
   const [hist, setHist] = useState(null);
   // Growth tab: 5y weekly per-symbol history (lazy-loaded), + range selector.
@@ -1109,6 +1111,20 @@ export default function Page() {
     return { rows, inv, val, pl, pct: inv ? (pl / inv) * 100 : 0, valued };
   }, [prices]);
 
+  // Sort the swing book DATA (header listeners bound once via JSX).
+  const swingSorted = useMemo(() => {
+    const arr = [...swing.rows];
+    const { key, dir } = swSort;
+    arr.sort((a, b) => {
+      const av = a[key], bv = b[key];
+      if (typeof av === 'string') return dir * String(av).localeCompare(String(bv));
+      return dir * ((av ?? -Infinity) - (bv ?? -Infinity));
+    });
+    return arr;
+  }, [swing, swSort]);
+  const sortSw = (key) =>
+    setSwSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'sym' ? 1 : -1 }));
+
   // FY26-27 algo YTD = S01 net + S02 net + live swing unrealised
   const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
   const ytdTotal = swing.valued ? ytdRealised + swing.pl : null;
@@ -1592,6 +1608,26 @@ export default function Page() {
                 <div className="sub" style={{ margin: 0 }}>declared total</div>
               </div>
             </div>
+            {corp.dividends.length > 0 && (
+              <div className="g4 sec">
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>credited</div>
+                  <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.done).reduce((s, d) => s + d.amount, 0)} /></div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>upcoming</div>
+                  <div className="vsm"><InrF n={corp.dividends.filter((d) => !d.done).reduce((s, d) => s + d.amount, 0)} /></div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
+                  <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.ex >= '2026-04-01').reduce((s, d) => s + d.amount, 0)} /></div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>payers</div>
+                  <div className="vsm">{corp.dividends.length}</div>
+                </div>
+              </div>
+            )}
             {corp.dividends.length === 0 ? (
               <div className="sub" style={{ color: 'var(--txt3)' }}>No dividends declared on current holdings.</div>
             ) : corp.dividends.map((d) => (
@@ -2279,19 +2315,22 @@ export default function Page() {
                   <table className="tbl" style={{ minWidth: 360 }}>
                     <thead>
                       <tr>
-                        <th>Symbol</th><th className="ra">Qty</th><th className="ra">Avg</th>
-                        <th className="ra">LTP</th><th className="ra">P&amp;L</th><th className="ra">%</th>
+                        {[['sym', 'Symbol', false], ['qty', 'Qty', true], ['cost', 'Avg', true], ['ltp', 'LTP', true], ['pl', 'P&L', true], ['pct', '%', true]].map(([k, label, num]) => (
+                          <th key={k} className={num ? 'ra' : ''} onClick={() => sortSw(k)}>
+                            {label} {swSort.key === k ? (swSort.dir < 0 ? '↓' : '↑') : '↕'}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {swing.rows.map((r) => (
+                      {swingSorted.map((r) => (
                         <tr key={r.sym}>
                           <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{r.sym}</td>
                           <td className="ra mut">{r.qty}</td>
                           <td className="ra mut mono">{r.cost.toFixed(2)}</td>
                           <td className="ra mono">{r.ltp != null ? r.ltp.toFixed(2) : <Skel w={42} h={11} />}</td>
                           <td className={'ra mono ' + (r.pl != null ? cl(r.pl) : 'mut')}>
-                            {r.pl != null ? sFull(r.pl) : '—'}
+                            {r.pl != null ? <SInrF n={r.pl} /> : '—'}
                           </td>
                           <td className={'ra mono ' + (r.pct != null ? cl(r.pct) : 'mut')}>
                             {r.pct != null ? pctS(r.pct) : '—'}
