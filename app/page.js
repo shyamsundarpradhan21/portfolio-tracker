@@ -5,6 +5,7 @@ import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
+  US_CASHFLOWS, US_BENCHMARKS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -677,9 +678,13 @@ export default function Page() {
   // Indian tab shows "—" for any series that doesn't resolve.
   const fetchHistory = async () => {
     try {
-      // Flatten all candidate tickers; the client picks the first that resolves.
-      const syms = [...new Set(INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms))].join(',');
-      const res = await fetch('/api/history?symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
+      // Indian + US benchmark candidate tickers; 5y range so US deposits back to
+      // 2024 are covered. The client picks the first candidate that resolves.
+      const syms = [...new Set([
+        ...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms),
+        ...US_BENCHMARKS.flatMap((b) => b.yahooSyms),
+      ])].join(',');
+      const res = await fetch('/api/history?range=5y&symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       if (!res.ok) return null;
       return await res.json();
     } catch {
@@ -999,9 +1004,10 @@ export default function Page() {
       s.col === col ? { col, dir: -s.dir } : { col, dir: col === 'sym' || col === 'name' ? 1 : -1 },
     );
 
-  // ─── derived: US analytics (category mix / movers / day change) ───
-  // No dated tradebook for the Vested SIP, so no XIRR/CAGR — category mix,
-  // concentration and movers mirror the Indian tab's structure instead.
+  // ─── derived: US analytics (XIRR/CAGR/benchmarks + category mix / movers) ───
+  // Real dated cashflows now come from the Vested statement (US_CASHFLOWS, USD),
+  // so the US tab gets money-weighted XIRR/CAGR and same-dated-dollars benchmarks
+  // just like the Indian tab. All US figures here are in USD.
   const usStats = useMemo(() => {
     const value = usData.val;
     const catMap = {};
@@ -1019,8 +1025,34 @@ export default function Page() {
       const prev = r.liveVal / (1 + r.dayPct / 100);
       dayPl += r.liveVal - prev; prevTot += prev;
     });
-    return { value, cats, winner, laggard, topPos, topCat: cats[0] || null, dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0 };
-  }, [usData]);
+    // Money-weighted XIRR/CAGR on net external capital ($), + benchmarks.
+    const netInvested = US_CASHFLOWS.reduce((s, c) => s + c.invested, 0);
+    let xr = null, cagr = null, years = null;
+    if (value) {
+      const cfs = US_CASHFLOWS.map((c) => ({ date: new Date(c.date), amount: -c.invested }));
+      const x = xirr([...cfs, { date: now, amount: value }]);
+      xr = x != null ? x * 100 : null;
+      const c = weightedCagr(US_CASHFLOWS, value, now);
+      cagr = c.cagr; years = c.years;
+    }
+    const cfFor = (b) => {
+      if (!hist || !hist.series || !value) return null;
+      for (const sym of b.yahooSyms) {
+        const cf = benchCounterfactual(hist.series[sym], US_CASHFLOWS, now);
+        if (cf) return cf;
+      }
+      return null;
+    };
+    const benchmarks = US_BENCHMARKS.map((b) => {
+      const cf = cfFor(b);
+      return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
+    });
+    return {
+      value, cats, winner, laggard, topPos, topCat: cats[0] || null,
+      dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0,
+      netInvested, xirr: xr, cagr, years, benchmarks,
+    };
+  }, [usData, hist, now]);
 
   // ─── derived: S02 swing book (live NSE) ───
   const swing = useMemo(() => {
@@ -1833,6 +1865,8 @@ export default function Page() {
           no dated tradebook, so category mix/movers replace XIRR/CAGR). */}
       {tab === 4 && (() => {
         const catColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
+        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const usRetCap = usStats.netInvested ? ((usData.val - usStats.netInvested) / usStats.netInvested) * 100 : 0;
         return (
         <div>
           <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
@@ -1869,19 +1903,56 @@ export default function Page() {
               <div className="sub">{usData.val ? `${pctS(usStats.dayPct)} since prev close` : 'intraday move'}</div>
             </div>
             <div className="csm">
-              <div className="lbl">value in ₹</div>
-              <div className="vmd">{usData.val && usdInr ? <InrC n={ov.usInr} /> : <Skel w={80} h={20} />}</div>
-              <div className="sub">converted at live USD/INR</div>
+              <div className="lbl">XIRR</div>
+              <div className={'vmd ' + (usStats.xirr != null ? cl(usStats.xirr) : '')}>
+                {usStats.xirr != null ? fmtX(usStats.xirr) : <Skel w={70} h={20} />}
+              </div>
+              <div className="sub">annualised · USD · since Mar 2024</div>
             </div>
             <div className="csm">
               <div className="lbl">USD / INR</div>
               <div className="vmd">{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : <Skel w={60} h={20} />}</div>
-              <div className="sub">live spot</div>
+              <div className="sub">{usData.val && usdInr ? <>value <InrC n={ov.usInr} /></> : 'live spot'}</div>
             </div>
           </div>
 
-          {/* Category mix + movers/concentration (single 2-col grid) */}
+          {/* vs Benchmarks + category allocation (single 2-col grid) */}
           <div className="g2 sec">
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
+              <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} deployed into each instead.</div>
+              <table className="tbl">
+                <thead>
+                  <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Return</th><th className="ra">Value</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
+                    <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{fmtX(usStats.xirr)}</td>
+                    <td className={'ra mono ' + (usData.val ? cl(usRetCap) : 'mut')}>{usData.val ? pctS(usRetCap) : '—'}</td>
+                    <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
+                  </tr>
+                  {usStats.benchmarks.map((b) => (
+                    <tr key={b.key}>
+                      <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
+                      </span></td>
+                      <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
+                      <td className={'ra mono ' + (b.ret != null ? cl(b.ret) : 'mut')}>{b.ret != null ? pctS(b.ret) : '—'}</td>
+                      <td className="ra mono mut">{b.value != null ? '$' + b.value.toFixed(0) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="sub" style={{ marginTop: 12 }}>
+                CAGR {usStats.cagr != null ? (usStats.cagr >= 0 ? '+' : '') + usStats.cagr.toFixed(1) + '%' : '—'}
+                {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
+              </div>
+              <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
+                Money-weighted on net external capital from the Vested statement. Index returns are price-only (ex-dividend);
+                your portfolio's total return includes reinvested dividends, so it is modestly flattered in comparison.
+              </div>
+            </div>
             <div className="card">
               <div className="ctitle" style={{ marginBottom: 14 }}>Category Allocation</div>
               {usStats.cats.map((c, i) => (
@@ -1891,38 +1962,23 @@ export default function Page() {
                   <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
                 </div>
               ))}
-              {usStats.topCat && (
-                <div className="sub" style={{ marginTop: 12 }}>
-                  Top category: <strong style={{ color: 'var(--txt)' }}>{usStats.topCat.label}</strong> at {usStats.topCat.pct.toFixed(0)}% of the book.
-                </div>
-              )}
-            </div>
-            <div className="card">
-              <div className="ctitle" style={{ marginBottom: 14 }}>Movers &amp; Concentration</div>
-              <div className="g2">
+              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              <div className="g3">
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Top winner</div>
+                  <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
                   <div className="vsm grn">{usStats.winner ? usStats.winner.sym : '—'}</div>
                   <div className="sub">{usStats.winner ? pctS(usStats.winner.livePct) : 'live'}</div>
                 </div>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Biggest drag</div>
+                  <div className="lbl" style={{ marginBottom: 4 }}>Drag</div>
                   <div className="vsm red">{usStats.laggard ? usStats.laggard.sym : '—'}</div>
                   <div className="sub">{usStats.laggard ? pctS(usStats.laggard.livePct) : 'live'}</div>
                 </div>
                 <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Largest position</div>
+                  <div className="lbl" style={{ marginBottom: 4 }}>Largest</div>
                   <div className="vsm">{usStats.topPos ? usStats.topPos.sym : '—'}</div>
-                  <div className="sub">{usStats.topPos && usData.val ? ((usStats.topPos.liveVal / usData.val) * 100).toFixed(1) + '% of book' : 'by value'}</div>
+                  <div className="sub">{usStats.topPos && usData.val ? ((usStats.topPos.liveVal / usData.val) * 100).toFixed(0) + '% of book' : 'by value'}</div>
                 </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Total return</div>
-                  <div className={'vsm ' + (usData.val ? cl(usData.pct) : '')}>{usData.val ? pctS(usData.pct) : '—'}</div>
-                  <div className="sub">unrealized</div>
-                </div>
-              </div>
-              <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
-                No dated tradebook for the Vested SIP, so XIRR/CAGR aren't shown — returns here are point-in-time, not annualised.
               </div>
             </div>
           </div>
