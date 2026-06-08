@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
@@ -39,6 +39,15 @@ const InrC = ({ n }) => (<><Rs />{inrCd(n)}</>);            // ₹4.04L
 const InrF = ({ n }) => (<><Rs />{inrFd(n)}</>);            // ₹4,03,803
 const SInrC = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrCd(Math.abs(n))}</>);
 const SInrF = ({ n }) => (<>{n >= 0 ? '+' : '−'}<Rs />{inrFd(Math.abs(n))}</>);
+// Render any string that contains ₹ with each glyph sized via .rs (Section 0f).
+// Lets pre-formatted strings (CFMemo values, data labels, subs) render safely.
+function RsText({ children }) {
+  const s = String(children ?? '');
+  if (!s.includes('₹')) return <>{s}</>;
+  return (
+    <>{s.split('₹').map((p, i) => (i === 0 ? <Fragment key={i}>{p}</Fragment> : <Fragment key={i}><Rs />{p}</Fragment>))}</>
+  );
+}
 // Signed full-rupee with grouping, e.g. -₹12,619 / +₹1,06,376
 const sFull = (n) => sg(n) + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 const numC = (n) => Math.round(n).toLocaleString('en-IN'); // plain grouped (charges)
@@ -417,7 +426,8 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
       const todayIso = isoOf(now);
       const heldSet = new Set(INDIAN.map((h) => h.sym));
       const inBench = INDIAN_BENCHMARKS.map((b) => {
-        const series = hist && hist.series ? hist.series[b.yahooSym] : null;
+        let series = null;
+        if (hist && hist.series) for (const sym of b.yahooSyms) if (hist.series[sym]) { series = hist.series[sym]; break; }
         const cf = inVal ? benchCounterfactual(series, TRANSACTIONS, now) : null;
         return `${b.label} XIRR ${cf && cf.xirr != null ? cf.xirr.toFixed(1) + '%' : '—'} / return ${cf && cf.ret != null ? cf.ret.toFixed(1) + '%' : '—'}`;
       }).join('; ');
@@ -527,7 +537,8 @@ export default function Page() {
   // Indian tab shows "—" for any series that doesn't resolve.
   const fetchHistory = async () => {
     try {
-      const syms = INDIAN_BENCHMARKS.map((b) => b.yahooSym).join(',');
+      // Flatten all candidate tickers; the client picks the first that resolves.
+      const syms = [...new Set(INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms))].join(',');
       const res = await fetch('/api/history?symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       if (!res.ok) return null;
       return await res.json();
@@ -748,10 +759,14 @@ export default function Page() {
     const winner = valued.length ? valued.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
     const laggard = valued.length ? valued.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
     const topPos = valued.length && value ? valued.reduce((a, b) => (b.val > a.val ? b : a)) : null;
-    // benchmark counterfactuals (same dated rupees)
+    // benchmark counterfactuals (same dated rupees) — first resolved candidate.
+    const seriesFor = (b) => {
+      if (!hist || !hist.series) return null;
+      for (const sym of b.yahooSyms) if (hist.series[sym]) return hist.series[sym];
+      return null;
+    };
     const benchmarks = INDIAN_BENCHMARKS.map((b) => {
-      const series = hist && hist.series ? hist.series[b.yahooSym] : null;
-      const cf = indian.valued && value ? benchCounterfactual(series, TRANSACTIONS, now) : null;
+      const cf = indian.valued && value ? benchCounterfactual(seriesFor(b), TRANSACTIONS, now) : null;
       return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
     });
     return {
@@ -839,6 +854,29 @@ export default function Page() {
     setUsSort((s) =>
       s.col === col ? { col, dir: -s.dir } : { col, dir: col === 'sym' || col === 'name' ? 1 : -1 },
     );
+
+  // ─── derived: US analytics (category mix / movers / day change) ───
+  // No dated tradebook for the Vested SIP, so no XIRR/CAGR — category mix,
+  // concentration and movers mirror the Indian tab's structure instead.
+  const usStats = useMemo(() => {
+    const value = usData.val;
+    const catMap = {};
+    usData.rows.forEach((r) => { if (r.liveVal != null) catMap[r.cat] = (catMap[r.cat] || 0) + r.liveVal; });
+    const cats = Object.entries(catMap)
+      .map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 }))
+      .sort((a, b) => b.val - a.val);
+    const valued = usData.rows.filter((r) => r.livePct != null);
+    const winner = valued.length ? valued.reduce((a, b) => (b.livePct > a.livePct ? b : a)) : null;
+    const laggard = valued.length ? valued.reduce((a, b) => (b.livePct < a.livePct ? b : a)) : null;
+    const topPos = valued.length && value ? valued.reduce((a, b) => ((b.liveVal || 0) > (a.liveVal || 0) ? b : a)) : null;
+    let dayPl = 0, prevTot = 0;
+    usData.rows.forEach((r) => {
+      if (r.liveVal == null || r.dayPct == null) return;
+      const prev = r.liveVal / (1 + r.dayPct / 100);
+      dayPl += r.liveVal - prev; prevTot += prev;
+    });
+    return { value, cats, winner, laggard, topPos, topCat: cats[0] || null, dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0 };
+  }, [usData]);
 
   // ─── derived: S02 swing book (live NSE) ───
   const swing = useMemo(() => {
@@ -958,13 +996,13 @@ export default function Page() {
       <div className="hdr">
         <div>
           <div className="hdr-lbl">Net worth — live<span className="spark">✦</span></div>
-          <div className="hdr-val">{indian.valued && usdInr ? inrC(ov.nw) : <Skel w={130} h={24} />}</div>
+          <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={130} h={24} />}</div>
           <div className="hdr-sub">
-            Tracked assets {inrC(ov.totalAssets)} · Loan ~₹7.50L · excl. savings
+            Tracked assets <InrC n={ov.totalAssets} /> · Loan ~<Rs />7.50L · excl. savings
           </div>
         </div>
         <div className="hdr-date">
-          <div>USD/INR: <strong>{usdInr ? '₹' + usdInr.toFixed(2) : '—'}</strong></div>
+          <div>USD/INR: <strong>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></div>
           <div style={{ marginTop: 3, fontSize: 10, color: 'var(--txt3)' }}>{lastUpdate}</div>
         </div>
       </div>
@@ -993,17 +1031,17 @@ export default function Page() {
               <div className="g3">
                 <div className="csm">
                   <div className="lbl">net worth</div>
-                  <div className="vlg">{usdInr ? inrC(ov.nw) : <Skel />}</div>
+                  <div className="vlg">{usdInr ? <InrC n={ov.nw} /> : <Skel />}</div>
                   <div className="sub">assets minus loan</div>
                 </div>
                 <div className="csm">
                   <div className="lbl">total tracked assets</div>
-                  <div className="vlg">{usdInr ? inrC(ov.totalAssets) : <Skel />}</div>
+                  <div className="vlg">{usdInr ? <InrC n={ov.totalAssets} /> : <Skel />}</div>
                   <div className="sub">6 asset classes</div>
                 </div>
                 <div className="csm">
                   <div className="lbl">liabilities</div>
-                  <div className="vlg" style={{ color: 'var(--red)' }}>~₹7.50L</div>
+                  <div className="vlg" style={{ color: 'var(--red)' }}>~<Rs />7.50L</div>
                   <div className="sub">personal loan, est. outstanding</div>
                 </div>
               </div>
@@ -1031,7 +1069,7 @@ export default function Page() {
                   <div className="lbl">US equity</div>
                   <div className="vmd">{usData.val ? <InrC n={ov.usInr} /> : <Skel w={64} h={18} />}</div>
                   <div className={'sub ' + (usData.val ? cl(usData.pl) : '')}>
-                    {usData.val ? `${pctS(usData.pct)} @₹${fxRate.toFixed(0)}` : `${US.length} holdings`}
+                    {usData.val ? <RsText>{`${pctS(usData.pct)} @₹${fxRate.toFixed(0)}`}</RsText> : `${US.length} holdings`}
                   </div>
                 </div>
                 <div className="csm">
@@ -1330,18 +1368,18 @@ export default function Page() {
           <div className="g4 sec">
             <div className="csm">
               <div className="lbl">active deployed</div>
-              <div className="vmd">{inrC(fds.principal)}</div>
+              <div className="vmd"><InrC n={fds.principal} /></div>
               <div className="sub">{FDS.length} FDs · Slice, ICICI, HDFC</div>
             </div>
             <div className="csm">
               <div className="lbl">accrued interest</div>
-              <div className="vmd grn">{inrFull(fds.accrued)}</div>
+              <div className="vmd grn"><InrF n={fds.accrued} /></div>
               <div className="sub">compounding quarterly · live</div>
             </div>
             <div className="csm">
               <div className="lbl">value at maturity</div>
-              <div className="vmd">{inrC(fds.maturity)}</div>
-              <div className="sub">+{inrFull(fds.maturity - fds.principal)} total interest</div>
+              <div className="vmd"><InrC n={fds.maturity} /></div>
+              <div className="sub">+<InrF n={fds.maturity - fds.principal} /> total interest</div>
             </div>
             <div className="csm">
               <div className="lbl">blended rate</div>
@@ -1375,21 +1413,21 @@ export default function Page() {
                         </span>
                         <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 3 }}>{f.progress.toFixed(0)}% elapsed</div>
                       </td>
-                      <td className="ra mono">{inrC(f.principal)}</td>
+                      <td className="ra mono"><InrC n={f.principal} /></td>
                       <td className="ra grn mono">{f.rate.toFixed(2)}%</td>
-                      <td className="ra grn mono">{inrFull(f.accruedSoFar)}</td>
+                      <td className="ra grn mono"><InrF n={f.accruedSoFar} /></td>
                       <td className="ra">
-                        <div className="mono">{inrC(f.maturityValue)}</div>
-                        <div style={{ fontSize: 10, color: 'var(--txt3)' }}>+{inrFull(f.maturityInterest)}</div>
+                        <div className="mono"><InrC n={f.maturityValue} /></div>
+                        <div style={{ fontSize: 10, color: 'var(--txt3)' }}>+<InrF n={f.maturityInterest} /></div>
                       </td>
                     </tr>
                   ))}
                   <tr className="tot">
                     <td colSpan={3}>Total — {fds.rows.length} FDs</td>
-                    <td className="ra">{inrC(fds.principal)}</td>
+                    <td className="ra"><InrC n={fds.principal} /></td>
                     <td className="ra">{fds.blendedRate.toFixed(2)}%</td>
-                    <td className="ra grn">{inrFull(fds.accrued)}</td>
-                    <td className="ra">{inrC(fds.maturity)}</td>
+                    <td className="ra grn"><InrF n={fds.accrued} /></td>
+                    <td className="ra"><InrC n={fds.maturity} /></td>
                   </tr>
                 </tbody>
               </table>
@@ -1399,7 +1437,7 @@ export default function Page() {
             <div className="fxc" style={{ marginBottom: 10 }}>
               <div className="lbl" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
               <div className="sub" style={{ margin: 0 }}>
-                Pipeline {inrC(fds.pipelineTotal)} · Grand total {inrC(fds.principal + fds.pipelineTotal)}
+                Pipeline <InrC n={fds.pipelineTotal} /> · Grand total <InrC n={fds.principal + fds.pipelineTotal} />
               </div>
             </div>
             <div className="ovx">
@@ -1418,13 +1456,13 @@ export default function Page() {
                       <td className="mut">{fmtNavDate(f.deploy)}</td>
                       <td className="mut">{fmtNavDate(f.maturity)}</td>
                       <td className="mut">{f.tenure}</td>
-                      <td className="ra mono">{inrC(f.amount)}</td>
+                      <td className="ra mono"><InrC n={f.amount} /></td>
                       <td>{f.badge && <span className="badge ba">{f.badge}</span>}</td>
                     </tr>
                   ))}
                   <tr className="tot">
                     <td colSpan={5}>Total pipeline</td>
-                    <td className="ra">{inrC(fds.pipelineTotal)}</td>
+                    <td className="ra"><InrC n={fds.pipelineTotal} /></td>
                     <td />
                   </tr>
                 </tbody>
@@ -1476,7 +1514,7 @@ export default function Page() {
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">total invested</div>
-              <div className="vmd">{inrFull(mf.totCost)}</div>
+              <div className="vmd"><InrF n={mf.totCost} /></div>
               <div className="sub">{MF_FUNDS.length} funds · 2 platforms</div>
             </div>
             <div className="csm">
@@ -1484,13 +1522,13 @@ export default function Page() {
                 <div className="lbl" style={{ margin: 0 }}>current value</div>
                 <FreshnessTag mode="nav" date={mfDate} />
               </div>
-              <div className="vmd grn" style={{ marginTop: 6 }}>{inrFull(mf.totVal)}</div>
+              <div className="vmd grn" style={{ marginTop: 6 }}><InrF n={mf.totVal} /></div>
               <div className="sub">live NAV × CAS units ({UNITS_AS_OF})</div>
             </div>
             <div className="csm">
               <div className="lbl">total return</div>
               <div className={'vmd ' + cl(mf.totRet)}>{pctS(mf.totRet)}</div>
-              <div className="sub">{sFull(mf.totVal - mf.totCost)} abs</div>
+              <div className="sub"><SInrF n={mf.totVal - mf.totCost} /> abs</div>
             </div>
           </div>
 
@@ -1531,7 +1569,7 @@ export default function Page() {
                   <div key={s.label} style={{ marginBottom: 10 }}>
                     <div className="fxc" style={{ marginBottom: 4 }}>
                       <span style={{ fontSize: 12, color: 'var(--txt2)' }}>{s.label}</span>
-                      <span className="mono" style={{ fontSize: 12 }}>{inrC(s.val)} · {pct.toFixed(1)}%</span>
+                      <span className="mono" style={{ fontSize: 12 }}><InrC n={s.val} /> · {pct.toFixed(1)}%</span>
                     </div>
                     <span className="bar-trk" style={{ display: 'block' }}>
                       <span className="bar-fil" style={{ width: pct + '%', background: s.color }} />
@@ -1557,7 +1595,7 @@ export default function Page() {
                     <span style={{ fontSize: 12, color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                       <span className="mf-dot" style={{ background: s.color }} />{s.label}
                     </span>
-                    <span className="mono" style={{ fontSize: 12 }}>{inrC(s.val)} · {((s.val / capTot) * 100).toFixed(1)}%</span>
+                    <span className="mono" style={{ fontSize: 12 }}><InrC n={s.val} /> · {((s.val / capTot) * 100).toFixed(1)}%</span>
                   </div>
                 ))}
               </div>
@@ -1569,8 +1607,8 @@ export default function Page() {
             <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
               <div className="ctitle">Holdings</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="mf-chip"><span className="mf-dot" style={{ background: '#BCAEFF' }} />JioBlackRock {inrFull(mf.jio.value)} <span className={cl(mf.jio.ret)} style={{ marginLeft: 2 }}>{pctS(mf.jio.ret)}</span></span>
-                <span className="mf-chip"><span className="mf-dot" style={{ background: '#6EE7B7' }} />Zerodha ELSS {inrFull(mf.elss.value)} <span className={cl(mf.elss.ret)} style={{ marginLeft: 2 }}>{pctS(mf.elss.ret)}</span></span>
+                <span className="mf-chip"><span className="mf-dot" style={{ background: '#BCAEFF' }} />JioBlackRock <InrF n={mf.jio.value} /> <span className={cl(mf.jio.ret)} style={{ marginLeft: 2 }}>{pctS(mf.jio.ret)}</span></span>
+                <span className="mf-chip"><span className="mf-dot" style={{ background: '#6EE7B7' }} />Zerodha ELSS <InrF n={mf.elss.value} /> <span className={cl(mf.elss.ret)} style={{ marginLeft: 2 }}>{pctS(mf.elss.ret)}</span></span>
               </div>
             </div>
             <div className="ovx">
@@ -1596,22 +1634,22 @@ export default function Page() {
                       <td><span className="mf-pill" style={platStyle(f.platform)}>{f.platform}</span></td>
                       <td className="ra mono mut">{f.units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>
                       <td className="ra mono">{f.nav.toFixed(4)}</td>
-                      <td className="ra mono">{inrFull(f.value)}</td>
-                      <td className="ra mono mut">{inrFull(f.cost)}</td>
+                      <td className="ra mono"><InrF n={f.value} /></td>
+                      <td className="ra mono mut"><InrF n={f.cost} /></td>
                       <td className={'ra mono ' + cl(f.ret)}>{pctS(f.ret)}</td>
                     </tr>
                   ))}
                   <tr className="tot">
                     <td colSpan={4}>Total — {MF_FUNDS.length} funds</td>
-                    <td className="ra">{inrFull(mf.totVal)}</td>
-                    <td className="ra">{inrFull(mf.totCost)}</td>
+                    <td className="ra"><InrF n={mf.totVal} /></td>
+                    <td className="ra"><InrF n={mf.totCost} /></td>
                     <td className={'ra ' + cl(mf.totRet)}>{pctS(mf.totRet)}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
-              JioBlackRock: ₹20K/mo SIP active, first installment pending — seeded ₹20K (13-Jan-26) + ₹30K (20-Mar-26).
+              JioBlackRock: <Rs />20K/mo SIP active, first installment pending — seeded <Rs />20K (13-Jan-26) + <Rs />30K (20-Mar-26).
               Zerodha ELSS: 3-yr lock-in, unlocks 26-Feb-2027.
             </div>
           </div>
@@ -1627,46 +1665,119 @@ export default function Page() {
         );
       })()}
 
-      {/* US STOCKS */}
-      {tab === 4 && (
+      {/* US STOCKS — live NYSE; mirrors the Indian tab structure (Vested SIP has
+          no dated tradebook, so category mix/movers replace XIRR/CAGR). */}
+      {tab === 4 && (() => {
+        const catColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
+        return (
         <div>
           <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
-          <div className="csm sec" style={{ borderColor: 'var(--brd2)' }}>
-            <div className="fxc">
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  US Portfolio (Vested)
-                  <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: markets.nyse ? 'NYSE open' : 'NYSE closed' }} />
-                </div>
-                <div className="sub">{US.length} holdings · fractional shares · USD + INR converted</div>
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` }} />
+          </div>
+
+          {/* Summary cards */}
+          <div className="g3 sec">
+            <div className="csm">
+              <div className="lbl">cost basis</div>
+              <div className="vmd">${usData.inv.toFixed(2)}</div>
+              <div className="sub">{US.length} holdings · fractional</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">current value</div>
+              <div className="vmd">{usData.val ? '$' + usData.val.toFixed(2) : <Skel w={90} h={20} />}</div>
+              <div className="sub">{usData.val && usdInr ? <><InrC n={ov.usInr} /> @ <Rs />{usdInr.toFixed(2)}</> : 'live NYSE'}</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">unrealized P&amp;L</div>
+              <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>
+                {usData.val ? (usData.pl >= 0 ? '+' : '') + usd(usData.pl) : <Skel w={80} h={20} />}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(usData.pl)}>
-                  {usData.val ? sg(usData.pl) + '$' + Math.abs(usData.pl).toFixed(2) : <Skel w={80} h={15} />}
+              <div className="sub">{usData.val ? `${pctS(usData.pct)} · value − cost` : 'value − cost'}</div>
+            </div>
+          </div>
+          <div className="g3 sec">
+            <div className="csm">
+              <div className="lbl">day change</div>
+              <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>
+                {usData.val ? (usStats.dayPl >= 0 ? '+' : '') + usd(usStats.dayPl) : <Skel w={80} h={20} />}
+              </div>
+              <div className="sub">{usData.val ? `${pctS(usStats.dayPct)} since prev close` : 'intraday move'}</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">value in ₹</div>
+              <div className="vmd">{usData.val && usdInr ? <InrC n={ov.usInr} /> : <Skel w={80} h={20} />}</div>
+              <div className="sub">converted at live USD/INR</div>
+            </div>
+            <div className="csm">
+              <div className="lbl">USD / INR</div>
+              <div className="vmd">{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : <Skel w={60} h={20} />}</div>
+              <div className="sub">live spot</div>
+            </div>
+          </div>
+
+          {/* Category mix + movers/concentration (single 2-col grid) */}
+          <div className="g2 sec">
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 14 }}>Category Allocation</div>
+              {usStats.cats.map((c, i) => (
+                <div key={c.label} className="seg-row">
+                  <span className="seg-lbl">{c.label}</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: CAT_COLORS[c.label] || catColors[i % catColors.length] }} /></span>
+                  <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
                 </div>
-                <div className="sub">
-                  {usData.val ? `${pctS(usData.pct)} · $${usData.inv.toFixed(2)} → $${usData.val.toFixed(2)}` : 'loading…'}
+              ))}
+              {usStats.topCat && (
+                <div className="sub" style={{ marginTop: 12 }}>
+                  Top category: <strong style={{ color: 'var(--txt)' }}>{usStats.topCat.label}</strong> at {usStats.topCat.pct.toFixed(0)}% of the book.
                 </div>
+              )}
+            </div>
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 14 }}>Movers &amp; Concentration</div>
+              <div className="g2">
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Top winner</div>
+                  <div className="vsm grn">{usStats.winner ? usStats.winner.sym : '—'}</div>
+                  <div className="sub">{usStats.winner ? pctS(usStats.winner.livePct) : 'live'}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Biggest drag</div>
+                  <div className="vsm red">{usStats.laggard ? usStats.laggard.sym : '—'}</div>
+                  <div className="sub">{usStats.laggard ? pctS(usStats.laggard.livePct) : 'live'}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Largest position</div>
+                  <div className="vsm">{usStats.topPos ? usStats.topPos.sym : '—'}</div>
+                  <div className="sub">{usStats.topPos && usData.val ? ((usStats.topPos.liveVal / usData.val) * 100).toFixed(1) + '% of book' : 'by value'}</div>
+                </div>
+                <div className="mini">
+                  <div className="lbl" style={{ marginBottom: 4 }}>Total return</div>
+                  <div className={'vsm ' + (usData.val ? cl(usData.pct) : '')}>{usData.val ? pctS(usData.pct) : '—'}</div>
+                  <div className="sub">unrealized</div>
+                </div>
+              </div>
+              <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
+                No dated tradebook for the Vested SIP, so XIRR/CAGR aren't shown — returns here are point-in-time, not annualised.
               </div>
             </div>
           </div>
+
+          {/* Sortable holdings (data-array sort; live tick-flash) */}
           <div className="card sec">
-            <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-              <Stat label="Cost basis (USD)" val={'$' + usData.inv.toFixed(2)} />
-              <Stat label="Live value (USD)" val={usData.val ? '$' + usData.val.toFixed(2) : '…'} />
-              <Stat label="Live value (INR)" val={usdInr ? inrC(ov.usInr) : '…'} />
-              <Stat label="USD/INR live" val={usdInr ? '₹' + usdInr.toFixed(2) : '…'} />
+            <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <div className="ctitle">Holdings</div>
+              <div className="sub" style={{ margin: 0 }}>
+                {usData.val ? `$${usData.inv.toFixed(2)} → $${usData.val.toFixed(2)} · ` : 'loading live prices… '}
+                <span className={cl(usData.pl)}>{usData.val ? (usData.pl >= 0 ? '+' : '') + usd(usData.pl) + ` (${pctS(usData.pct)})` : ''}</span>
+              </div>
             </div>
-            <div className="scroll-tbl">
+            <div className="ovx">
               <table className="tbl" style={{ minWidth: 760 }}>
                 <thead>
                   <tr>
                     {US_COLS.map((c) => (
-                      <th
-                        key={c.key}
-                        className={c.num ? 'ra' : ''}
-                        onClick={() => sortUs(c.key)}
-                      >
+                      <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortUs(c.key)}>
                         {c.label} {usSort.col === c.key ? (usSort.dir < 0 ? '↓' : '↑') : '↕'}
                       </th>
                     ))}
@@ -1681,9 +1792,16 @@ export default function Page() {
                           background: CAT_COLORS[s.cat] || 'var(--txt3)', marginRight: 6,
                         }} />
                         {s.sym}
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
+                          {s.name} · {s.cat}
+                        </div>
                       </td>
                       <td style={{ color: 'var(--txt2)', fontSize: 11 }}>{s.name}</td>
-                      <td className="ra mono">{s.livePrice != null ? '$' + s.livePrice.toFixed(2) : <Skel w={40} h={11} />}</td>
+                      <td className="ra mono">
+                        {s.livePrice != null
+                          ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}>${s.livePrice.toFixed(2)}</span>
+                          : <Skel w={40} h={11} />}
+                      </td>
                       <td className="ra mono">{s.liveVal != null ? usd(s.liveVal) : '—'}</td>
                       <td className="ra mono mut">${s.inv.toFixed(2)}</td>
                       <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>
@@ -1709,10 +1827,9 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 8 }}>
-              Click headers to sort · Prices live from Yahoo Finance, converted at live USD/INR
-            </div>
+            <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
           </div>
+
           <CFMemo
             title="Foreign Equity Tax — FY25-26 Capital Gains"
             rows={[
@@ -1721,7 +1838,8 @@ export default function Page() {
             ]}
           />
         </div>
-      )}
+        );
+      })()}
 
       {/* ALGO */}
       {tab === 5 && (
@@ -1740,16 +1858,16 @@ export default function Page() {
             </div>
             <div className="csm">
               <div className="lbl">FY 2025-26</div>
-              <div className={'vmd ' + cl(FY.combined2526.net)}>{sFull(FY.combined2526.net)}</div>
+              <div className={'vmd ' + cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></div>
               <div className="sub">realised value</div>
             </div>
             <div className="csm">
               <div className="lbl">FY26-27 YTD</div>
               <div className="vmd grn">{ytdTotal != null ? sFull(ytdTotal) : <Skel w={90} h={15} />}</div>
               <div className="sub">
-                <span className="grn">S01 {sFull(FY.s01.fy2627.net)}</span> ·{' '}
-                <span className="grn">S02 {sFull(FY.s02.fy2627.net)}</span> ·{' '}
-                swing {swing.valued ? <span className={cl(swing.pl)}>{sFull(swing.pl)}</span> : '…'}
+                <span className="grn">S01 <SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
+                <span className="grn">S02 <SInrF n={FY.s02.fy2627.net} /></span> ·{' '}
+                swing {swing.valued ? <span className={cl(swing.pl)}><SInrF n={swing.pl} /></span> : '…'}
               </div>
             </div>
           </div>
@@ -1787,15 +1905,15 @@ export default function Page() {
                   </div>
                   <div className="fxc">
                     <span style={{ color: 'var(--txt2)' }}>CF entering FY26-27</span>
-                    <span className="red mono">{sFull(-cfEntering)}</span>
+                    <span className="red mono"><SInrF n={-cfEntering} /></span>
                   </div>
                   <div className="fxc" style={{ marginTop: 8 }}>
                     <span style={{ color: 'var(--txt2)' }}>Realised F&amp;O YTD (S01 + S02)</span>
-                    <span className="grn mono">{sFull(ytdRealised)}</span>
+                    <span className="grn mono"><SInrF n={ytdRealised} /></span>
                   </div>
                   <div className="fxc" style={{ marginTop: 10, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
                     <span style={{ color: 'var(--txt2)' }}>CF remaining</span>
-                    <span className="red mono">{sFull(-cfAfterRealised)}</span>
+                    <span className="red mono"><SInrF n={-cfAfterRealised} /></span>
                   </div>
                 </div>
               </div>
@@ -1857,7 +1975,7 @@ export default function Page() {
                       <tr className="tot">
                         <td>Total</td>
                         <td />
-                        <td className="ra">{inrFull(swing.inv)}</td>
+                        <td className="ra"><InrF n={swing.inv} /></td>
                         <td className="ra">{swing.valued ? inrFull(swing.val) : '…'}</td>
                         <td className={'ra ' + cl(swing.pl)}>{swing.valued ? sFull(swing.pl) : '…'}</td>
                         <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
@@ -1875,11 +1993,11 @@ export default function Page() {
             <span style={{ color: 'var(--txt2)' }}>
               Own capital: <strong style={{ color: 'var(--txt)' }}>{ALGO.summary.deployed}</strong> <span className="mut">({ALGO.summary.deployedNote})</span>
               {'  ·  '}
-              FY25-26 combined — Gross: <span className="grn">{sFull(FY.combined2526.gross)}</span> ·
+              FY25-26 combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
               Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
-              Net F&amp;O (Sch BP): <span className="red">{sFull(FY.combined2526.net)}</span>
+              Net F&amp;O (Sch BP): <span className="red"><SInrF n={FY.combined2526.net} /></span>
               {'  '}
-              <span className="mut">(S01 {sFull(FY.s01.fy2526.total.net)} · S02 {sFull(FY.s02.fy2526.total.net)})</span>
+              <span className="mut">(S01 <SInrF n={FY.s01.fy2526.total.net} /> · S02 <SInrF n={FY.s02.fy2526.total.net} />)</span>
             </span>
           </div>
 
@@ -1893,7 +2011,7 @@ export default function Page() {
                 <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
                   <div className="sub" style={{ margin: 0 }}>{c.label}</div>
                   <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
-                    {c.consumed ? '₹0' : sFull(c.val)}
+                    {c.consumed ? <><Rs />0</> : <SInrF n={c.val} />}
                   </div>
                   <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
                 </div>
@@ -1998,8 +2116,8 @@ function CFMemo({ title, lead, rows, foot }) {
           {rows.map((r) => (
             <div className="csm" key={r.label} style={r.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
               <div className="sub" style={{ margin: 0 }}>{r.label}</div>
-              <div className="vsm" style={{ marginTop: 4, color: r.color || 'var(--red)' }}>{r.val}</div>
-              {r.sub && <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{r.sub}</div>}
+              <div className="vsm" style={{ marginTop: 4, color: r.color || 'var(--red)' }}><RsText>{r.val}</RsText></div>
+              {r.sub && <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}><RsText>{r.sub}</RsText></div>}
             </div>
           ))}
         </div>
@@ -2024,16 +2142,16 @@ function BrokerTable({ data }) {
         {rows.map((r) => (
           <tr key={r.broker}>
             <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{r.broker}</td>
-            <td className={'ra mono ' + cl(r.gross)}>{sFull(r.gross)}</td>
+            <td className={'ra mono ' + cl(r.gross)}><SInrF n={r.gross} /></td>
             <td className="ra mono mut">{numC(r.charges)}</td>
-            <td className={'ra mono ' + cl(r.net)}>{sFull(r.net)}</td>
+            <td className={'ra mono ' + cl(r.net)}><SInrF n={r.net} /></td>
           </tr>
         ))}
         <tr className="tot">
           <td>Total</td>
-          <td className={'ra ' + cl(total.gross)}>{sFull(total.gross)}</td>
+          <td className={'ra ' + cl(total.gross)}><SInrF n={total.gross} /></td>
           <td className="ra mut">{numC(total.charges)}</td>
-          <td className={'ra ' + cl(total.net)}>{sFull(total.net)}</td>
+          <td className={'ra ' + cl(total.net)}><SInrF n={total.net} /></td>
         </tr>
       </tbody>
     </table>
@@ -2046,9 +2164,9 @@ function YtdFno({ label, data, extra }) {
   return (
     <div className="mini">
       <div className="lbl" style={{ marginBottom: 6 }}>{label}</div>
-      <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Gross</span><span className={'mono ' + cl(data.gross)}>{sFull(data.gross)}</span></div>
+      <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Gross</span><span className={'mono ' + cl(data.gross)}><SInrF n={data.gross} /></span></div>
       <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Charges</span><span className="mono mut">{numC(data.charges)}</span></div>
-      <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Net realised</span><span className={'mono ' + cl(data.net)}>{sFull(data.net)}</span></div>
+      <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Net realised</span><span className={'mono ' + cl(data.net)}><SInrF n={data.net} /></span></div>
       {extra && (
         <div className="fxc" style={{ marginTop: 3 }}>
           <span style={{ color: 'var(--txt2)' }}>{extra.label}</span>{extra.node}
@@ -2086,7 +2204,7 @@ function Donut({ segments }) {
         <text x={size / 2} y={size / 2 - 4} textAnchor="middle" fill="var(--txt3)"
           fontSize="9" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>assets</text>
         <text x={size / 2} y={size / 2 + 14} textAnchor="middle" fill="var(--txt)"
-          fontSize="17" fontWeight="700" fontFamily="var(--mono)">{inrC(total)}</text>
+          fontSize="17" fontWeight="700" fontFamily="var(--mono)"><tspan fontSize="13">₹</tspan>{inrCd(total)}</text>
       </svg>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 12px', width: '100%' }}>
         {segments.map((seg) => (
