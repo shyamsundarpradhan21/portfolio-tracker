@@ -2142,61 +2142,61 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
           </div>
 
-          {/* Realized P&L — overall, as on date (computed avg-cost) */}
-          <div className="card sec">
-            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div className="ctitle">Realized P&amp;L · Overall <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
-                <div className="sub" style={{ margin: 0 }}>Vested trade ledger · avg-cost · as on {US_REALIZED.asOf}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
-                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
-              </div>
-            </div>
-            <div className="g3 sec">
-              {US_REALIZED.fy.map((f) => (
-                <div className="mini" key={f.label}>
-                  <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
-                  <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
+          {/* Realized P&L + Dividend Income, side by side */}
+          <div className="g2 sec">
+            {/* Realized P&L — overall, as on date (computed avg-cost) */}
+            <div className="card">
+              <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div className="ctitle">Realized P&amp;L <span className="badge" style={{ fontSize: 9, marginLeft: 4, background: 'var(--acc-bg)', color: 'var(--acc)' }}>COMPUTED</span></div>
+                  <div className="sub" style={{ margin: 0 }}>avg-cost · as on {US_REALIZED.asOf}</div>
                 </div>
-              ))}
+                <div style={{ textAlign: 'right' }}>
+                  <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
+                  <div className="sub" style={{ margin: 0 }}>overall (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
+                </div>
+              </div>
+              <div className="g3 sec">
+                {US_REALIZED.fy.map((f) => (
+                  <div className="mini" key={f.label}>
+                    <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
+                    <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[...US_REALIZED.winners, ...US_REALIZED.losers].map((m, i) => (
+                  <span key={m.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{m.sym} <span className={cl(m.amt)}>${Math.abs(m.amt).toFixed(2)}</span></span>
+                ))}
+              </div>
+              <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Avg-cost realised from the trade ledger. Filed foreign-STCG is in the ITR-verified card below.</div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {US_REALIZED.winners.map((w) => (
-                <span key={w.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{w.sym} <span className="grn">${w.amt.toFixed(2)}</span></span>
-              ))}
-              {US_REALIZED.losers.map((l) => (
-                <span key={l.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--red)' }} />{l.sym} <span className="red">${Math.abs(l.amt).toFixed(2)}</span></span>
-              ))}
-            </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Average-cost realised gains/losses from the Vested trade ledger (overall, as on date). The filed foreign-STCG tax figure is in the ITR-verified card below.</div>
-          </div>
 
-          {/* Dividend income (from the Vested statement) */}
-          <div className="card sec">
-            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div className="ctitle">Dividend Income</div>
-                <div className="sub" style={{ margin: 0 }}>From the Vested statement · as of {US_DIVIDENDS.asOf}</div>
+            {/* Dividend income (from the Vested statement) */}
+            <div className="card">
+              <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div className="ctitle">Dividend Income</div>
+                  <div className="sub" style={{ margin: 0 }}>Vested statement · as of {US_DIVIDENDS.asOf}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+                  <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+                </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
-                <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+              <div className="g2 sec">
+                <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div><div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div></div>
+                <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div><div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div></div>
+                <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div><div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div></div>
+                <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div><div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div></div>
               </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {US_DIVIDENDS.top.map((t, i) => (
+                  <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} ${t.amt.toFixed(2)}</span>
+                ))}
+              </div>
+              <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>25% US withholding at source; creditable against Indian tax via the DTAA.</div>
             </div>
-            <div className="g4 sec">
-              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div><div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div></div>
-              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div><div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div></div>
-              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div><div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div></div>
-              <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div><div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div></div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {US_DIVIDENDS.top.map((t, i) => (
-                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} ${t.amt.toFixed(2)}</span>
-              ))}
-            </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source; creditable against Indian tax via the DTAA.</div>
           </div>
 
           <CFMemo
