@@ -50,22 +50,21 @@ export const TRANSACTIONS = [
 // short-term −25,786 + intraday −4,864 + long-term +2,789. Update after exits.
 export const REALIZED_PNL = -27862;
 
-// Indian realised equity P&L — from the filed ITR (ITR-3, AY2425/AY2526). The
-// individual large-cap holdings tracked on the dashboard are held OUTSIDE the
-// personal trading/ITR account, so they generate no personal realised P&L; the
-// only domestic equity capital gains in the ITR are small STT-paid delivery
-// STCG (Fyers/Dhan). F&O and mutual-fund gains live on their own tabs.
+// Indian realised equity P&L. The tracked large-caps sit in a family member's
+// (Tulasi Pradhan) account, not the personal ITR — so the overall figure is the
+// equity capital gains filed in that account (per her ITR-3/ITR-2). `ytd` is the
+// current FY (none booked). Upload the Zerodha tradebook for live per-stock
+// realised. The bottom tax card carries the ITR-verified last-year figure.
 export const INDIAN_REALIZED = {
-  verified: true,
-  source: 'ITR-3 · domestic delivery STCG',
   ytdLabel: 'FY26-27',
-  ytd: 0,                 // nothing realised this FY (holdings sit outside the account)
-  overall: 1538,          // FY24-25 +62 + FY25-26 +1,476
+  ytd: 0,
+  overall: 1072,          // FY23-24 −634 (STCG) + FY24-25 +1,706 (STCG −1,083 + LTCG +2,789)
   fy: [
-    { label: 'FY24-25', amt: 62 },
-    { label: 'FY25-26', amt: 1476 },
+    { label: 'FY23-24', amt: -634 },
+    { label: 'FY24-25', amt: 1706 },
   ],
-  note: 'The large-cap holdings above are tracked but held outside your personal trading/ITR account — no personal realised P&L arises from them. These are your filed domestic delivery STCG figures.',
+  source: 'Tulasi Pradhan a/c · ITR',
+  note: 'These holdings sit in a family member (Tulasi Pradhan) account, not your personal ITR. Overall realised is the equity capital gains filed there; upload the Zerodha tradebook for live per-stock realised.',
 };
 
 // Corporate actions on CURRENT holdings (manual array, maintained like the FD
@@ -123,19 +122,20 @@ export const US_CASHFLOWS = [
   { date: '2026-02-17', invested: -140 }, // withdrawal
 ];
 
-// Realised US equity P&L. Overall is the ITR-verified foreign STCG (US shares,
-// slab rate, held <24m) from the filed return (₹). YTD is the current-FY figure
-// computed live from the Vested trade ledger (avg-cost, USD) until that year is
-// filed. Refresh from the tax report each year.
+// Realised US equity P&L — avg-cost from the Vested trade ledger (overall, as on
+// date). `ytdUsd` is the current-FY figure for the summary card; the window
+// shows the all-time number + per-FY + winners/losers. The filed foreign STCG
+// (ITR) lives only in the bottom tax card.
 export const US_REALIZED = {
   asOf: '08 Jun 2026',
-  verified: true,
-  source: 'ITR-3 · foreign STCG (Sch CG/FSI)',
-  overall: 27694,         // FY25-26 foreign STCG (₹), ITR-verified
-  overallCcy: 'INR',
-  fy: [{ label: 'FY25-26', amt: 27694 }],
+  total: 171.38,
   ytdLabel: 'FY26-27',
-  ytdUsd: 8.70,           // computed from the trade ledger (current FY, not yet filed)
+  ytdUsd: 8.70,
+  fy: [
+    { label: 'FY24-25', amt: -344.29 }, { label: 'FY25-26', amt: 506.97 }, { label: 'FY26-27', amt: 8.70 },
+  ],
+  winners: [{ sym: 'MSTR', amt: 345.52 }, { sym: 'HOOD', amt: 60.98 }, { sym: 'MU', amt: 36.44 }],
+  losers: [{ sym: 'NFLX', amt: -344.75 }, { sym: 'NOW', amt: -49.45 }, { sym: 'BTBT', amt: -21.02 }],
 };
 
 // US dividend income from the Vested/DriveWealth statement (Income sheet).
