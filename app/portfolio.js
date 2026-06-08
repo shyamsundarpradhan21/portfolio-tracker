@@ -123,13 +123,20 @@ export const US_DIVIDENDS = {
   ],
 };
 
-// Upcoming US corporate actions (dividends / splits) on current holdings —
-// maintained manually like the Indian array, since the Vested statement only
-// carries *executed* income, and there's no reliable free upcoming-ex-date feed.
-// Add the next ex-dates from the Nasdaq dividend calendar during the monthly
-// update. `perShare` in USD. Same shape as CORPORATE_ACTIONS.
-//   { type: 'dividend', sym: 'SCHD', name: 'Schwab US Dividend', ex: '2026-06-25', perShare: 0.27 }
-export const US_CORP_ACTIONS = [];
+// Upcoming US corporate actions on current holdings. ETF distributions are
+// clockwork, so these ex-dates are PROJECTED from each fund's payout history in
+// the Vested statement (last ex-date + its typical interval); perShare is the
+// last distribution ÷ current units. Refresh / confirm against the Nasdaq
+// dividend calendar at the monthly update. `projected: true` flags the estimate.
+export const US_CORP_ACTIONS = [
+  { type: 'dividend', sym: 'IVV',  name: 'iShares Core S&P 500',   ex: '2026-06-19', perShare: 1.63, projected: true },
+  { type: 'dividend', sym: 'EFA',  name: 'iShares MSCI EAFE',      ex: '2026-06-19', perShare: 1.24, projected: true },
+  { type: 'dividend', sym: 'EEM',  name: 'iShares MSCI Em Mkts',   ex: '2026-06-19', perShare: 0.93, projected: true },
+  { type: 'dividend', sym: 'QQQM', name: 'Invesco NASDAQ 100',     ex: '2026-06-26', perShare: 0.30, projected: true },
+  { type: 'dividend', sym: 'SCHD', name: 'Schwab US Dividend',     ex: '2026-06-29', perShare: 0.23, projected: true },
+  { type: 'dividend', sym: 'IUSB', name: 'iShares Core USD Bond',  ex: '2026-07-04', perShare: 0.15, projected: true },
+  { type: 'dividend', sym: 'HYDB', name: 'iShares Hi-Yld Bond',    ex: '2026-07-04', perShare: 0.26, projected: true },
+];
 
 // US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
 // market / growth tilt / low-correlation gold. Yahoo carries these reliably.
