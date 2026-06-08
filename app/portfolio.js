@@ -50,21 +50,20 @@ export const TRANSACTIONS = [
 // short-term −25,786 + intraday −4,864 + long-term +2,789. Update after exits.
 export const REALIZED_PNL = -27862;
 
-// Indian realised equity P&L. The tracked large-caps sit in a family member's
-// (Tulasi Pradhan) account, not the personal ITR — so the overall figure is the
-// equity capital gains filed in that account (per her ITR-3/ITR-2). `ytd` is the
-// current FY (none booked). Upload the Zerodha tradebook for live per-stock
-// realised. The bottom tax card carries the ITR-verified last-year figure.
+// Indian realised equity P&L — avg-cost from the Zerodha tradebook (GWS919EQ),
+// same method as the US side. `ytd` = current FY; the window shows all-time +
+// per-FY + top winners/losers. The bottom tax card carries the ITR figure.
 export const INDIAN_REALIZED = {
+  asOf: '08 Jun 2026',
   ytdLabel: 'FY26-27',
-  ytd: 0,
-  overall: 1072,          // FY23-24 −634 (STCG) + FY24-25 +1,706 (STCG −1,083 + LTCG +2,789)
+  ytd: 3996,
+  total: -22491,
   fy: [
-    { label: 'FY23-24', amt: -634 },
-    { label: 'FY24-25', amt: 1706 },
+    { label: 'FY24-25', amt: 1370 }, { label: 'FY25-26', amt: -27966 }, { label: 'FY26-27', amt: 3996 },
   ],
-  source: 'Tulasi Pradhan a/c · ITR',
-  note: 'These holdings sit in a family member (Tulasi Pradhan) account, not your personal ITR. Overall realised is the equity capital gains filed there; upload the Zerodha tradebook for live per-stock realised.',
+  winners: [{ sym: 'GOLDBEES', amt: 7259 }, { sym: 'NATCOPHARM', amt: 4099 }, { sym: 'SUPRIYA', amt: 4010 }],
+  losers: [{ sym: 'TINNARUBR', amt: -7984 }, { sym: 'HDFCBANK', amt: -6228 }, { sym: 'TECHNOE', amt: -2820 }],
+  source: 'Zerodha tradebook · avg-cost',
 };
 
 // Corporate actions on CURRENT holdings (manual array, maintained like the FD
