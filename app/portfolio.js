@@ -50,18 +50,22 @@ export const TRANSACTIONS = [
 // short-term −25,786 + intraday −4,864 + long-term +2,789. Update after exits.
 export const REALIZED_PNL = -27862;
 
-// Indian realised P&L — from the Zerodha tax P&L statement, i.e. the figure that
-// flows into the ITR, so it is tax/ITR-verified. Update after new exits.
+// Indian realised equity P&L — from the filed ITR (ITR-3, AY2425/AY2526). The
+// individual large-cap holdings tracked on the dashboard are held OUTSIDE the
+// personal trading/ITR account, so they generate no personal realised P&L; the
+// only domestic equity capital gains in the ITR are small STT-paid delivery
+// STCG (Fyers/Dhan). F&O and mutual-fund gains live on their own tabs.
 export const INDIAN_REALIZED = {
-  total: -27862,
   verified: true,
-  source: 'Zerodha tax P&L · ITR',
-  period: 'FY22 → FY26',
-  breakdown: [
-    { label: 'Short-term', amt: -25786 },
-    { label: 'Intraday', amt: -4864 },
-    { label: 'Long-term', amt: 2789 },
+  source: 'ITR-3 · domestic delivery STCG',
+  ytdLabel: 'FY26-27',
+  ytd: 0,                 // nothing realised this FY (holdings sit outside the account)
+  overall: 1538,          // FY24-25 +62 + FY25-26 +1,476
+  fy: [
+    { label: 'FY24-25', amt: 62 },
+    { label: 'FY25-26', amt: 1476 },
   ],
+  note: 'The large-cap holdings above are tracked but held outside your personal trading/ITR account — no personal realised P&L arises from them. These are your filed domestic delivery STCG figures.',
 };
 
 // Corporate actions on CURRENT holdings (manual array, maintained like the FD
@@ -119,18 +123,19 @@ export const US_CASHFLOWS = [
   { date: '2026-02-17', invested: -140 }, // withdrawal
 ];
 
-// Realised US equity P&L from the Vested Trades ledger (average-cost method):
-// proceeds − running average cost on every sell. USD. Refresh monthly.
+// Realised US equity P&L. Overall is the ITR-verified foreign STCG (US shares,
+// slab rate, held <24m) from the filed return (₹). YTD is the current-FY figure
+// computed live from the Vested trade ledger (avg-cost, USD) until that year is
+// filed. Refresh from the tax report each year.
 export const US_REALIZED = {
   asOf: '08 Jun 2026',
-  total: 171.38,
-  verified: false, // computed avg-cost from the trade ledger, NOT a filed tax figure
-  source: 'Vested trade ledger · avg-cost (computed)',
-  fy: [
-    { label: 'FY24-25', amt: -344.29 }, { label: 'FY25-26', amt: 506.97 }, { label: 'FY26-27', amt: 8.70 },
-  ],
-  winners: [{ sym: 'MSTR', amt: 345.52 }, { sym: 'HOOD', amt: 60.98 }, { sym: 'MU', amt: 36.44 }],
-  losers: [{ sym: 'NFLX', amt: -344.75 }, { sym: 'NOW', amt: -49.45 }, { sym: 'BTBT', amt: -21.02 }],
+  verified: true,
+  source: 'ITR-3 · foreign STCG (Sch CG/FSI)',
+  overall: 27694,         // FY25-26 foreign STCG (₹), ITR-verified
+  overallCcy: 'INR',
+  fy: [{ label: 'FY25-26', amt: 27694 }],
+  ytdLabel: 'FY26-27',
+  ytdUsd: 8.70,           // computed from the trade ledger (current FY, not yet filed)
 };
 
 // US dividend income from the Vested/DriveWealth statement (Income sheet).
@@ -169,9 +174,13 @@ export const US_CORP_ACTIONS = [
 // US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
 // market / growth tilt / low-correlation gold. Yahoo carries these reliably.
 export const US_BENCHMARKS = [
-  { key: 'sp500',  label: 'S&P 500',     color: 'var(--blu)', yahooSyms: ['^GSPC', 'IVV'] },
-  { key: 'nasdaq', label: 'NASDAQ 100',  color: 'var(--pur)', yahooSyms: ['^NDX', 'QQQ'] },
-  { key: 'gold',   label: 'Gold',        color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
+  { key: 'sp500',  label: 'S&P 500',         color: 'var(--blu)', yahooSyms: ['^GSPC', 'IVV'] },
+  { key: 'nasdaq', label: 'NASDAQ 100',      color: 'var(--pur)', yahooSyms: ['^NDX', 'QQQ'] },
+  { key: 'world',  label: 'MSCI World',      color: 'var(--cyn)', yahooSyms: ['URTH'] },
+  { key: 'acwi',   label: 'MSCI ACWI',       color: 'var(--grn)', yahooSyms: ['ACWI'] },
+  { key: 'eafe',   label: 'Dev. ex-US (EAFE)', color: 'var(--pnk)', yahooSyms: ['EFA', 'IEFA'] },
+  { key: 'em',     label: 'Emerging Mkts',   color: '#7A8CA8',    yahooSyms: ['EEM', 'VWO'] },
+  { key: 'gold',   label: 'Gold',            color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
 ];
 export const US = [
   { sym: 'QQQM', name: 'Invesco NASDAQ 100',   cat: 'ETF',        qty: 3.21393889,  cost: 227.36 },
