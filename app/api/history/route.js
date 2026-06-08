@@ -22,10 +22,10 @@ const UA =
 
 const isoDay = (sec) => new Date(sec * 1000).toISOString().slice(0, 10);
 
-async function fetchSeries(symbol) {
+async function fetchSeries(symbol, range) {
   const path =
     `/v8/finance/chart/${encodeURIComponent(symbol)}` +
-    `?interval=1wk&range=2y`;
+    `?interval=1wk&range=${encodeURIComponent(range)}`;
   let lastErr;
   for (const host of HOSTS) {
     try {
@@ -75,15 +75,17 @@ async function fetchSeries(symbol) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get('symbols') || '';
+  const ALLOWED = new Set(['1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'max']);
+  const range = ALLOWED.has(searchParams.get('range')) ? searchParams.get('range') : '2y';
   const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean);
   if (symbols.length === 0) {
     return Response.json({ error: 'pass ?symbols=^NSEI,GOLDBEES.NS' }, { status: 400 });
   }
-  if (symbols.length > 10) {
-    return Response.json({ error: 'too many symbols (max 10)' }, { status: 400 });
+  if (symbols.length > 70) {
+    return Response.json({ error: 'too many symbols (max 70)' }, { status: 400 });
   }
 
-  const results = await Promise.all(symbols.map(fetchSeries));
+  const results = await Promise.all(symbols.map((s) => fetchSeries(s, range)));
   const series = {};
   for (const r of results) {
     series[r.symbol] = r.error
