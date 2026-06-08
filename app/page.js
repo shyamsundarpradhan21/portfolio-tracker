@@ -454,17 +454,15 @@ function AreaChart({ points, height = 240 }) {
   );
 }
 
-// Mirrors the Indian holdings columns, plus the extra Category column. USD.
+// Value-focused (fractional shares), plus the extra Category column. USD.
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
   { key: 'cat', label: 'Category', num: false },
-  { key: 'qty', label: 'Qty', num: true },
-  { key: 'cost', label: 'Avg cost', num: true },
-  { key: 'livePrice', label: 'LTP', num: true },
-  { key: 'inv', label: 'Invested', num: true },
-  { key: 'liveVal', label: 'Value', num: true },
-  { key: 'livePl', label: 'P&L', num: true },
-  { key: 'livePct', label: 'Return %', num: true },
+  { key: 'livePrice', label: 'Live $', num: true },
+  { key: 'liveVal', label: 'Value $', num: true },
+  { key: 'inv', label: 'Invested $', num: true },
+  { key: 'livePl', label: 'P&L $', num: true },
+  { key: 'livePct', label: 'P&L %', num: true },
   { key: 'dayPct', label: 'Day %', num: true },
 ];
 
@@ -1406,7 +1404,7 @@ export default function Page() {
             rows={[
               { label: 'Non-spec F&O', val: sFull(-FY.cf.nonSpec), sub: 'Sec 72 · 8-yr · offsets future F&O profit only' },
               { label: 'Speculative (intraday)', val: sFull(-FY.cf.speculative), sub: 'Sec 73 · 4-yr · ₹16,958 expires AY28-29 first' },
-              { label: 'Pool entering FY26-27', val: sFull(-FY.cf.poolEnteringFY2627), accent: true, sub: `−${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
+              { label: 'Pool entering FY26-27', val: sFull(-FY.cf.poolEnteringFY2627), accent: true, sub: `${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
             ]}
           />
         </div>
@@ -1426,7 +1424,7 @@ export default function Page() {
           { key: 'pct', label: 'Return %', num: true },
           { key: 'day', label: 'Day %', num: true },
         ];
-        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
         const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' };
         const secColors = SECTOR_PALETTE;
         return (
@@ -1512,7 +1510,7 @@ export default function Page() {
                 </tbody>
               </table>
               <div className="sub" style={{ marginTop: 12 }}>
-                CAGR {inStats.cagr != null ? inStats.cagr.toFixed(1) + '%' : '—'}
+                CAGR {inStats.cagr != null ? Math.abs(inStats.cagr).toFixed(1) + '%' : '—'}
                 {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
               </div>
               <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
@@ -1583,10 +1581,10 @@ export default function Page() {
                 <tbody>
                   {inSorted.map((s) => (
                     <tr key={s.sym}>
-                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
                         {s.sym}
-                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>
-                          {s.sector} · {s.cap}
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
+                          {s.name} · {s.sector} · {s.cap}
                         </div>
                       </td>
                       <td className="ra mut mono">{s.qty}</td>
@@ -1857,7 +1855,7 @@ export default function Page() {
           { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
         ];
         const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
-        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
         const delta = mfx.port != null && mfx.bench != null ? mfx.port - mfx.bench : null;
         const platStyle = (p) => p === 'JioBLK'
           ? { background: 'rgba(155,138,251,.16)', color: '#BCAEFF' }
@@ -2033,7 +2031,7 @@ export default function Page() {
       {/* US STOCKS — live NYSE; mirrors the Indian tab (XIRR/CAGR/benchmarks
           from US_CASHFLOWS, sector allocation, sortable holdings + Category). */}
       {tab === 4 && (() => {
-        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
         return (
         <div>
           <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
@@ -2112,7 +2110,7 @@ export default function Page() {
                 </tbody>
               </table>
               <div className="sub" style={{ marginTop: 12 }}>
-                CAGR {usStats.cagr != null ? usStats.cagr.toFixed(1) + '%' : '—'}
+                CAGR {usStats.cagr != null ? Math.abs(usStats.cagr).toFixed(1) + '%' : '—'}
                 {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
               </div>
               <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
@@ -2173,20 +2171,18 @@ export default function Page() {
                 <tbody>
                   {usSorted.map((s) => (
                     <tr key={s.sym}>
-                      <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
+                      <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
                         {s.sym}
-                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{s.name}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>{s.name} · {s.cat}</div>
                       </td>
                       <td><span className="mf-pill" style={{ background: 'var(--sur2)', color: 'var(--txt2)' }}>{s.cat}</span></td>
-                      <td className="ra mut mono">{s.qty.toFixed(4)}</td>
-                      <td className="ra mut mono">${s.cost.toFixed(2)}</td>
                       <td className="ra mono">
                         {s.livePrice != null
                           ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}>${s.livePrice.toFixed(2)}</span>
                           : <Skel w={40} h={11} />}
                       </td>
-                      <td className="ra mono">${s.inv.toFixed(2)}</td>
                       <td className="ra mono">{s.liveVal != null ? usd(s.liveVal) : '—'}</td>
+                      <td className="ra mono mut">${s.inv.toFixed(2)}</td>
                       <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>
                         {s.livePl != null ? usd(s.livePl) : '—'}
                       </td>
@@ -2199,9 +2195,9 @@ export default function Page() {
                     </tr>
                   ))}
                   <tr className="tot">
-                    <td colSpan={5}>Total — {US.length} holdings</td>
-                    <td className="ra">${usData.inv.toFixed(2)}</td>
+                    <td colSpan={3}>Total — {US.length} holdings</td>
                     <td className="ra">{usData.val ? '$' + usData.val.toFixed(2) : '…'}</td>
+                    <td className="ra">${usData.inv.toFixed(2)}</td>
                     <td className={'ra ' + cl(usData.pl)}>{usData.val ? usd(usData.pl) : '…'}</td>
                     <td className={'ra ' + cl(usData.pl)}>{usData.val ? pctS(usData.pct) : '…'}</td>
                     <td />
@@ -2296,8 +2292,8 @@ export default function Page() {
           <div className="g3 sec">
             <div className="csm">
               <div className="lbl">own capital</div>
-              <div className="vmd" style={{ color: 'var(--acc)' }}>{ALGO.summary.deployed}</div>
-              <div className="sub">{ALGO.summary.deployedNote}</div>
+              <div className="vmd"><RsText>{ALGO.summary.deployed}</RsText></div>
+              <div className="sub"><RsText>{ALGO.summary.deployedNote}</RsText></div>
             </div>
             <div className="csm">
               <div className="lbl">FY 2025-26</div>
@@ -2306,7 +2302,7 @@ export default function Page() {
             </div>
             <div className="csm">
               <div className="lbl">FY26-27 YTD</div>
-              <div className="vmd grn">{ytdTotal != null ? sFull(ytdTotal) : <Skel w={90} h={15} />}</div>
+              <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <SInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
               <div className="sub">
                 <span className="grn">S01 <SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
                 <span className="grn">S02 <SInrF n={FY.s02.fy2627.net} /></span> ·{' '}
@@ -2330,9 +2326,9 @@ export default function Page() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
-                      <div className="sub" style={{ margin: 0 }}>{ALGO.s01.pool}</div>
+                      <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s01.pool}</RsText></div>
                     </div>
-                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}>{ALGO.s01.deployed}</div>
+                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s01.deployed}</RsText></div>
                   </div>
                 </div>
                 <div className="mini">
@@ -2376,9 +2372,9 @@ export default function Page() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
-                      <div className="sub" style={{ margin: 0 }}>{ALGO.s02.capital}</div>
+                      <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s02.capital}</RsText></div>
                     </div>
-                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--acc)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}>{ALGO.s02.deployed}</div>
+                    <div style={{ fontSize: 23, fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s02.deployed}</RsText></div>
                   </div>
                 </div>
                 <div className="mini">
@@ -2423,7 +2419,7 @@ export default function Page() {
                         <td />
                         <td className="ra"><InrF n={swing.inv} /></td>
                         <td className="ra">{swing.valued ? inrFull(swing.val) : '…'}</td>
-                        <td className={'ra ' + cl(swing.pl)}>{swing.valued ? sFull(swing.pl) : '…'}</td>
+                        <td className={'ra ' + cl(swing.pl)}>{swing.valued ? <SInrF n={swing.pl} /> : '…'}</td>
                         <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
                       </tr>
                     </tbody>
@@ -2437,7 +2433,7 @@ export default function Page() {
           {/* BOTTOM STRIP */}
           <div className="csm sec">
             <span style={{ color: 'var(--txt2)' }}>
-              Own capital: <strong style={{ color: 'var(--txt)' }}>{ALGO.summary.deployed}</strong> <span className="mut">({ALGO.summary.deployedNote})</span>
+              Own capital: <strong style={{ color: 'var(--txt)' }}><RsText>{ALGO.summary.deployed}</RsText></strong> <span className="mut">(<RsText>{ALGO.summary.deployedNote}</RsText>)</span>
               {'  ·  '}
               FY25-26 combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
               Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
