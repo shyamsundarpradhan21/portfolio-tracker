@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
-  ALGO, SWING, STATIC, RETIREMENT, ALLOC_COLORS,
+  ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS,
 } from './portfolio';
@@ -244,6 +244,25 @@ const US_SECTOR_OVERRIDE = {
   GOOG: 'Communication Services', META: 'Communication Services', DIS: 'Communication Services',
 };
 const usSectorOf = (s) => US_SECTOR_OVERRIDE[s.sym] || US_SECTOR[s.cat] || s.cat;
+
+// ETF sector look-through (approx published weights) so the US sector split
+// lines up with Vested, which cracks ETFs into underlying sectors rather than a
+// single "ETF" slice. Refresh weights at the monthly update if they drift.
+const ETF_LOOKTHROUGH = {
+  QQQM: { 'Information Technology': 0.50, 'Communication Services': 0.16, 'Consumer Discretionary': 0.14, 'Health Care': 0.06, 'Consumer Staples': 0.04, 'Industrials': 0.05, 'Financials': 0.01, 'All Others': 0.04 },
+  IVV:  { 'Information Technology': 0.33, 'Financials': 0.14, 'Communication Services': 0.09, 'Health Care': 0.10, 'Consumer Discretionary': 0.10, 'Consumer Staples': 0.06, 'Industrials': 0.08, 'Materials': 0.02, 'All Others': 0.08 },
+  SCHD: { 'Financials': 0.19, 'Consumer Staples': 0.19, 'Health Care': 0.16, 'Industrials': 0.13, 'Information Technology': 0.10, 'Consumer Discretionary': 0.08, 'Communication Services': 0.05, 'Materials': 0.04, 'All Others': 0.06 },
+  EFA:  { 'Financials': 0.21, 'Industrials': 0.17, 'Health Care': 0.12, 'Consumer Discretionary': 0.11, 'Information Technology': 0.09, 'Consumer Staples': 0.09, 'Materials': 0.07, 'Communication Services': 0.04, 'All Others': 0.10 },
+  EEM:  { 'Information Technology': 0.24, 'Financials': 0.23, 'Consumer Discretionary': 0.13, 'Communication Services': 0.09, 'Materials': 0.07, 'Consumer Staples': 0.05, 'Industrials': 0.06, 'All Others': 0.13 },
+};
+// US market-cap buckets (direct stocks). ETFs/bonds/commodity sit in "Other".
+const US_CAP = {
+  AAPL: 'Large', MSFT: 'Large', NVDA: 'Large', AVGO: 'Large', GOOG: 'Large', AMZN: 'Large', META: 'Large',
+  TSM: 'Large', ASML: 'Large', JPM: 'Large', V: 'Large', MA: 'Large', KO: 'Large', PEP: 'Large', PG: 'Large',
+  ADBE: 'Large', CRM: 'Large', INTU: 'Large', MCO: 'Large', DE: 'Large', TMO: 'Large', COIN: 'Large', DIS: 'Large',
+  FTNT: 'Mid', CPRT: 'Mid', SHW: 'Mid', HOOD: 'Mid', PYPL: 'Mid', MARA: 'Mid', RIOT: 'Mid', IREN: 'Mid', CORZ: 'Mid', CLSK: 'Mid',
+  HUT: 'Small', KEEL: 'Small', CIFR: 'Small', WULF: 'Small', APLD: 'Small', BTDR: 'Small', GLXY: 'Small',
+};
 
 // Shared categorical palette for ALL allocation visuals (Indian sector & cap,
 // US sector, MF market-cap) — uniform slice colours across tabs. These are
@@ -1073,17 +1092,31 @@ export default function Page() {
   // just like the Indian tab. All US figures here are in USD.
   const usStats = useMemo(() => {
     const value = usData.val;
+    // Sector split with ETF look-through (matches Vested's methodology).
     const secMap = {};
-    usData.rows.forEach((r) => { if (r.liveVal != null) { const k = usSectorOf(r); secMap[k] = (secMap[k] || 0) + r.liveVal; } });
+    usData.rows.forEach((r) => {
+      if (r.liveVal == null) return;
+      const lt = ETF_LOOKTHROUGH[r.sym];
+      if (lt) { Object.entries(lt).forEach(([sec, w]) => { secMap[sec] = (secMap[sec] || 0) + r.liveVal * w; }); }
+      else { const k = usSectorOf(r); secMap[k] = (secMap[k] || 0) + r.liveVal; }
+    });
     let sectors = Object.entries(secMap)
       .map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 }))
       .sort((a, b) => b.val - a.val);
     // Top 6 + "All Others", like the Vested sector split.
     if (sectors.length > 7) {
-      const head = sectors.slice(0, 6);
-      const restVal = sectors.slice(6).reduce((s, x) => s + x.val, 0);
+      const head = sectors.slice(0, 6).filter((x) => x.label !== 'All Others');
+      const restVal = value - head.reduce((s, x) => s + x.val, 0);
       sectors = [...head, { label: 'All Others', val: restVal, pct: value ? (restVal / value) * 100 : 0, other: true }];
     }
+    // Market-cap split (direct stocks; ETFs/bonds/commodity → Other).
+    const capMap = { Large: 0, Mid: 0, Small: 0, Other: 0 };
+    usData.rows.forEach((r) => {
+      if (r.liveVal == null) return;
+      const k = US_CAP[r.sym] || (['ETF', 'Bond', 'Commodity'].includes(r.cat) ? 'Other' : 'Large');
+      capMap[k] += r.liveVal;
+    });
+    const caps = ['Large', 'Mid', 'Small', 'Other'].map((label) => ({ label, val: capMap[label], pct: value ? (capMap[label] / value) * 100 : 0 }));
     const valued = usData.rows.filter((r) => r.livePct != null);
     const winner = valued.length ? valued.reduce((a, b) => (b.livePct > a.livePct ? b : a)) : null;
     const laggard = valued.length ? valued.reduce((a, b) => (b.livePct < a.livePct ? b : a)) : null;
@@ -1117,7 +1150,7 @@ export default function Page() {
       return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, cagr: cf ? cf.cagr : null, ret: cf ? cf.ret : null };
     });
     return {
-      value, sectors, winner, laggard, topPos, topSector: sectors[0] || null,
+      value, sectors, caps, winner, laggard, topPos, topSector: sectors[0] || null,
       dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0,
       netInvested, xirr: xr, cagr, years, benchmarks,
     };
@@ -1463,9 +1496,9 @@ export default function Page() {
               <div className="sub">{indian.valued ? `${pctS(indianDayPct)} since prev close` : 'intraday move'}</div>
             </div>
             <div className="csm">
-              <div className="lbl">XIRR</div>
-              <div className={'vmd ' + (inStats.portXirr != null ? cl(inStats.portXirr) : '')}>
-                {inStats.portXirr != null ? fmtX(inStats.portXirr) : <Skel w={70} h={20} />}
+              <div className="lbl">CAGR</div>
+              <div className={'vmd ' + (inStats.cagr != null ? cl(inStats.cagr) : '')}>
+                {inStats.cagr != null ? fmtX(inStats.cagr) : <Skel w={70} h={20} />}
               </div>
               <div className="sub">annualised · ~5mo window</div>
             </div>
@@ -1484,14 +1517,13 @@ export default function Page() {
               <table className="tbl">
                 <thead>
                   <tr>
-                    <th>Instrument</th><th className="ra">XIRR</th><th className="ra">CAGR</th><th className="ra">Value</th>
+                    <th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
                     <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{fmtX(inStats.portXirr)}</td>
-                    <td className={'ra mono ' + (inStats.cagr != null ? cl(inStats.cagr) : 'mut')}>{fmtX(inStats.cagr)}</td>
                     <td className="ra mono">{indian.valued ? <InrC n={indian.val} /> : '—'}</td>
                   </tr>
                   {inStats.benchmarks.map((b) => (
@@ -1503,7 +1535,6 @@ export default function Page() {
                         </span>
                       </td>
                       <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
-                      <td className={'ra mono ' + (b.cagr != null ? cl(b.cagr) : 'mut')}>{fmtX(b.cagr)}</td>
                       <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
                     </tr>
                   ))}
@@ -1670,42 +1701,34 @@ export default function Page() {
                 <div className="sub" style={{ margin: 0 }}>declared total</div>
               </div>
             </div>
-            {corp.dividends.length > 0 && (
-              <div className="g4 sec">
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>credited</div>
-                  <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.done).reduce((s, d) => s + d.amount, 0)} /></div>
-                </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>upcoming</div>
-                  <div className="vsm"><InrF n={corp.dividends.filter((d) => !d.done).reduce((s, d) => s + d.amount, 0)} /></div>
-                </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
-                  <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.ex >= '2026-04-01').reduce((s, d) => s + d.amount, 0)} /></div>
-                </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>payers</div>
-                  <div className="vsm">{corp.dividends.length}</div>
-                </div>
+            <div className="g4 sec">
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>credited</div>
+                <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.done).reduce((s, d) => s + d.amount, 0)} /></div>
               </div>
-            )}
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>upcoming</div>
+                <div className="vsm"><InrF n={corp.dividends.filter((d) => !d.done).reduce((s, d) => s + d.amount, 0)} /></div>
+              </div>
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div>
+                <div className="vsm grn"><InrF n={corp.dividends.filter((d) => d.ex >= '2026-04-01').reduce((s, d) => s + d.amount, 0)} /></div>
+              </div>
+              <div className="mini">
+                <div className="lbl" style={{ marginBottom: 4 }}>payers</div>
+                <div className="vsm">{corp.dividends.length}</div>
+              </div>
+            </div>
             {corp.dividends.length === 0 ? (
               <div className="sub" style={{ color: 'var(--txt3)' }}>No dividends declared on current holdings.</div>
-            ) : corp.dividends.map((d) => (
-              <div className="ca-row" key={d.sym + d.ex}>
-                <span className="ca-ico">💵</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>{d.name} <span className="mut" style={{ fontWeight: 400 }}>· {d.sym}</span></div>
-                  <div className="sub" style={{ margin: 0 }}>₹{d.perShare}/sh × {d.qty} · ex {fmtNavDate(d.ex)}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="mono grn"><InrF n={d.amount} /></div>
-                  <span className="badge" style={{ fontSize: 9, background: d.done ? 'var(--grn-bg)' : 'var(--acc-bg)', color: d.done ? 'var(--grn)' : 'var(--acc)' }}>{d.done ? 'CREDITED' : 'UPCOMING'}</span>
-                </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {corp.dividends.map((d, i) => (
+                  <span key={d.sym + d.ex} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{d.sym} <RsText>{inrFull(d.amount)}</RsText></span>
+                ))}
               </div>
-            ))}
-            <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)' }}>Indian dividends are tax-free in hand up to ₹10L/yr (taxed at slab above); credited ~30–45 days after ex-date.</div>
+            )}
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>Indian dividends are tax-free in hand up to ₹10L/yr (taxed at slab above); credited ~30–45 days after ex-date.</div>
           </div>
 
           <CFMemo
@@ -2068,16 +2091,16 @@ export default function Page() {
               <div className="sub">{usData.val ? `${pctS(usStats.dayPct)} since prev close` : 'intraday move'}</div>
             </div>
             <div className="csm">
-              <div className="lbl">XIRR</div>
-              <div className={'vmd ' + (usStats.xirr != null ? cl(usStats.xirr) : '')}>
-                {usStats.xirr != null ? fmtX(usStats.xirr) : <Skel w={70} h={20} />}
+              <div className="lbl">CAGR</div>
+              <div className={'vmd ' + (usStats.cagr != null ? cl(usStats.cagr) : '')}>
+                {usStats.cagr != null ? fmtX(usStats.cagr) : <Skel w={70} h={20} />}
               </div>
               <div className="sub">annualised · USD · since Mar 2024</div>
             </div>
             <div className="csm">
-              <div className="lbl">USD / INR</div>
-              <div className="vmd">{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : <Skel w={60} h={20} />}</div>
-              <div className="sub">{usData.val && usdInr ? <>value <InrC n={ov.usInr} /></> : 'live spot'}</div>
+              <div className="lbl">dividend income</div>
+              <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+              <div className="sub">net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
             </div>
           </div>
 
@@ -2088,13 +2111,12 @@ export default function Page() {
               <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} deployed into each instead.</div>
               <table className="tbl">
                 <thead>
-                  <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">CAGR</th><th className="ra">Value</th></tr>
+                  <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
                     <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{fmtX(usStats.xirr)}</td>
-                    <td className={'ra mono ' + (usStats.cagr != null ? cl(usStats.cagr) : 'mut')}>{fmtX(usStats.cagr)}</td>
                     <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
                   </tr>
                   {usStats.benchmarks.map((b) => (
@@ -2103,7 +2125,6 @@ export default function Page() {
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
                       </span></td>
                       <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
-                      <td className={'ra mono ' + (b.cagr != null ? cl(b.cagr) : 'mut')}>{fmtX(b.cagr)}</td>
                       <td className="ra mono mut">{b.value != null ? '$' + b.value.toFixed(0) : '—'}</td>
                     </tr>
                   ))}
@@ -2119,7 +2140,7 @@ export default function Page() {
               </div>
             </div>
             <div className="card">
-              <div className="ctitle" style={{ marginBottom: 14 }}>Sector Allocation</div>
+              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
               {usStats.sectors.map((c, i) => (
                 <div key={c.label} className="seg-row">
                   <span className="seg-lbl" style={{ width: 120 }}>{c.label}</span>
@@ -2128,6 +2149,15 @@ export default function Page() {
                 </div>
               ))}
               <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              {usStats.caps.filter((c) => c.val > 0).map((c) => (
+                <div key={c.label} className="seg-row">
+                  <span className="seg-lbl" style={{ width: 120 }}>{c.label === 'Other' ? 'ETF / Other' : c.label + ' cap'}</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: c.label === 'Other' ? OTHERS_COLOR : { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' }[c.label] }} /></span>
+                  <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginBottom: 10, lineHeight: 1.5 }}>Sectors use ETF look-through to align with Vested; direct stocks by GICS.</div>
               <div className="g3">
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
@@ -2213,13 +2243,13 @@ export default function Page() {
             <div className="ctitle" style={{ marginBottom: 4 }}>Corporate Actions</div>
             <div className="sub" style={{ marginBottom: 6 }}>Upcoming dividends &amp; splits on current holdings, soonest first.</div>
             {corpUS.upcoming.length === 0 ? (
-              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions logged — add ex-dates from the Nasdaq dividend calendar at the monthly update.</div>
+              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions logged.</div>
             ) : corpUS.upcoming.map((a) => (
               <div className="ca-row" key={a.sym + a.ex}>
                 <span className="ca-ico">{a.type === 'split' ? '🔀' : '💵'}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>{a.name} <span className="mut" style={{ fontWeight: 400 }}>· {a.sym}</span></div>
-                  <div className="sub" style={{ margin: 0 }}>{a.type === 'split' ? `Split ${a.ratio}` : `Dividend $${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}</div>
+                  <div className="sub" style={{ margin: 0 }}>{a.type === 'split' ? `Split ${a.ratio}` : `Dividend ~$${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}{a.projected ? ' · projected' : ''}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   {a.impact.kind === 'dividend' && <div className="mono grn">${a.impact.amount.toFixed(2)}</div>}
@@ -2229,6 +2259,7 @@ export default function Page() {
                 </div>
               </div>
             ))}
+            <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)' }}>Ex-dates projected from each fund's payout history (last ex-date + typical interval) — confirm against the Nasdaq dividend calendar.</div>
           </div>
 
           {/* Dividend income (from the Vested statement) */}
@@ -2263,7 +2294,7 @@ export default function Page() {
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {US_DIVIDENDS.top.map((t) => (
-                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: 'var(--grn)' }} />{t.sym} <span className="grn" style={{ marginLeft: 2 }}>${t.amt.toFixed(2)}</span></span>
+                <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: CAT_COLORS[(US.find((u) => u.sym === t.sym) || {}).cat] || 'var(--grn)' }} />{t.sym} ${t.amt.toFixed(2)}</span>
               ))}
             </div>
             <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>US dividends are taxed at 25% withholding at source (shown above); creditable against Indian tax via the DTAA.</div>
@@ -2386,7 +2417,7 @@ export default function Page() {
                 <YtdFno label={`FY2026-27 YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                    Swing positions <span className="badge bg" style={{ fontSize: 9 }}>Live</span>
+                    Swing positions <span className={'badge ' + (markets.nse ? 'bg' : '')} style={{ fontSize: 9, ...(markets.nse ? {} : { background: 'rgba(90,90,114,.2)', color: 'var(--txt3)' }) }}>{markets.nse ? 'LIVE' : 'NSE CLOSED'}</span>
                   </div>
                   <div className="ovx">
                   <table className="tbl" style={{ minWidth: 360 }}>
@@ -2430,14 +2461,12 @@ export default function Page() {
             </div>
           </div>
 
-          {/* BOTTOM STRIP */}
+          {/* BOTTOM STRIP — FY25-26 realised only (capital is shown above) */}
           <div className="csm sec">
             <span style={{ color: 'var(--txt2)' }}>
-              Own capital: <strong style={{ color: 'var(--txt)' }}><RsText>{ALGO.summary.deployed}</RsText></strong> <span className="mut">(<RsText>{ALGO.summary.deployedNote}</RsText>)</span>
-              {'  ·  '}
               FY25-26 combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
-              Charges: <span className="red">−₹{numC(FY.combined2526.charges)}</span> ·
-              Net F&amp;O (Sch BP): <span className="red"><SInrF n={FY.combined2526.net} /></span>
+              Charges: <span className="red"><RsText>{inrFull(FY.combined2526.charges)}</RsText></span> ·
+              Net F&amp;O (Sch BP): <span className={cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></span>
               {'  '}
               <span className="mut">(S01 <SInrF n={FY.s01.fy2526.total.net} /> · S02 <SInrF n={FY.s02.fy2526.total.net} />)</span>
             </span>
@@ -2604,12 +2633,14 @@ function Stat({ label, val }) {
 // One freshness indicator for the whole dashboard — same dot+text grammar, copy
 // differs by asset class. mode: 'live' (intraday equities, the only "LIVE"),
 // 'nav' (once-daily mutual funds), 'manual' (FDs / algo / retirement).
+// Uniform freshness coding across the dashboard:
+//   green = live & market open · grey = market closed · amber = cached/stale · grey = manual
 function FreshnessTag({ mode, date, marketState }) {
   let dot = 'var(--txt3)', text = '';
   if (mode === 'live') {
     const open = marketState && marketState.open;
-    dot = open ? 'var(--grn)' : 'var(--acc)';
-    text = `LIVE · ${marketState ? marketState.label : ''}`;
+    dot = open ? 'var(--grn)' : 'var(--txt3)';
+    text = (open ? 'LIVE · ' : '') + (marketState ? marketState.label : '');
   } else if (mode === 'nav') {
     const f = fmtNavDate(date);
     if (f) { dot = 'var(--grn)'; text = `NAV as of ${f}`; }
