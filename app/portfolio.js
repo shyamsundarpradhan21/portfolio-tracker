@@ -172,18 +172,24 @@ export const US_CORP_ACTIONS = [
 
 // US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
 // market / growth tilt / low-correlation gold. Yahoo carries these reliably.
-// Low-correlation GLOBAL benchmark set, valued same-dated-dollars. Uses
-// USD-denominated regional ETFs (not local-currency indices) so each return is
-// FX-inclusive and comparable to the USD portfolio. Spanning US / Japan /
-// Europe / China / India / Gold keeps the benchmarks regionally decorrelated
-// (S&P, NASDAQ, MSCI-World etc. all move together → avoided).
+// Global benchmark set, valued same-dated-dollars. Mirrors the world-indices
+// board (US / Germany / UK / France / Japan / Hong Kong / China / Taiwan /
+// Korea / India) plus Gold. Uses USD-denominated country ETFs (not local-
+// currency indices) so every return is FX-inclusive and comparable to the USD
+// portfolio. Spanning many markets keeps the set decorrelated.
 export const US_BENCHMARKS = [
-  { key: 'sp500',  label: 'S&P 500 · US',    color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
-  { key: 'japan',  label: 'Japan · EWJ',     color: 'var(--pur)', yahooSyms: ['EWJ'] },
-  { key: 'europe', label: 'Europe · VGK',    color: 'var(--cyn)', yahooSyms: ['VGK', 'IEUR'] },
-  { key: 'china',  label: 'China · MCHI',    color: 'var(--pnk)', yahooSyms: ['MCHI', 'FXI'] },
-  { key: 'india',  label: 'India · INDA',    color: 'var(--grn)', yahooSyms: ['INDA', 'EPI'] },
-  { key: 'gold',   label: 'Gold · GLD',      color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
+  { key: 'sp500',    label: 'S&P 500 · US',       color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
+  { key: 'nasdaq',   label: 'Nasdaq 100 · US',    color: 'var(--pur)', yahooSyms: ['QQQ', '^NDX'] },
+  { key: 'germany',  label: 'Germany · DAX',      color: 'var(--cyn)', yahooSyms: ['EWG'] },
+  { key: 'uk',       label: 'UK · FTSE',          color: 'var(--grn)', yahooSyms: ['EWU'] },
+  { key: 'france',   label: 'France · CAC',       color: 'var(--pnk)', yahooSyms: ['EWQ'] },
+  { key: 'japan',    label: 'Japan · Nikkei',     color: '#7A8CA8',    yahooSyms: ['EWJ'] },
+  { key: 'hongkong', label: 'Hong Kong · HSI',    color: 'var(--blu)', yahooSyms: ['EWH'] },
+  { key: 'china',    label: 'China · SSE',        color: 'var(--pur)', yahooSyms: ['FXI', 'MCHI'] },
+  { key: 'taiwan',   label: 'Taiwan · TAIEX',     color: 'var(--cyn)', yahooSyms: ['EWT'] },
+  { key: 'korea',    label: 'Korea · KOSPI',      color: 'var(--grn)', yahooSyms: ['EWY'] },
+  { key: 'india',    label: 'India · Nifty',      color: 'var(--pnk)', yahooSyms: ['INDA', 'EPI'] },
+  { key: 'gold',     label: 'Gold',               color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
 ];
 export const US = [
   { sym: 'QQQM', name: 'Invesco NASDAQ 100',   cat: 'ETF',        qty: 3.21393889,  cost: 227.36 },

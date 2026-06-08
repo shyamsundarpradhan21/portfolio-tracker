@@ -1615,12 +1615,12 @@ export default function Page() {
           <div className="card sec">
             <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <div className="ctitle">Realized P&amp;L · Overall</div>
+                <div className="ctitle">Realized P&amp;L</div>
                 <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source} · as on {INDIAN_REALIZED.asOf}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div className={'vmd ' + cl(INDIAN_REALIZED.total)}><SInrF n={INDIAN_REALIZED.total} /></div>
-                <div className="sub" style={{ margin: 0 }}>net booked, all years</div>
+                <div className="sub" style={{ margin: 0 }}>overall, all years</div>
               </div>
             </div>
             <div className="g3 sec">
@@ -1640,8 +1640,8 @@ export default function Page() {
           </div>
 
           <CFMemo
-            title="Equity Tax — FY24-25 Capital Gains (Tulasi Pradhan a/c)"
-            lead="These holdings sit in a family member's (Tulasi Pradhan) account, not your personal ITR. Last filed year's equity capital gains in that account:"
+            title="Equity Tax — FY24-25 Capital Gains"
+            lead="Last filed year's equity capital gains in this account (ITR):"
             rows={[
               { label: 'FY24-25 LTCG (Sec 112A)', val: '₹2,789', color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
               { label: 'FY24-25 STCG (equity MF)', val: '₹1,083', color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
