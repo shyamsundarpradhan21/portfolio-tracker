@@ -5,7 +5,7 @@ import {
   INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, RETIREMENT, CAT_COLORS, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, REALIZED_PNL, INDIAN_BENCHMARKS,
-  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS,
+  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_CORP_ACTIONS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -22,8 +22,10 @@ function inrC(n) {
   if (a >= 1e3) return '₹' + (n / 1e3).toFixed(1) + 'K';
   return '₹' + Math.round(n);
 }
-const usd = (n) => (n < 0 ? '-$' : '$') + Math.abs(n).toFixed(2);
-const pctS = (n) => sg(n) + Math.abs(n).toFixed(2) + '%';
+const usd = (n) => '$' + Math.abs(n).toFixed(2);
+// Percentages and signed-value displays drop the +/− sign — colour (grn/red via
+// `cl`) conveys direction, uniformly across the dashboard.
+const pctS = (n) => Math.abs(n).toFixed(2) + '%';
 
 // ─── rupee-safe currency (Section 0f) — render ₹ inside a sized span so the
 // monospace fallback glyph isn't oversized. Digit-only helpers + JSX wrappers. ───
@@ -38,8 +40,8 @@ function inrCd(n) {                       // compact digits, no ₹
 const inrFd = (n) => Math.round(n).toLocaleString('en-IN'); // full digits, no ₹
 const InrC = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(n)}</span>);            // ₹4.04L
 const InrF = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(n)}</span>);            // ₹4,03,803
-const SInrC = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}>{n >= 0 ? '+' : '−'}<Rs />{inrCd(Math.abs(n))}</span>);
-const SInrF = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}>{n >= 0 ? '+' : '−'}<Rs />{inrFd(Math.abs(n))}</span>);
+const SInrC = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(Math.abs(n))}</span>);
+const SInrF = ({ n }) => (<span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(Math.abs(n))}</span>);
 // Render any string that contains ₹ with each glyph sized via .rs (Section 0f).
 // Lets pre-formatted strings (CFMemo values, data labels, subs) render safely.
 function RsText({ children }) {
@@ -228,6 +230,18 @@ function fmtDateObj(d) {
   return `${String(d.getDate()).padStart(2, '0')} ${MON[d.getMonth()]} ${d.getFullYear()}`;
 }
 const isoOf = (d) => d.toISOString().slice(0, 10);
+
+// Map the US holding's asset `cat` to a GICS-style sector for the sector chart
+// (the Category column keeps the raw `cat`). Per-symbol overrides where the
+// asset type and sector differ.
+const US_SECTOR = {
+  ETF: 'Diversified ETF', Crypto: 'Crypto & Mining', Bond: 'Fixed Income',
+  Commodity: 'Commodity', Tech: 'Technology', Financial: 'Financials',
+  Fintech: 'Financials', Consumer: 'Consumer Staples', Industrial: 'Industrials',
+  Healthcare: 'Healthcare',
+};
+const US_SECTOR_OVERRIDE = { SHW: 'Materials', DIS: 'Communication', GOOG: 'Communication', META: 'Communication' };
+const usSectorOf = (s) => US_SECTOR_OVERRIDE[s.sym] || US_SECTOR[s.cat] || s.cat;
 
 // Market open/closed by the exchange's own wall clock — deterministic, unlike
 // Yahoo's marketState which lagged and mislabelled sessions. Mon–Fri only;
@@ -435,6 +449,7 @@ function AreaChart({ points, height = 240 }) {
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
   { key: 'name', label: 'Name', num: false },
+  { key: 'cat', label: 'Category', num: false },
   { key: 'livePrice', label: 'Live $', num: true },
   { key: 'liveVal', label: 'Value $', num: true },
   { key: 'inv', label: 'Invested $', num: true },
@@ -1050,9 +1065,9 @@ export default function Page() {
   // just like the Indian tab. All US figures here are in USD.
   const usStats = useMemo(() => {
     const value = usData.val;
-    const catMap = {};
-    usData.rows.forEach((r) => { if (r.liveVal != null) catMap[r.cat] = (catMap[r.cat] || 0) + r.liveVal; });
-    const cats = Object.entries(catMap)
+    const secMap = {};
+    usData.rows.forEach((r) => { if (r.liveVal != null) { const k = usSectorOf(r); secMap[k] = (secMap[k] || 0) + r.liveVal; } });
+    const sectors = Object.entries(secMap)
       .map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 }))
       .sort((a, b) => b.val - a.val);
     const valued = usData.rows.filter((r) => r.livePct != null);
@@ -1088,11 +1103,31 @@ export default function Page() {
       return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, cagr: cf ? cf.cagr : null, ret: cf ? cf.ret : null };
     });
     return {
-      value, cats, winner, laggard, topPos, topCat: cats[0] || null,
+      value, sectors, winner, laggard, topPos, topSector: sectors[0] || null,
       dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0,
       netInvested, xirr: xr, cagr, years, benchmarks,
     };
   }, [usData, hist, now]);
+
+  // US corporate actions (upcoming) on current holdings — mirrors the Indian panel.
+  const corpUS = useMemo(() => {
+    const today = isoOf(now);
+    const held = new Set(US.map((h) => h.sym));
+    const list = US_CORP_ACTIONS.filter((a) => held.has(a.sym));
+    const upcoming = list
+      .filter((a) => a.ex >= today)
+      .sort((a, b) => (a.ex < b.ex ? -1 : 1))
+      .map((a) => {
+        const h = US.find((x) => x.sym === a.sym);
+        const qty = h ? h.qty : 0;
+        const days = daysBetween(a.ex, now);
+        const impact = a.type === 'dividend'
+          ? { kind: 'dividend', amount: a.perShare * qty }
+          : { kind: 'split', ratio: a.ratio };
+        return { ...a, days, qty, impact };
+      });
+    return { upcoming };
+  }, [now]);
 
   // ─── derived: S02 swing book (live NSE) ───
   const swing = useMemo(() => {
@@ -1375,7 +1410,7 @@ export default function Page() {
           { key: 'pct', label: 'Return %', num: true },
           { key: 'day', label: 'Day %', num: true },
         ];
-        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
         const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--grn)' };
         const secColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
         return (
@@ -1461,7 +1496,7 @@ export default function Page() {
                 </tbody>
               </table>
               <div className="sub" style={{ marginTop: 12 }}>
-                CAGR {inStats.cagr != null ? (inStats.cagr >= 0 ? '+' : '') + inStats.cagr.toFixed(1) + '%' : '—'}
+                CAGR {inStats.cagr != null ? inStats.cagr.toFixed(1) + '%' : '—'}
                 {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
               </div>
               <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
@@ -1793,7 +1828,7 @@ export default function Page() {
           { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
         ];
         const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
-        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
         const delta = mfx.port != null && mfx.bench != null ? mfx.port - mfx.bench : null;
         const platStyle = (p) => p === 'JioBLK'
           ? { background: 'rgba(155,138,251,.16)', color: '#BCAEFF' }
@@ -1970,7 +2005,7 @@ export default function Page() {
           no dated tradebook, so category mix/movers replace XIRR/CAGR). */}
       {tab === 4 && (() => {
         const catColors = ['var(--blu)', 'var(--pur)', 'var(--grn)', 'var(--acc)', 'var(--pnk)', 'var(--cyn)', 'var(--red)'];
-        const fmtX = (n) => (n == null ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%');
+        const fmtX = (n) => (n == null ? '—' : n.toFixed(1) + '%');
         return (
         <div>
           <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
@@ -1993,7 +2028,7 @@ export default function Page() {
             <div className="csm">
               <div className="lbl">unrealized P&amp;L</div>
               <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>
-                {usData.val ? (usData.pl >= 0 ? '+' : '') + usd(usData.pl) : <Skel w={80} h={20} />}
+                {usData.val ? usd(usData.pl) : <Skel w={80} h={20} />}
               </div>
               <div className="sub">{usData.val ? `${pctS(usData.pct)} · value − cost` : 'value − cost'}</div>
             </div>
@@ -2002,7 +2037,7 @@ export default function Page() {
             <div className="csm">
               <div className="lbl">day change</div>
               <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>
-                {usData.val ? (usStats.dayPl >= 0 ? '+' : '') + usd(usStats.dayPl) : <Skel w={80} h={20} />}
+                {usData.val ? usd(usStats.dayPl) : <Skel w={80} h={20} />}
               </div>
               <div className="sub">{usData.val ? `${pctS(usStats.dayPct)} since prev close` : 'intraday move'}</div>
             </div>
@@ -2049,7 +2084,7 @@ export default function Page() {
                 </tbody>
               </table>
               <div className="sub" style={{ marginTop: 12 }}>
-                CAGR {usStats.cagr != null ? (usStats.cagr >= 0 ? '+' : '') + usStats.cagr.toFixed(1) + '%' : '—'}
+                CAGR {usStats.cagr != null ? usStats.cagr.toFixed(1) + '%' : '—'}
                 {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
               </div>
               <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
@@ -2058,11 +2093,11 @@ export default function Page() {
               </div>
             </div>
             <div className="card">
-              <div className="ctitle" style={{ marginBottom: 14 }}>Category Allocation</div>
-              {usStats.cats.map((c, i) => (
+              <div className="ctitle" style={{ marginBottom: 14 }}>Sector Allocation</div>
+              {usStats.sectors.map((c, i) => (
                 <div key={c.label} className="seg-row">
-                  <span className="seg-lbl">{c.label}</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: CAT_COLORS[c.label] || catColors[i % catColors.length] }} /></span>
+                  <span className="seg-lbl" style={{ width: 120 }}>{c.label}</span>
+                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: catColors[i % catColors.length] }} /></span>
                   <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
                 </div>
               ))}
@@ -2093,7 +2128,7 @@ export default function Page() {
               <div className="ctitle">Holdings</div>
               <div className="sub" style={{ margin: 0 }}>
                 {usData.val ? `$${usData.inv.toFixed(2)} → $${usData.val.toFixed(2)} · ` : 'loading live prices… '}
-                <span className={cl(usData.pl)}>{usData.val ? (usData.pl >= 0 ? '+' : '') + usd(usData.pl) + ` (${pctS(usData.pct)})` : ''}</span>
+                <span className={cl(usData.pl)}>{usData.val ? usd(usData.pl) + ` (${pctS(usData.pct)})` : ''}</span>
               </div>
             </div>
             <div className="ovx">
@@ -2121,6 +2156,7 @@ export default function Page() {
                         </div>
                       </td>
                       <td style={{ color: 'var(--txt2)', fontSize: 11 }}>{s.name}</td>
+                      <td><span className="mf-pill" style={{ background: 'var(--sur2)', color: 'var(--txt2)' }}>{s.cat}</span></td>
                       <td className="ra mono">
                         {s.livePrice != null
                           ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}>${s.livePrice.toFixed(2)}</span>
@@ -2129,7 +2165,7 @@ export default function Page() {
                       <td className="ra mono">{s.liveVal != null ? usd(s.liveVal) : '—'}</td>
                       <td className="ra mono mut">${s.inv.toFixed(2)}</td>
                       <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>
-                        {s.livePl != null ? (s.livePl >= 0 ? '+' : '') + usd(s.livePl) : '—'}
+                        {s.livePl != null ? usd(s.livePl) : '—'}
                       </td>
                       <td className={'ra mono ' + (s.livePct != null ? cl(s.livePct) : 'mut')}>
                         {s.livePct != null ? pctS(s.livePct) : '—'}
@@ -2140,11 +2176,11 @@ export default function Page() {
                     </tr>
                   ))}
                   <tr className="tot">
-                    <td colSpan={2}>Total — {US.length} holdings</td>
+                    <td colSpan={3}>Total — {US.length} holdings</td>
                     <td />
                     <td className="ra">{usData.val ? '$' + usData.val.toFixed(2) : '…'}</td>
                     <td className="ra">${usData.inv.toFixed(2)}</td>
-                    <td className={'ra ' + cl(usData.pl)}>{usData.val ? (usData.pl >= 0 ? '+' : '') + usd(usData.pl) : '…'}</td>
+                    <td className={'ra ' + cl(usData.pl)}>{usData.val ? usd(usData.pl) : '…'}</td>
                     <td className={'ra ' + cl(usData.pl)}>{usData.val ? pctS(usData.pct) : '…'}</td>
                     <td />
                   </tr>
@@ -2152,6 +2188,29 @@ export default function Page() {
               </table>
             </div>
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
+          </div>
+
+          {/* Corporate actions (upcoming) */}
+          <div className="card sec">
+            <div className="ctitle" style={{ marginBottom: 4 }}>Corporate Actions</div>
+            <div className="sub" style={{ marginBottom: 6 }}>Upcoming dividends &amp; splits on current holdings, soonest first.</div>
+            {corpUS.upcoming.length === 0 ? (
+              <div className="sub" style={{ color: 'var(--txt3)' }}>No upcoming actions logged — add ex-dates from the Nasdaq dividend calendar at the monthly update.</div>
+            ) : corpUS.upcoming.map((a) => (
+              <div className="ca-row" key={a.sym + a.ex}>
+                <span className="ca-ico">{a.type === 'split' ? '🔀' : '💵'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'var(--txt)', fontWeight: 600, fontSize: 13 }}>{a.name} <span className="mut" style={{ fontWeight: 400 }}>· {a.sym}</span></div>
+                  <div className="sub" style={{ margin: 0 }}>{a.type === 'split' ? `Split ${a.ratio}` : `Dividend $${a.perShare}/sh`} · ex {fmtNavDate(a.ex)}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  {a.impact.kind === 'dividend' && <div className="mono grn">${a.impact.amount.toFixed(2)}</div>}
+                  <div style={{ marginTop: 4 }}>
+                    <span className="badge ba" style={{ fontSize: 9 }}>{a.days <= 0 ? 'TODAY' : a.days === 1 ? 'IN 1 DAY' : `IN ${a.days} DAYS`}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Dividend income (from the Vested statement) */}
@@ -2173,7 +2232,7 @@ export default function Page() {
               </div>
               <div className="mini">
                 <div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div>
-                <div className="vsm red">−${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
+                <div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
               </div>
               <div className="mini">
                 <div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div>
