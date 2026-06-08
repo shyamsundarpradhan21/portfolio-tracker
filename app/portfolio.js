@@ -69,7 +69,7 @@ export const CORPORATE_ACTIONS = [
 export const INDIAN_BENCHMARKS = [
   { key: 'nifty50',  label: 'Nifty 50',          color: 'var(--blu)', yahooSyms: ['^NSEI', 'NIFTYBEES.NS'] },
   { key: 'midcap',   label: 'Nifty Midcap 150',  color: 'var(--pur)', yahooSyms: ['NIFTYMIDCAP150.NS', 'MIDCAPIETF.NS', 'MID150BEES.NS'] },
-  { key: 'smallcap', label: 'Nifty Smallcap 250', color: 'var(--grn)', yahooSyms: ['NIFTYSMLCAP250.NS', 'MOSMALL250.NS', 'HDFCSML250.NS'] },
+  { key: 'smallcap', label: 'Nifty Smallcap',     color: 'var(--grn)', yahooSyms: ['^CNXSC', 'NIFTYSMLCAP250.NS', 'NIFTYSMALLCAP250.NS', 'MOSMALL250.NS', 'HDFCSML250.NS'] },
   { key: 'gold',     label: 'Gold',              color: 'var(--acc)', yahooSyms: ['GOLDBEES.NS', 'GOLD.NS'] },
 ];
 

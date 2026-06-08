@@ -267,6 +267,11 @@ function weightedCagr(transactions, currentValue, now) {
 function benchCounterfactual(series, transactions, now) {
   if (!series || !Array.isArray(series.closes) || !series.closes.length) return null;
   const closes = [...series.closes].sort((a, b) => (a.date < b.date ? -1 : 1));
+  // Reject series that don't actually cover the holding window — otherwise every
+  // pre-history date snaps to the first (≈ latest) close and the counterfactual
+  // collapses to ~0%. A too-short/new ETF series is treated as unresolved ("—").
+  const earliestTx = transactions.reduce((m, t) => (t.date < m ? t.date : m), '9999');
+  if (closes[0].date > earliestTx || closes.length < 8) return null;
   const levelOnOrBefore = (iso) => {
     let lvl = null;
     for (const c of closes) { if (c.date <= iso) lvl = c.close; else break; }
@@ -291,6 +296,112 @@ function benchCounterfactual(series, transactions, now) {
     xirr: x != null ? x * 100 : null,
     ret: invested ? ((value - invested) / invested) * 100 : null,
   };
+}
+
+// ─── all-time portfolio growth reconstruction ───
+// No stored net-worth history exists, so the curve is reconstructed weekly from
+// per-symbol price history: Indian equities valued from each stock's buy date,
+// US equities valued across the window (no dated Vested tradebook), FD accrual
+// computed exactly (quarterly compounding), MF & algo held at current value.
+// Symbols whose history doesn't resolve fall back to cost basis (flat) so the
+// curve always renders. The latest point is anchored to live net worth.
+const GROWTH_SYMS = [...INDIAN.map((s) => s.ns), ...US.map((s) => s.sym)];
+const GROWTH_RANGES = [
+  { key: '1W', days: 7 }, { key: '1M', days: 31 }, { key: '1Y', days: 366 },
+  { key: '5Y', days: 1830 }, { key: 'MAX', days: Infinity },
+];
+
+function priceAtOrBefore(sortedCloses, iso) {
+  let p = null;
+  for (const c of sortedCloses) { if (c.date <= iso) p = c.close; else break; }
+  return p;
+}
+// FD value (principal + accrued, quarterly compounding) at an arbitrary date.
+function fdValueAt(iso) {
+  const t = new Date(iso).getTime();
+  let v = 0;
+  FDS.forEach((f) => {
+    const openT = new Date(f.open).getTime();
+    if (t < openT) return;
+    const totalYears = (new Date(f.matures).getTime() - openT) / YEAR_MS;
+    const elapsed = clamp((t - openT) / YEAR_MS, 0, totalYears);
+    v += compound(f.principal, f.rate, elapsed);
+  });
+  return v;
+}
+function buildGrowthSeries(hist, fxRate, mfValNow) {
+  const series = (hist && hist.series) || {};
+  const pm = {};
+  const allDates = new Set();
+  Object.keys(series).forEach((sym) => {
+    const s = series[sym];
+    if (s && Array.isArray(s.closes) && s.closes.length) {
+      const sorted = [...s.closes].sort((a, b) => (a.date < b.date ? -1 : 1));
+      pm[sym] = sorted;
+      sorted.forEach((c) => allDates.add(c.date));
+    }
+  });
+  const dates = [...allDates].sort();
+  if (dates.length < 2) return [];
+  const txDate = {};
+  TRANSACTIONS.forEach((t) => { txDate[t.sym] = t.date; });
+  return dates.map((d) => {
+    let indian = 0;
+    INDIAN.forEach((h) => {
+      const acq = txDate[h.sym];
+      if (acq && d < acq) return; // not yet bought
+      const px = pm[h.ns] ? priceAtOrBefore(pm[h.ns], d) : null;
+      indian += (px != null ? px : h.cost) * h.qty;
+    });
+    let us$ = 0;
+    US.forEach((h) => {
+      const px = pm[h.sym] ? priceAtOrBefore(pm[h.sym], d) : null;
+      us$ += (px != null ? px : h.cost) * h.qty;
+    });
+    const us = us$ * fxRate;
+    const fd = fdValueAt(d);
+    const mf = d >= '2024-02-26' ? mfValNow : 0;
+    const algo = STATIC.algo;
+    return { d, indian, us, fd, mf, algo, nw: indian + us + fd + mf + algo - STATIC.loan };
+  });
+}
+
+// Compact SVG area chart (responsive). points: [{ d, v }].
+function AreaChart({ points, height = 240 }) {
+  if (!points || points.length < 2) return null;
+  const w = 1000, h = height, padL = 8, padR = 8, padT = 14, padB = 26;
+  const vals = points.map((p) => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals), span = (max - min) || 1;
+  const X = (i) => padL + (i / (points.length - 1)) * (w - padL - padR);
+  const Y = (v) => padT + (1 - (v - min) / span) * (h - padT - padB);
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(' ');
+  const area = `${line} L${X(points.length - 1).toFixed(1)} ${h - padB} L${X(0).toFixed(1)} ${h - padB} Z`;
+  const up = points[points.length - 1].v >= points[0].v;
+  const col = up ? 'var(--grn)' : 'var(--red)';
+  const gid = up ? 'gGrn' : 'gRed';
+  const lbl = (iso) => { const m = /^(\d{4})-(\d{2})/.exec(iso); return m ? `${MON[+m[2] - 1]} ${m[1].slice(2)}` : iso; };
+  const mid = Math.floor((points.length - 1) / 2);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" preserveAspectRatio="none" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={col} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={col} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((g) => (
+        <line key={g} x1={padL} x2={w - padR} y1={padT + g * (h - padT - padB)} y2={padT + g * (h - padT - padB)}
+          stroke="var(--brd)" strokeWidth="0.5" />
+      ))}
+      <path d={area} fill={`url(#${gid})`} />
+      <path d={line} fill="none" stroke={col} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <circle cx={X(points.length - 1)} cy={Y(points[points.length - 1].v)} r="3.5" fill={col} />
+      {[0, mid, points.length - 1].map((i) => (
+        <text key={i} x={Math.min(Math.max(X(i), 24), w - 24)} y={h - 8} textAnchor="middle"
+          fill="var(--txt3)" fontSize="11" fontFamily="var(--mono)">{lbl(points[i].d)}</text>
+      ))}
+    </svg>
+  );
 }
 
 const US_COLS = [
@@ -426,9 +537,10 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
       const todayIso = isoOf(now);
       const heldSet = new Set(INDIAN.map((h) => h.sym));
       const inBench = INDIAN_BENCHMARKS.map((b) => {
-        let series = null;
-        if (hist && hist.series) for (const sym of b.yahooSyms) if (hist.series[sym]) { series = hist.series[sym]; break; }
-        const cf = inVal ? benchCounterfactual(series, TRANSACTIONS, now) : null;
+        let cf = null;
+        if (hist && hist.series && inVal) {
+          for (const sym of b.yahooSyms) { cf = benchCounterfactual(hist.series[sym], TRANSACTIONS, now); if (cf) break; }
+        }
         return `${b.label} XIRR ${cf && cf.xirr != null ? cf.xirr.toFixed(1) + '%' : '—'} / return ${cf && cf.ret != null ? cf.ret.toFixed(1) + '%' : '—'}`;
       }).join('; ');
       const caUp = CORPORATE_ACTIONS.filter((a) => heldSet.has(a.sym) && a.ex >= todayIso)
@@ -484,6 +596,10 @@ export default function Page() {
   const [inSort, setInSort] = useState({ key: 'val', dir: -1 });
   // Benchmark weekly history (2y) for the same-dated-rupees counterfactual.
   const [hist, setHist] = useState(null);
+  // Growth tab: 5y weekly per-symbol history (lazy-loaded), + range selector.
+  const [growthHist, setGrowthHist] = useState(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
+  const [histRange, setHistRange] = useState('1Y');
   // LTP flash: per-symbol last price + tick direction, recomputed on each fetch.
   const [flash, setFlash] = useState({});
   const prevPrices = useRef({});
@@ -494,6 +610,30 @@ export default function Page() {
     const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Growth tab is index 7; lazy-load 5y weekly history the first time it opens
+  // (heavy multi-symbol fetch — don't pay for it on every page load).
+  useEffect(() => {
+    if (tab !== 7 || growthHist || growthLoading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem('nwTracker.growth') || 'null');
+        if (cached && cached.hist && Date.now() - cached.ts < 60 * 60 * 1000) { setGrowthHist(cached.hist); return; }
+      } catch {}
+      setGrowthLoading(true);
+      try {
+        const url = '/api/history?range=5y&symbols=' + encodeURIComponent(GROWTH_SYMS.join(','));
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setGrowthHist(data);
+          try { sessionStorage.setItem('nwTracker.growth', JSON.stringify({ ts: Date.now(), hist: data })); } catch {}
+        }
+      } catch {} finally { if (!cancelled) setGrowthLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [tab, growthHist, growthLoading]);
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsOn, setInsightsOn] = useState(() => {
@@ -759,14 +899,18 @@ export default function Page() {
     const winner = valued.length ? valued.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
     const laggard = valued.length ? valued.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
     const topPos = valued.length && value ? valued.reduce((a, b) => (b.val > a.val ? b : a)) : null;
-    // benchmark counterfactuals (same dated rupees) — first resolved candidate.
-    const seriesFor = (b) => {
-      if (!hist || !hist.series) return null;
-      for (const sym of b.yahooSyms) if (hist.series[sym]) return hist.series[sym];
+    // benchmark counterfactuals (same dated rupees) — try each candidate ticker
+    // and use the first that resolves AND covers the holding window.
+    const cfFor = (b) => {
+      if (!hist || !hist.series || !indian.valued || !value) return null;
+      for (const sym of b.yahooSyms) {
+        const cf = benchCounterfactual(hist.series[sym], TRANSACTIONS, now);
+        if (cf) return cf;
+      }
       return null;
     };
     const benchmarks = INDIAN_BENCHMARKS.map((b) => {
-      const cf = indian.valued && value ? benchCounterfactual(seriesFor(b), TRANSACTIONS, now) : null;
+      const cf = cfFor(b);
       return { ...b, value: cf ? cf.value : null, xirr: cf ? cf.xirr : null, ret: cf ? cf.ret : null };
     });
     return {
@@ -944,6 +1088,26 @@ export default function Page() {
     return { usInr, fdValue, totalAssets, nw };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
 
+  // ─── derived: all-time growth (reconstructed weekly + live anchor) ───
+  const growthBase = useMemo(() => buildGrowthSeries(growthHist, fxRate, mf.totVal), [growthHist, fxRate, mf.totVal]);
+  const growthView = useMemo(() => {
+    let pts = [...growthBase];
+    // Anchor the final point to live net worth (matches the rest of the app).
+    const todayIso = isoOf(now);
+    if (usdInr && indian.valued) {
+      const curr = { d: todayIso, indian: indian.val, us: ov.usInr, fd: ov.fdValue, mf: mf.totVal, algo: STATIC.algo, nw: ov.nw };
+      if (pts.length && pts[pts.length - 1].d >= todayIso) pts[pts.length - 1] = curr;
+      else pts.push(curr);
+    }
+    const r = GROWTH_RANGES.find((x) => x.key === histRange) || GROWTH_RANGES[2];
+    if (isFinite(r.days)) {
+      const ci = isoOf(new Date(now.getTime() - r.days * DAY_MS));
+      const sliced = pts.filter((p) => p.d >= ci);
+      pts = sliced.length >= 2 ? sliced : pts.slice(-2);
+    }
+    return pts;
+  }, [growthBase, histRange, now, usdInr, indian.valued, indian.val, ov.usInr, ov.fdValue, ov.nw, mf.totVal]);
+
   // Allocation donut segments — live values where available, else snapshot.
   const donutSegs = [
     { label: 'Algo Capitals',  value: STATIC.algo,        color: ALLOC_COLORS.algo },
@@ -1009,7 +1173,7 @@ export default function Page() {
 
       {/* TABS */}
       <div className="tabs">
-        {['Overview', 'Indian Stocks', 'Fixed Deposits', 'Mutual Funds', 'US Stocks', 'Algo', 'Retirement'].map(
+        {['Overview', 'Indian Stocks', 'Fixed Deposits', 'Mutual Funds', 'US Stocks', 'Algo', 'Retirement', 'Growth'].map(
           (t, i) => (
             <button key={t} className={'tab' + (tab === i ? ' on' : '')} onClick={() => setTab(i)}>
               {t}
@@ -2061,6 +2225,87 @@ export default function Page() {
           </div>
         </div>
       )}
+
+      {/* GROWTH — all-time portfolio value, reconstructed weekly from price
+          history (see buildGrowthSeries); range toggle + sleeve allocation. */}
+      {tab === 7 && (() => {
+        const first = growthView[0], last = growthView[growthView.length - 1];
+        const haveCurve = growthView.length >= 2;
+        const chg = haveCurve ? last.nw - first.nw : 0;
+        const chgPct = haveCurve && first.nw ? (chg / Math.abs(first.nw)) * 100 : 0;
+        const sleeves = [
+          { label: 'Indian Stocks', value: indian.val || 0, color: ALLOC_COLORS.indian },
+          { label: 'Mutual Funds', value: mf.totVal, color: ALLOC_COLORS.mf },
+          { label: 'Fixed Deposits', value: ov.fdValue, color: ALLOC_COLORS.fd },
+          { label: 'US Stocks', value: ov.usInr || 0, color: ALLOC_COLORS.us },
+          { label: 'Algo Capital', value: STATIC.algo, color: ALLOC_COLORS.algo },
+        ];
+        const sleeveTot = sleeves.reduce((s, x) => s + x.value, 0) || 1;
+        return (
+        <div>
+          <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <FreshnessTag mode="manual" date={`reconstructed weekly · live anchor ${fmtDateObj(now)}`} />
+          </div>
+
+          <div className="card sec">
+            <div className="fxc" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <div className="ctitle">Portfolio Growth</div>
+                <div className="sub" style={{ margin: 0 }}>Net worth over time · reconstructed from price history</div>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {GROWTH_RANGES.map((r) => (
+                  <button key={r.key} className={'tab' + (histRange === r.key ? ' on' : '')}
+                    style={{ padding: '5px 11px', fontSize: 12 }} onClick={() => setHistRange(r.key)}>
+                    {r.key}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {haveCurve ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <div className="vlg">{usdInr ? <InrC n={last.nw} /> : <Skel w={120} h={22} />}</div>
+                  <div className={'vsm ' + cl(chg)}><SInrC n={chg} /> ({pctS(chgPct)}) · {histRange}</div>
+                </div>
+                <AreaChart points={growthView.map((p) => ({ d: p.d, v: p.nw }))} />
+              </>
+            ) : (
+              <div style={{ padding: '28px 4px' }}>
+                <div className="vlg">{usdInr ? <InrC n={ov.nw} /> : <Skel w={120} h={22} />}</div>
+                <div className="sub">
+                  {growthLoading ? 'Loading 5-year price history…' : 'Historical curve unavailable right now (price-history feed didn\'t resolve). Showing current net worth; the trend appears once history loads.'}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sleeve allocation in the total */}
+          <div className="card">
+            <div className="ctitle" style={{ marginBottom: 14 }}>Allocation in Net Worth</div>
+            <div className="mf-stack" style={{ height: 16, marginBottom: 14 }}>
+              {sleeves.map((s) => (
+                <span key={s.label} style={{ width: (s.value / sleeveTot) * 100 + '%', background: s.color }} />
+              ))}
+            </div>
+            {sleeves.map((s) => (
+              <div key={s.label} className="seg-row">
+                <span className="seg-lbl" style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />{s.label}
+                </span>
+                <span className="seg-trk"><span className="seg-fil" style={{ width: (s.value / sleeveTot) * 100 + '%', background: s.color }} /></span>
+                <span className="seg-val"><InrC n={s.value} /> · {((s.value / sleeveTot) * 100).toFixed(0)}%</span>
+              </div>
+            ))}
+            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
+              Equities reconstructed from weekly price history (Indian valued from each buy date; US assumed held across the
+              window — no dated Vested tradebook). FD accrual is computed exactly; MF &amp; algo are held at current value as no
+              historical series exists. Indicative, not a substitute for statement records.
+            </div>
+          </div>
+        </div>
+        );
+      })()}
 
       <div style={{ textAlign: 'center', color: 'var(--txt3)', fontSize: 10, marginTop: 18 }}>
         Live prices via Yahoo Finance · auto-refresh every 15 min · for personal tracking only
