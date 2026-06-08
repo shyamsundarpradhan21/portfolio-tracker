@@ -228,8 +228,8 @@ body {
 /* serif card titles (DM Serif Display) — Section 0b: 19px. */
 .ctitle { font-family: var(--title); font-size: 19px; font-weight: 400; letter-spacing: .2px; color: var(--txt); }
 
-/* mutual-funds tab utilities */
-.mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: start; margin-bottom: 12px; }
+/* mutual-funds tab utilities — equal-height analytical cards (Section 0c). */
+.mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
 @media (max-width: 1000px) { .mf-g3 { grid-template-columns: 1fr; } }
 .mf-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10.5px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
 .mf-stack { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; background: var(--sur2); }

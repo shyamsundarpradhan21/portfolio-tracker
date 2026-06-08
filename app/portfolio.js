@@ -60,15 +60,17 @@ export const CORPORATE_ACTIONS = [
   { type: 'dividend', sym: 'GODREJCP', name: 'Godrej Consumer Products', ex: '2026-05-12', perShare: 5 },
 ];
 
-// Less-correlated benchmark set (the old Nifty 50/500/MidSmall trio was ~0.9+
-// correlated; Nifty 500 contains Nifty 50). Large-cap market / the portfolio's
-// mid-small tilt / a low-correlation opportunity-cost asset. Yahoo tickers for
-// Indian indices are flaky — the history route logs raw responses and the UI
-// falls back to "—" when a series doesn't resolve.
+// Less-correlated benchmark set. The portfolio carries a mid/small tilt, so we
+// keep Mid and Small as SEPARATE benchmarks (the single MidSmall-400 index is
+// flaky on Yahoo), plus large-cap market and a low-correlation opportunity-cost
+// asset (gold). Each benchmark lists candidate Yahoo tickers tried in order —
+// the first that resolves wins; if none do, the UI shows "—". Indian index
+// tickers are flaky, so liquid ETF proxies are included as fallbacks.
 export const INDIAN_BENCHMARKS = [
-  { key: 'nifty50',  label: 'Nifty 50',         yahooSym: '^NSEI',                color: 'var(--blu)' },
-  { key: 'midsml',   label: 'Nifty MidSml 400', yahooSym: 'NIFTYMIDSML400.NS',    color: 'var(--pur)' },
-  { key: 'gold',     label: 'Gold',             yahooSym: 'GOLDBEES.NS',          color: 'var(--acc)' },
+  { key: 'nifty50',  label: 'Nifty 50',          color: 'var(--blu)', yahooSyms: ['^NSEI', 'NIFTYBEES.NS'] },
+  { key: 'midcap',   label: 'Nifty Midcap 150',  color: 'var(--pur)', yahooSyms: ['NIFTYMIDCAP150.NS', 'MIDCAPIETF.NS', 'MID150BEES.NS'] },
+  { key: 'smallcap', label: 'Nifty Smallcap 250', color: 'var(--grn)', yahooSyms: ['NIFTYSMLCAP250.NS', 'MOSMALL250.NS', 'HDFCSML250.NS'] },
+  { key: 'gold',     label: 'Gold',              color: 'var(--acc)', yahooSyms: ['GOLDBEES.NS', 'GOLD.NS'] },
 ];
 
 // US holdings — Vested (fractional shares). Priced in USD.
