@@ -73,7 +73,45 @@ export const INDIAN_BENCHMARKS = [
   { key: 'gold',     label: 'Gold',              color: 'var(--acc)', yahooSyms: ['GOLDBEES.NS', 'GOLD.NS'] },
 ];
 
-// US holdings — Vested (fractional shares). Priced in USD.
+// US external cashflows from the Vested/DriveWealth statement (Transfers sheet):
+// deposits are capital in (+invested), the lone withdrawal is capital out
+// (−invested), all in USD. Drives the US tab's money-weighted XIRR/CAGR and the
+// same-dated-dollars benchmark counterfactuals. Net deployed ≈ $3,565.
+export const US_CASHFLOWS = [
+  { date: '2024-03-08', invested: 120 },
+  { date: '2024-03-25', invested: 120 },
+  { date: '2024-04-15', invested: 50 },
+  { date: '2024-05-03', invested: 90 },
+  { date: '2024-06-05', invested: 90 },
+  { date: '2024-08-07', invested: 100 },
+  { date: '2024-09-12', invested: 189.1 },
+  { date: '2024-10-16', invested: 60 },
+  { date: '2024-11-04', invested: 200 },
+  { date: '2024-12-03', invested: 200 },
+  { date: '2025-02-03', invested: 200 },
+  { date: '2025-03-12', invested: 200 },
+  { date: '2025-06-12', invested: 200 },
+  { date: '2025-06-30', invested: 170 },
+  { date: '2025-07-31', invested: 151.2 },
+  { date: '2025-08-04', invested: 151.2 },
+  { date: '2025-09-02', invested: 154.22 },
+  { date: '2025-09-26', invested: 201.15 },
+  { date: '2025-10-30', invested: 202.11 },
+  { date: '2025-12-03', invested: 198.49 },
+  { date: '2026-01-05', invested: 198.35 },
+  { date: '2026-02-05', invested: 208.47 },
+  { date: '2026-04-27', invested: 104.74 },
+  { date: '2026-05-11', invested: 146.46 },
+  { date: '2026-02-17', invested: -140 }, // withdrawal
+];
+
+// US benchmark set (USD), valued as same-dated-dollars counterfactuals: broad
+// market / growth tilt / low-correlation gold. Yahoo carries these reliably.
+export const US_BENCHMARKS = [
+  { key: 'sp500',  label: 'S&P 500',     color: 'var(--blu)', yahooSyms: ['^GSPC', 'IVV'] },
+  { key: 'nasdaq', label: 'NASDAQ 100',  color: 'var(--pur)', yahooSyms: ['^NDX', 'QQQ'] },
+  { key: 'gold',   label: 'Gold',        color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
+];
 export const US = [
   { sym: 'QQQM', name: 'Invesco NASDAQ 100',   cat: 'ETF',        qty: 3.21393889,  cost: 227.36 },
   { sym: 'SCHD', name: 'Schwab US Dividend',    cat: 'ETF',        qty: 26.89079465, cost: 28.16 },
