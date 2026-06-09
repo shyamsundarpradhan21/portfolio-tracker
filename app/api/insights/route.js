@@ -1,11 +1,16 @@
-// Server-side AI insight generator. Accepts live portfolio data as JSON and
-// asks Claude for short, tab-specific insights — flagging only genuine concerns.
+// Server-side AI insight generator. Accepts a COMPACT aggregates snapshot
+// (one summary string per sleeve, built client-side — never full holdings
+// books) and asks Claude for short, tab-specific insights.
 //
-//   POST /api/insights   body: { timestamp, overview, indian, us, usdInr,
-//                                 mutualFunds, algo }
-//   → { insights: { overview, indian_stocks, us_stocks, mutual_funds, algo } }
+//   POST /api/insights   body: { asOf, usdInr, overview, indian, indianRisk,
+//                                us, mutualFunds, fixedDeposits, algo }
+//   → { insights: { overview, indian_swot, indian_stocks, us_stocks,
+//                   mutual_funds, fixed_deposits, algo } }
 //
 // Each field is a 1–2 sentence string, or null when nothing is worth flagging.
+// Token economics: Haiku-tier model, ~500-token input, structured outputs
+// (no JSON scaffold in the prompt), max_tokens 700. The client additionally
+// hash-gates calls so unchanged data never re-bills.
 // Requires the ANTHROPIC_API_KEY environment variable (set it in Vercel).
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -14,25 +19,57 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// Claude Opus 4.8 — most capable model, for the sharpest portfolio analysis.
-// Isolated here so the model is a one-line change.
-const MODEL = 'claude-opus-4-8';
+// Claude Haiku 4.5 — cheapest tier; right-sized for 1-2 sentence insights.
+// Isolated here so the model is a one-line change (Sonnet 4.6 if quality lags).
+const MODEL = 'claude-haiku-4-5';
 
 const SYSTEM_PROMPT =
   'You are a sharp, macro-aware portfolio analyst reading the markets like a hawk. ' +
-  'You receive a snapshot of live portfolio data; reason over it against the broader ' +
-  'market backdrop you know — global and Indian macro (rates, inflation, INR/USD, ' +
-  'crude, gold), sector and factor rotation, large-cap vs mid/small-cap regimes, ' +
-  'index concentration, US mega-cap tech dynamics, and how these forces bear on the ' +
-  'specific holdings shown. Connect position-level moves to the dynamics driving them; ' +
-  'surface non-obvious risks (concentration, correlation, currency, duration, ' +
-  'reinvestment, tax) and genuine opportunities. ' +
-  'Return ONLY valid JSON. Each value is 1-2 tight, high-signal sentences — specific ' +
-  'and actionable, never generic filler. Flag only what genuinely matters; null any ' +
-  'tab that looks fine. Respect the provided caveats — never overstate short-window or ' +
-  'benchmark-flattered results, and do not invent prices or figures not given. ' +
-  'Your knowledge has a training cutoff, so frame macro views as analytical context, ' +
-  'not real-time certainty.';
+  'You receive a compact aggregates snapshot of a live portfolio; reason over it against ' +
+  'the broader market backdrop you know — global and Indian macro (rates, inflation, ' +
+  'INR/USD, crude, gold), sector and factor rotation, large-cap vs mid/small-cap regimes, ' +
+  'index concentration, US mega-cap tech dynamics — and how these forces bear on the ' +
+  'positions shown. Surface non-obvious risks (concentration, correlation, currency, ' +
+  'duration, reinvestment, tax) and genuine opportunities. ' +
+  'Each value is 1-2 tight, high-signal sentences — specific and actionable, never ' +
+  'generic filler. Flag only what genuinely matters; null any tab that looks fine. ' +
+  'Respect the provided caveats — never overstate short-window or benchmark-flattered ' +
+  'results, and do not invent prices or figures not given. Your knowledge has a training ' +
+  'cutoff, so frame macro views as analytical context, not real-time certainty.';
+
+// Structured-outputs schema — guarantees parseable JSON and replaces the old
+// "Return JSON: {...}" prompt scaffold.
+const nullable = (t) => ({ anyOf: [{ type: t }, { type: 'null' }] });
+const INSIGHTS_SCHEMA = {
+  type: 'object',
+  properties: {
+    overview: nullable('string'),
+    indian_swot: {
+      anyOf: [
+        {
+          type: 'object',
+          properties: {
+            macro: nullable('string'),
+            s: nullable('string'),
+            w: nullable('string'),
+            o: nullable('string'),
+            t: nullable('string'),
+          },
+          required: ['macro', 's', 'w', 'o', 't'],
+          additionalProperties: false,
+        },
+        { type: 'null' },
+      ],
+    },
+    indian_stocks: nullable('string'),
+    us_stocks: nullable('string'),
+    mutual_funds: nullable('string'),
+    fixed_deposits: nullable('string'),
+    algo: nullable('string'),
+  },
+  required: ['overview', 'indian_swot', 'indian_stocks', 'us_stocks', 'mutual_funds', 'fixed_deposits', 'algo'],
+  additionalProperties: false,
+};
 
 const EMPTY = {
   overview: null,
@@ -44,61 +81,26 @@ const EMPTY = {
   algo: null,
 };
 
-// The MF signal arrives as a structured object; flatten it into prose the model
-// can reason over, keeping the guardrail caveats explicit so it can't over-claim.
-function fmtMf(mf) {
-  if (!mf) return 'JioBLK + ELSS (no live detail)';
-  if (typeof mf === 'string') return mf;
-  const funds = (mf.perFund || [])
-    .map((f) => `${f.name} ${f.ret ?? '?'}% (${f.sharePct ?? '?'}% of MF)`)
-    .join('; ');
-  return (
-    `Invested ₹${mf.invested}, value ₹${mf.value}, return ${mf.returnPct}%. ` +
-    `XIRR ${mf.xirrPct}% vs Nifty 50 ${mf.benchmarkXirrPct}% (delta ${mf.xirrDeltaPct} pts). ` +
-    `Asset mix: ${mf.mix}. Market-cap tilt: ${mf.capTilt}. ` +
-    `Largest: ${mf.largest}. Biggest drag: ${mf.drag}. ` +
-    `Per fund: ${funds}. SIP: ${mf.sip}.\n` +
-    `CAVEATS (must respect, do not over-claim): ${mf.caveats}`
-  );
-}
-
 function buildUserMessage(d) {
-  const ov = d.overview || {};
-  const fmtRows = (rows) =>
-    (rows || [])
-      .map(
-        (r) =>
-          `${r.sym}: qty ${r.qty}, avg ${r.avgCost}, live ${r.livePrice ?? 'n/a'}, ` +
-          `P&L ${r.plPct ?? 'n/a'}%, day ${r.dayPct ?? 'n/a'}%`,
-      )
-      .join('\n');
-
+  // No stale hardcoded fallbacks — a missing section is 'n/a', never an old figure.
+  const s = (x) => (typeof x === 'string' && x.trim() ? x : 'n/a');
   return (
-    `Current portfolio data as of ${d.timestamp || new Date().toISOString()}:\n\n` +
-    `OVERVIEW: Net worth ₹${ov.netWorthL ?? '?'}L, Total assets ₹${ov.totalAssetsL ?? '?'}L, Loan ₹7.5L\n` +
-    `Indian equity P&L: ${ov.indianPlPct ?? '?'}%, US portfolio P&L: ${ov.usPlPct ?? '?'}%\n\n` +
-    `INDIAN STOCKS (live prices, ${d.indianSummary || 'all positions'}):\n${fmtRows(d.indian)}\n` +
-    (d.indianStocks ? `INDIAN EQUITY SIGNALS: ${d.indianStocks}\n` : '') +
-    (d.indianRisk ? `INDIAN RISK STATS: ${d.indianRisk}\n` : '') + '\n' +
-    `US STOCKS (live prices, ${d.usSummary || 'all positions'}):\n${fmtRows(d.us)}\n` +
-    `USD/INR: ${d.usdInr ?? '?'}\n\n` +
-    `MUTUAL FUNDS: ${fmtMf(d.mutualFunds)}\n\n` +
-    `FIXED DEPOSITS: ${d.fixedDeposits || 'none'}\n\n` +
-    `ALGO: ${d.algo || 'S01 pool -₹26,293 (in recovery), S02 +₹30,998 realized'}\n\n` +
-    `Return JSON:\n` +
-    `{\n` +
-    `  overview: string | null,\n` +
-    `  indian_swot: { macro: string, s: string, w: string, o: string, t: string } | null,  // a SWOT of the Indian equity book: macro = one-line read of the backdrop (rates, INR, crude, FII flows, large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each (Strengths, Weaknesses, Opportunities, Threats) grounded in the risk stats (beta/vol/alpha) and holdings. Always populate this object.\n` +
-    `  indian_stocks: string | null,\n` +
-    `  us_stocks: string | null,\n` +
-    `  mutual_funds: string | null,\n` +
-    `  fixed_deposits: string | null,\n` +
-    `  algo: string | null\n` +
-    `}`
+    `Portfolio snapshot as of ${s(d.asOf)} · USD/INR ${d.usdInr ?? 'n/a'}\n\n` +
+    `OVERVIEW: ${s(d.overview)}\n` +
+    `INDIAN EQUITY: ${s(d.indian)}\n` +
+    `INDIAN RISK STATS: ${s(d.indianRisk)}\n` +
+    `US EQUITY: ${s(d.us)}\n` +
+    `MUTUAL FUNDS: ${s(d.mutualFunds)}\n` +
+    `FIXED DEPOSITS: ${s(d.fixedDeposits)}\n` +
+    `ALGO (tracked separately, excluded from net worth): ${s(d.algo)}\n\n` +
+    `indian_swot: macro = one-line read of the backdrop (rates, INR, crude, FII flows, ` +
+    `large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each, grounded ` +
+    `in the risk stats and aggregates above. Always populate indian_swot.`
   );
 }
 
-// Sonnet 4 returns plain text; tolerate ```json fences / stray prose.
+// Structured outputs should yield pure JSON; keep a tolerant parser as a
+// safety net for refusals or truncation.
 function parseInsights(text) {
   if (!text) return null;
   let t = text.trim();
@@ -144,8 +146,9 @@ export async function POST(request) {
     const client = new Anthropic();
     const message = await client.messages.create({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 700,
       system: SYSTEM_PROMPT,
+      output_config: { format: { type: 'json_schema', schema: INSIGHTS_SCHEMA } },
       messages: [{ role: 'user', content: buildUserMessage(data) }],
     });
 

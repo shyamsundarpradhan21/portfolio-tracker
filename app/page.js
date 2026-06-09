@@ -189,7 +189,12 @@ export default function Page() {
   const [insights, setInsights]               = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsOn, setInsightsOn]           = useState(() => { try { return localStorage.getItem('nwTracker.insightsOn') !== 'false'; } catch { return true; } });
-  const toggleInsights = () => setInsightsOn((prev) => { const next = !prev; try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {} return next; });
+  // Regeneration "ticket" — bumped when fresh insights are wanted. The payload
+  // effect below runs after render, so it reads fully-recomputed derived state
+  // (no need to thread prices/fx/nav through as arguments).
+  const [insightsReq, setInsightsReq] = useState(0);
+  const requestInsights = useCallback(() => setInsightsReq((n) => n + 1), []);
+  const toggleInsights = () => setInsightsOn((prev) => { const next = !prev; try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {} if (next) requestInsights(); return next; });
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
@@ -216,14 +221,6 @@ export default function Page() {
     } catch { return null; }
   };
 
-  const fetchInsights = useCallback(async (pricesArg, fxArg, mfArg, histArg) => {
-    setInsightsLoading(true);
-    try {
-      const res = await fetch('/api/insights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ _ts: Date.now() }) });
-      if (res.ok) { const d = await res.json(); if (d.insights) { setInsights(d.insights); try { sessionStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts: Date.now(), insights: d.insights })); } catch {} } }
-    } catch {} finally { setInsightsLoading(false); }
-  }, []);
-
   const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true); setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
@@ -245,18 +242,17 @@ export default function Page() {
       const t = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setStatus({ msg: 'Updated at ' + t, type: '' }); setLastUpdate('Last updated ' + t);
       try { sessionStorage.setItem(FETCH_TS_KEY, JSON.stringify({ ts: Date.now(), prices: merged, usdInr: fx || usdInr })); } catch {}
-      if (opts.insights && insightsOn) fetchInsights(merged, fx || usdInr, mfData || mfNav, histData || hist);
+      if (opts.insights && insightsOn) requestInsights();
     } catch (e) { setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' }); }
     finally { setLoading(false); }
-  }, [usdInr, fetchInsights, insightsOn]);
+  }, [usdInr, requestInsights, insightsOn]);
 
   useEffect(() => {
-    let haveInsights = false;
-    try { const ic = JSON.parse(sessionStorage.getItem(INSIGHTS_KEY) || 'null'); if (ic?.insights) { setInsights(ic.insights); haveInsights = true; } } catch {}
-    let cachedMfNav = null;
-    try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) { cachedMfNav = mc.mfNav; setMfNav(mc.mfNav); } } catch {}
-    let cachedHist = null;
-    try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) { cachedHist = hc.hist; setHist(hc.hist); } } catch {}
+    // Show last-known insights immediately (localStorage — survives sessions);
+    // the hash-gated effect below decides whether a fresh API call is needed.
+    try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (ic?.insights) setInsights(ic.insights); } catch {}
+    try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) setMfNav(mc.mfNav); } catch {}
+    try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -265,10 +261,10 @@ export default function Page() {
         const age = Math.round((Date.now() - c.ts) / 60000);
         setStatus({ msg: `Cached prices (${age}m ago)`, type: 'stale' }); setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
-        if (!haveInsights && insightsOn) fetchInsights(c.prices || {}, c.usdInr, cachedMfNav, cachedHist);
+        if (insightsOn) requestInsights();
       }
     } catch {}
-    if (!hydrated) doRefresh({ insights: !haveInsights && insightsOn });
+    if (!hydrated) doRefresh({ insights: insightsOn });
     timer.current = setInterval(doRefresh, REFRESH_MS);
     return () => clearInterval(timer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -434,6 +430,85 @@ export default function Page() {
     const gains = (indian.pl || 0) + (usData.pl || 0) * fxRate + (mf.totVal - mf.totCost) + (fds.accrued || 0);
     return Math.round((ov.nw || 0) - gains);
   }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
+
+  // ── AI insights — compact aggregates payload, hash-gated ─────────────────────
+  // Builds one summary string per sleeve (~500 input tokens — never the full
+  // holdings books) and POSTs to /api/insights. A coarse data hash (NW to 0.1L,
+  // returns to 0.5pt, plus the calendar date) skips the API call entirely when
+  // nothing material changed; results persist in localStorage across sessions.
+  useEffect(() => {
+    if (!insightsReq || !insightsOn) return;
+    if (!(indian.valued && usData.val && usdInr)) return; // wait for live data
+
+    const r1 = (n) => (n == null || !isFinite(n) ? 'n/a' : n.toFixed(1));
+    const L = (n) => (n / 1e5).toFixed(2) + 'L';
+    const movers = (rows, key) => {
+      const v = rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
+      if (!v.length) return 'n/a';
+      const f = (r) => `${r.sym} ${r[key] >= 0 ? '+' : ''}${r[key].toFixed(1)}%`;
+      return `best ${v.slice(0, 3).map(f).join(', ')}; worst ${v.slice(-3).reverse().map(f).join(', ')}`;
+    };
+    const payload = {
+      asOf: new Date().toISOString().slice(0, 16) + 'Z',
+      usdInr: +usdInr.toFixed(2),
+      overview:
+        `net worth ₹${L(ov.nw)} (assets ₹${L(ov.totalAssets)} − loan ₹7.5L) · ` +
+        `Indian P&L ${r1(indian.pct)}% (day ${r1(indianDay.dayPct)}%) · US P&L ${r1(usData.pct)}% (day ${r1(usStats.dayPct)}%)`,
+      indian:
+        `${INDIAN.length} stocks ₹${L(indian.inv)}→₹${L(indian.val)} · XIRR ${r1(inStats.portXirr)}% vs ${inStats.benchmarks[0]?.label || 'benchmark'} ${r1(inStats.benchmarks[0]?.xirr)}% · ` +
+        `top sector ${inStats.topSector ? `${inStats.topSector.label} ${r1(inStats.topSector.pct)}%` : 'n/a'} · ` +
+        `largest ${inStats.topPos ? `${inStats.topPos.sym} ${r1((inStats.topPos.val / (indian.val || 1)) * 100)}% of book` : 'n/a'} · ` +
+        `movers: ${movers(indian.rows, 'pct')} · CAVEAT ~5-month window, indicative`,
+      indianRisk: indianRisk.hasReg
+        ? `beta ${indianRisk.beta?.toFixed(2)} · alpha ${indianRisk.alpha?.toFixed(2)} · vol ${r1(indianRisk.vol)}% vs Nifty ${r1(indianRisk.mktVol)}% (weekly regression)`
+        : 'n/a',
+      us:
+        `${US.length} holdings $${usData.inv.toFixed(0)}→$${usData.val.toFixed(0)} · XIRR ${r1(usStats.xirr)}% · ` +
+        `top sector ${usStats.topSector ? `${usStats.topSector.label} ${r1(usStats.topSector.pct)}%` : 'n/a'} (ETF look-through) · ` +
+        `movers: ${movers(usData.rows, 'livePct')}`,
+      mutualFunds:
+        `invested ₹${Math.round(mf.totCost)} value ₹${Math.round(mf.totVal)} (${r1(mf.totRet)}%) · XIRR ${r1(mfx.port)}% vs Nifty ${r1(mfx.bench)}% · ` +
+        `mix equity ${r1((mf.alloc.equity / (mf.totVal || 1)) * 100)}% arbitrage ${r1((mf.alloc.arbitrage / (mf.totVal || 1)) * 100)}% · ` +
+        `SIP ₹20K/mo JioBLK, ELSS locked to Feb-27 · CAVEAT very small base + short window`,
+      fixedDeposits:
+        `₹${L(fds.principal)} across ${FDS.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
+        `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
+      algo:
+        `own capital ₹7.3L (off-NW) · FY27 realised S01 +₹${FY.s01.fy2627.net} S02 +₹${FY.s02.fy2627.net}` +
+        `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹5.97L (tax asset)`,
+    };
+
+    // Coarse hash — regenerate only on a material move or a new calendar day.
+    const hash = JSON.stringify([
+      Math.round(ov.nw / 1e4),
+      Math.round(indian.pct * 2) / 2,
+      Math.round(usData.pct * 2) / 2,
+      Math.round((indianDay.dayPct || 0) * 2) / 2,
+      Math.round(mf.totRet * 2) / 2,
+      new Date().toISOString().slice(0, 10),
+    ]);
+    try {
+      const c = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null');
+      if (c?.insights && c.hash === hash) { setInsights(c.insights); return; } // unchanged — no API spend
+    } catch {}
+
+    let stale = false;
+    (async () => {
+      setInsightsLoading(true);
+      try {
+        const res = await fetch('/api/insights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok && !stale) {
+          const d = await res.json();
+          if (d.insights) {
+            setInsights(d.insights);
+            try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts: Date.now(), hash, insights: d.insights })); } catch {}
+          }
+        }
+      } catch {} finally { if (!stale) setInsightsLoading(false); }
+    })();
+    return () => { stale = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [insightsReq]);
 
   // NW sleeves only — algo capital is excluded from net worth (see ov above),
   // so it appears in neither the allocation view nor the projection model.
