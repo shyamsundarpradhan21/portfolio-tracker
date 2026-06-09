@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Theme Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0C0C12;color:#E8E8EC;font-family:'Inter',system-ui,sans-serif;padding:48px 24px;line-height:1.55}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-family:'DM Serif Display',serif;font-size:38px;font-weight:400;letter-spacing:-.5px}
+.sub{color:#6B6B7A;font-size:15px;margin:8px 0 36px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.card{display:block;text-decoration:none;border-radius:16px;padding:24px;border:.5px solid rgba(255,255,255,.1);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
+.swatches{display:flex;gap:6px;margin-bottom:16px}
+.sw{width:34px;height:34px;border-radius:8px}
+.name{font-size:18px;font-weight:700;color:#fff}
+.desc{font-size:13px;color:#8A8A99;margin-top:5px}
+.n{font-size:12px;color:#4A4A57;font-weight:700;letter-spacing:1px;margin-bottom:12px}
+</style></head><body>
+<div class="wrap">
+  <h1>Dashboard Theme Options</h1>
+  <p class="sub">Four directions, identical layout — so you're comparing only the feel. Open one, scroll to watch the header fade. Tell me which to ship.</p>
+  <div class="grid">
+    <a class="card" href="1-midnight-emerald.html" style="background:#0C0C12">
+      <div class="n">01 — CURRENT</div>
+      <div class="swatches"><span class="sw" style="background:#0C0C12;border:.5px solid #333"></span><span class="sw" style="background:#34D399"></span><span class="sw" style="background:#E8A857"></span><span class="sw" style="background:#5B9BE8"></span></div>
+      <div class="name">Midnight Emerald</div>
+      <div class="desc">Near-black canvas, emerald gains, amber accent. The look you're on now — restrained and modern.</div>
+    </a>
+    <a class="card" href="2-slate-terminal.html" style="background:#0E1420">
+      <div class="n">02</div>
+      <div class="swatches"><span class="sw" style="background:#0E1420;border:.5px solid #2a3a52"></span><span class="sw" style="background:#3DD68C"></span><span class="sw" style="background:#4FB8FF"></span><span class="sw" style="background:#FF6B7A"></span></div>
+      <div class="name">Slate Terminal</div>
+      <div class="desc">Cool blue-grey with solid panels and crisp 1px borders. A Bloomberg / trading-desk density.</div>
+    </a>
+    <a class="card" href="3-warm-paper.html" style="background:#F6F3EC">
+      <div class="n" style="color:#9C9384">03 — LIGHT</div>
+      <div class="swatches"><span class="sw" style="background:#FFFFFF;border:.5px solid #ccc"></span><span class="sw" style="background:#1F9D6B"></span><span class="sw" style="background:#C8780F"></span><span class="sw" style="background:#3B7BC4"></span></div>
+      <div class="name" style="color:#26211A">Warm Paper</div>
+      <div class="desc" style="color:#6E6555">Editorial cream light-mode with a Fraunces serif. Calm, premium, easy in daylight.</div>
+    </a>
+    <a class="card" href="4-royal-violet.html" style="background:#120E1C">
+      <div class="n">04</div>
+      <div class="swatches"><span class="sw" style="background:#120E1C;border:.5px solid #3a2f52"></span><span class="sw" style="background:#3FE0A8"></span><span class="sw" style="background:#E0B44D"></span><span class="sw" style="background:#B79BFF"></span></div>
+      <div class="name">Royal Violet</div>
+      <div class="desc">Deep aubergine with gold + cyan and a Playfair headline. Luxe and distinctive.</div>
+    </a>
+  </div>
+</div>
+</body></html>
