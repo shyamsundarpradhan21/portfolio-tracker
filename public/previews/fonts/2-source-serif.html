@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Font 7 — Geist + Geist Mono</title>
+<title>Font 2 — Source Serif 4 (Adobe superfamily)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Geist + Geist Mono — Vercel's own superfamily. Engineered, neutral, pixel-perfect for dashboards. */
-  --body:'Geist',system-ui,sans-serif; --mono:'Geist Mono',monospace; --title:'Geist',sans-serif; --title-w:700;
+  /* Adobe's Source superfamily — Serif body, Sans labels, Code figures. Editorial, scholarly, fully cohesive. */
+  --body:'Source Serif 4',Georgia,serif; --mono:'Source Code Pro',monospace; --title:'Source Serif 4',serif; --title-w:700;
   --bg:#0C0C12; --sur:rgba(255,255,255,.025); --sur2:rgba(255,255,255,.045);
   --brd:rgba(255,255,255,.07); --brd2:rgba(255,255,255,.045); --brd-w:.5px;
   --txt:#E8E8EC; --txt2:#6B6B7A; --txt3:#4A4A57;
@@ -16,12 +16,13 @@
   --side-bg:rgba(255,255,255,.022); --hdr-bg:rgba(12,12,18,calc(var(--hdr-t)*.8)); --hdr-brd:rgba(255,255,255,calc(var(--hdr-t)*.07));
 }
 .hdr-val{background:none;-webkit-text-fill-color:initial;color:var(--grn);}
-.ctitle{letter-spacing:-.5px;text-transform:none;font-size:18px;}
+.ctitle{letter-spacing:0;text-transform:none;font-size:19px;}
+.lbl,.nav-item,.theme-tag{font-family:'Source Sans 3',sans-serif;}
 </style>
 <link rel="stylesheet" href="../_base.css">
 </head><body>
 <div id="app"></div>
-<div class="theme-tag">GEIST + GEIST MONO<a href="index.html">all ↗</a></div>
+<div class="theme-tag">SOURCE SERIF 4<a href="index.html">all ↗</a></div>
 <script src="../_dashboard.js"></script>
 <script>const m=document.querySelector('.main');m.addEventListener('scroll',()=>{document.querySelector('.main-header').style.setProperty('--hdr-t',Math.min(1,m.scrollTop/120));},{passive:true});</script>
 </body></html>

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Font 6 — Current (Inter + DM Serif + JetBrains)</title>
+<title>Font 8 — Chivo + Chivo Mono</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700;800;900&family=Chivo+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* What's live now — three unrelated families (the disjoint feel to fix). */
-  --body:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace; --title:'DM Serif Display',serif; --title-w:400;
+  /* Chivo + Chivo Mono — an athletic grotesque superfamily. Punchy, confident, great heavy weights. Built as a pair. */
+  --body:'Chivo',system-ui,sans-serif; --mono:'Chivo Mono',monospace; --title:'Chivo',sans-serif; --title-w:900;
   --bg:#0C0C12; --sur:rgba(255,255,255,.025); --sur2:rgba(255,255,255,.045);
   --brd:rgba(255,255,255,.07); --brd2:rgba(255,255,255,.045); --brd-w:.5px;
   --txt:#E8E8EC; --txt2:#6B6B7A; --txt3:#4A4A57;
@@ -16,11 +16,12 @@
   --side-bg:rgba(255,255,255,.022); --hdr-bg:rgba(12,12,18,calc(var(--hdr-t)*.8)); --hdr-brd:rgba(255,255,255,calc(var(--hdr-t)*.07));
 }
 .hdr-val{background:none;-webkit-text-fill-color:initial;color:var(--grn);}
+.ctitle{letter-spacing:-.6px;text-transform:none;font-size:18px;}
 </style>
 <link rel="stylesheet" href="../_base.css">
 </head><body>
 <div id="app"></div>
-<div class="theme-tag">CURRENT (baseline)<a href="index.html">all ↗</a></div>
+<div class="theme-tag">CHIVO + CHIVO MONO<a href="index.html">all ↗</a></div>
 <script src="../_dashboard.js"></script>
 <script>const m=document.querySelector('.main');m.addEventListener('scroll',()=>{document.querySelector('.main-header').style.setProperty('--hdr-t',Math.min(1,m.scrollTop/120));},{passive:true});</script>
 </body></html>
