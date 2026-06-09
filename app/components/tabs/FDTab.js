@@ -1,0 +1,121 @@
+'use client';
+import { InrC, InrF, fmtNavDate, fmtDateObj } from '../../lib/fmt';
+import InsightBanner from '../shared/InsightBanner';
+import FreshnessTag from '../shared/FreshnessTag';
+
+export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoad, FDS, FD_PIPELINE }) {
+  return (
+    <div>
+      <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <FreshnessTag mode="manual" date={`${fmtDateObj(now)} · accrued recalculated daily`} />
+      </div>
+
+      <div className="g4 sec">
+        <div className="csm">
+          <div className="lbl">active deployed</div>
+          <div className="vmd"><InrC n={fds.principal} /></div>
+          <div className="sub">{FDS.length} FDs · Slice, ICICI, HDFC</div>
+        </div>
+        <div className="csm">
+          <div className="lbl">accrued interest</div>
+          <div className="vmd grn"><InrF n={fds.accrued} /></div>
+          <div className="sub">compounding quarterly · live</div>
+        </div>
+        <div className="csm">
+          <div className="lbl">value at maturity</div>
+          <div className="vmd"><InrC n={fds.maturity} /></div>
+          <div className="sub">+<InrF n={fds.maturity - fds.principal} /> total interest</div>
+        </div>
+        <div className="csm">
+          <div className="lbl">blended rate</div>
+          <div className="vmd">{fds.blendedRate.toFixed(2)}%</div>
+          <div className="sub">weighted by principal</div>
+        </div>
+      </div>
+
+      <div className="card sec">
+        <div className="lbl" style={{ marginBottom: 10 }}>active FDs</div>
+        <div className="ovx">
+          <table className="tbl" style={{ minWidth: 760 }}>
+            <thead>
+              <tr>
+                <th>Bank</th><th>FD</th><th>Matures</th>
+                <th className="ra">Principal</th><th className="ra">Rate</th>
+                <th className="ra">Accrued</th><th className="ra">At maturity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fds.rows.map((f) => (
+                <tr key={f.bank + f.label}>
+                  <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                  <td className="mut">{f.label}</td>
+                  <td style={{ minWidth: 140 }}>
+                    <div className="mut" style={{ marginBottom: 4 }}>{fmtNavDate(f.matures)}</div>
+                    <span className="bar-trk" style={{ display: 'block', height: 4 }}>
+                      <span className="bar-fil" style={{ width: f.progress.toFixed(1) + '%', height: 4, background: 'linear-gradient(90deg, var(--grn), #5FE3B0)' }} />
+                    </span>
+                    <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 3 }}>{f.progress.toFixed(0)}% elapsed</div>
+                  </td>
+                  <td className="ra mono"><InrC n={f.principal} /></td>
+                  <td className="ra grn mono">{f.rate.toFixed(2)}%</td>
+                  <td className="ra grn mono"><InrF n={f.accruedSoFar} /></td>
+                  <td className="ra">
+                    <div className="mono"><InrC n={f.maturityValue} /></div>
+                    <div style={{ fontSize: 11, color: 'var(--txt3)' }}>+<InrF n={f.maturityInterest} /></div>
+                  </td>
+                </tr>
+              ))}
+              <tr className="tot">
+                <td colSpan={3}>Total — {fds.rows.length} FDs</td>
+                <td className="ra"><InrC n={fds.principal} /></td>
+                <td className="ra">{fds.blendedRate.toFixed(2)}%</td>
+                <td className="ra grn"><InrF n={fds.accrued} /></td>
+                <td className="ra"><InrC n={fds.maturity} /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="fxc" style={{ marginBottom: 10 }}>
+          <div className="lbl" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
+          <div className="sub" style={{ margin: 0 }}>Pipeline <InrC n={fds.pipelineTotal} /> · Grand total <InrC n={fds.principal + fds.pipelineTotal} /></div>
+        </div>
+        <div className="ovx">
+          <table className="tbl" style={{ minWidth: 760 }}>
+            <thead>
+              <tr>
+                <th>Bank</th><th>FD</th><th>Deploy date</th><th>Maturity</th>
+                <th>Tenure</th><th className="ra">Amount</th><th />
+              </tr>
+            </thead>
+            <tbody>
+              {fds.pipeline.map((f) => (
+                <tr key={f.bank + f.label}>
+                  <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                  <td className="mut">{f.label}</td>
+                  <td className="mut">{fmtNavDate(f.deploy)}</td>
+                  <td className="mut">{fmtNavDate(f.maturity)}</td>
+                  <td className="mut">{f.tenure}</td>
+                  <td className="ra mono"><InrC n={f.amount} /></td>
+                  <td>{f.badge && <span className="badge ba">{f.badge}</span>}</td>
+                </tr>
+              ))}
+              <tr className="tot">
+                <td colSpan={5}>Total pipeline</td>
+                <td className="ra"><InrC n={fds.pipelineTotal} /></td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+          Strategy: maturities laddered quarterly across 4 banks — spreads reinvestment risk and keeps each bank's annual interest
+          below the ₹40,000 Sec 194A TDS threshold. Pipeline stays out of net worth until its deploy date arrives.
+        </div>
+      </div>
+    </div>
+  );
+}
