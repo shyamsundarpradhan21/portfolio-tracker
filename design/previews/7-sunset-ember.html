@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Theme 7 — Sunset Ember</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Clash+Display:wght@600&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --body:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace; --title:'Inter',sans-serif; --title-w:800;
+  /* Sunset Ember — warm charcoal with coral/amber/rose glow. Energetic, cozy. */
+  --bg:#15100E; --sur:rgba(255,170,120,.045); --sur2:rgba(255,170,120,.085);
+  --brd:rgba(255,170,120,.13); --brd2:rgba(255,170,120,.07); --brd-w:.5px;
+  --txt:#F6E9E2; --txt2:#B59585; --txt3:#7E635A;
+  --acc:#FF8A5B; --grn:#4FD89B; --red:#FF6B6B; --blu:#FFB454; --pur:#FF9EC8;
+  --acc-bg:rgba(255,138,91,.14); --grn-bg:rgba(79,216,155,.12); --red-bg:rgba(255,107,107,.12);
+  --side-bg:#100C0A; --hdr-bg:rgba(21,16,14,calc(var(--hdr-t)*.82)); --hdr-brd:rgba(255,170,120,calc(var(--hdr-t)*.15));
+}
+.hdr-val{background:linear-gradient(100deg,#FF8A5B,#FFB454,#FF8A5B);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+</style>
+<link rel="stylesheet" href="_base.css">
+</head><body>
+<div id="app"></div>
+<div class="theme-tag" style="color:#15100E">SUNSET EMBER<a href="index.html" style="color:#15100E">all ↗</a></div>
+<script src="_dashboard.js"></script>
+<script>
+const m=document.querySelector('.main');
+m.addEventListener('scroll',()=>{document.querySelector('.main-header').style.setProperty('--hdr-t',Math.min(1,m.scrollTop/120));},{passive:true});
+</script>
+</body></html>
