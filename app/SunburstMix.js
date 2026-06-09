@@ -7,8 +7,11 @@ import { useState } from 'react';
 // deployed and swaps to the hovered slice's name · weight · value; siblings dim.
 // Hand-rolled SVG arcs (no D3) so it stays dependency-free and on-theme.
 
-const fmtAmt = (n) =>
-  n == null ? '—' : n >= 1e5 ? '₹' + (n / 1e5).toFixed(2) + 'L' : '₹' + (n / 1e3).toFixed(1) + 'K';
+const fmtFor = (currency) => (n) => {
+  if (n == null) return '—';
+  if (currency === 'usd') return n >= 1000 ? '$' + (n / 1000).toFixed(1) + 'k' : '$' + Math.round(n);
+  return n >= 1e5 ? '₹' + (n / 1e5).toFixed(2) + 'L' : '₹' + (n / 1e3).toFixed(1) + 'K';
+};
 
 // Arc wedge between two radii; angles in radians, 0 at top, clockwise.
 function arc(cx, cy, rIn, rOut, a0, a1) {
@@ -33,13 +36,14 @@ function ring(items, total, pad) {
   });
 }
 
-export default function SunburstMix({ sectors, caps, total, secColors, capColor }) {
+export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)' }) {
   const [hov, setHov] = useState(null);
   const W = 260, cx = 130, cy = 130;
+  const fmtAmt = fmtFor(currency);
 
   const secVal = sectors.reduce((s, x) => s + (x.val || 0), 0);
   const T = total || secVal;
-  const secArcs = ring(sectors.map((s, i) => ({ ...s, color: secColors[i % secColors.length] })), T, 0.02);
+  const secArcs = ring(sectors.map((s, i) => ({ ...s, color: s.other ? othersColor : secColors[i % secColors.length] })), T, 0.02);
   const capList = caps.filter((c) => c.val > 0);
   const capTot = capList.reduce((s, c) => s + c.val, 0);
   const capArcs = ring(capList.map((c) => ({ ...c, color: capColor[c.label] || 'var(--txt2)' })), capTot, 0.03);

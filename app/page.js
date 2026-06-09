@@ -427,8 +427,13 @@ function computeBetaVol(hist, held, _now) {
   let cov = 0, vm = 0, vp = 0;
   for (let i = 0; i < rp.length; i++) { cov += (rp[i] - mp) * (rm[i] - mkm); vm += (rm[i] - mkm) ** 2; vp += (rp[i] - mp) ** 2; }
   const n = rp.length; cov /= n; vm /= n; vp /= n;
+  const beta = vm > 0 ? cov / vm : null;
+  // Jensen's alpha: the regression intercept (annualised), i.e. return not
+  // explained by market exposure. 0 = exactly market-explained (rf≈0 weekly).
+  const alpha = beta != null ? (mp - beta * mkm) * 52 : null;
   return {
-    beta: vm > 0 ? cov / vm : null,
+    beta,
+    alpha,
     vol: Math.sqrt(vp * 52) * 100,
     mktVol: Math.sqrt(vm * 52) * 100,
     rsq: (vp > 0 && vm > 0) ? (cov * cov) / (vp * vm) : null,
@@ -556,22 +561,17 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
       'Do not over-claim outperformance.',
   };
 
-  // Risk stats for the macro-aware SWOT: beta/vol from the weekly regression,
-  // alpha as portfolio CAGR minus the same-dated Nifty CAGR.
+  // Risk stats for the macro-aware SWOT — beta/alpha/vol from the weekly
+  // regression on Nifty (beta vs 1, Jensen's alpha vs 0).
   const inRisk = computeBetaVol(hist, heldIndian, now);
-  let niftyCagr = null;
-  const nb = INDIAN_BENCHMARKS.find((b) => b.key === 'nifty50');
-  if (nb && hist && hist.series && inVal) {
-    for (const sym of nb.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], TRANSACTIONS, now); if (cf) { niftyCagr = cf.cagr; break; } }
-  }
-  const inPortCagr = inVal ? weightedCagr(TRANSACTIONS, inVal, now).cagr : null;
-  const inAlpha = (inPortCagr != null && niftyCagr != null) ? inPortCagr - niftyCagr : null;
-  const indianRisk = [
-    inRisk ? `beta ${inRisk.beta != null ? inRisk.beta.toFixed(2) : '?'} vs Nifty` : null,
-    inRisk ? `annualised vol ${inRisk.vol.toFixed(0)}% (Nifty ${inRisk.mktVol.toFixed(0)}%)` : null,
-    inRisk && inRisk.rsq != null ? `R² ${inRisk.rsq.toFixed(2)} to Nifty` : null,
-    inAlpha != null ? `alpha ${inAlpha >= 0 ? '+' : ''}${inAlpha.toFixed(1)} pts CAGR vs Nifty` : null,
-  ].filter(Boolean).join(', ') || null;
+  const indianRisk = inRisk
+    ? [
+        `beta ${inRisk.beta != null ? inRisk.beta.toFixed(2) : '?'} (1.00 = Nifty)`,
+        `Jensen alpha ${inRisk.alpha >= 0 ? '+' : ''}${inRisk.alpha.toFixed(2)} annualised (0 = market-explained)`,
+        `annualised vol ${inRisk.vol.toFixed(0)}% (Nifty ${inRisk.mktVol.toFixed(0)}%)`,
+        inRisk.rsq != null ? `R² ${inRisk.rsq.toFixed(2)} to Nifty` : null,
+      ].filter(Boolean).join(', ')
+    : null;
 
   return {
     timestamp: new Date().toISOString(),
@@ -955,11 +955,8 @@ export default function Page() {
   // ─── derived: Indian risk stats (beta / vol / alpha) for the Insights card ───
   const indianRisk = useMemo(() => {
     const reg = computeBetaVol(hist, heldIndian, now);
-    const niftyCagr = (inStats.benchmarks.find((b) => b.key === 'nifty50') || {}).cagr ?? null;
-    const alpha = (inStats.cagr != null && niftyCagr != null) ? inStats.cagr - niftyCagr : null;
-    const topPct = (inStats.topPos && inStats.value) ? (inStats.topPos.val / inStats.value) * 100 : null;
-    return { ...(reg || {}), alpha, niftyCagr, topPct, hasReg: !!reg };
-  }, [hist, heldIndian, now, inStats]);
+    return { ...(reg || {}), hasReg: !!reg };
+  }, [hist, heldIndian, now]);
 
   // Corporate actions: upcoming (ex ≥ today) populate the panel; executed go to
   // the footline. Impact is computed against the current held quantity.
@@ -1167,6 +1164,18 @@ export default function Page() {
     const nw = totalAssets - STATIC.loan;
     return { usInr, fdValue, totalAssets, nw };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
+
+  // Cost basis behind today's net worth = NW − current gains. Current gains are
+  // the unrealised P&L on equity (Indian + US in ₹ + MF) plus FD interest accrued;
+  // algo is carried at value. Feeds the projection so year-0 growth ≠ 0.
+  const projInvested0 = useMemo(() => {
+    const gains =
+      (indian.pl || 0) +
+      (usData.pl || 0) * fxRate +
+      (mf.totVal - mf.totCost) +
+      (fds.accrued || 0);
+    return Math.round((ov.nw || 0) - gains);
+  }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
 
   // Allocation donut segments — live values where available, else snapshot.
   // `key` ties each sleeve to its forward drift rule in PROJECTION.allocRules.
@@ -1965,22 +1974,16 @@ export default function Page() {
             </div>
             <div className="card">
               <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              {usStats.sectors.map((c, i) => (
-                <div key={c.label} className="seg-row">
-                  <span className="seg-lbl" style={{ width: 120 }}>{c.label}</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: c.other ? OTHERS_COLOR : SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} /></span>
-                  <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
-              {usStats.caps.filter((c) => c.val > 0).map((c) => (
-                <div key={c.label} className="seg-row">
-                  <span className="seg-lbl" style={{ width: 120 }}>{c.label} cap</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: { Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }[c.label] }} /></span>
-                  <span className="seg-val">${(c.val).toFixed(0)} · {c.pct.toFixed(0)}%</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              <SunburstMix
+                sectors={usStats.sectors}
+                caps={usStats.caps}
+                total={usStats.value}
+                secColors={SECTOR_PALETTE}
+                capColor={{ Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }}
+                currency="usd"
+                othersColor={OTHERS_COLOR}
+              />
+              <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
               <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginBottom: 10, lineHeight: 1.5 }}>Sector &amp; cap use ETF look-through to align with Vested (equity only); direct stocks by GICS.</div>
               <div className="g3">
                 <div className="mini">
@@ -2298,7 +2301,7 @@ export default function Page() {
           <div className="sec">
             <FreshnessTag mode="manual" date={`forward projection · from net worth ${inrCd(ov.nw)} today`} />
           </div>
-          <ProjectionTab nw={Math.round(ov.nw)} loan={STATIC.loan} sleeves={projSleeves} baseYear={now.getFullYear()} />
+          <ProjectionTab nw={Math.round(ov.nw)} loan={STATIC.loan} sleeves={projSleeves} baseYear={now.getFullYear()} invested0={projInvested0} />
         </div>
       )}
 

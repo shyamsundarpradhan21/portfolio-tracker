@@ -25,7 +25,7 @@ const cr = (n) => {
 };
 const crPlain = (n) => cr(n).replace(/<[^>]+>/g, '');
 
-function ProjectionTab({ nw, loan, sleeves, baseYear }) {
+function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
   const coneEl = useRef(null);
   const allocEl = useRef(null);
   const coneRef = useRef(null);
@@ -49,10 +49,14 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
   // ── pure model ────────────────────────────────────────────────────────────
   const model = useMemo(() => {
     const base = nw || 0;
+    // Invested anchor = capital deployed to date (cost basis). Defaults to today's
+    // net worth only if a cost basis isn't supplied — otherwise the gap between
+    // corpus and invested at year 0 reflects the gains already in the book.
+    const inv0 = invested0 != null ? invested0 : base;
     const M0 = PROJECTION.monthly, step = PROJECTION.stepUp, infl = PROJECTION.inflation;
     const assetTotal0 = sleeves.reduce((a, s) => a + (s.value || 0), 0) || (base + loan);
     const sim = (rate) => {
-      const mr = rate / 12; let c = base, inv = base;
+      const mr = rate / 12; let c = base, inv = inv0;
       const corpus = [c], invested = [inv];
       for (let m = 1; m <= MAXY * 12; m++) {
         const x = M0 * Math.pow(1 + step, Math.floor((m - 1) / 12));
@@ -90,7 +94,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
       return { assets, out };
     };
     return { base, arr, invested, infl, rates, allocAt };
-  }, [nw, loan, sleeves, MAXY, fdCeiling]);
+  }, [nw, loan, sleeves, MAXY, fdCeiling, invested0]);
 
   const corpusAt = (sc, t) => {
     const a = model.arr[sc].corpus; const i = Math.floor(t), f = t - i;
