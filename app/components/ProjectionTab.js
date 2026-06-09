@@ -17,8 +17,9 @@ const SC = {
   base: { c: '#34D399', name: 'Base' },
   opt:  { c: '#E8A857', name: 'Optimistic' },
 };
-const HORIZONS = [{ key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
+const HORIZONS = [{ key: 'Now', y: 0 }, { key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
 const SPARK_W = 240, SPARK_H = 48;
+const GROW_W = 640, GROW_H = 150; // hero invested+growth area chart coordinate space
 
 // rupee formatters (Cr / L) — color conveys sign elsewhere; these are unsigned
 const cr = (n) => {
@@ -34,12 +35,12 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
   const allocRef = useRef(null);
   const echRef = useRef(null);
   const raf = useRef(null);
-  const st = useRef({ t: 10, lastAlloc: -1, playing: false, sc: 'base', view: 'rose' });
+  const st = useRef({ t: 0, lastAlloc: -1, playing: false, sc: 'base', view: 'rose' });
   // Scenario / view / horizon live in React state so their button highlights
   // survive a live-price re-render; the fast-changing play time stays in a ref.
   const [sc, setSc] = useState('base');
   const [view, setView] = useState('rose');
-  const [hsel, setHsel] = useState(10);
+  const [hsel, setHsel] = useState(0);
   st.current.sc = sc; st.current.view = view;
 
   const MAXY = PROJECTION.horizonYears;
@@ -115,6 +116,22 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     return arr.map((v, i) => `${((i / (n - 1)) * SPARK_W).toFixed(1)},${(SPARK_H - (v / mx) * SPARK_H).toFixed(1)}`).join(' ');
   };
 
+  // Invested-vs-growth area chart for the hero (selected scenario). Bottom band =
+  // capital you put in; top band = market growth on top of it.
+  const growPaths = (k) => {
+    const inv = model.invested, cor = model.arr[k].corpus; const n = cor.length;
+    const mx = cor[n - 1] || 1;
+    const X = (i) => ((i / (n - 1)) * GROW_W);
+    const Y = (v) => (GROW_H - (v / mx) * GROW_H);
+    const fmt = (i, v) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`;
+    const invArea = `M0,${GROW_H} ` + inv.map((v, i) => `L${fmt(i, v)}`).join(' ') + ` L${GROW_W},${GROW_H} Z`;
+    const top = cor.map((v, i) => fmt(i, v));
+    const bot = inv.map((v, i) => fmt(i, v)).reverse();
+    const growArea = `M${top.join(' L')} L${bot.join(' L')} Z`;
+    const corLine = `M${cor.map((v, i) => fmt(i, v)).join(' L')}`;
+    return { invArea, growArea, corLine, X, Y };
+  };
+
   // ECharts is canvas-rendered, so CSS variables don't reach it — read the live
   // theme tokens off <html> and build day/night-aware chart styles each draw.
   const palette = () => {
@@ -167,6 +184,17 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         dot.setAttribute('cy', (SPARK_H - (c / mx) * SPARK_H).toFixed(1));
       }
     });
+
+    // hero growth-curve playhead
+    const gx = document.getElementById('pj-gx');
+    const gdot = document.getElementById('pj-gdot');
+    if (gx || gdot) {
+      const arr = model.arr[scn].corpus; const mx = arr[arr.length - 1] || 1;
+      const px = (t / MAXY) * GROW_W;
+      const py = GROW_H - (corpus / mx) * GROW_H;
+      if (gx) { gx.setAttribute('x1', px.toFixed(1)); gx.setAttribute('x2', px.toFixed(1)); }
+      if (gdot) { gdot.setAttribute('cx', px.toFixed(1)); gdot.setAttribute('cy', py.toFixed(1)); }
+    }
 
     const aYr = document.getElementById('pj-ayr'); if (aYr) aYr.textContent = baseYear + Math.round(t);
     const kYr = document.getElementById('pj-kyr'); if (kYr) kYr.textContent = baseYear + Math.round(t);
@@ -283,8 +311,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
       <div className="card sec">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <button id="pj-play" onClick={onPlay} className="pj-play">▶</button>
-          <div id="pj-year" className="pj-year">{baseYear + 10}<small>year 10</small></div>
-          <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="10" onInput={onScrub} className="pj-range" />
+          <div id="pj-year" className="pj-year">{baseYear}<small>today</small></div>
+          <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="0" onInput={onScrub} className="pj-range" />
           <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
             {HORIZONS.map((h) => (
               <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
@@ -293,11 +321,29 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         </div>
       </div>
 
-      {/* HERO headline */}
+      {/* HERO — portfolio growth (invested + growth) for the selected scenario */}
       <div className="card sec pj-hero">
-        <div className="lbl">Projected corpus · <span id="pj-scn">base</span></div>
-        <div id="pj-corpus" className="pj-big" style={{ color: SC.base.c }}>—</div>
+        <div className="lbl">Portfolio growth · <span id="pj-scn">base</span></div>
+        <div id="pj-corpus" className="pj-big" style={{ color: SC[sc].c }}>—</div>
         <div id="pj-range" className="sub" style={{ marginTop: 6 }}>—</div>
+        {(() => {
+          const g = growPaths(sc);
+          const c = SC[sc].c;
+          return (
+            <svg viewBox={`0 0 ${GROW_W} ${GROW_H}`} preserveAspectRatio="none"
+              style={{ width: '100%', height: 168, display: 'block', marginTop: 14, overflow: 'visible' }}>
+              <path d={g.invArea} fill="var(--txt3)" opacity="0.18" />
+              <path d={g.growArea} fill={c} opacity="0.16" />
+              <path d={g.corLine} fill="none" stroke={c} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+              <line id="pj-gx" x1="0" y1="0" x2="0" y2={GROW_H} stroke="var(--txt3)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+              <circle id="pj-gdot" r="3.6" fill={c} stroke="var(--bg)" strokeWidth="1.5" cx="0" cy={GROW_H} />
+            </svg>
+          );
+        })()}
+        <div className="fxc sub" style={{ marginTop: 6 }}>
+          <span><span style={{ color: 'var(--txt3)' }}>▇</span> invested</span>
+          <span><span style={{ color: SC[sc].c }}>▇</span> growth · {baseYear}→{baseYear + MAXY}</span>
+        </div>
       </div>
 
       {/* SCENARIO CARD STACK — click to select; each shows corpus @ horizon + curve */}
@@ -329,7 +375,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
       {/* KPIs | allocation */}
       <div className="g2">
         <div className="card">
-          <div className="ctitle" style={{ fontSize: 15 }}>At <span id="pj-kyr" className="acc">{baseYear + 10}</span></div>
+          <div className="ctitle" style={{ fontSize: 15 }}>At <span id="pj-kyr" className="acc">{baseYear}</span></div>
           <div className="sub">figures shown nowhere else</div>
           <div className="pj-kpis">
             <div className="csm"><div className="lbl">Today's money</div><div id="pj-real" className="vsm mono">—</div></div>
@@ -340,7 +386,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         </div>
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-            <div><div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear + 10}</span></div>
+            <div><div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
               <div className="sub">FD &amp; algo dilute · equities scale up</div></div>
             <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
               <button className={'pj-seg' + (view === 'rose' ? ' on' : '')} onClick={() => onView('rose')}>Rose %</button>

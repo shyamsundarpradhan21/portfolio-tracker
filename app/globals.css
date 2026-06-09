@@ -774,14 +774,55 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  /* 4px sidebar strip + breathing room */
-  padding: 0 28px 40px 36px;
-  max-width: 1220px;
-  /* Centre the content column so wide screens don't leave a deformed empty
-     gutter on the right (the sidebar is fixed/auto-hide, so it takes no flow). */
+  padding: 0 28px 40px;
+  max-width: 1280px;
+  /* Centre the content column on wide screens (no sidebar in flow). */
   margin: 0 auto;
   overflow-y: auto;
   height: 100vh;
+}
+
+/* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
+.hdr-brand { font-weight: 700; font-size: 14px; letter-spacing: .3px; color: var(--txt); margin-right: 4px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+.hdr-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, 270px) 1fr;
+  gap: 16px; align-items: stretch;
+  margin: 6px 0 14px;
+}
+.hdr-hero {
+  display: flex; flex-direction: column; justify-content: center;
+  text-align: left; background: transparent; border: none; cursor: pointer;
+  padding: 2px 4px; border-radius: 12px; transition: background .15s;
+}
+.hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
+.hdr-hero.active .page-header-lbl { color: var(--acc); }
+
+.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.hdr-card {
+  text-align: left; cursor: pointer; min-width: 0;
+  background: color-mix(in srgb, var(--acc) 3.5%, var(--sur));
+  border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd));
+  border-radius: 12px; padding: 10px 13px;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.hdr-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2)); }
+.hdr-card.active {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--brd));
+  box-shadow: inset 0 -2px 0 -.5px var(--acc);
+}
+.hdr-card .lbl { font-size: 10px; margin-bottom: 4px; }
+.hdr-card .vmd { font-size: 18px; letter-spacing: -.3px; }
+.hdr-card .sub { font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 1080px) {
+  .hdr-grid { grid-template-columns: 1fr; }
+  .hdr-cards { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .hdr-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Sticky frosted header — starts transparent at scroll-top, fades to a
@@ -886,39 +927,6 @@ body { padding: 0; }
 /* Override old body padding that conflicts with sidebar layout */
 @media (max-width: 720px) {
   body { padding: 0; }
-  .main { padding: 54px 14px 32px; }
+  .main { padding: 0 14px 32px; }
   .main .topbar { padding: 12px 0 10px; }
-
-  /* Hamburger toggle, fixed top-left */
-  .nav-toggle {
-    display: flex; align-items: center; justify-content: center;
-    position: fixed; top: 10px; left: 10px; z-index: 130;
-    width: 38px; height: 38px; border-radius: 9px;
-    background: color-mix(in srgb, var(--acc) 8%, rgba(var(--hdr-bg-base), .9));
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-    border: .5px solid color-mix(in srgb, var(--acc) 25%, var(--brd));
-    color: var(--txt); font-size: 17px; cursor: pointer;
-  }
-
-  /* Sidebar becomes a slide-in drawer driven by [data-nav] */
-  .sidebar {
-    width: 244px; overflow-y: auto;
-    transform: translateX(-100%);
-    transition: transform .28s cubic-bezier(.4,0,.2,1);
-  }
-  .sidebar::before { display: none; } /* hide the 4px accent strip on mobile */
-  .layout[data-nav="open"] .sidebar { transform: none; }
-  .layout[data-nav="open"] .sidebar .sidebar-brand,
-  .layout[data-nav="open"] .sidebar .sidebar-nav,
-  .layout[data-nav="open"] .sidebar .sidebar-footer {
-    opacity: 1; pointer-events: auto;
-  }
-  .nav-scrim {
-    display: block; position: fixed; inset: 0; z-index: 120;
-    background: rgba(0,0,0,.45);
-  }
 }
-
-/* When sidebar is open it sits above content — prevent main from jumping */
-.sidebar:hover ~ .main,
-.layout:has(.sidebar:hover) .main { padding-left: 36px; }

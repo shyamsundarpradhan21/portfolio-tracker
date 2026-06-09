@@ -16,7 +16,7 @@ import {
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
 } from './lib/calc';
 import {
-  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, SInrC, SInrF, sFull, Rs,
+  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, InrF, SInrC, SInrF, sFull, Rs, pctS,
 } from './lib/fmt';
 import { ETF_LOOKTHROUGH, ETF_CAP, US_CAP, usSectorOf } from './lib/constants';
 const COLORS = ALLOC_COLORS;
@@ -27,7 +27,6 @@ import FDTab        from './components/tabs/FDTab';
 import MFTab        from './components/tabs/MFTab';
 import USTab        from './components/tabs/USTab';
 import AlgoTab      from './components/tabs/AlgoTab';
-import ProjectionTab from './components/ProjectionTab';
 import Skel         from './components/shared/Skel';
 import FreshnessTag from './components/shared/FreshnessTag';
 
@@ -105,25 +104,8 @@ function mfXirr(mf, mfNav) {
 }
 
 // ─── tabs config ──────────────────────────────────────────────────────────────
-const TABS = ['Overview', 'Indian', 'Fixed Deposits', 'Mutual Funds', 'US Stocks', 'Algo', 'Projection'];
-// Consistent 16×16 SVG icons — uniform stroke weight so they optically align
-const TAB_ICONS = [
-  // Overview — grid
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>,
-  // Indian — rupee
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 3h8M4 7h8M7 7l-3 6" strokeLinecap="round"/><path d="M4 5c0 1.657 1.343 2 3 2s3-.343 3-2-1.343-2-3-2" strokeLinecap="round"/></svg>,
-  // Fixed Deposits — bank/column
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 6l6-3 6 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 6v5M8 6v5M12 6v5" strokeLinecap="round"/><path d="M2 11h12" strokeLinecap="round"/><path d="M1.5 13.5h13" strokeLinecap="round"/></svg>,
-  // Mutual Funds — pie chart
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v6l4.5 4.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="5.5"/></svg>,
-  // US Stocks — trend arrow
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12l4-4 3 2 5-6" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 4h4v4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  // Algo — cpu/circuit
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6 1v3M10 1v3M6 12v3M10 12v3M1 6h3M1 10h3M12 6h3M12 10h3" strokeLinecap="round"/></svg>,
-  // Projection — rocket
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2c0 0 4 2 4 7H4c0-5 4-7 4-7z" strokeLinejoin="round"/><path d="M6 9v3a2 2 0 004 0V9" strokeLinecap="round"/><path d="M4 9c-1 .5-2 1.5-2 2.5h3M12 9c1 .5 2 1.5 2 2.5h-3" strokeLinecap="round"/></svg>,
-];
-
+// Projection now lives inside the Overview tab; the header asset cards are the
+// primary nav (each opens its tab) and the live net-worth figure opens Overview.
 // ─── page component ───────────────────────────────────────────────────────────
 export default function Page() {
   const [tab, setTab]               = useState(0);
@@ -153,7 +135,7 @@ export default function Page() {
   }, []);
 
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
-  const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'projection'];
+  const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo'];
 
   // Theme mode: 'auto' (sunrise/sunset), 'day', or 'night'. Persisted.
   const [themeMode, setThemeMode] = useState(() => {
@@ -466,81 +448,72 @@ export default function Page() {
   const mktPill  = (open) => open == null ? 'mkt-closed' : open ? 'mkt-open' : 'mkt-closed';
   const mktTxt   = (open) => open == null ? '—' : open ? 'OPEN' : 'CLOSED';
 
-  // Mobile nav drawer (the sidebar is hover-only on desktop; touch/mobile needs
-  // an explicit toggle, otherwise navigation is unreachable below 720px).
-  const [navOpen, setNavOpen] = useState(false);
+  // Header asset cards double as the primary navigation — each opens its tab.
+  const headerCards = [
+    { label: 'Indian equity', tab: 1,
+      val: indian.valued ? <InrC n={indian.val} /> : <Skel w={58} h={18} />,
+      cls: indian.valued ? cl(indian.pl) : '',
+      sub: indian.valued ? <><SInrC n={indian.pl} /> · {pctS(indian.pct)}</> : `${INDIAN.length} stocks` },
+    { label: 'Mutual funds', tab: 3,
+      val: <InrC n={mf.totVal} />, cls: cl(mf.totRet),
+      sub: <>{pctS(mf.totRet)} · live NAV</> },
+    { label: 'Fixed deposits', tab: 2,
+      val: <InrC n={ov.fdValue} />, cls: 'grn',
+      sub: <>+<InrF n={fds.accrued} /> accrued</> },
+    { label: 'US equity', tab: 4,
+      val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
+      cls: usData.val ? cl(usData.pl) : '',
+      sub: usData.val ? <>{pctS(usData.pct)} @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
+    { label: 'Algo capital', tab: 5,
+      val: <InrC n={STATIC.algo} />, cls: ytdTotal != null ? cl(ytdTotal) : '',
+      sub: ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /></> : 'own capital' },
+  ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="layout" data-nav={navOpen ? 'open' : 'closed'}>
-      {/* Mobile nav toggle — hidden on desktop via CSS */}
-      <button className="nav-toggle" aria-label="Toggle navigation" aria-expanded={navOpen} onClick={() => setNavOpen((o) => !o)}>
-        {navOpen ? '✕' : '☰'}
-      </button>
-      {navOpen && <div className="nav-scrim" onClick={() => setNavOpen(false)} />}
-
-      {/* SIDEBAR NAV */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo">◈</div>
-          <div>
-            <div className="sidebar-title">NetWorth</div>
-            <div className="sidebar-sub">Live Dashboard</div>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          {TABS.map((t, i) => (
-            <button key={t} className={'nav-item' + (tab === i ? ' active' : '')} onClick={() => { setTab(i); setNavOpen(false); }}>
-              <span className="nav-icon">{TAB_ICONS[i]}</span>
-              <span className="nav-label">{t}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-market">
-            <span className={'mkt-pill ' + mktPill(markets.nse)}>NSE {mktTxt(markets.nse)}</span>
-            <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
-          </div>
-          <button className="sidebar-ai-btn" onClick={toggleInsights} style={{ opacity: insightsOn ? 1 : 0.45 }}>
-            ✨ AI {insightsOn ? 'ON' : 'OFF'}
-          </button>
-          <button className="sidebar-ai-btn" onClick={cycleTheme} title="Theme: auto follows sunrise/sunset">
-            {themeMode === 'auto' ? '🌗 Auto' : themeMode === 'day' ? '☀️ Day' : '🌙 Night'}
-          </button>
-          <button className={'sidebar-refresh-btn' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })}>
-            ↻ {loading ? 'Updating…' : 'Refresh'}
-          </button>
-        </div>
-      </aside>
-
+    <div className="layout">
       {/* MAIN CONTENT */}
       <main className="main">
-        {/* STICKY FROSTED HEADER */}
+        {/* STICKY GLOBAL HEADER — summary figures + asset-card nav */}
         <div className="main-header" ref={headerRef}>
-        {/* TOPBAR */}
-        <div className="topbar">
-          <div className="topbar-left">
-            <div className={pulseCls} />
-            <span className="status-txt">{status.msg}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'var(--txt2)' }}>USD/INR: <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
-            <span style={{ fontSize: 12, color: 'var(--txt3)' }}>{lastUpdate}</span>
-          </div>
-        </div>
-
-        {/* HEADER */}
-        <div className="page-header">
-          <div>
-            <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
-            <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={160} h={36} />}</div>
-            <div className="page-header-sub">
-              Total assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong> · Loan ~<Rs />7.50L · excl. savings &amp; EPF
+          <div className="topbar">
+            <div className="topbar-left">
+              <span className="hdr-brand">◈ NetWorth</span>
+              <div className={pulseCls} />
+              <span className="status-txt">{status.msg}</span>
+            </div>
+            <div className="topbar-right">
+              <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
+              <span className={'mkt-pill ' + mktPill(markets.nse)}>NSE {mktTxt(markets.nse)}</span>
+              <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
+              <button className="sidebar-ai-btn" onClick={toggleInsights} style={{ opacity: insightsOn ? 1 : 0.45 }}>✨ AI {insightsOn ? 'ON' : 'OFF'}</button>
+              <button className="sidebar-ai-btn" onClick={cycleTheme} title="Theme: auto follows sunrise/sunset">{themeMode === 'auto' ? '🌗 Auto' : themeMode === 'day' ? '☀️ Day' : '🌙 Night'}</button>
+              <button className={'sidebar-refresh-btn' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })}>↻ {loading ? 'Updating…' : 'Refresh'}</button>
             </div>
           </div>
-        </div>
+
+          <div className="hdr-grid">
+            {/* Net-worth hero — click to open Overview. Assets/Liabilities are figures only. */}
+            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">
+              <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
+              <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
+              <div className="page-header-sub">
+                Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
+                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
+              </div>
+            </button>
+
+            {/* Asset-class cards — primary navigation */}
+            <div className="hdr-cards">
+              {headerCards.map((c) => (
+                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
+                  <div className="lbl">{c.label}</div>
+                  <div className="vmd">{c.val}</div>
+                  <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* TAB CONTENT */}
@@ -549,7 +522,8 @@ export default function Page() {
             <OverviewTab ov={ov} indian={indian} usData={usData} mf={mf} fds={fds}
               swing={swing} fxRate={fxRate} donutSegs={donutSegs}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              ytdTotal={ytdTotal} MF_CONFIG={STATIC} FY={FY} />
+              ytdTotal={ytdTotal} MF_CONFIG={STATIC} FY={FY}
+              projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}
@@ -577,14 +551,6 @@ export default function Page() {
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               ALGO={ALGO} FY={FY} />
-          )}
-          {tab === 6 && (
-            <div>
-              <div className="sec">
-                <FreshnessTag mode="manual" date={`forward projection · from net worth ${inrCd(ov.nw)} today`} />
-              </div>
-              <ProjectionTab nw={Math.round(ov.nw)} loan={STATIC.loan} sleeves={projSleeves} baseYear={now.getFullYear()} invested0={projInvested0} />
-            </div>
           )}
         </div>
 
