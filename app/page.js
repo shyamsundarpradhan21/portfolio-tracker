@@ -1477,15 +1477,17 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="card">
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              <SunburstMix
-                sectors={inStats.sectors}
-                caps={inStats.caps}
-                total={inStats.value}
-                secColors={secColors}
-                capColor={capColor}
-              />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <SunburstMix
+                  sectors={inStats.sectors}
+                  caps={inStats.caps}
+                  total={inStats.value}
+                  secColors={secColors}
+                  capColor={capColor}
+                />
+              </div>
             </div>
           </div>
 
@@ -1990,17 +1992,19 @@ export default function Page() {
                 </div>
               </div>
             </div>
-            <div className="card">
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              <SunburstMix
-                sectors={usStats.sectors}
-                caps={usStats.caps}
-                total={usStats.value}
-                secColors={SECTOR_PALETTE}
-                capColor={{ Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }}
-                currency="usd"
-                othersColor={OTHERS_COLOR}
-              />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <SunburstMix
+                  sectors={usStats.sectors}
+                  caps={usStats.caps}
+                  total={usStats.value}
+                  secColors={SECTOR_PALETTE}
+                  capColor={{ Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }}
+                  currency="usd"
+                  othersColor={OTHERS_COLOR}
+                />
+              </div>
               <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
               <div style={{ fontSize: 10.5, color: 'var(--txt3)', textAlign: 'center', lineHeight: 1.5 }}>Sector &amp; cap use ETF look-through to align with Vested (equity only); direct stocks by GICS.</div>
             </div>
