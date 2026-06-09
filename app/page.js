@@ -1264,7 +1264,7 @@ export default function Page() {
         <div>
           <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
           <div className="ov-top">
-            <div className="card ov-donut">
+            <div className="card ov-donut" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="lbl" style={{ marginBottom: 8 }}>allocation</div>
               <Donut segments={donutSegs} />
             </div>
@@ -1756,27 +1756,25 @@ export default function Page() {
           {/* 3-up analytics */}
           <div className="mf-g3">
             {/* XIRR vs Nifty 50 */}
-            <div className="card">
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="ctitle" style={{ marginBottom: 12 }}>XIRR vs Nifty 50</div>
-              <div className="g2">
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Your portfolio</div>
-                  <div className={'vmd ' + (mfx.port != null ? cl(mfx.port) : '')}>{fmtX(mfx.port)}</div>
-                  <div className="sub">annualised</div>
+              <div className="g2" style={{ flex: 1 }}>
+                <div className="mini" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div className="lbl" style={{ marginBottom: 6 }}>Your portfolio</div>
+                  <div className={'mono ' + (mfx.port != null ? cl(mfx.port) : '')} style={{ fontSize: 'clamp(28px, 3.4vw, 40px)', fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{fmtX(mfx.port)}</div>
+                  <div className="sub" style={{ marginTop: 6 }}>annualised</div>
                 </div>
-                <div className="mini">
-                  <div className="lbl" style={{ marginBottom: 4 }}>Nifty 50</div>
-                  <div className={'vmd ' + (mfx.bench != null ? cl(mfx.bench) : '')}>{fmtX(mfx.bench)}</div>
-                  <div className="sub">same dated rupees</div>
+                <div className="mini" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div className="lbl" style={{ marginBottom: 6 }}>Nifty 50</div>
+                  <div className={'mono ' + (mfx.bench != null ? cl(mfx.bench) : '')} style={{ fontSize: 'clamp(28px, 3.4vw, 40px)', fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{fmtX(mfx.bench)}</div>
+                  <div className="sub" style={{ marginTop: 6 }}>same dated rupees</div>
                 </div>
               </div>
               {delta != null && (
-                <div style={{ marginTop: 12 }}>
-                  <span className="verdict" style={delta >= 0
-                    ? { background: 'var(--grn-bg)', color: 'var(--grn)' }
-                    : { background: 'var(--red-bg)', color: 'var(--red)' }}>
-                    {delta >= 0 ? '▲ Ahead' : '▼ Behind'} by {Math.abs(delta).toFixed(1)} pts
-                  </span>
+                <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 10, textAlign: 'center', fontWeight: 700, fontSize: 14, ...(delta >= 0
+                  ? { background: 'var(--grn-bg)', color: 'var(--grn)' }
+                  : { background: 'var(--red-bg)', color: 'var(--red)' }) }}>
+                  {delta >= 0 ? '▲ Ahead' : '▼ Behind'} by {Math.abs(delta).toFixed(1)} pts
                 </div>
               )}
             </div>
@@ -2431,8 +2429,8 @@ function Donut({ segments }) {
   const size = 168, thick = 24, r = (size - thick) / 2, C = 2 * Math.PI * r;
   let acc = 0;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: 1, justifyContent: 'center' }}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 210, height: 'auto', flexShrink: 0 }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
           {segments.map((seg) => {
