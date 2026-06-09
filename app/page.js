@@ -122,7 +122,7 @@ export default function Page() {
   const prevPrices                  = useRef({});
   const headerRef                   = useRef(null);
 
-  // Scroll-driven header fade: transparent at top → frosted at ~120px scrolled
+  // Scroll-driven header fade
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
@@ -134,6 +134,22 @@ export default function Page() {
     scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => scroller.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
+  const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'projection'];
+  useEffect(() => {
+    const apply = () => {
+      const h = new Date().getHours();
+      document.documentElement.dataset.time = (h >= 7 && h < 19) ? 'day' : 'night';
+    };
+    apply();
+    // Re-check every minute so it flips automatically at 7am/7pm
+    const id = setInterval(apply, 60_000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.tab = TAB_KEYS[tab] ?? 'overview';
+  }, [tab]);
   const [now, setNow]               = useState(() => new Date());
 
   // sorts

@@ -1,30 +1,112 @@
+/* ── Layer 1: Base night tokens (always-on defaults) ───────────────────────── */
 :root {
-  /* Shared theme tokens — identical on every tab (Section 0). */
-  --bg: #0C0C12;
-  --sur: rgba(255, 255, 255, .025);   /* card */
-  --sur2: rgba(255, 255, 255, .04);   /* card2 */
-  --brd: rgba(255, 255, 255, .07);    /* line */
-  --brd2: rgba(255, 255, 255, .045);  /* line2 */
-  --txt: #E8E8EC;
-  --txt2: #6B6B7A;                     /* muted */
-  --txt3: #4A4A57;                     /* dim */
-  --acc: #E8A857;                      /* amber */
-  --grn: #34D399;                      /* green */
-  --red: #F87171;                      /* red */
-  --blu: #5B9BE8;                      /* blue */
-  --pur: #9B8AFB;                      /* purple */
-  --pnk: #E85F8F;
-  --cyn: #06B6D4;
-  --acc-bg: rgba(232, 168, 87, .12);
-  --grn-bg: rgba(52, 211, 153, .1);
-  --red-bg: rgba(248, 113, 113, .1);
-  --blu-bg: rgba(91, 155, 232, .1);
-  /* JetBrains Mono's loaded subset lacks U+20B9 (₹); list the body sans (Inter)
-     before Courier so a bare ₹ falls back to a correctly-sized glyph, not an
-     oversized monospace substitute. The .rs span (below) gives finer control. */
   --mono: var(--font-mono), var(--font-body), 'Segoe UI', Arial, sans-serif;
   --body: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --title: var(--font-title), Georgia, 'Times New Roman', serif;
+
+  /* Night palette */
+  --bg:   #0C0C12;
+  --sur:  rgba(255,255,255,.025);
+  --sur2: rgba(255,255,255,.04);
+  --brd:  rgba(255,255,255,.07);
+  --brd2: rgba(255,255,255,.045);
+  --txt:  #E8E8EC;
+  --txt2: #6B6B7A;
+  --txt3: #4A4A57;
+  --grn:  #34D399;
+  --red:  #F87171;
+  --blu:  #5B9BE8;
+  --pur:  #9B8AFB;
+  --pnk:  #E85F8F;
+  --cyn:  #06B6D4;
+  --grn-bg: rgba(52,211,153,.1);
+  --red-bg: rgba(248,113,113,.1);
+  --blu-bg: rgba(91,155,232,.1);
+  /* Default tab accent — Overview: emerald */
+  --acc:    #34D399;
+  --acc2:   #5FE3B0;
+  --acc-bg: rgba(52,211,153,.12);
+  --side-bg: rgba(255,255,255,.022);
+  --hdr-bg-base: 12,12,18;   /* used as rgb(...) inside calc */
+}
+
+/* ── Layer 2: Day palette override ─────────────────────────────────────────── */
+:root[data-time="day"] {
+  --bg:   #F4F6FA;
+  --sur:  #FFFFFF;
+  --sur2: #ECF0F6;
+  --brd:  rgba(40,60,90,.1);
+  --brd2: rgba(40,60,90,.06);
+  --txt:  #1C2533;
+  --txt2: #5E6B80;
+  --txt3: #94A0B4;
+  --grn:  #13A871;
+  --red:  #E1453B;
+  --blu:  #2E6FE6;
+  --pur:  #7B5FD0;
+  --pnk:  #D43F7B;
+  --cyn:  #0891B2;
+  --grn-bg: rgba(19,168,113,.1);
+  --red-bg: rgba(225,69,59,.09);
+  --blu-bg: rgba(46,111,230,.1);
+  --side-bg: #FFFFFF;
+  --hdr-bg-base: 244,246,250;
+}
+
+/* ── Layer 3: Per-tab accent colors (night) ─────────────────────────────────
+   Each tab gets a distinct accent that drives: active nav highlight,
+   card accent borders, badge colors, hdr-val gradient, and hkpi underlines. */
+
+/* Overview — emerald teal (default, already set above) */
+:root[data-tab="overview"] {
+  --acc: #34D399; --acc2: #5FE3B0; --acc-bg: rgba(52,211,153,.12);
+}
+/* Indian Stocks — sapphire blue */
+:root[data-tab="indian"] {
+  --acc: #5B9BE8; --acc2: #7CB8FF; --acc-bg: rgba(91,155,232,.14);
+}
+/* Fixed Deposits — warm amber */
+:root[data-tab="fd"] {
+  --acc: #E8A857; --acc2: #FFCA7A; --acc-bg: rgba(232,168,87,.13);
+}
+/* Mutual Funds — soft violet */
+:root[data-tab="mf"] {
+  --acc: #9B8AFB; --acc2: #BDB0FF; --acc-bg: rgba(155,138,251,.13);
+}
+/* US Stocks — electric cyan */
+:root[data-tab="us"] {
+  --acc: #06B6D4; --acc2: #38D4EE; --acc-bg: rgba(6,182,212,.13);
+}
+/* Algo — vivid orange-rose */
+:root[data-tab="algo"] {
+  --acc: #F97316; --acc2: #FFA552; --acc-bg: rgba(249,115,22,.13);
+}
+/* Projection — cosmic purple-teal */
+:root[data-tab="projection"] {
+  --acc: #A78BFA; --acc2: #C4B5FD; --acc-bg: rgba(167,139,250,.13);
+}
+
+/* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
+:root[data-time="day"][data-tab="overview"] {
+  --acc: #059669; --acc2: #10B981; --acc-bg: rgba(5,150,105,.1);
+}
+:root[data-time="day"][data-tab="indian"] {
+  --acc: #2563EB; --acc2: #3B82F6; --acc-bg: rgba(37,99,235,.1);
+}
+:root[data-time="day"][data-tab="fd"] {
+  --acc: #D97706; --acc2: #F59E0B; --acc-bg: rgba(217,119,6,.1);
+}
+:root[data-time="day"][data-tab="mf"] {
+  --acc: #7C3AED; --acc2: #8B5CF6; --acc-bg: rgba(124,58,237,.1);
+}
+:root[data-time="day"][data-tab="us"] {
+  --acc: #0891B2; --acc2: #06B6D4; --acc-bg: rgba(8,145,178,.1);
+}
+:root[data-time="day"][data-tab="algo"] {
+  --acc: #EA580C; --acc2: #F97316; --acc-bg: rgba(234,88,12,.1);
+}
+:root[data-time="day"][data-tab="projection"] {
+  --acc: #6D28D9; --acc2: #7C3AED; --acc-bg: rgba(109,40,217,.1);
 }
 
 /* Rupee glyph: render every ₹ inside this span so the substitute glyph isn't
@@ -40,6 +122,8 @@ body {
   font-size: 15.5px;
   line-height: 1.55;
   padding: 0;
+  /* Smooth sunrise/sunset flip when data-time changes */
+  transition: background 1.2s ease, color 1.2s ease;
 }
 
 .wrap { width: 100%; max-width: 1440px; margin: 0 auto; }
@@ -305,7 +389,7 @@ body {
   .g3 { grid-template-columns: 1fr; }
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
-  body { padding: 10px; }
+  body { padding: 0; }
   .hdr-val { font-size: 24px; }
 }
 
@@ -313,7 +397,8 @@ body {
 
 /* cards gently lift and glow on hover */
 .csm, .card {
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease,
+              background 1.2s ease, color 1.2s ease;
 }
 .csm:hover, .card:hover {
   transform: translateY(-2px);
@@ -321,13 +406,14 @@ body {
   box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .6);
 }
 
-/* the headline net-worth value gets a slow emerald shimmer */
+/* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
-  background: linear-gradient(100deg, var(--grn) 0%, #5FE3B0 45%, var(--cyn) 55%, var(--grn) 100%);
+  background: linear-gradient(100deg, var(--acc) 0%, var(--acc2) 45%, var(--acc) 100%);
   background-size: 220% 100%;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: nw-shine 6s ease-in-out infinite;
+  transition: background 0.6s ease;
 }
 @keyframes nw-shine {
   0%, 100% { background-position: 0% 0; }
@@ -357,7 +443,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hdr-val, .spark, .pulse, .insight-shimmer { animation: none !important; }
-  .hdr-val { -webkit-text-fill-color: var(--grn); }
+  .hdr-val { -webkit-text-fill-color: var(--acc); }
 }
 
 /* ── Projection tab (ECharts) — theme-scoped, Section P ───────────────────── */
@@ -518,11 +604,11 @@ body { padding: 0; }
   cursor: pointer;
   text-align: left;
   width: 100%;
-  transition: background .12s, color .12s;
+  transition: background .12s, color .12s, box-shadow .3s;
 }
 .nav-item:hover { background: var(--sur2); color: var(--txt2); }
 .nav-item.active {
-  background: rgba(232,168,87,.12);
+  background: var(--acc-bg);
   color: var(--acc);
   box-shadow: inset 3px 0 0 var(--acc);
 }
@@ -577,7 +663,7 @@ body { padding: 0; }
   margin: 0 -28px 20px;
   padding: 0 28px;
   /* bg opacity: 0 at top → 0.78 when fully scrolled */
-  background: rgba(12, 12, 18, calc(var(--hdr-t) * .78));
+  background: rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .82));
   -webkit-backdrop-filter: saturate(calc(1 + var(--hdr-t) * .6)) blur(calc(var(--hdr-t) * 18px));
   backdrop-filter: saturate(calc(1 + var(--hdr-t) * .6)) blur(calc(var(--hdr-t) * 18px));
   /* border fades in */
@@ -587,7 +673,7 @@ body { padding: 0; }
 .main-header .topbar { margin-bottom: 0; }
 .main-header .page-header { margin-bottom: 16px; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .main-header { background: rgba(12, 12, 18, calc(var(--hdr-t) * .96)); }
+  .main-header { background: rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .96)); }
 }
 
 /* Topbar inside main */
