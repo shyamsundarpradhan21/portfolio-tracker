@@ -71,7 +71,7 @@ export default function USTab({
                 <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{fmtX(usStats.xirr)}</td>
                 <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
               </tr>
-              {usStats.benchmarks.map((b) => (
+              {usStats.benchmarks.slice(0, 7).map((b) => (
                 <tr key={b.key}>
                   <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
@@ -126,7 +126,7 @@ export default function USTab({
             <span className={cl(usData.pl)}>{usData.val ? usd(usData.pl) + ` (${pctS(usData.pct)})` : ''}</span>
           </div>
         </div>
-        <div className="ovx">
+        <div className="ovx" style={{ maxHeight: 460, overflowY: 'auto' }}>
           <table className="tbl" style={{ minWidth: 760 }}>
             <thead>
               <tr>
@@ -173,7 +173,7 @@ export default function USTab({
 
       <div className="g2 sec">
         <RealizedPanel data={US_REALIZED} currency="usd" fxRate={fxRate} note="Realised gains from Vested's lot-level P&L report (split/lot-adjusted)." />
-        <div className="card">
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <div className="ctitle">Dividend Income</div>
@@ -190,12 +190,12 @@ export default function USTab({
             <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div><div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div></div>
             <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div><div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div></div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignContent: 'flex-start', flex: 1 }}>
             {US_DIVIDENDS.top.map((t, i) => (
               <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} ${t.amt.toFixed(2)}</span>
             ))}
           </div>
-          <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)' }}>25% US withholding at source; creditable against Indian tax via the DTAA.</div>
+          <div className="sub" style={{ marginTop: 'auto', paddingTop: 12, color: 'var(--txt3)' }}>25% US withholding at source; creditable against Indian tax via the DTAA.</div>
         </div>
       </div>
 

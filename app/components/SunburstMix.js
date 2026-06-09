@@ -82,7 +82,12 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         })}
         {/* centre readout */}
         <text x={cx} y={cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          {fmtAmt(hov ? hov.val : T)}
+          {(() => {
+            const s = fmtAmt(hov ? hov.val : T);
+            const m = /^([₹$])(.*)$/.exec(s);
+            // Render the currency symbol smaller so ₹/$ matches the digit height.
+            return m ? <><tspan fontSize="16">{m[1]}</tspan>{m[2]}</> : s;
+          })()}
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle"
           style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov ? hov.color : 'var(--txt3)', fontWeight: 700 }}>

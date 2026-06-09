@@ -166,7 +166,7 @@ export default function AlgoTab({
             <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
               <div className="sub" style={{ margin: 0 }}>{c.label}</div>
               <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
-                {c.consumed ? <>₹0</> : <SInrF n={c.val} />}
+                {c.consumed ? <><span className="rs">₹</span>0</> : <SInrF n={c.val} />}
               </div>
               <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
             </div>

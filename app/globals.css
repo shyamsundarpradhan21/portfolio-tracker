@@ -764,11 +764,13 @@ body { padding: 0; }
 
 /* Main content area */
 .main {
-  flex: 1;
   min-width: 0;
   /* 4px sidebar strip + breathing room */
   padding: 0 28px 40px 36px;
   max-width: 1220px;
+  /* Centre the content column so wide screens don't leave a deformed empty
+     gutter on the right (the sidebar is fixed/auto-hide, so it takes no flow). */
+  margin: 0 auto;
   overflow-y: auto;
   height: 100vh;
 }
