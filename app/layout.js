@@ -1,11 +1,11 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Inter, DM_Serif_Display, JetBrains_Mono } from 'next/font/google';
+import { Source_Sans_3, Playfair_Display, IBM_Plex_Mono } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
-const serif = DM_Serif_Display({ subsets: ['latin'], weight: '400', variable: '--font-title', display: 'swap' });
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
+const body = Source_Sans_3({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const serif = Playfair_Display({ subsets: ['latin'], weight: ['500','600','700','800'], variable: '--font-title', display: 'swap' });
+const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
 
 export const metadata = {
   title: 'Net Worth — Live',
@@ -20,7 +20,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${serif.variable} ${mono.variable}`}>
+    <html lang="en" className={`${body.variable} ${serif.variable} ${mono.variable}`}>
       <body>{children}<Analytics /><SpeedInsights /></body>
     </html>
   );

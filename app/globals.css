@@ -1,8 +1,8 @@
 /* ── Layer 1: Base night tokens (always-on defaults) ───────────────────────── */
 :root {
-  --mono: var(--font-mono), var(--font-body), 'Segoe UI', Arial, sans-serif;
-  --body: var(--font-body), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --title: var(--font-title), Georgia, 'Times New Roman', serif;
+  --mono: var(--font-mono), 'IBM Plex Mono', 'Courier New', monospace;
+  --body: var(--font-body), 'Source Sans 3', system-ui, sans-serif;
+  --title: var(--font-title), 'Playfair Display', Georgia, serif;
 
   /* Night palette */
   --bg:   #0C0C12;
@@ -326,7 +326,7 @@ body {
 .card-accent { border-left-width: 3px; border-left-style: solid; }
 
 /* serif card titles (DM Serif Display) — Section 0b: 21px. */
-.ctitle { font-family: var(--title); font-size: 21px; font-weight: 400; letter-spacing: .2px; color: var(--txt); }
+.ctitle { font-family: var(--title); font-size: 21px; font-weight: 600; letter-spacing: -.2px; color: var(--txt); }
 
 /* mutual-funds tab utilities — equal-height analytical cards (Section 0c). */
 .mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
@@ -407,7 +407,7 @@ body {
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 0; }
-  .hdr-val { font-size: 24px; }
+  .hdr-val { font-size: 32px !important; }
 }
 
 /* ─── sparkles ✨ — tasteful dark-theme polish ─── */
@@ -426,16 +426,28 @@ body {
 
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
-  background: linear-gradient(100deg, var(--acc) 0%, var(--acc2) 45%, var(--acc) 100%);
-  background-size: 220% 100%;
+  font-size: 48px !important;
+  font-weight: 700 !important;
+  letter-spacing: -2px;
+  line-height: 1;
+  background: linear-gradient(105deg,
+    var(--acc) 0%,
+    color-mix(in srgb, var(--acc) 60%, #fff) 38%,
+    #ffffff 50%,
+    color-mix(in srgb, var(--acc) 60%, #fff) 62%,
+    var(--acc2, var(--acc)) 100%
+  );
+  background-size: 280% 100%;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: nw-shine 6s ease-in-out infinite;
+  animation: nw-shine 4s ease-in-out infinite;
   transition: background 0.6s ease;
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--acc) 55%, transparent));
 }
 @keyframes nw-shine {
-  0%, 100% { background-position: 0% 0; }
-  50% { background-position: 100% 0; }
+  0%   { background-position: 0% 0; }
+  50%  { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
 }
 
 /* twinkling sparkle next to the live label */
