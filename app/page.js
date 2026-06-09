@@ -138,6 +138,26 @@ export default function Page() {
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo'];
 
+  // Tabs are URL-addressable (#overview … #algo): deep-linkable, reload-safe,
+  // and back/forward navigable. State stays the source of truth; the hash syncs.
+  const selectTab = useCallback((i) => {
+    setTab(i);
+    const key = '#' + (TAB_KEYS[i] || 'overview');
+    try { if (window.location.hash !== key) history.pushState(null, '', key); } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const fromHash = () => {
+      const i = TAB_KEYS.indexOf((window.location.hash || '').slice(1));
+      if (i >= 0) setTab(i);
+    };
+    fromHash(); // honor a deep link on first load
+    window.addEventListener('popstate', fromHash);
+    window.addEventListener('hashchange', fromHash);
+    return () => { window.removeEventListener('popstate', fromHash); window.removeEventListener('hashchange', fromHash); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Theme mode: 'auto' (sunrise/sunset), 'day', or 'night'. Persisted.
   const [themeMode, setThemeMode] = useState(() => {
     try { return localStorage.getItem('nwTracker.theme') || 'auto'; } catch { return 'auto'; }
@@ -594,7 +614,7 @@ export default function Page() {
 
           <div className="hdr-grid">
             {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
-            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">
+            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
               <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
               <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
               <div className="page-header-sub">
@@ -607,7 +627,7 @@ export default function Page() {
             {/* Asset-class cards — primary navigation */}
             <div className="hdr-cards">
               {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)} title={c.tip || `Open ${c.label}`}>
+                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
                   <div className="lbl">{c.label}</div>
                   <div className="vmd">{c.val}</div>
                   <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
