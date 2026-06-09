@@ -8,6 +8,8 @@ import {
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
+import ProjectionTab from './ProjectionTab';
+import RealizedPanel from './RealizedPanel';
 
 // ─── formatting helpers ───
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
@@ -378,47 +380,6 @@ function benchCounterfactual(series, transactions, now) {
   };
 }
 
-// ─── projection horizons (forward net-worth projection tab) ───
-const PROJ_HORIZONS = [{ key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
-
-// Compact SVG area chart (responsive). points: [{ d, v }].
-function AreaChart({ points, height = 240 }) {
-  if (!points || points.length < 2) return null;
-  const w = 1000, h = height, padL = 8, padR = 8, padT = 14, padB = 26;
-  const vals = points.map((p) => p.v);
-  const min = Math.min(...vals), max = Math.max(...vals), span = (max - min) || 1;
-  const X = (i) => padL + (i / (points.length - 1)) * (w - padL - padR);
-  const Y = (v) => padT + (1 - (v - min) / span) * (h - padT - padB);
-  const line = points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(' ');
-  const area = `${line} L${X(points.length - 1).toFixed(1)} ${h - padB} L${X(0).toFixed(1)} ${h - padB} Z`;
-  const up = points[points.length - 1].v >= points[0].v;
-  const col = up ? 'var(--grn)' : 'var(--red)';
-  const gid = up ? 'gGrn' : 'gRed';
-  const lbl = (iso) => { const m = /^(\d{4})-(\d{2})/.exec(iso); return m ? `${MON[+m[2] - 1]} ${m[1].slice(2)}` : iso; };
-  const mid = Math.floor((points.length - 1) / 2);
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" preserveAspectRatio="none" style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={col} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={col} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {[0.25, 0.5, 0.75].map((g) => (
-        <line key={g} x1={padL} x2={w - padR} y1={padT + g * (h - padT - padB)} y2={padT + g * (h - padT - padB)}
-          stroke="var(--brd)" strokeWidth="0.5" />
-      ))}
-      <path d={area} fill={`url(#${gid})`} />
-      <path d={line} fill="none" stroke={col} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-      <circle cx={X(points.length - 1)} cy={Y(points[points.length - 1].v)} r="3.5" fill={col} />
-      {[0, mid, points.length - 1].map((i) => (
-        <text key={i} x={Math.min(Math.max(X(i), 24), w - 24)} y={h - 8} textAnchor="middle"
-          fill="var(--txt3)" fontSize="11" fontFamily="var(--mono)">{lbl(points[i].d)}</text>
-      ))}
-    </svg>
-  );
-}
-
 // Value-focused (fractional shares), plus the extra Category column. USD.
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
@@ -613,8 +574,6 @@ export default function Page() {
   const [swSort, setSwSort] = useState({ key: 'pl', dir: -1 });
   // Benchmark weekly history (2y) for the same-dated-rupees counterfactual.
   const [hist, setHist] = useState(null);
-  // Projection tab horizon selector.
-  const [projHorizon, setProjHorizon] = useState('10Y');
   // LTP flash: per-symbol last price + tick direction, recomputed on each fetch.
   const [flash, setFlash] = useState({});
   const prevPrices = useRef({});
@@ -1125,43 +1084,23 @@ export default function Page() {
     return { usInr, fdValue, totalAssets, nw };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
 
-  // ─── derived: forward net-worth projection (no external data) ───
-  // Compounds the live net worth + monthly contribution at each scenario rate
-  // over the selected horizon; "real" divides by inflation for today's money.
-  const proj = useMemo(() => {
-    const base = ov.nw || 0;
-    const t = (PROJ_HORIZONS.find((h) => h.key === projHorizon) || PROJ_HORIZONS[2]).y;
-    const M = PROJECTION.monthly;
-    const infl = PROJECTION.inflation;
-    const fv = (r) => {
-      const mr = r / 12, n = 12 * t;
-      const corpus = base * Math.pow(1 + mr, n);
-      const contrib = mr ? M * ((Math.pow(1 + mr, n) - 1) / mr) : M * n;
-      return corpus + contrib;
-    };
-    const scen = PROJECTION.scenarios.map((s) => {
-      const v = fv(s.rate);
-      return { ...s, fv: v, real: v / Math.pow(1 + infl, t), gain: v - base - M * 12 * t };
-    });
-    const baseRate = (scen.find((s) => s.key === 'base') || scen[1]).rate;
-    const curve = [];
-    for (let y = 0; y <= t; y++) {
-      const mr = baseRate / 12, n = 12 * y;
-      const v = base * Math.pow(1 + mr, n) + (mr ? M * ((Math.pow(1 + mr, n) - 1) / mr) : M * n);
-      curve.push({ d: String(now.getFullYear() + y), v });
-    }
-    return { base, t, scen, curve, contributed: M * 12 * t };
-  }, [ov.nw, projHorizon, now]);
-
   // Allocation donut segments — live values where available, else snapshot.
+  // `key` ties each sleeve to its forward drift rule in PROJECTION.allocRules.
   const donutSegs = [
-    { label: 'Algo Capitals',  value: STATIC.algo,        color: ALLOC_COLORS.algo },
-    { label: 'Fixed Deposits', value: ov.fdValue,         color: ALLOC_COLORS.fd },
-    { label: 'Indian Stocks',  value: indian.val || 471000, color: ALLOC_COLORS.indian },
-    { label: 'US Stocks',      value: ov.usInr || 443000, color: ALLOC_COLORS.us },
-    { label: 'Mutual Funds',   value: mf.jio.value,       color: ALLOC_COLORS.mf },
-    { label: 'ELSS',           value: mf.elss.value,      color: ALLOC_COLORS.elss },
+    { key: 'algo',   label: 'Algo Capitals',  value: STATIC.algo,        color: ALLOC_COLORS.algo },
+    { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,         color: ALLOC_COLORS.fd },
+    { key: 'indian', label: 'Indian Stocks',  value: indian.val || 471000, color: ALLOC_COLORS.indian },
+    { key: 'us',     label: 'US Stocks',      value: ov.usInr || 443000, color: ALLOC_COLORS.us },
+    { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,       color: ALLOC_COLORS.mf },
+    { key: 'elss',   label: 'ELSS',           value: mf.elss.value,      color: ALLOC_COLORS.elss },
   ];
+
+  // Stable sleeve array for the Projection tab — only changes when a live value
+  // actually moves (not on every minute-tick re-render), so the chart/controls
+  // don't churn while the user is scrubbing or a play loop is running.
+  const projSleeves = useMemo(() => donutSegs.map((s) => ({ ...s, value: Math.round(s.value || 0) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [STATIC.algo, Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0)]);
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
   const mktPill = (open) =>
@@ -1529,33 +1468,13 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* Realized P&L — overall, as on date (Zerodha tradebook) */}
-          <div className="card sec">
-            <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div className="ctitle">Realized P&amp;L</div>
-                <div className="sub" style={{ margin: 0 }}>{INDIAN_REALIZED.source} · as on {INDIAN_REALIZED.asOf}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className={'vmd ' + cl(INDIAN_REALIZED.total)}><SInrF n={INDIAN_REALIZED.total} /></div>
-                <div className="sub" style={{ margin: 0 }}>overall, all years</div>
-              </div>
-            </div>
-            <div className="g3 sec">
-              {INDIAN_REALIZED.fy.map((b) => (
-                <div className="mini" key={b.label}>
-                  <div className="lbl" style={{ marginBottom: 4 }}>{b.label}</div>
-                  <div className={'vsm ' + cl(b.amt)}><SInrF n={b.amt} /></div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[...INDIAN_REALIZED.winners, ...INDIAN_REALIZED.losers].map((m, i) => (
-                <span key={m.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{m.sym} <span className={cl(m.amt)}><SInrF n={m.amt} /></span></span>
-              ))}
-            </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Avg-cost realised gains/losses booked across all exits (overall, as on date). The filed ITR capital-gains figure is in the card below.</div>
-          </div>
+          {/* Realized P&L — scalable, scope-aware (Zerodha tradebook · avg-cost) */}
+          <RealizedPanel
+            data={INDIAN_REALIZED}
+            currency="inr"
+            className="sec"
+            note="Avg-cost realised gains/losses booked across all exits. The filed ITR capital-gains figure is in the card below."
+          />
 
           <CFMemo
             title="Equity Tax — FY24-25 Capital Gains"
@@ -2067,33 +1986,13 @@ export default function Page() {
 
           {/* Realized P&L + Dividend Income, side by side */}
           <div className="g2 sec">
-            {/* Realized P&L — overall, as on date (computed avg-cost) */}
-            <div className="card">
-              <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <div className="ctitle">Realized P&amp;L</div>
-                  <div className="sub" style={{ margin: 0 }}>avg-cost · as on {US_REALIZED.asOf}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className={'vmd ' + cl(US_REALIZED.total)}>${Math.abs(US_REALIZED.total).toFixed(2)}</div>
-                  <div className="sub" style={{ margin: 0 }}>overall (≈<InrC n={US_REALIZED.total * fxRate} />)</div>
-                </div>
-              </div>
-              <div className="g3 sec">
-                {US_REALIZED.fy.map((f) => (
-                  <div className="mini" key={f.label}>
-                    <div className="lbl" style={{ marginBottom: 4 }}>{f.label}</div>
-                    <div className={'vsm ' + cl(f.amt)}>${Math.abs(f.amt).toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {[...US_REALIZED.winners, ...US_REALIZED.losers].map((m, i) => (
-                  <span key={m.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{m.sym} <span className={cl(m.amt)}>${Math.abs(m.amt).toFixed(2)}</span></span>
-                ))}
-              </div>
-              <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>Avg-cost realised from the trade ledger. Filed foreign-STCG is in the ITR-verified card below.</div>
-            </div>
+            {/* Realized P&L — scalable, scope-aware (Vested ledger · avg-cost) */}
+            <RealizedPanel
+              data={US_REALIZED}
+              currency="usd"
+              fxRate={fxRate}
+              note="Avg-cost realised from the trade ledger. Filed foreign-STCG is in the ITR-verified card below."
+            />
 
             {/* Dividend income (from the Vested statement) */}
             <div className="card">
@@ -2314,69 +2213,16 @@ export default function Page() {
         </div>
       )}
 
-      {/* PROJECTION — forward net-worth projection (1Y/5Y/10Y/30Y), driven by
-          current net worth + monthly contribution + return assumptions. */}
-      {tab === 6 && (() => {
-        const baseScen = proj.scen.find((s) => s.key === 'base') || proj.scen[1];
-        return (
+      {/* PROJECTION — forward net-worth projection (rolling, 1/5/10/30Y), driven
+          live by net worth + sleeve mix + the assumptions in PROJECTION. */}
+      {tab === 6 && (
         <div>
-          <div className="sec" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <FreshnessTag mode="manual" date={`forward projection · from net worth ${inrCd(proj.base)} today`} />
-            <div style={{ display: 'flex', gap: 4 }}>
-              {PROJ_HORIZONS.map((h) => (
-                <button key={h.key} className={'tab' + (projHorizon === h.key ? ' on' : '')}
-                  style={{ padding: '5px 12px', fontSize: 12 }} onClick={() => setProjHorizon(h.key)}>{h.key}</button>
-              ))}
-            </div>
+          <div className="sec">
+            <FreshnessTag mode="manual" date={`forward projection · from net worth ${inrCd(ov.nw)} today`} />
           </div>
-
-          {/* Headline — base-case projected corpus at the selected horizon */}
-          <div className="card sec">
-            <div className="fxc" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
-              <div>
-                <div className="ctitle">Projected net worth · {projHorizon}</div>
-                <div className="sub" style={{ margin: 0 }}>base case @ {(baseScen.rate * 100).toFixed(0)}% p.a. · from <InrC n={proj.base} /> today + <InrC n={PROJECTION.monthly} />/mo</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="vlg grn"><InrC n={baseScen.fv} /></div>
-                <div className="sub" style={{ margin: 0 }}>≈<InrC n={baseScen.real} /> in today's money</div>
-              </div>
-            </div>
-            <AreaChart points={proj.curve.map((p) => ({ d: p.d, v: p.v }))} />
-          </div>
-
-          {/* Scenarios */}
-          <div className="g3 sec">
-            {proj.scen.map((s) => (
-              <div key={s.key} className="csm" style={s.key === 'base' ? { borderColor: 'rgba(232,168,87,.35)' } : {}}>
-                <div className="lbl">{s.label} · {(s.rate * 100).toFixed(0)}% p.a.</div>
-                <div className="vmd grn"><InrC n={s.fv} /></div>
-                <div className="sub">≈<InrC n={s.real} /> today · <SInrC n={s.gain} /> gain</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Assumptions */}
-          <div className="card">
-            <div className="ctitle" style={{ marginBottom: 12 }}>Assumptions</div>
-            <div className="ovx">
-              <table className="tbl">
-                <tbody>
-                  <tr><td style={{ color: 'var(--txt2)', width: 220 }}>Starting net worth (live)</td><td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono"><InrC n={proj.base} /></td></tr>
-                  <tr><td style={{ color: 'var(--txt2)' }}>Monthly contribution</td><td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono"><InrC n={PROJECTION.monthly} /> · <InrC n={proj.contributed} /> over {proj.t}y</td></tr>
-                  <tr><td style={{ color: 'var(--txt2)' }}>Return scenarios (nominal)</td><td style={{ color: 'var(--txt)', fontWeight: 600 }}>{proj.scen.map((s) => `${(s.rate * 100).toFixed(0)}%`).join(' · ')}</td></tr>
-                  <tr><td style={{ color: 'var(--txt2)' }}>Inflation (real-value deflator)</td><td style={{ color: 'var(--txt)', fontWeight: 600 }}>{(PROJECTION.inflation * 100).toFixed(0)}% p.a.</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
-              Compounds the current net worth plus the monthly contribution forward at each rate. Nominal future rupees; the
-              "today's money" figure divides by inflation. Indicative only — not advice; markets don't compound smoothly.
-            </div>
-          </div>
+          <ProjectionTab nw={Math.round(ov.nw)} loan={STATIC.loan} sleeves={projSleeves} baseYear={now.getFullYear()} />
         </div>
-        );
-      })()}
+      )}
 
       <div style={{ textAlign: 'center', color: 'var(--txt3)', fontSize: 10, marginTop: 18 }}>
         Live prices via Yahoo Finance · auto-refresh every 15 min · for personal tracking only
