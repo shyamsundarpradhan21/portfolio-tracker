@@ -18,8 +18,6 @@ const SC = {
   opt:  { c: '#E8A857', name: 'Optimistic' },
 };
 const HORIZONS = [{ key: 'Now', y: 0 }, { key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
-const SPARK_W = 240, SPARK_H = 48;
-const GROW_W = 640, GROW_H = 150; // hero invested+growth area chart coordinate space
 
 // rupee formatters (Cr / L) — color conveys sign elsewhere; these are unsigned
 const cr = (n) => {
@@ -110,28 +108,6 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     return a[i] + (a[i + 1] - a[i]) * f;
   };
 
-  // sparkline polyline for a scenario's full 0→MAXY curve (scaled to its own max)
-  const sparkPts = (k) => {
-    const arr = model.arr[k].corpus; const n = arr.length; const mx = arr[n - 1] || 1;
-    return arr.map((v, i) => `${((i / (n - 1)) * SPARK_W).toFixed(1)},${(SPARK_H - (v / mx) * SPARK_H).toFixed(1)}`).join(' ');
-  };
-
-  // Invested-vs-growth area chart for the hero (selected scenario). Bottom band =
-  // capital you put in; top band = market growth on top of it.
-  const growPaths = (k) => {
-    const inv = model.invested, cor = model.arr[k].corpus; const n = cor.length;
-    const mx = cor[n - 1] || 1;
-    const X = (i) => ((i / (n - 1)) * GROW_W);
-    const Y = (v) => (GROW_H - (v / mx) * GROW_H);
-    const fmt = (i, v) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`;
-    const invArea = `M0,${GROW_H} ` + inv.map((v, i) => `L${fmt(i, v)}`).join(' ') + ` L${GROW_W},${GROW_H} Z`;
-    const top = cor.map((v, i) => fmt(i, v));
-    const bot = inv.map((v, i) => fmt(i, v)).reverse();
-    const growArea = `M${top.join(' L')} L${bot.join(' L')} Z`;
-    const corLine = `M${cor.map((v, i) => fmt(i, v)).join(' L')}`;
-    return { invArea, growArea, corLine, X, Y };
-  };
-
   // ECharts is canvas-rendered, so CSS variables don't reach it — read the live
   // theme tokens off <html> and build day/night-aware chart styles each draw.
   const palette = () => {
@@ -160,46 +136,27 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     extraCssText: `border-radius:10px;box-shadow:0 18px 40px -20px ${p.shadow};`,
   });
 
-  // ── move the scrub readouts + scenario cards (cheap, per-frame) ──────────────
+  // ── move the scrub readouts (cheap, per-frame; no graphs) ───────────────────
   function moveHead(t) {
-    const scn = st.current.sc; const corpus = corpusAt(scn, t);
-    const yEl = document.getElementById('pj-year'); if (yEl) yEl.innerHTML = `${baseYear + Math.round(t)}<small>year ${Math.round(t)}</small>`;
+    const scn = st.current.sc; const yr = Math.round(t);
+    const corpus = corpusAt(scn, t);
     const real = corpus / Math.pow(1 + model.infl, t), inv = investedAt(t), growth = corpus - inv;
-    const set = (id, html, col) => { const el = document.getElementById(id); if (el) { el.innerHTML = html; if (col) el.style.color = col; } };
-    set('pj-corpus', cr(corpus), SC[scn].c);
-    set('pj-scn', SC[scn].name.toLowerCase());
-    set('pj-range', `in ${baseYear + Math.round(t)} · range <span style="color:${SC.cons.c}">${cr(model.arr.cons.corpus[Math.round(t)])}</span> – <span style="color:${SC.opt.c}">${cr(model.arr.opt.corpus[Math.round(t)])}</span>`);
-    set('pj-real', cr(real)); set('pj-inv', cr(inv)); set('pj-growth', cr(growth));
-    set('pj-rng', `<span style="color:${SC.cons.c}">${cr(model.arr.cons.corpus[Math.round(t)])}</span><br><span style="color:${SC.opt.c}">${cr(model.arr.opt.corpus[Math.round(t)])}</span>`);
+    const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
-    // per-scenario cards: corpus at the scrubbed year + moving playhead dot
-    PROJECTION.scenarios.forEach((s) => {
-      const k = s.key; const c = corpusAt(k, t);
-      set(`pj-scorp-${k}`, cr(c));
-      const yl = document.getElementById(`pj-syr-${k}`); if (yl) yl.textContent = `at ${baseYear + Math.round(t)} · year ${Math.round(t)}`;
-      const dot = document.getElementById(`pj-sdot-${k}`);
-      if (dot) {
-        const arr = model.arr[k].corpus; const mx = arr[arr.length - 1] || 1;
-        dot.setAttribute('cx', ((t / MAXY) * SPARK_W).toFixed(1));
-        dot.setAttribute('cy', (SPARK_H - (c / mx) * SPARK_H).toFixed(1));
-      }
-    });
+    const yEl = document.getElementById('pj-year');
+    if (yEl) yEl.innerHTML = `${baseYear + yr}<small>${yr === 0 ? 'today' : 'year ' + yr}</small>`;
 
-    // hero growth-curve playhead
-    const gx = document.getElementById('pj-gx');
-    const gdot = document.getElementById('pj-gdot');
-    if (gx || gdot) {
-      const arr = model.arr[scn].corpus; const mx = arr[arr.length - 1] || 1;
-      const px = (t / MAXY) * GROW_W;
-      const py = GROW_H - (corpus / mx) * GROW_H;
-      if (gx) { gx.setAttribute('x1', px.toFixed(1)); gx.setAttribute('x2', px.toFixed(1)); }
-      if (gdot) { gdot.setAttribute('cx', px.toFixed(1)); gdot.setAttribute('cy', py.toFixed(1)); }
-    }
+    // Conservative / Base / Optimistic — one line. The selected scenario is bold.
+    set('pj-cbo', PROJECTION.scenarios.map((s) => {
+      const on = s.key === scn;
+      return `<span style="color:${SC[s.key].c};${on ? 'font-weight:700' : 'opacity:.7'}">${SC[s.key].name} ${cr(corpusAt(s.key, t))}</span>`;
+    }).join('<span style="color:var(--txt3)"> · </span>'));
 
-    const aYr = document.getElementById('pj-ayr'); if (aYr) aYr.textContent = baseYear + Math.round(t);
-    const kYr = document.getElementById('pj-kyr'); if (kYr) kYr.textContent = baseYear + Math.round(t);
+    // Today's money / You put in / Growth — text below the C/B/O line.
+    set('pj-figs', `Today's money <b>${cr(real)}</b> · You put in <b>${cr(inv)}</b> · Growth <b style="color:var(--grn)">${cr(growth)}</b>`);
+
+    const aYr = document.getElementById('pj-ayr'); if (aYr) aYr.textContent = baseYear + yr;
     const sl = document.getElementById('pj-slider'); if (sl && document.activeElement !== sl) { sl.value = t; sl.style.setProperty('--p', (t / MAXY * 100) + '%'); }
-    const yr = Math.round(t);
     if (yr !== st.current.lastAlloc) { st.current.lastAlloc = yr; drawAlloc(yr); }
   }
 
@@ -307,93 +264,50 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
 
   return (
     <div>
-      {/* controls */}
-      <div className="card sec">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <button id="pj-play" onClick={onPlay} className="pj-play">▶</button>
-          <div id="pj-year" className="pj-year">{baseYear}<small>today</small></div>
-          <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="0" onInput={onScrub} className="pj-range" />
-          <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
-            {HORIZONS.map((h) => (
-              <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* HERO — forward projected outlook (invested + growth) for the scenario */}
-      <div className="card sec pj-hero">
-        <div className="lbl">Projected outlook · <span id="pj-scn">base</span></div>
-        <div id="pj-corpus" className="pj-big" style={{ color: SC[sc].c }}>—</div>
-        <div id="pj-range" className="sub" style={{ marginTop: 6 }}>—</div>
-        {(() => {
-          const g = growPaths(sc);
-          const c = SC[sc].c;
-          return (
-            <svg viewBox={`0 0 ${GROW_W} ${GROW_H}`} preserveAspectRatio="none"
-              style={{ width: '100%', height: 168, display: 'block', marginTop: 14, overflow: 'visible' }}>
-              <path d={g.invArea} fill="var(--txt3)" opacity="0.18" />
-              <path d={g.growArea} fill={c} opacity="0.16" />
-              <path d={g.corLine} fill="none" stroke={c} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-              <line id="pj-gx" x1="0" y1="0" x2="0" y2={GROW_H} stroke="var(--txt3)" strokeWidth="1" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
-              <circle id="pj-gdot" r="3.6" fill={c} stroke="var(--bg)" strokeWidth="1.5" cx="0" cy={GROW_H} />
-            </svg>
-          );
-        })()}
-        <div className="fxc sub" style={{ marginTop: 6 }}>
-          <span><span style={{ color: 'var(--txt3)' }}>▇</span> invested</span>
-          <span><span style={{ color: SC[sc].c }}>▇</span> growth · {baseYear}→{baseYear + MAXY}</span>
-        </div>
-      </div>
-
-      {/* SCENARIO CARD STACK — click to select; each shows corpus @ horizon + curve */}
-      <div className="g3 sec">
-        {PROJECTION.scenarios.map((s) => {
-          const k = s.key; const arr = model.arr[k].corpus; const final = arr[arr.length - 1];
-          return (
-            <div key={k} className={'card pj-scard' + (sc === k ? ' on' : '')} onClick={() => onScenario(k)}
-              role="button" tabIndex={0} aria-pressed={sc === k}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onScenario(k); } }}
-              style={{ cursor: 'pointer', borderColor: sc === k ? SC[k].c : undefined }}>
-              <div className="fxc" style={{ alignItems: 'baseline' }}>
-                <div className="lbl" style={{ margin: 0, color: SC[k].c }}>{SC[k].name}</div>
-                <div className="sub mono" style={{ margin: 0 }}>{(s.rate * 100).toFixed(0)}{NNBSP}%/yr</div>
-              </div>
-              <div id={`pj-scorp-${k}`} className="vlg" style={{ color: SC[k].c, marginTop: 8 }}>—</div>
-              <div id={`pj-syr-${k}`} className="sub" style={{ margin: '2px 0 10px' }}>—</div>
-              <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none" style={{ width: '100%', height: 48, display: 'block', overflow: 'visible' }}>
-                <polyline points={sparkPts(k)} fill="none" stroke={SC[k].c} strokeWidth={k === sc ? 2.2 : 1.4}
-                  strokeLinejoin="round" strokeLinecap="round" opacity={k === sc ? 1 : 0.55} vectorEffect="non-scaling-stroke" />
-                <circle id={`pj-sdot-${k}`} r="3.2" fill={SC[k].c} stroke="var(--bg)" strokeWidth="1.5" cx="0" cy={SPARK_H} />
-              </svg>
-              <div className="sub mono" style={{ marginTop: 8 }}>{baseYear + MAXY}: <span dangerouslySetInnerHTML={{ __html: cr(final) }} /></div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* KPIs | allocation */}
-      <div className="g2">
-        <div className="card">
-          <div className="ctitle" style={{ fontSize: 15 }}>At <span id="pj-kyr" className="acc">{baseYear}</span></div>
-          <div className="sub">figures shown nowhere else</div>
-          <div className="pj-kpis">
-            <div className="csm"><div className="lbl">Today's money</div><div id="pj-real" className="vsm mono">—</div></div>
-            <div className="csm"><div className="lbl">You put in</div><div id="pj-inv" className="vsm mono">—</div></div>
-            <div className="csm"><div className="lbl">Growth</div><div id="pj-growth" className="vsm mono grn">—</div></div>
-            <div className="csm"><div className="lbl">9% – 15% range</div><div id="pj-rng" className="mono" style={{ fontSize: 12.5, fontWeight: 700, marginTop: 4 }}>—</div></div>
-          </div>
-        </div>
+      {/* Allocation (left) · Outlook scrubber + C/B/O line + figures text (right) */}
+      <div className="g2 sec pj-outlook">
+        {/* LEFT — allocation share */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-            <div><div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
-              <div className="sub">FD &amp; algo dilute · equities scale up</div></div>
+            <div>
+              <div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
+              <div className="sub">FD &amp; algo dilute · equities scale up</div>
+            </div>
             <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
               <button className={'pj-seg' + (view === 'rose' ? ' on' : '')} onClick={() => onView('rose')}>Rose %</button>
               <button className={'pj-seg' + (view === 'race' ? ' on' : '')} onClick={() => onView('race')}>Race ₹</button>
             </div>
           </div>
           <div ref={allocEl} style={{ width: '100%', height: 270, marginTop: 8 }} />
+        </div>
+
+        {/* RIGHT — outlook: scrub, then C/B/O one line, then figures text */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="fxc" style={{ marginBottom: 10 }}>
+            <div className="lbl" style={{ margin: 0 }}>Projected outlook · <span id="pj-scn">base</span></div>
+            <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
+              {PROJECTION.scenarios.map((s) => (
+                <button key={s.key} className={'pj-seg' + (sc === s.key ? ' on' : '')} data-tone={s.key} onClick={() => onScenario(s.key)}>{SC[s.key].name}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* the scroll */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button id="pj-play" onClick={onPlay} className="pj-play">▶</button>
+            <div id="pj-year" className="pj-year">{baseYear}<small>today</small></div>
+            <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="0" onInput={onScrub} className="pj-range" style={{ flex: 1, minWidth: 140 }} />
+          </div>
+          <div className="seg" style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2, marginTop: 10 }}>
+            {HORIZONS.map((h) => (
+              <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
+            ))}
+          </div>
+
+          {/* C/B/O — one line just below the scroll */}
+          <div id="pj-cbo" className="mono" style={{ marginTop: 16, fontSize: 15, lineHeight: 1.5 }}>—</div>
+          {/* today's money · you put in · growth — text below the C/B/O values */}
+          <div id="pj-figs" className="sub" style={{ marginTop: 8, lineHeight: 1.6 }}>—</div>
         </div>
       </div>
 

@@ -783,24 +783,27 @@ body { padding: 0; }
 }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
-.hdr-brand { font-weight: 700; font-size: 14px; letter-spacing: .3px; color: var(--txt); margin-right: 4px; }
-.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-
-.hdr-grid {
-  display: grid;
-  grid-template-columns: minmax(210px, 270px) 1fr;
-  gap: 16px; align-items: stretch;
-  margin: 6px 0 14px;
+.hdr-brand {
+  font-weight: 700; font-size: 14px; letter-spacing: .3px; color: var(--txt2);
+  margin-right: 4px; background: transparent; border: none; cursor: pointer;
+  padding: 2px 4px; border-radius: 6px; transition: color .15s;
 }
-.hdr-hero {
-  display: flex; flex-direction: column; justify-content: center;
-  text-align: left; background: transparent; border: none; cursor: pointer;
-  padding: 2px 4px; border-radius: 12px; transition: background .15s;
-}
-.hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
-.hdr-hero.active .page-header-lbl { color: var(--acc); }
+.hdr-brand:hover { color: var(--txt); }
+.hdr-brand.active { color: var(--acc); }
+.topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
 
-.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+/* Compact icon toggles (AI / theme / refresh) — small, not tab-sized */
+.hdr-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; font-size: 14px; cursor: pointer;
+  background: var(--sur2); border: .5px solid var(--brd2); color: var(--txt2);
+  transition: border-color .15s, color .15s, transform .1s;
+}
+.hdr-toggle:hover { color: var(--txt); border-color: color-mix(in srgb, var(--acc) 40%, var(--brd2)); }
+.hdr-toggle:active { transform: scale(.92); }
+.hdr-toggle.loading { opacity: .5; pointer-events: none; }
+
+.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
 .hdr-card {
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 3.5%, var(--sur));
@@ -823,6 +826,9 @@ body { padding: 0; }
 }
 @media (max-width: 600px) {
   .hdr-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .pj-outlook { grid-template-columns: 1fr; }
 }
 
 /* Sticky frosted header — starts transparent at scroll-top, fades to a

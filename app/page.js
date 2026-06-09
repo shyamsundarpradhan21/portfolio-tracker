@@ -488,45 +488,33 @@ export default function Page() {
     <div className="layout">
       {/* MAIN CONTENT */}
       <main className="main">
-        {/* STICKY GLOBAL HEADER — summary figures + asset-card nav */}
+        {/* STICKY GLOBAL HEADER — utility bar + asset-card nav */}
         <div className="main-header" ref={headerRef}>
           <div className="topbar">
             <div className="topbar-left">
-              <span className="hdr-brand">◈ NetWorth</span>
+              <button className={'hdr-brand' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">◈ NetWorth</button>
               <div className={pulseCls} />
               <span className="status-txt">{status.msg}</span>
             </div>
             <div className="topbar-right">
-              <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className={'mkt-pill ' + mktPill(markets.nse)}>NSE {mktTxt(markets.nse)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
-              <button className="sidebar-ai-btn" onClick={toggleInsights} style={{ opacity: insightsOn ? 1 : 0.45 }}>✨ AI {insightsOn ? 'ON' : 'OFF'}</button>
-              <button className="sidebar-ai-btn" onClick={cycleTheme} title="Theme: auto follows sunrise/sunset">{themeMode === 'auto' ? '🌗 Auto' : themeMode === 'day' ? '☀️ Day' : '🌙 Night'}</button>
-              <button className={'sidebar-refresh-btn' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })}>↻ {loading ? 'Updating…' : 'Refresh'}</button>
+              <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
+              <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
+              <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
+              <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })} title="Refresh" aria-label="Refresh">↻</button>
             </div>
           </div>
 
-          <div className="hdr-grid">
-            {/* Net-worth hero — click to open Overview. Assets/Liabilities are figures only. */}
-            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">
-              <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
-              <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
-              <div className="page-header-sub">
-                Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
-                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
-              </div>
-            </button>
-
-            {/* Asset-class cards — primary navigation */}
-            <div className="hdr-cards">
-              {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
-                  <div className="lbl">{c.label}</div>
-                  <div className="vmd">{c.val}</div>
-                  <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
-                </button>
-              ))}
-            </div>
+          {/* Asset-class cards — primary navigation */}
+          <div className="hdr-cards">
+            {headerCards.map((c) => (
+              <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
+                <div className="lbl">{c.label}</div>
+                <div className="vmd">{c.val}</div>
+                <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
+              </button>
+            ))}
           </div>
         </div>
 
