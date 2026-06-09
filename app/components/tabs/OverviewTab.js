@@ -3,12 +3,13 @@ import { cl, pctS, InrC, InrF, SInrC, SInrF, RsText, Rs, inrFull, inrC } from '.
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
+import HistoryCurve from '../shared/HistoryCurve';
 import { MF, ALLOC_COLORS } from '../../portfolio';
 
 export default function OverviewTab({
   ov, indian, usData, mf, fds, swing, fxRate,
   donutSegs, insights, insightsOn, insightsFirstLoad,
-  ytdTotal, MF_CONFIG, FY,
+  ytdTotal, MF_CONFIG, FY, snapshots,
   projSleeves, projInvested0, loan, baseYear,
 }) {
   const sFull = (n) => (n >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -17,8 +18,10 @@ export default function OverviewTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
 
-      {/* Portfolio growth (invested + growth) + allocation share + scenario stack.
-          Defaults to today; scrub forward to explore the projection. */}
+      {/* Historical growth from persisted daily snapshots */}
+      <HistoryCurve snapshots={snapshots} />
+
+      {/* Forward outlook: allocation share + scenario stack. Defaults to today. */}
       <ProjectionTab
         nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
         baseYear={baseYear} invested0={projInvested0} donutSegs={donutSegs}

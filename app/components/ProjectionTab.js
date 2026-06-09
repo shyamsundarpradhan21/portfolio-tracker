@@ -321,9 +321,9 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         </div>
       </div>
 
-      {/* HERO — portfolio growth (invested + growth) for the selected scenario */}
+      {/* HERO — forward projected outlook (invested + growth) for the scenario */}
       <div className="card sec pj-hero">
-        <div className="lbl">Portfolio growth · <span id="pj-scn">base</span></div>
+        <div className="lbl">Projected outlook · <span id="pj-scn">base</span></div>
         <div id="pj-corpus" className="pj-big" style={{ color: SC[sc].c }}>—</div>
         <div id="pj-range" className="sub" style={{ marginTop: 6 }}>—</div>
         {(() => {

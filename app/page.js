@@ -11,6 +11,7 @@ import FY from '../data/fy2526_verified.json';
 
 import { nseOpenNow, nyseOpenNow } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
+import { getSnapshots, recordSnapshot } from './lib/snapshots';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -448,6 +449,19 @@ export default function Page() {
   const mktPill  = (open) => open == null ? 'mkt-closed' : open ? 'mkt-open' : 'mkt-closed';
   const mktTxt   = (open) => open == null ? '—' : open ? 'OPEN' : 'CLOSED';
 
+  // Daily net-worth snapshots → the historical growth curve on Overview.
+  const [snapshots, setSnapshots] = useState([]);
+  useEffect(() => { setSnapshots(getSnapshots()); }, []);
+  useEffect(() => {
+    if (!(indian.valued && usdInr)) return;
+    setSnapshots(recordSnapshot({
+      d: isoOf(new Date()),
+      nw: Math.round(ov.nw),
+      assets: Math.round(ov.totalAssets),
+      invested: Math.round(projInvested0),
+    }));
+  }, [indian.valued, usdInr, ov.nw, ov.totalAssets, projInvested0]);
+
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
     { label: 'Indian equity', tab: 1,
@@ -522,7 +536,7 @@ export default function Page() {
             <OverviewTab ov={ov} indian={indian} usData={usData} mf={mf} fds={fds}
               swing={swing} fxRate={fxRate} donutSegs={donutSegs}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              ytdTotal={ytdTotal} MF_CONFIG={STATIC} FY={FY}
+              ytdTotal={ytdTotal} MF_CONFIG={STATIC} FY={FY} snapshots={snapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />
           )}
           {tab === 1 && (
