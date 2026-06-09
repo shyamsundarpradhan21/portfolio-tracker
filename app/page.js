@@ -488,11 +488,10 @@ export default function Page() {
     <div className="layout">
       {/* MAIN CONTENT */}
       <main className="main">
-        {/* STICKY GLOBAL HEADER — utility bar + asset-card nav */}
+        {/* STICKY GLOBAL HEADER — utility bar + live NW + asset-card nav */}
         <div className="main-header" ref={headerRef}>
           <div className="topbar">
             <div className="topbar-left">
-              <button className={'hdr-brand' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">◈ NetWorth</button>
               <div className={pulseCls} />
               <span className="status-txt">{status.msg}</span>
             </div>
@@ -506,15 +505,27 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Asset-class cards — primary navigation */}
-          <div className="hdr-cards">
-            {headerCards.map((c) => (
-              <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
-                <div className="lbl">{c.label}</div>
-                <div className="vmd">{c.val}</div>
-                <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
-              </button>
-            ))}
+          <div className="hdr-grid">
+            {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
+            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => setTab(0)} title="Open Overview">
+              <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
+              <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
+              <div className="page-header-sub">
+                Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
+                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
+              </div>
+            </button>
+
+            {/* Asset-class cards — primary navigation */}
+            <div className="hdr-cards">
+              {headerCards.map((c) => (
+                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
+                  <div className="lbl">{c.label}</div>
+                  <div className="vmd">{c.val}</div>
+                  <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -1,11 +1,14 @@
 'use client';
 
-// Forward net-worth projection (1/5/10/30Y). The scenario outlook is shown as a
-// card-based stack — one card per scenario (Conservative / Base / Optimistic),
-// each with the corpus at the scrubbed horizon plus a mini per-year sparkline.
-// The allocation panel stays ECharts-powered, lazy-loaded so the library only
-// ships to this tab. NOTHING is hardcoded: starting net worth, sleeve values and
-// the FD ceiling all arrive live; only the forward assumptions live in PROJECTION
+// Forward net-worth outlook, embedded in Overview. No charts here — the only
+// graph on Overview is the historical invested+growth curve (HistoryCurve).
+// Conservative / Base case / Optimistic render as one row of three flat columns
+// (rate, corpus at the scrubbed year, ×multiple vs today, inflation-adjusted
+// value); clicking a column selects that scenario. Below it, a two-line text:
+// "You'll have put in X / of which Y is compounding growth". The allocation
+// panel stays ECharts-powered, lazy-loaded so the library only ships here.
+// NOTHING is hardcoded: starting net worth, sleeve values and the FD ceiling
+// all arrive live; only the forward assumptions live in PROJECTION
 // (app/portfolio.js). The model is a rolling window anchored to "today".
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
@@ -14,7 +17,7 @@ import { NNBSP } from '../lib/fmt';
 
 const SC = {
   cons: { c: '#5B9BE8', name: 'Conservative' },
-  base: { c: '#34D399', name: 'Base' },
+  base: { c: '#34D399', name: 'Base case' },
   opt:  { c: '#E8A857', name: 'Optimistic' },
 };
 const HORIZONS = [{ key: 'Now', y: 0 }, { key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
@@ -139,21 +142,28 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
   // ── move the scrub readouts (cheap, per-frame; no graphs) ───────────────────
   function moveHead(t) {
     const scn = st.current.sc; const yr = Math.round(t);
-    const corpus = corpusAt(scn, t);
-    const real = corpus / Math.pow(1 + model.infl, t), inv = investedAt(t), growth = corpus - inv;
+    const inv = investedAt(t);
+    const deflate = Math.pow(1 + model.infl, t);
     const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
     const yEl = document.getElementById('pj-year');
     if (yEl) yEl.innerHTML = `${baseYear + yr}<small>${yr === 0 ? 'today' : 'year ' + yr}</small>`;
 
-    // Conservative / Base / Optimistic — one line. The selected scenario is bold.
-    set('pj-cbo', PROJECTION.scenarios.map((s) => {
-      const on = s.key === scn;
-      return `<span style="color:${SC[s.key].c};${on ? 'font-weight:700' : 'opacity:.7'}">${SC[s.key].name} ${cr(corpusAt(s.key, t))}</span>`;
-    }).join('<span style="color:var(--txt3)"> · </span>'));
+    // Conservative / Base case / Optimistic columns: corpus at the scrubbed
+    // year, ×multiple vs today's net worth, and the inflation-adjusted value.
+    PROJECTION.scenarios.forEach((s) => {
+      const c = corpusAt(s.key, t);
+      const mult = model.base > 0 ? c / model.base : 0;
+      set(`pj-cv-${s.key}`, cr(c));
+      set(`pj-cm-${s.key}`, `×${mult.toFixed(1)} · ${cr(c / deflate)} today`);
+    });
 
-    // Today's money / You put in / Growth — text below the C/B/O line.
-    set('pj-figs', `Today's money <b>${cr(real)}</b> · You put in <b>${cr(inv)}</b> · Growth <b style="color:var(--grn)">${cr(growth)}</b>`);
+    // "You'll have put in X / of which Y is compounding growth" — growth from
+    // the selected scenario's corpus.
+    const growth = corpusAt(scn, t) - inv;
+    set('pj-figs',
+      `${yr === 0 ? "You've" : "You'll have"} put in <b class="mono">${cr(inv)}</b><br>` +
+      `of which <b class="mono" style="color:var(--grn)">${cr(growth)}</b> is compounding growth`);
 
     const aYr = document.getElementById('pj-ayr'); if (aYr) aYr.textContent = baseYear + yr;
     const sl = document.getElementById('pj-slider'); if (sl && document.activeElement !== sl) { sl.value = t; sl.style.setProperty('--p', (t / MAXY * 100) + '%'); }
@@ -281,16 +291,9 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
           <div ref={allocEl} style={{ width: '100%', height: 270, marginTop: 8 }} />
         </div>
 
-        {/* RIGHT — outlook: scrub, then C/B/O one line, then figures text */}
+        {/* RIGHT — outlook: scrub, then the C/B/O columns, then figures text */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="fxc" style={{ marginBottom: 10 }}>
-            <div className="lbl" style={{ margin: 0 }}>Projected outlook · <span id="pj-scn">base</span></div>
-            <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
-              {PROJECTION.scenarios.map((s) => (
-                <button key={s.key} className={'pj-seg' + (sc === s.key ? ' on' : '')} data-tone={s.key} onClick={() => onScenario(s.key)}>{SC[s.key].name}</button>
-              ))}
-            </div>
-          </div>
+          <div className="lbl" style={{ marginBottom: 10 }}>Projected outlook</div>
 
           {/* the scroll */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -304,10 +307,23 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
             ))}
           </div>
 
-          {/* C/B/O — one line just below the scroll */}
-          <div id="pj-cbo" className="mono" style={{ marginTop: 16, fontSize: 15, lineHeight: 1.5 }}>—</div>
-          {/* today's money · you put in · growth — text below the C/B/O values */}
-          <div id="pj-figs" className="sub" style={{ marginTop: 8, lineHeight: 1.6 }}>—</div>
+          {/* Conservative / Base case / Optimistic — one row just below the
+              scroll; clicking a column selects that scenario. */}
+          <div className="pj-cbo-row">
+            {PROJECTION.scenarios.map((s) => (
+              <button key={s.key} className={'pj-cbo-col' + (sc === s.key ? ' on' : '')}
+                style={{ '--tone': SC[s.key].c }} aria-pressed={sc === s.key}
+                onClick={() => onScenario(s.key)}>
+                <div className="pj-cbo-name" style={{ color: SC[s.key].c }}>{SC[s.key].name}</div>
+                <div className="pj-cbo-rate">{(s.rate * 100).toFixed(0)}{NNBSP}% p.a.</div>
+                <div id={`pj-cv-${s.key}`} className="pj-cbo-val mono">—</div>
+                <div id={`pj-cm-${s.key}`} className="pj-cbo-sub mono">—</div>
+              </button>
+            ))}
+          </div>
+
+          {/* you'll have put in · compounding growth — text below the C/B/O values */}
+          <div id="pj-figs" className="sub" style={{ marginTop: 12, lineHeight: 1.7 }}>—</div>
         </div>
       </div>
 

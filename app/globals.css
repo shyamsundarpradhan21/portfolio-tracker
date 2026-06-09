@@ -342,8 +342,6 @@ body {
 .mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
 @media (max-width: 1000px) { .mf-g3 { grid-template-columns: 1fr; } }
 .mf-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11.5px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
-.mf-stack { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; background: var(--sur2); }
-.mf-stack > span { height: 100%; }
 .mf-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: var(--sur2); border: .5px solid var(--brd2); border-radius: 8px; font-size: 13px; color: var(--txt2); }
 .mf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 /* Table scroll wrapper — every holdings table on every tab. Scrolls both axes
@@ -524,19 +522,28 @@ body {
   border: 0; background: transparent; color: var(--txt3); cursor: pointer; transition: all .15s;
 }
 .pj-seg.on { color: var(--txt); background: var(--sur2); }
-.pj-seg.on[data-tone="cons"] { background: rgba(91, 155, 232, .18); box-shadow: 0 0 0 .5px var(--blu); }
-.pj-seg.on[data-tone="base"] { background: rgba(52, 211, 153, .18); box-shadow: 0 0 0 .5px var(--grn); }
-.pj-seg.on[data-tone="opt"]  { background: rgba(232, 168, 87, .18); box-shadow: 0 0 0 .5px var(--acc); }
-.pj-hero {
-  position: relative; overflow: hidden;
-  background:
-    radial-gradient(820px 360px at 72% -28%, rgba(52, 211, 153, .12), transparent 62%),
-    radial-gradient(560px 300px at 8% 120%, rgba(232, 168, 87, .05), transparent 60%),
-    var(--sur);
-}
 .pj-big { font-family: var(--mono); font-weight: 800; font-size: 42px; letter-spacing: -1.5px; line-height: 1; margin-top: 5px; }
-.pj-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 @media (prefers-reduced-motion: reduce) { .pj-play:hover { box-shadow: none; } }
+
+/* Conservative / Base case / Optimistic — one row of three flat columns below
+   the scrubber. --tone is the scenario accent; clicking selects the scenario. */
+.pj-cbo-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.pj-cbo-col {
+  text-align: center; cursor: pointer; min-width: 0;
+  background: transparent; border: .5px solid var(--brd2); border-radius: 12px;
+  padding: 12px 8px; opacity: .72;
+  transition: border-color .15s, background .15s, opacity .15s;
+}
+.pj-cbo-col:hover { opacity: 1; border-color: color-mix(in srgb, var(--tone) 35%, var(--brd2)); }
+.pj-cbo-col.on {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--tone) 55%, var(--brd));
+  background: color-mix(in srgb, var(--tone) 6%, transparent);
+}
+.pj-cbo-name { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-cbo-rate { font-size: 11.5px; color: var(--txt2); margin-top: 3px; }
+.pj-cbo-val  { font-size: 19px; font-weight: 700; letter-spacing: -.4px; color: var(--txt); margin-top: 9px; white-space: nowrap; }
+.pj-cbo-sub  { font-size: 11px; color: var(--txt2); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Realized P&L panel (scalable bar chart) — Section R ──────────────────── */
 .rz-bars { display: flex; align-items: stretch; gap: 3px; height: 96px; margin: 12px 0 2px; }
@@ -783,14 +790,22 @@ body { padding: 0; }
 }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
-.hdr-brand {
-  font-weight: 700; font-size: 14px; letter-spacing: .3px; color: var(--txt2);
-  margin-right: 4px; background: transparent; border: none; cursor: pointer;
-  padding: 2px 4px; border-radius: 6px; transition: color .15s;
-}
-.hdr-brand:hover { color: var(--txt); }
-.hdr-brand.active { color: var(--acc); }
 .topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Live NW hero (left) + 5 asset cards (right). The hero is the Overview link. */
+.hdr-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, 280px) 1fr;
+  gap: 16px; align-items: stretch;
+  margin: 8px 0 14px;
+}
+.hdr-hero {
+  display: flex; flex-direction: column; justify-content: center;
+  text-align: left; background: transparent; border: none; cursor: pointer;
+  padding: 2px 6px; border-radius: 12px; transition: background .15s;
+}
+.hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
+.hdr-hero.active .page-header-lbl { color: var(--acc); }
 
 /* Compact icon toggles (AI / theme / refresh) — small, not tab-sized */
 .hdr-toggle {
@@ -803,7 +818,7 @@ body { padding: 0; }
 .hdr-toggle:active { transform: scale(.92); }
 .hdr-toggle.loading { opacity: .5; pointer-events: none; }
 
-.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
+.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .hdr-card {
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 3.5%, var(--sur));
