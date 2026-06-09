@@ -55,14 +55,14 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
                     <span className="bar-trk" style={{ display: 'block', height: 4 }}>
                       <span className="bar-fil" style={{ width: f.progress.toFixed(1) + '%', height: 4, background: 'linear-gradient(90deg, var(--grn), #5FE3B0)' }} />
                     </span>
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 3 }}><Pct n={f.progress} d={0} /> elapsed</div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 3 }}><Pct n={f.progress} d={0} /> elapsed</div>
                   </td>
                   <td className="ra mono"><InrC n={f.principal} /></td>
                   <td className="ra grn mono"><Pct n={f.rate} /></td>
                   <td className="ra grn mono"><InrF n={f.accruedSoFar} /></td>
                   <td className="ra">
                     <div className="mono"><InrC n={f.maturityValue} /></div>
-                    <div style={{ fontSize: 11, color: 'var(--txt3)' }}>+<InrF n={f.maturityInterest} /></div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>+<InrF n={f.maturityInterest} /></div>
                   </td>
                 </tr>
               ))}
@@ -111,7 +111,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
             </tbody>
           </table>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
+        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
           Strategy: maturities laddered quarterly across 4 banks — spreads reinvestment risk and keeps each bank's annual interest
           below the ₹40,000 Sec 194A TDS threshold. Pipeline stays out of net worth until its deploy date arrives.
         </div>

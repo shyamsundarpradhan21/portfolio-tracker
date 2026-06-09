@@ -113,7 +113,7 @@ export default function USTab({
             />
           </div>
           <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
-          <div style={{ fontSize: 11, color: 'var(--txt3)', textAlign: 'center', lineHeight: 1.5 }}>ETF look-through aligns with Vested (equity only); direct stocks by GICS.</div>
+          <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textAlign: 'center', lineHeight: 1.5 }}>ETF look-through aligns with Vested (equity only); direct stocks by GICS.</div>
         </div>
       </div>
 
@@ -144,7 +144,7 @@ export default function USTab({
                 <tr key={s.sym}>
                   <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
                     {s.sym}
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>{s.name} · {s.cat}</div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>{s.name} · {s.cat}</div>
                   </td>
                   <td><span className="mf-pill" style={{ background: 'var(--sur2)', color: 'var(--txt2)' }}>{s.cat}</span></td>
                   <td className="ra mono">

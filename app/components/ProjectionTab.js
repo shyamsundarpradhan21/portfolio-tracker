@@ -15,10 +15,12 @@ import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS, FD_PIPELINE } from '../portfolio';
 import { NNBSP } from '../lib/fmt';
 
+// Scenario accents come from the theme so the day palette can deepen them
+// (see --sc-* in globals.css). Never fed to ECharts (canvas needs raw hex).
 const SC = {
-  cons: { c: '#5B9BE8', name: 'Conservative' },
-  base: { c: '#34D399', name: 'Base case' },
-  opt:  { c: '#E8A857', name: 'Optimistic' },
+  cons: { c: 'var(--sc-cons)', name: 'Conservative' },
+  base: { c: 'var(--sc-base)', name: 'Base case' },
+  opt:  { c: 'var(--sc-opt)',  name: 'Optimistic' },
 };
 const HORIZONS = [{ key: 'Now', y: 0 }, { key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
 
@@ -280,7 +282,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <div>
-              <div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
+              <div className="ctitle" style={{ fontSize: 'var(--fs-md)' }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
               <div className="sub">FD &amp; algo dilute · equities scale up</div>
             </div>
             <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>

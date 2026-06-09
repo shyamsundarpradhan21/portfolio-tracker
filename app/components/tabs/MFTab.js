@@ -6,9 +6,11 @@ import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import TreeMap from '../shared/TreeMap';
 
+// Platform pills derive from theme vars — the old hardcoded light-on-light
+// tints were near-invisible on the day theme.
 const platStyle = (p) => p === 'JioBLK'
-  ? { background: 'rgba(155,138,251,.16)', color: '#BCAEFF' }
-  : { background: 'rgba(52,211,153,.16)', color: '#6EE7B7' };
+  ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
+  : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
 // Asset-allocation donut — segment arcs with a live centre readout that swaps
 // to the hovered sleeve. Stroke-dasharray circles, no chart library.
@@ -56,10 +58,10 @@ function AllocDonut({ segs, total }) {
           <div key={s.label} className="fxc" style={{ marginBottom: 7, opacity: s.val > 0 ? 1 : 0.45, cursor: 'default' }}
             onMouseEnter={() => s.val > 0 && setHov({ label: s.label, val: s.val })}
             onMouseLeave={() => setHov(null)}>
-            <span style={{ fontSize: 13, color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <span className="mf-dot" style={{ background: s.color }} />{s.label}
             </span>
-            <span className="mono" style={{ fontSize: 13 }}><InrC n={s.val} /> · <Pct n={(s.val / tot) * 100} d={1} /></span>
+            <span className="mono" style={{ fontSize: 'var(--fs-xs)' }}><InrC n={s.val} /> · <Pct n={(s.val / tot) * 100} d={1} /></span>
           </div>
         ))}
       </div>
@@ -128,13 +130,13 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
             ].map(({ label, val, sub }) => (
               <div key={label} className="mini" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div className="lbl" style={{ marginBottom: 6 }}>{label}</div>
-                <div className={'mono ' + (val != null ? cl(val) : '')} style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{pct1(val)}</div>
+                <div className={'mono ' + (val != null ? cl(val) : '')} style={{ fontSize: 'var(--fs-h1)', fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{pct1(val)}</div>
                 <div className="sub" style={{ marginTop: 6 }}>{sub}</div>
               </div>
             ))}
           </div>
           {delta != null && (
-            <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 10, textAlign: 'center', fontWeight: 700, fontSize: 14,
+            <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 10, textAlign: 'center', fontWeight: 700, fontSize: 'var(--fs-sm)',
               ...(delta >= 0 ? { background: 'var(--grn-bg)', color: 'var(--grn)' } : { background: 'var(--red-bg)', color: 'var(--red)' }) }}>
               {delta >= 0 ? '▲ Ahead' : '▼ Behind'} by {Math.abs(delta).toFixed(1)} pts
             </div>
@@ -182,7 +184,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
                 <tr key={f.id}>
                   <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
                     {f.name}
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{f.cat} · <Pct n={f.share} d={1} /></div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{f.cat} · <Pct n={f.share} d={1} /></div>
                   </td>
                   <td><span className="mf-pill" style={platStyle(f.platform)}>{f.platform}</span></td>
                   <td className="ra mono mut">{f.units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>

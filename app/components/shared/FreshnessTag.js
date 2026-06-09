@@ -15,7 +15,7 @@ export default function FreshnessTag({ mode, date, marketState }) {
     dot = 'var(--txt3)'; text = `as of ${date || 'manual'}`;
   }
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--txt2)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', fontWeight: 500, whiteSpace: 'nowrap' }}>
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       {text}
     </span>

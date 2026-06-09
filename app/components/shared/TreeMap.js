@@ -81,17 +81,17 @@ export default function TreeMap({ items, height = 228, aspect = 1.5 }) {
                 transition: 'background .15s, opacity .15s',
               }}>
               {frac >= 0.05 && (
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: s.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: s.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.label}
                 </div>
               )}
               {frac >= 0.14 && (
-                <div className="mono" style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt)', marginTop: 4, whiteSpace: 'nowrap' }}>
+                <div className="mono" style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--txt)', marginTop: 4, whiteSpace: 'nowrap' }}>
                   <InrC n={s.val} />
                 </div>
               )}
               {frac >= 0.05 && (
-                <div className="mono" style={{ fontSize: 11, color: 'var(--txt2)', marginTop: 2, whiteSpace: 'nowrap' }}>
+                <div className="mono" style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt2)', marginTop: 2, whiteSpace: 'nowrap' }}>
                   <Pct n={pc} d={1} />
                 </div>
               )}

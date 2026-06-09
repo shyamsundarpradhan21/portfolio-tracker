@@ -163,7 +163,7 @@ export default function IndianTab({
                 <tr key={s.sym}>
                   <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
                     {s.sym}
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
                       {s.name} · {s.sector} · {s.cap}
                     </div>
                   </td>

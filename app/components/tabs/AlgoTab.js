@@ -45,7 +45,7 @@ export default function AlgoTab({
         <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)', display: 'flex', flexDirection: 'column' }}>
           <div className="fxc" style={{ marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{ALGO.s01.title}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>{ALGO.s01.title}</div>
               <div className="sub" style={{ margin: 0 }}>{ALGO.s01.broker}</div>
             </div>
             <span className="badge ba">{ALGO.s01.badge}</span>
@@ -57,19 +57,19 @@ export default function AlgoTab({
                   <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
                   <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s01.pool}</RsText></div>
                 </div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s01.deployed}</RsText></div>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s01.deployed}</RsText></div>
               </div>
             </div>
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                FY2025-26 <span className="badge bb" style={{ fontSize: 10 }}>ITR-verified</span>
+                FY2025-26 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
               </div>
               <BrokerTable data={FY.s01.fy2526} />
             </div>
             <YtdFno label={`FY2026-27 YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
             <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 10 }}>ITR</span>
+                CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
               </div>
               <div className="fxc"><span style={{ color: 'var(--txt2)' }}>CF entering FY26-27</span><span className="red mono"><SInrF n={-cfEntering} /></span></div>
               <div className="fxc" style={{ marginTop: 8 }}><span style={{ color: 'var(--txt2)' }}>Realised F&amp;O YTD (S01 + S02)</span><span className="grn mono"><SInrF n={ytdRealised} /></span></div>
@@ -83,7 +83,7 @@ export default function AlgoTab({
         <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)', display: 'flex', flexDirection: 'column' }}>
           <div className="fxc" style={{ marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{ALGO.s02.title}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>{ALGO.s02.title}</div>
               <div className="sub" style={{ margin: 0 }}>{ALGO.s02.broker}</div>
             </div>
             <span className="badge bg">{ALGO.s02.badge}</span>
@@ -95,12 +95,12 @@ export default function AlgoTab({
                   <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
                   <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s02.capital}</RsText></div>
                 </div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s02.deployed}</RsText></div>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s02.deployed}</RsText></div>
               </div>
             </div>
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                FY2025-26 <span className="badge bb" style={{ fontSize: 10 }}>ITR-verified</span>
+                FY2025-26 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
               </div>
               <BrokerTable data={FY.s02.fy2526} />
             </div>
@@ -108,7 +108,7 @@ export default function AlgoTab({
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                 Swing positions{' '}
-                <span className={'badge ' + (markets.nse ? 'bg' : '')} style={{ fontSize: 10, ...(markets.nse ? {} : { background: 'rgba(90,90,114,.2)', color: 'var(--txt3)' }) }}>
+                <span className={'badge ' + (markets.nse ? 'bg' : '')} style={{ fontSize: 'var(--fs-2xs)', ...(markets.nse ? {} : { background: 'rgba(90,90,114,.2)', color: 'var(--txt3)' }) }}>
                   {markets.nse ? 'LIVE' : 'NSE CLOSED'}
                 </span>
               </div>
@@ -159,16 +159,16 @@ export default function AlgoTab({
 
       <div className="card">
         <div className="lbl" style={{ marginBottom: 10, display: 'flex', gap: 6 }}>
-          F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 10 }}>ITR-verified · entering FY26-27</span>
+          F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified · entering FY26-27</span>
         </div>
         <div className="g4">
           {FY.carryforward.map((c) => (
-            <div className="csm" key={c.label} style={c.accent ? { borderColor: 'rgba(232,160,48,.35)' } : {}}>
+            <div className="csm" key={c.label} style={c.accent ? { borderColor: 'var(--warn-brd)' } : {}}>
               <div className="sub" style={{ margin: 0 }}>{c.label}</div>
               <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
                 {c.consumed ? <><span className="rs">₹</span>0</> : <SInrF n={c.val} />}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
+              <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
             </div>
           ))}
         </div>

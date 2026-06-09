@@ -18,10 +18,20 @@ export const viewport = {
   themeColor: '#0C0C12',
 };
 
+// Set day/night before first paint so day-theme users don't get a dark flash
+// while React hydrates. 7am–7pm approximation; the client effect refines it to
+// real sunrise/sunset (and the persisted manual mode) right after mount.
+const THEME_BOOT =
+  "try{var m=localStorage.getItem('nwTracker.theme')||'auto';var h=(new Date).getHours();" +
+  "document.documentElement.dataset.time=(m==='day'||(m==='auto'&&h>=7&&h<19))?'day':'night'}catch(e){}";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${body.variable} ${serif.variable} ${mono.variable}`}>
-      <body>{children}<Analytics /><SpeedInsights /></body>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        {children}<Analytics /><SpeedInsights />
+      </body>
     </html>
   );
 }
