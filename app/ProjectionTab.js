@@ -23,7 +23,7 @@ const cr = (n) => {
   if (a >= 1e5) return '<span class="rs">₹</span>' + (a / 1e5).toFixed(2) + ' L';
   return '<span class="rs">₹</span>' + Math.round(a).toLocaleString('en-IN');
 };
-const crPlain = (n) => cr(n).replace(/<[^>]+>/g, '₹');
+const crPlain = (n) => cr(n).replace(/<[^>]+>/g, '');
 
 function ProjectionTab({ nw, loan, sleeves, baseYear }) {
   const coneEl = useRef(null);

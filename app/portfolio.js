@@ -135,14 +135,23 @@ export const US_CASHFLOWS = [
 // (ITR) lives only in the bottom tax card.
 export const US_REALIZED = {
   asOf: '08 Jun 2026',
-  total: 171.38,
+  source: 'Vested realized P&L · lot-level',
+  total: 343.56,
   ytdLabel: 'FY26-27',
-  ytdUsd: 8.70,
+  ytdUsd: 14.24,
   fy: [
-    { label: 'FY24-25', amt: -344.29 }, { label: 'FY25-26', amt: 506.97 }, { label: 'FY26-27', amt: 8.70 },
+    { label: 'FY24-25', amt: 11.13,
+      winners: [{ sym: 'SCHD', amt: 7.48 }, { sym: 'VGT', amt: 7.06 }, { sym: 'VOO', amt: 1.79 }],
+      losers:  [{ sym: 'BITO', amt: -2.78 }, { sym: 'MSTR', amt: -2.17 }, { sym: 'ASML', amt: -1.84 }] },
+    { label: 'FY25-26', amt: 318.19,
+      winners: [{ sym: 'MSTR', amt: 76.91 }, { sym: 'HOOD', amt: 66.41 }, { sym: 'IREN', amt: 36.58 }],
+      losers:  [{ sym: 'BTBT', amt: -21.04 }, { sym: 'NOW', amt: -11.72 }, { sym: 'IRDM', amt: -11.52 }] },
+    { label: 'FY26-27', amt: 14.24,
+      winners: [{ sym: 'EEM', amt: 13.31 }, { sym: 'IVV', amt: 0.62 }, { sym: 'IUSB', amt: 0.30 }],
+      losers:  [] },
   ],
-  winners: [{ sym: 'MSTR', amt: 345.52 }, { sym: 'HOOD', amt: 60.98 }, { sym: 'MU', amt: 36.44 }],
-  losers: [{ sym: 'NFLX', amt: -344.75 }, { sym: 'NOW', amt: -49.45 }, { sym: 'BTBT', amt: -21.02 }],
+  winners: [{ sym: 'MSTR', amt: 74.74 }, { sym: 'HOOD', amt: 66.39 }, { sym: 'IREN', amt: 36.58 }],
+  losers: [{ sym: 'BTBT', amt: -21.04 }, { sym: 'NOW', amt: -11.72 }, { sym: 'IRDM', amt: -11.52 }],
 };
 
 // US dividend income from the Vested/DriveWealth statement (Income sheet).
