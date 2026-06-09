@@ -81,7 +81,7 @@ export default function TreeMap({ items, height = 228, aspect = 1.5 }) {
                 transition: 'background .15s, opacity .15s',
               }}>
               {frac >= 0.05 && (
-                <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: s.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: s.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.label}
                 </div>
               )}

@@ -285,7 +285,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
               <div className="ctitle" style={{ fontSize: 'var(--fs-md)' }}>Allocation · <span id="pj-ayr" className="acc">{baseYear}</span></div>
               <div className="sub">FD &amp; algo dilute · equities scale up</div>
             </div>
-            <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
+            <div className="seg" style={{ display: 'inline-flex', background: 'var(--sur2)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
               <button className={'pj-seg' + (view === 'rose' ? ' on' : '')} onClick={() => onView('rose')}>Rose %</button>
               <button className={'pj-seg' + (view === 'race' ? ' on' : '')} onClick={() => onView('race')}>Race ₹</button>
             </div>
@@ -303,7 +303,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
             <div id="pj-year" className="pj-year">{baseYear}<small>today</small></div>
             <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="0" onInput={onScrub} className="pj-range" style={{ flex: 1, minWidth: 140 }} />
           </div>
-          <div className="seg" style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2, marginTop: 10 }}>
+          <div className="seg" style={{ display: 'inline-flex', alignSelf: 'flex-start', background: 'var(--sur2)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2, marginTop: 10 }}>
             {HORIZONS.map((h) => (
               <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
             ))}

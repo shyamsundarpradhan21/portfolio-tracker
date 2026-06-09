@@ -26,7 +26,7 @@ function AllocDonut({ segs, total }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 210, height: 'auto' }}>
+      <svg className="svgchart" viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 230, height: 'auto' }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
         {live.map((s) => {
           const frac = s.val / tot;
@@ -45,11 +45,11 @@ function AllocDonut({ segs, total }) {
           );
         })}
         <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
-          style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 21, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          <tspan fontSize="15">₹</tspan>{inrCd(centre.val)}
+          style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 23, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
+          <tspan fontSize="16">₹</tspan>{inrCd(centre.val)}
         </text>
         <text x={size / 2} y={size / 2 + 15} textAnchor="middle"
-          style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
+          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
           {centre.label}
         </text>
       </svg>

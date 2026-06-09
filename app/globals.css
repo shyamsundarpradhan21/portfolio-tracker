@@ -140,10 +140,19 @@
    make the glyph vanish. Baseline alignment is good enough at this size. */
 .rs { font-size: 0.78em; font-variant-numeric: normal; margin-right: 0.02em; }
 
+/* Hand-rolled SVG charts share one rhythm: block-centered, uniform breathing
+   room, never clipped at the card edge. */
+.svgchart { display: block; margin: 10px auto; overflow: visible; }
+
 /* Percent glyph: a sliver of left margin so % doesn't jam into the digits. */
 .pct { margin-left: 0.12em; font-size: 0.92em; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Buttons inherit the app's font and color — the UA's buttontext/menu-font
+   otherwise renders unstyled button content (e.g. header-card values) in a
+   near-invisible grey on the night theme and in the system font everywhere. */
+button { font: inherit; color: inherit; }
 
 body {
   background: var(--bg);
@@ -192,9 +201,9 @@ body {
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd)); border-radius: 16px; padding: 20px 24px; }
+.card { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 16px; padding: 20px 24px; }
 /* Summary card (Section 0a): radius 14px. */
-.csm { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd)); border-radius: 14px; padding: 14px 16px; overflow: hidden; }
+.csm { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 14px; padding: 14px 16px; overflow: hidden; }
 /* Values inside summary cards must not push the card wider */
 .csm .vlg, .csm .vmd, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
@@ -237,14 +246,14 @@ body {
 .tbl th {
   font-size: var(--fs-xs); color: var(--txt3); text-transform: uppercase;
   letter-spacing: .7px; padding: 9px 16px; text-align: left;
-  border-bottom: .5px solid var(--brd2); font-weight: 500;
+  border-bottom: .5px solid color-mix(in srgb, var(--acc) 12%, var(--brd2)); font-weight: 500;
   white-space: nowrap; cursor: pointer; user-select: none;
 }
 .tbl th:first-child { padding-left: 4px; }
 .tbl th:last-child { padding-right: 4px; }
 .tbl th:hover { color: var(--txt2); }
 .tbl td {
-  padding: 12px 16px; border-bottom: .5px solid var(--brd);
+  padding: 12px 16px; border-bottom: .5px solid color-mix(in srgb, var(--acc) 8%, var(--brd));
   color: var(--txt2); font-size: var(--fs-sm); vertical-align: middle;
 }
 .tbl td:first-child { padding-left: 4px; }
@@ -258,7 +267,7 @@ body {
 .tbl tr:hover td { background: var(--sur2); }
 .tbl .tot td {
   font-weight: 700; color: var(--txt);
-  border-top: .5px solid var(--brd2); border-bottom: none;
+  border-top: .5px solid color-mix(in srgb, var(--acc) 14%, var(--brd2)); border-bottom: none;
   font-family: var(--mono);
 }
 .ra { text-align: right; }
@@ -319,7 +328,7 @@ body {
 
 /* mini info card inside another card */
 .mini {
-  background: color-mix(in srgb, var(--acc) 2.5%, var(--sur2)); border: .5px solid var(--brd2);
+  background: color-mix(in srgb, var(--acc) 4.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd2));
   border-radius: 6px; padding: 9px 12px;
 }
 .mini.danger { border-color: rgba(232, 64, 64, .35); background: rgba(232, 64, 64, .06); }
@@ -590,16 +599,18 @@ body { padding: 0; }
 .hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .hdr-card {
   text-align: left; cursor: pointer; min-width: 0;
-  background: color-mix(in srgb, var(--acc) 3.5%, var(--sur));
-  border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd));
+  background: color-mix(in srgb, var(--acc) 6%, var(--sur));
+  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
   border-radius: 12px; padding: 10px 13px;
   transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .hdr-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2)); }
 .hdr-card.active {
-  border-color: color-mix(in srgb, var(--acc) 55%, var(--brd));
+  border-color: color-mix(in srgb, var(--acc) 75%, var(--brd));
+  background: color-mix(in srgb, var(--acc) 10%, var(--sur));
   box-shadow: inset 0 -2px 0 -.5px var(--acc);
 }
+.hdr-card.active .lbl { color: var(--acc); }
 .hdr-card .lbl { font-size: var(--fs-2xs); margin-bottom: 4px; }
 .hdr-card .vmd { font-size: var(--fs-lg); letter-spacing: -.3px; }
 .hdr-card .sub { font-size: var(--fs-2xs); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

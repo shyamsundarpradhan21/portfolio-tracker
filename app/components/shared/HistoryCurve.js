@@ -54,8 +54,8 @@ export default function HistoryCurve({ snapshots }) {
       </div>
       <div className="sub">net worth change since first snapshot</div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-        style={{ width: '100%', height: 168, marginTop: 14, display: 'block', overflow: 'visible' }}>
+      <svg className="svgchart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+        style={{ width: '100%', height: 168, marginTop: 14 }}>
         <path d={invArea} fill="var(--txt3)" opacity="0.18" />
         <path d={growArea} fill="var(--grn)" opacity="0.16" />
         <path d={valLine} fill="none" stroke="var(--grn)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />

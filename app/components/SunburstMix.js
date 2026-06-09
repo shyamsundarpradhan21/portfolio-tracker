@@ -53,12 +53,12 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto', overflow: 'visible' }}>
+      <svg className="svgchart" viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto' }}>
         {/* outer ring — sectors */}
         {secArcs.map((s) => {
           const key = 's:' + s.label;
           return (
-            <path key={key} d={arc(cx, cy, 86, 120, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
+            <path key={key} d={arc(cx, cy, 84, 126, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
               onMouseEnter={() => setHov({ key, label: s.label, val: s.val, pct: s.pct, color: s.color })}
               onMouseLeave={() => setHov(null)} />
@@ -67,30 +67,30 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {/* inner ring — cap mix */}
         {capArcs.map((c) => {
           const key = 'c:' + c.label;
-          const [lx, ly] = lp(64, c.mid);
+          const [lx, ly] = lp(62, c.mid);
           return (
             <g key={key}>
-              <path d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
+              <path d={arc(cx, cy, 46, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
                 style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
                 onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
                 onMouseLeave={() => setHov(null)} />
               {c.pct >= 9 && (!hov || hov.key === key) ? (
-                <text x={lx} y={ly + 3.5} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#0A0C10" style={{ pointerEvents: 'none' }}>{c.label[0]}</text>
+                <text x={lx} y={ly + 3.5} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#0A0C10" style={{ pointerEvents: 'none' }}>{c.label[0]}</text>
               ) : null}
             </g>
           );
         })}
         {/* centre readout */}
-        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
+        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
           {(() => {
             const s = fmtAmt(hov ? hov.val : T);
             const m = /^([₹$])(.*)$/.exec(s);
             // Render the currency symbol smaller so ₹/$ matches the digit height.
-            return m ? <><tspan fontSize="16">{m[1]}</tspan>{m[2]}</> : s;
+            return m ? <><tspan fontSize="17">{m[1]}</tspan>{m[2]}</> : s;
           })()}
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle"
-          style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov ? hov.color : 'var(--txt3)', fontWeight: 700 }}>
+          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov ? hov.color : 'var(--txt3)', fontWeight: 700 }}>
           {hov ? `${hov.label} · ${hov.pct.toFixed(0)} %` : 'Deployed'}
         </text>
       </svg>
@@ -101,13 +101,13 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
           <span key={s.label}
             onMouseEnter={() => setHov({ key: 's:' + s.label, label: s.label, val: s.val, pct: s.pct, color: s.color })}
             onMouseLeave={() => setHov(null)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)', cursor: 'default', opacity: hov && hov.key !== 's:' + s.label ? 0.4 : 1, transition: 'opacity .15s' }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', cursor: 'default', opacity: hov && hov.key !== 's:' + s.label ? 0.4 : 1, transition: 'opacity .15s' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flex: '0 0 auto' }} />{s.label} {s.pct.toFixed(0)} %
           </span>
         ))}
       </div>
       {/* cap-mix line */}
-      <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
+      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
         Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)} %`).join('  ·  ')}
       </div>
     </div>
