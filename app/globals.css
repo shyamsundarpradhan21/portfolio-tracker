@@ -201,9 +201,9 @@ body {
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: var(--sur); border: .5px solid var(--brd); border-radius: 16px; padding: 20px 24px; }
+.card { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd)); border-radius: 16px; padding: 20px 24px; }
 /* Summary card (Section 0a): radius 14px. */
-.csm { background: var(--sur); border: .5px solid var(--brd); border-radius: 14px; padding: 16px 20px; }
+.csm { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd)); border-radius: 14px; padding: 16px 20px; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
 .lbl {
   font-size: 12px; color: var(--txt2); text-transform: uppercase;
@@ -333,7 +333,7 @@ body {
 
 /* mini info card inside another card */
 .mini {
-  background: var(--sur2); border: .5px solid var(--brd2);
+  background: color-mix(in srgb, var(--acc) 2.5%, var(--sur2)); border: .5px solid var(--brd2);
   border-radius: 6px; padding: 9px 12px;
 }
 .mini.danger { border-color: rgba(232, 64, 64, .35); background: rgba(232, 64, 64, .06); }
@@ -402,8 +402,9 @@ body {
 }
 .csm:hover, .card:hover {
   transform: translateY(-2px);
-  border-color: var(--brd2);
-  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .6);
+  border-color: color-mix(in srgb, var(--acc) 22%, var(--brd2));
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .6),
+              0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
 }
 
 /* the headline net-worth value shimmers using the current tab's accent color */
@@ -712,11 +713,12 @@ body { padding: 0; }
   flex-wrap: wrap;
 }
 .hkpi {
-  background: var(--sur);
-  border: .5px solid var(--brd);
+  background: color-mix(in srgb, var(--acc) 4%, var(--sur));
+  border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd));
   border-radius: 10px;
   padding: 10px 16px;
   min-width: 140px;
+  transition: background .6s ease, border-color .6s ease;
 }
 .hkpi-lbl {
   font-size: 11px;
