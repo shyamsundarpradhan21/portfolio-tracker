@@ -36,6 +36,7 @@ const SYSTEM_PROMPT =
 
 const EMPTY = {
   overview: null,
+  indian_swot: null,
   indian_stocks: null,
   us_stocks: null,
   mutual_funds: null,
@@ -77,7 +78,8 @@ function buildUserMessage(d) {
     `OVERVIEW: Net worth ₹${ov.netWorthL ?? '?'}L, Total assets ₹${ov.totalAssetsL ?? '?'}L, Loan ₹7.5L\n` +
     `Indian equity P&L: ${ov.indianPlPct ?? '?'}%, US portfolio P&L: ${ov.usPlPct ?? '?'}%\n\n` +
     `INDIAN STOCKS (live prices, ${d.indianSummary || 'all positions'}):\n${fmtRows(d.indian)}\n` +
-    (d.indianStocks ? `INDIAN EQUITY SIGNALS: ${d.indianStocks}\n` : '') + '\n' +
+    (d.indianStocks ? `INDIAN EQUITY SIGNALS: ${d.indianStocks}\n` : '') +
+    (d.indianRisk ? `INDIAN RISK STATS: ${d.indianRisk}\n` : '') + '\n' +
     `US STOCKS (live prices, ${d.usSummary || 'all positions'}):\n${fmtRows(d.us)}\n` +
     `USD/INR: ${d.usdInr ?? '?'}\n\n` +
     `MUTUAL FUNDS: ${fmtMf(d.mutualFunds)}\n\n` +
@@ -86,6 +88,7 @@ function buildUserMessage(d) {
     `Return JSON:\n` +
     `{\n` +
     `  overview: string | null,\n` +
+    `  indian_swot: { macro: string, s: string, w: string, o: string, t: string } | null,  // a SWOT of the Indian equity book: macro = one-line read of the backdrop (rates, INR, crude, FII flows, large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each (Strengths, Weaknesses, Opportunities, Threats) grounded in the risk stats (beta/vol/alpha) and holdings. Always populate this object.\n` +
     `  indian_stocks: string | null,\n` +
     `  us_stocks: string | null,\n` +
     `  mutual_funds: string | null,\n` +
@@ -106,8 +109,13 @@ function parseInsights(text) {
   if (start === -1 || end === -1) return null;
   try {
     const obj = JSON.parse(t.slice(start, end + 1));
+    const sw = obj.indian_swot;
+    const swot = (sw && typeof sw === 'object')
+      ? { macro: sw.macro ?? null, s: sw.s ?? null, w: sw.w ?? null, o: sw.o ?? null, t: sw.t ?? null }
+      : null;
     return {
       overview: obj.overview ?? null,
+      indian_swot: swot,
       indian_stocks: obj.indian_stocks ?? null,
       us_stocks: obj.us_stocks ?? null,
       mutual_funds: obj.mutual_funds ?? null,

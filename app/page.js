@@ -10,6 +10,7 @@ import {
 import FY from '../data/fy2526_verified.json';
 import ProjectionTab from './ProjectionTab';
 import RealizedPanel from './RealizedPanel';
+import InsightsCard from './InsightsCard';
 
 // ─── formatting helpers ───
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
@@ -380,6 +381,60 @@ function benchCounterfactual(series, transactions, now) {
   };
 }
 
+// Portfolio beta & annualised volatility vs the market, from weekly history.
+// Values the CURRENT holdings (qty × historical weekly close, forward-filled) to
+// build a portfolio level series, then regresses its weekly returns on Nifty's.
+// Returns { beta, vol, mktVol, rsq, weeks } in %, or null if history is thin/absent
+// (sandbox blocks Yahoo, so this resolves only on the live deploy — like benchmarks).
+function computeBetaVol(hist, held, _now) {
+  if (!hist || !hist.series) return null;
+  let mkt = null;
+  for (const s of ['^NSEI', 'NIFTYBEES.NS']) {
+    const ser = hist.series[s];
+    if (ser && Array.isArray(ser.closes) && ser.closes.length >= 24) { mkt = ser; break; }
+  }
+  if (!mkt) return null;
+  const mapOf = (ser) => {
+    const m = {};
+    ((ser && ser.closes) || []).forEach((c) => { if (isFinite(c.close) && c.close > 0) m[c.date] = c.close; });
+    return m;
+  };
+  const mm = mapOf(mkt);
+  const dates = Object.keys(mm).sort();
+  const holds = held.map((h) => ({ qty: h.qty, m: mapOf(hist.series[h.ns]) }));
+  const last = holds.map(() => null);
+  const pv = [], mv = [];
+  for (const d of dates) {
+    let v = 0, ok = true;
+    for (let i = 0; i < holds.length; i++) {
+      const c = holds[i].m[d];
+      if (c != null) last[i] = c;
+      if (last[i] == null) { ok = false; break; }
+      v += holds[i].qty * last[i];
+    }
+    if (!ok) continue; // skip weeks before every current holding has a price
+    pv.push(v); mv.push(mm[d]);
+  }
+  if (pv.length < 24) return null;
+  const rp = [], rm = [];
+  for (let i = 1; i < pv.length; i++) {
+    if (pv[i - 1] > 0 && mv[i - 1] > 0) { rp.push(pv[i] / pv[i - 1] - 1); rm.push(mv[i] / mv[i - 1] - 1); }
+  }
+  if (rp.length < 20) return null;
+  const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+  const mp = mean(rp), mkm = mean(rm);
+  let cov = 0, vm = 0, vp = 0;
+  for (let i = 0; i < rp.length; i++) { cov += (rp[i] - mp) * (rm[i] - mkm); vm += (rm[i] - mkm) ** 2; vp += (rp[i] - mp) ** 2; }
+  const n = rp.length; cov /= n; vm /= n; vp /= n;
+  return {
+    beta: vm > 0 ? cov / vm : null,
+    vol: Math.sqrt(vp * 52) * 100,
+    mktVol: Math.sqrt(vm * 52) * 100,
+    rsq: (vp > 0 && vm > 0) ? (cov * cov) / (vp * vm) : null,
+    weeks: pv.length,
+  };
+}
+
 // Value-focused (fractional shares), plus the extra Category column. USD.
 const US_COLS = [
   { key: 'sym', label: 'Ticker', num: false },
@@ -500,6 +555,23 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
       'Do not over-claim outperformance.',
   };
 
+  // Risk stats for the macro-aware SWOT: beta/vol from the weekly regression,
+  // alpha as portfolio CAGR minus the same-dated Nifty CAGR.
+  const inRisk = computeBetaVol(hist, heldIndian, now);
+  let niftyCagr = null;
+  const nb = INDIAN_BENCHMARKS.find((b) => b.key === 'nifty50');
+  if (nb && hist && hist.series && inVal) {
+    for (const sym of nb.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], TRANSACTIONS, now); if (cf) { niftyCagr = cf.cagr; break; } }
+  }
+  const inPortCagr = inVal ? weightedCagr(TRANSACTIONS, inVal, now).cagr : null;
+  const inAlpha = (inPortCagr != null && niftyCagr != null) ? inPortCagr - niftyCagr : null;
+  const indianRisk = [
+    inRisk ? `beta ${inRisk.beta != null ? inRisk.beta.toFixed(2) : '?'} vs Nifty` : null,
+    inRisk ? `annualised vol ${inRisk.vol.toFixed(0)}% (Nifty ${inRisk.mktVol.toFixed(0)}%)` : null,
+    inRisk && inRisk.rsq != null ? `R² ${inRisk.rsq.toFixed(2)} to Nifty` : null,
+    inAlpha != null ? `alpha ${inAlpha >= 0 ? '+' : ''}${inAlpha.toFixed(1)} pts CAGR vs Nifty` : null,
+  ].filter(Boolean).join(', ') || null;
+
   return {
     timestamp: new Date().toISOString(),
     overview: {
@@ -509,6 +581,7 @@ function buildInsightPayload(prices, fx, mfNav, hist) {
       usPlPct: usInv && usVal ? r2(((usVal - usInv) / usInv) * 100) : null,
     },
     indian,
+    indianRisk,
     indianSummary: `${indian.length}/${INDIAN.length} shown (|P&L|>10% or |day|>2%)`,
     indianStocks: (() => {
       const todayIso = isoOf(now);
@@ -642,6 +715,7 @@ export default function Page() {
       const syms = [...new Set([
         ...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms),
         ...US_BENCHMARKS.flatMap((b) => b.yahooSyms),
+        ...INDIAN.map((h) => `${h.sym}.NS`), // holdings' weekly series → beta/vol regression
       ])].join(',');
       const res = await fetch('/api/history?range=5y&symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       if (!res.ok) return null;
@@ -876,6 +950,15 @@ export default function Page() {
       topSector: sectors[0] || null,
     };
   }, [indian, hist, now]);
+
+  // ─── derived: Indian risk stats (beta / vol / alpha) for the Insights card ───
+  const indianRisk = useMemo(() => {
+    const reg = computeBetaVol(hist, heldIndian, now);
+    const niftyCagr = (inStats.benchmarks.find((b) => b.key === 'nifty50') || {}).cagr ?? null;
+    const alpha = (inStats.cagr != null && niftyCagr != null) ? inStats.cagr - niftyCagr : null;
+    const topPct = (inStats.topPos && inStats.value) ? (inStats.topPos.val / inStats.value) * 100 : null;
+    return { ...(reg || {}), alpha, niftyCagr, topPct, hasReg: !!reg };
+  }, [hist, heldIndian, now, inStats]);
 
   // Corporate actions: upcoming (ex ≥ today) populate the panel; executed go to
   // the footline. Impact is computed against the current held quantity.
@@ -1468,13 +1551,15 @@ export default function Page() {
             <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
           </div>
 
-          {/* Realized P&L — scalable, scope-aware (Zerodha tradebook · avg-cost) */}
-          <RealizedPanel
-            data={INDIAN_REALIZED}
-            currency="inr"
-            className="sec"
-            note="Avg-cost realised gains/losses booked across all exits. The filed ITR capital-gains figure is in the card below."
-          />
+          {/* Realized P&L + Portfolio Insights, side by side */}
+          <div className="g2 sec">
+            <RealizedPanel
+              data={INDIAN_REALIZED}
+              currency="inr"
+              note="Avg-cost realised gains/losses booked across all exits. The filed ITR capital-gains figure is in the card below."
+            />
+            <InsightsCard stats={indianRisk} swot={insights && insights.indian_swot} loading={insightsFirstLoad} />
+          </div>
 
           <CFMemo
             title="Equity Tax — FY24-25 Capital Gains"

@@ -423,3 +423,28 @@ body {
   border: .5px solid var(--brd2); background: transparent; color: var(--txt3); cursor: pointer; transition: all .12s;
 }
 .rz-tab.on { background: var(--sur2); color: var(--txt); box-shadow: inset 0 -2px 0 -.5px var(--acc); }
+
+/* ── Portfolio Insights card (Indian) — Section I ─────────────────────────── */
+.ins-ai { font-size: 8.5px; font-weight: 800; letter-spacing: .6px; color: var(--pur); background: rgba(155,138,251,.14); border: .5px solid rgba(155,138,251,.3); border-radius: 5px; padding: 2px 6px; }
+.ins-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.ins-stat { background: var(--sur2); border: .5px solid var(--brd2); border-radius: 11px; padding: 12px 13px; }
+.ins-stat .v { font-family: var(--mono); font-weight: 800; font-size: 22px; letter-spacing: -.5px; margin-top: 3px; }
+.ins-stat .v small { font-size: 12px; font-weight: 600; color: var(--txt2); }
+.ins-badge { display: inline-block; font-size: 8.5px; font-weight: 800; letter-spacing: .5px; border-radius: 5px; padding: 2px 7px; margin-top: 7px; }
+.ins-badge.low  { color: var(--grn); background: rgba(52,211,153,.12);  border: .5px solid rgba(52,211,153,.3); }
+.ins-badge.med  { color: var(--acc); background: rgba(232,168,87,.12);  border: .5px solid rgba(232,168,87,.3); }
+.ins-badge.high { color: var(--red); background: rgba(248,113,113,.12); border: .5px solid rgba(248,113,113,.3); }
+.ins-badge.flat { color: var(--txt2); background: var(--sur2); border: .5px solid var(--brd2); }
+.ins-macro { margin-top: 12px; font-size: 11px; color: var(--txt2); line-height: 1.55; background: var(--sur2); border: .5px solid var(--brd2); border-radius: 10px; padding: 9px 11px; }
+.ins-macro .mh { font-size: 8.5px; font-weight: 800; letter-spacing: .6px; color: var(--acc); margin-right: 7px; }
+.ins-swot { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+.ins-q { border: .5px solid var(--brd2); border-radius: 10px; padding: 10px 11px; background: var(--sur2); }
+.ins-q .qh { font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.ins-q .qt { font-size: 11px; color: var(--txt2); margin-top: 5px; line-height: 1.5; }
+.ins-q.s .qh { color: var(--grn); } .ins-q.w .qh { color: var(--red); }
+.ins-q.o .qh { color: var(--blu); } .ins-q.t .qh { color: var(--acc); }
+.ins-q.s { box-shadow: inset 2px 0 0 -.5px var(--grn); } .ins-q.w { box-shadow: inset 2px 0 0 -.5px var(--red); }
+.ins-q.o { box-shadow: inset 2px 0 0 -.5px var(--blu); } .ins-q.t { box-shadow: inset 2px 0 0 -.5px var(--acc); }
+.ins-skel { height: 56px; border-radius: 10px; background: linear-gradient(90deg, var(--sur2), rgba(255,255,255,.06), var(--sur2)); background-size: 200% 100%; animation: insshimmer 1.4s infinite; }
+@keyframes insshimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .ins-skel { animation: none; } }
