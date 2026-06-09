@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Font Options</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@600&family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@700&family=Manrope:wght@500;800&family=Sora:wght@500;700&family=Archivo:wght@600;800&family=Spline+Sans+Mono:wght@600&family=Inter:wght@500;700&family=DM+Serif+Display&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0C0C12;color:#E8E8EC;font-family:'Inter',system-ui,sans-serif;padding:48px 24px;line-height:1.55}
+.wrap{max-width:920px;margin:0 auto}
+h1{font-size:34px;font-weight:800;letter-spacing:-.5px}
+.sub{color:#6B6B7A;font-size:15px;margin:8px 0 36px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.grid{grid-template-columns:1fr}}
+.card{display:block;text-decoration:none;border-radius:16px;padding:22px;border:.5px solid rgba(255,255,255,.1);background:#13131b;transition:transform .15s,box-shadow .15s,border-color .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 30px -10px rgba(0,0,0,.6);border-color:rgba(52,211,153,.3)}
+.n{font-size:11px;color:#4A4A57;font-weight:700;letter-spacing:1px;margin-bottom:10px}
+.name{font-size:17px;font-weight:700;color:#fff}
+.desc{font-size:12.5px;color:#8A8A99;margin-top:5px;line-height:1.5}
+.spec{margin-top:16px;border-top:.5px solid rgba(255,255,255,.07);padding-top:14px}
+.big{font-size:30px;letter-spacing:-1px;color:#34D399}
+.row{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px}
+.ttl{font-size:18px;color:#E8E8EC}
+.lbl2{font-size:10px;color:#4A4A57;text-transform:uppercase;letter-spacing:.5px}
+</style></head><body>
+<div class="wrap">
+  <h1>Font Systems</h1>
+  <p class="sub">The current setup mixes three unrelated families. These options favour uniformity — superfamilies or families that share design DNA. Each card previews its body label, serif/title, and the mono figures. Click to open the full dashboard in that type.</p>
+  <div class="grid">
+
+    <a class="card" href="1-ibm-plex.html">
+      <div class="n">01 — RECOMMENDED · SUPERFAMILY</div>
+      <div class="name" style="font-family:'IBM Plex Sans'">IBM Plex</div>
+      <div class="desc">Sans + Serif + Mono all from one family. The gold standard for uniformity — every weight and role visibly related. A finance/engineering classic.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'IBM Plex Mono';font-weight:600">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'IBM Plex Serif';font-weight:600">Net worth</span><span class="lbl2" style="font-family:'IBM Plex Sans';font-weight:600">HOLDINGS</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="2-space-grotesk.html">
+      <div class="n">02 — SHARED DNA</div>
+      <div class="name" style="font-family:'Space Grotesk'">Space Grotesk + Space Mono</div>
+      <div class="desc">Body and mono are sibling designs — quirky, contemporary, a touch editorial. Title is the same grotesk in bold. Distinctive without being loud.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'Space Mono';font-weight:700">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'Space Grotesk';font-weight:700;letter-spacing:-.5px">Net worth</span><span class="lbl2" style="font-family:'Space Grotesk';font-weight:500">HOLDINGS</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="3-manrope.html">
+      <div class="n">03 — GEOMETRIC, NO SERIF</div>
+      <div class="name" style="font-family:'Manrope'">Manrope + JetBrains</div>
+      <div class="desc">Soft geometric sans for everything; titles are just Manrope 800 — no serif at all, so nothing clashes. Clean, friendly, very modern SaaS.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'JetBrains Mono';font-weight:800">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'Manrope';font-weight:800;letter-spacing:-.6px">Net worth</span><span class="lbl2" style="font-family:'Manrope';font-weight:600">HOLDINGS</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="4-sora.html">
+      <div class="n">04 — FINTECH</div>
+      <div class="name" style="font-family:'Sora'">Sora + Plex Mono</div>
+      <div class="desc">Sora is low-contrast and engineered-looking — reads very "fintech dashboard". Titles in Sora bold, figures in Plex Mono.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'IBM Plex Mono';font-weight:600">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'Sora';font-weight:700;letter-spacing:-.4px">Net worth</span><span class="lbl2" style="font-family:'Sora';font-weight:500">HOLDINGS</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="5-archivo.html">
+      <div class="n">05 — SWISS / DATA</div>
+      <div class="name" style="font-family:'Archivo'">Archivo + Spline Mono</div>
+      <div class="desc">Archivo is a tight Swiss grotesque — confident, news/data-terminal energy. Spline Sans Mono shares the same rational tone.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'Spline Sans Mono';font-weight:600">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'Archivo';font-weight:800;letter-spacing:-.5px">Net worth</span><span class="lbl2" style="font-family:'Archivo';font-weight:600">HOLDINGS</span></div>
+      </div>
+    </a>
+
+    <a class="card" href="6-current.html">
+      <div class="n">06 — CURRENT (baseline)</div>
+      <div class="name" style="font-family:'Inter'">Inter + DM Serif + JetBrains</div>
+      <div class="desc">What's live now: three unrelated families. The serif display title is the main source of the disjointed feel. Here for comparison.</div>
+      <div class="spec">
+        <div class="big" style="font-family:'JetBrains Mono';font-weight:800">₹16.05L</div>
+        <div class="row"><span class="ttl" style="font-family:'DM Serif Display'">Net worth</span><span class="lbl2" style="font-family:'Inter';font-weight:500">HOLDINGS</span></div>
+      </div>
+    </a>
+
+  </div>
+  <p class="sub" style="margin-top:32px">↩ <a href="../index.html" style="color:#34D399;text-decoration:none">Back to theme gallery</a></p>
+</div>
+</body></html>
