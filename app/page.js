@@ -198,6 +198,8 @@ export default function Page() {
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
+  // Approximate FX fallback used only for ≈₹ conversion sub-text until the live
+  // rate arrives — headline figures (NW, assets, snapshots) gate on live usdInr.
   const fxRate = usdInr || 88;
 
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000); return () => clearInterval(id); }, []);
@@ -512,12 +514,15 @@ export default function Page() {
 
   // NW sleeves only — algo capital is excluded from net worth (see ov above),
   // so it appears in neither the allocation view nor the projection model.
+  // No fabricated fallbacks: until live prices land, unvalued sleeves are 0
+  // (the projection/allocation simply under-represent them for a few seconds)
+  // rather than showing stale hardcoded figures as if they were real.
   const donutSegs = [
-    { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,              color: ALLOC_COLORS.fd     },
-    { key: 'indian', label: 'Indian Stocks',  value: indian.val  || 471000,   color: ALLOC_COLORS.indian },
-    { key: 'us',     label: 'US Stocks',      value: ov.usInr    || 443000,   color: ALLOC_COLORS.us     },
-    { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,            color: ALLOC_COLORS.mf     },
-    { key: 'elss',   label: 'ELSS',           value: mf.elss.value,           color: ALLOC_COLORS.elss   },
+    { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,      color: ALLOC_COLORS.fd     },
+    { key: 'indian', label: 'Indian Stocks',  value: indian.val || 0, color: ALLOC_COLORS.indian },
+    { key: 'us',     label: 'US Stocks',      value: ov.usInr   || 0, color: ALLOC_COLORS.us     },
+    { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,    color: ALLOC_COLORS.mf     },
+    { key: 'elss',   label: 'ELSS',           value: mf.elss.value,   color: ALLOC_COLORS.elss   },
   ];
 
   const projSleeves = useMemo(
@@ -580,6 +585,7 @@ export default function Page() {
               <span className={'mkt-pill ' + mktPill(markets.nse)}>NSE {mktTxt(markets.nse)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
+              <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
               <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
               <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })} title="Refresh" aria-label="Refresh">↻</button>
@@ -614,16 +620,15 @@ export default function Page() {
         {/* TAB CONTENT */}
         <div className="tab-content">
           {tab === 0 && (
-            <OverviewTab ov={ov} indian={indian} usData={usData} mf={mf} fds={fds}
-              swing={swing} fxRate={fxRate} donutSegs={donutSegs}
+            <OverviewTab ov={ov}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              ytdTotal={ytdTotal} MF_CONFIG={STATIC} FY={FY} snapshots={snapshots}
+              FY={FY} snapshots={snapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}
               inStats={inStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
-              flash={flash} markets={markets} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
+              flash={flash} markets={markets} lastUpdate={lastUpdate} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY} />
           )}
           {tab === 2 && (
@@ -636,7 +641,7 @@ export default function Page() {
           )}
           {tab === 4 && (
             <USTab usData={usData} usStats={usStats} usSorted={usSorted} usSort={usSort} sortUs={sortUs}
-              ov={ov} fxRate={fxRate} flash={flash} markets={markets}
+              ov={ov} fxRate={fxRate} flash={flash} markets={markets} lastUpdate={lastUpdate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               US={US} US_REALIZED={US_REALIZED} US_DIVIDENDS={US_DIVIDENDS} FY={FY} />
           )}

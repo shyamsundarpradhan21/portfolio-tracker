@@ -1,15 +1,13 @@
 'use client';
-import { cl, pctS, InrC, InrF, SInrC, SInrF, RsText, Rs, inrFull, inrC } from '../../lib/fmt';
+import { inrFull, inrC } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
 import HistoryCurve from '../shared/HistoryCurve';
-import { MF, ALLOC_COLORS } from '../../portfolio';
+import { MF } from '../../portfolio';
 
 export default function OverviewTab({
-  ov, indian, usData, mf, fds, swing, fxRate,
-  donutSegs, insights, insightsOn, insightsFirstLoad,
-  ytdTotal, MF_CONFIG, FY, snapshots,
+  ov, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, loan, baseYear,
 }) {
   const sFull = (n) => (n >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -24,7 +22,7 @@ export default function OverviewTab({
       {/* Forward outlook: allocation share + scenario stack. Defaults to today. */}
       <ProjectionTab
         nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
-        baseYear={baseYear} invested0={projInvested0} donutSegs={donutSegs}
+        baseYear={baseYear} invested0={projInvested0}
       />
 
       <div className="card sec ov-fill">

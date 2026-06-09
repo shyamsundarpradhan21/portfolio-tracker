@@ -21,18 +21,17 @@ const IN_COLS = [
   { key: 'day',  label: 'Day %',    num: true  },
 ];
 const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' };
-const fmtX = pct1;
 
 export default function IndianTab({
   indian, indianDayPl, indianDayPct, inStats, indianRisk, inSorted, inSort, sortIn,
-  flash, markets, insights, insightsOn, insightsFirstLoad,
+  flash, markets, lastUpdate, insights, insightsOn, insightsFirstLoad,
   INDIAN, INDIAN_REALIZED, CORPORATE_ACTIONS, FY,
 }) {
   return (
     <div>
       <InsightBanner text={insightsOn ? insights?.indian_stocks : null} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` }} />
+        <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
 
       <div className="g3 sec">
@@ -65,7 +64,7 @@ export default function IndianTab({
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
           <div className={'vmd ' + (inStats.cagr != null ? cl(inStats.cagr) : '')}>
-            {inStats.cagr != null ? fmtX(inStats.cagr) : <Skel w={70} h={20} />}
+            {inStats.cagr != null ? pct1(inStats.cagr) : <Skel w={70} h={20} />}
           </div>
           <div className="sub">money-weighted · ~5mo window</div>
         </div>
@@ -87,7 +86,7 @@ export default function IndianTab({
             <tbody>
               <tr>
                 <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
-                <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{fmtX(inStats.portXirr)}</td>
+                <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{pct1(inStats.portXirr)}</td>
                 <td className="ra mono">{indian.valued ? <InrC n={indian.val} /> : '—'}</td>
               </tr>
               {inStats.benchmarks.map((b) => (
@@ -98,7 +97,7 @@ export default function IndianTab({
                       {b.label}
                     </span>
                   </td>
-                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
+                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
                   <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
                 </tr>
               ))}

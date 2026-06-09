@@ -8,10 +8,9 @@ import SunburstMix from '../SunburstMix';
 import RealizedPanel from '../RealizedPanel';
 import Skel from '../shared/Skel';
 
-const fmtX = pct1;
 
 export default function USTab({
-  usData, usStats, usSorted, usSort, sortUs, ov, fxRate, flash, markets,
+  usData, usStats, usSorted, usSort, sortUs, ov, fxRate, flash, markets, lastUpdate,
   insights, insightsOn, insightsFirstLoad,
   US, US_REALIZED, US_DIVIDENDS, FY,
 }) {
@@ -19,7 +18,7 @@ export default function USTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` }} />
+        <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
 
       <div className="g3 sec">
@@ -47,7 +46,7 @@ export default function USTab({
         </div>
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
-          <div className={'vmd ' + (usStats.cagr != null ? cl(usStats.cagr) : '')}>{usStats.cagr != null ? fmtX(usStats.cagr) : <Skel w={70} h={20} />}</div>
+          <div className={'vmd ' + (usStats.cagr != null ? cl(usStats.cagr) : '')}>{usStats.cagr != null ? pct1(usStats.cagr) : <Skel w={70} h={20} />}</div>
           <div className="sub">money-weighted · since Mar 2024</div>
         </div>
         <div className="csm">
@@ -68,7 +67,7 @@ export default function USTab({
             <tbody>
               <tr>
                 <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
-                <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{fmtX(usStats.xirr)}</td>
+                <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{pct1(usStats.xirr)}</td>
                 <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
               </tr>
               {usStats.benchmarks.slice(0, 7).map((b) => (
@@ -76,7 +75,7 @@ export default function USTab({
                   <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
                   </span></td>
-                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{fmtX(b.xirr)}</td>
+                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
                   <td className="ra mono mut">{b.value != null ? '$' + b.value.toFixed(0) : '—'}</td>
                 </tr>
               ))}

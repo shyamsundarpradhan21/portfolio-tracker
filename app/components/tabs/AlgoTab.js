@@ -136,7 +136,7 @@ export default function AlgoTab({
                     ))}
                     <tr className="tot">
                       <td>Total</td><td /><td className="ra"><InrF n={swing.inv} /></td>
-                      <td className="ra">{swing.valued ? inrFull(swing.val) : '…'}</td>
+                      <td className="ra">{swing.valued ? <InrF n={swing.val} /> : '…'}</td>
                       <td className={'ra ' + cl(swing.pl)}>{swing.valued ? <SInrF n={swing.pl} /> : '…'}</td>
                       <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
                     </tr>
