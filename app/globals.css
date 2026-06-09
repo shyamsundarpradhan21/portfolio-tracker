@@ -213,7 +213,18 @@ body {
 .vlg { font-size: 27px; font-weight: 800; font-family: var(--mono); letter-spacing: -.5px; }
 .vmd { font-size: 27px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
 .vsm { font-size: 18px; font-weight: 600; font-family: var(--mono); }
-.vlg, .vmd, .vsm { overflow-wrap: anywhere; }
+/* Numbers contain no spaces so they never wrap; never break inside a word
+   (tickers like POWERGRID/FEDERALBNK) — overflow-wrap:anywhere did exactly that. */
+.vlg, .vmd, .vsm { overflow-wrap: normal; word-break: keep-all; }
+/* Symbol/ticker values in compact minis stay on one line and shrink to fit,
+   falling back to a clean ellipsis instead of an ugly mid-word break. */
+.mini .vsm, .mini .vmd {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  letter-spacing: -.6px;
+}
 .sub { font-size: 13px; color: var(--txt2); margin-top: 4px; }
 .fxc { display: flex; justify-content: space-between; align-items: center; }
 

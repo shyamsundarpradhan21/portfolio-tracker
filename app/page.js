@@ -499,24 +499,6 @@ export default function Page() {
               Total assets <strong><InrC n={ov.totalAssets} /></strong> · Loan ~₹7.50L · excl. savings &amp; EPF
             </div>
           </div>
-          <div className="page-header-kpis">
-            <div className="hkpi">
-              <div className="hkpi-lbl">Indian Equity</div>
-              <div className={'hkpi-val ' + (indian.valued ? cl(indian.pl) : '')}>{indian.valued ? <><InrC n={indian.val} /></> : '—'}</div>
-            </div>
-            <div className="hkpi">
-              <div className="hkpi-lbl">US Equity</div>
-              <div className={'hkpi-val ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? '$' + usData.val.toFixed(0) : '—'}</div>
-            </div>
-            <div className="hkpi">
-              <div className="hkpi-lbl">Fixed Deposits</div>
-              <div className="hkpi-val"><InrC n={ov.fdValue} /></div>
-            </div>
-            <div className="hkpi">
-              <div className="hkpi-lbl">Mutual Funds</div>
-              <div className="hkpi-val"><InrC n={mf.totVal} /></div>
-            </div>
-          </div>
         </div>
         </div>
 
