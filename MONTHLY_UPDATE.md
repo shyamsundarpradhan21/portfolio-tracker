@@ -43,6 +43,13 @@ below.
 - **Quarterly:** move any deployed FD from `FD_PIPELINE[]` → `FDS[]`
 - **Annually (post-ITR):** `data/fy2526_verified.json` + `ALGO` figures (F&O
   carryforward, capital-gains notes) — ITR-verified, once a year
+- **Annually — Projection assumptions** (`PROJECTION` in `portfolio.js`): revisit
+  `monthly`, `stepUp`, the scenario `rate`s and the algo `target`. Everything else
+  in the Projection tab is live (net worth, sleeve mix, FD ceiling) and rolls
+  forward on its own — only these forward assumptions drift from reality.
+- **Optional — per-year realized movers:** add `winners`/`losers` to any entry in
+  `INDIAN_REALIZED.fy[]` / `US_REALIZED.fy[]` and the realized bar-chart drill-down
+  shows that year's top stocks; without them it falls back to the overall movers.
 
 ## Verify before committing
 1. Holdings-table **invested total** matches your broker
