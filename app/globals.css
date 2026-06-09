@@ -1,6 +1,6 @@
 /* ── Layer 1: Base night tokens (always-on defaults) ───────────────────────── */
 :root {
-  --mono: var(--font-mono), 'IBM Plex Mono', 'Courier New', monospace;
+  --mono: var(--font-mono), 'Source Code Pro', 'Courier New', monospace;
   --body: var(--font-body), 'Source Sans 3', system-ui, sans-serif;
   --title: var(--font-title), 'Playfair Display', Georgia, serif;
 
