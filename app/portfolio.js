@@ -274,7 +274,7 @@ export const FDS = [
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
-  algo: 730000,        // own algo capital deployed = S01 ₹3.9L + S02 ₹3.4L (reconciled with the Algo tab)
+  algo: 730000,        // own algo capital = S01 ₹3.9L + S02 ₹3.4L — EXCLUDED from net worth (no daily mark-to-market); tracked on the Algo tab + header card only
   loan: 750000,        // personal loan liability
   // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
   // FD value (principal + accrued interest) is now computed live — see deriveFds.
@@ -360,7 +360,7 @@ export const MF = {
 export const ALGO = {
   summary: {
     deployed: '₹7.30L',
-    deployedNote: 'S01 ₹3.9L + S02 ₹3.4L · own capital, live',
+    deployedNote: 'S01 ₹3.9L + S02 ₹3.4L · own capital · excluded from net worth',
   },
   s01: {
     title: 'S01 — Credit Spreads',
@@ -414,14 +414,14 @@ export const PROJECTION = {
   // FUTURE-PROOF: add a sleeve here and the projection just absorbs it.
   //   scale  — grows with the residual (absorbs the SIP), share rises
   //   capped — nominal ceiling (e.g. the FD ladder), share falls over time
-  //   target — held at a % of total assets (e.g. the algo book)
+  //   target — held at a % of total assets
   // The FD ceiling itself is derived live from FDS + FD_PIPELINE (not typed in).
+  // Note: algo capital is excluded from net worth, so it has no sleeve here.
   allocRules: {
     indian: { rule: 'scale' },
     us:     { rule: 'scale' },
     mf:     { rule: 'scale' },
     elss:   { rule: 'scale' },
-    algo:   { rule: 'target', target: 0.225, rampYears: 4 },
     fd:     { rule: 'capped', rampYears: 2.5 },
   },
 };

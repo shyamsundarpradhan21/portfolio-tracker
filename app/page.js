@@ -421,7 +421,12 @@ export default function Page() {
 
   const ov = useMemo(() => {
     const usInr = usData.val * fxRate; const fdValue = fds.principal + fds.accrued;
-    const totalAssets = indian.val + usInr + fdValue + STATIC.algo + mf.totVal;
+    // Algo capital (STATIC.algo) is deliberately EXCLUDED from net worth: its
+    // account equity isn't marked to market daily (profits sit in the pool,
+    // get distributed to clients, or compound on no fixed schedule), so it
+    // can't honestly sit next to the live-priced sleeves. It stays fully
+    // tracked on the Algo tab and the header card.
+    const totalAssets = indian.val + usInr + fdValue + mf.totVal;
     return { usInr, fdValue, totalAssets, nw: totalAssets - STATIC.loan };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
 
@@ -430,8 +435,9 @@ export default function Page() {
     return Math.round((ov.nw || 0) - gains);
   }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
 
+  // NW sleeves only — algo capital is excluded from net worth (see ov above),
+  // so it appears in neither the allocation view nor the projection model.
   const donutSegs = [
-    { key: 'algo',   label: 'Algo Capitals',  value: STATIC.algo,             color: ALLOC_COLORS.algo   },
     { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,              color: ALLOC_COLORS.fd     },
     { key: 'indian', label: 'Indian Stocks',  value: indian.val  || 471000,   color: ALLOC_COLORS.indian },
     { key: 'us',     label: 'US Stocks',      value: ov.usInr    || 443000,   color: ALLOC_COLORS.us     },
@@ -442,7 +448,7 @@ export default function Page() {
   const projSleeves = useMemo(
     () => donutSegs.map((s) => ({ ...s, value: Math.round(s.value || 0) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [STATIC.algo, Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0)],
+    [Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0)],
   );
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
@@ -478,9 +484,9 @@ export default function Page() {
       val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       cls: usData.val ? cl(usData.pl) : '',
       sub: usData.val ? <>{pctS(usData.pct)} @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
-    { label: 'Algo capital', tab: 5,
+    { label: 'Algo capital', tab: 5, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
       val: <InrC n={STATIC.algo} />, cls: ytdTotal != null ? cl(ytdTotal) : '',
-      sub: ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /></> : 'own capital' },
+      sub: ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /> · off-NW</> : 'own capital · off-NW' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
@@ -513,13 +519,14 @@ export default function Page() {
               <div className="page-header-sub">
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
                 {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
+                {' · '}excl. algo
               </div>
             </button>
 
             {/* Asset-class cards — primary navigation */}
             <div className="hdr-cards">
               {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)}>
+                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => setTab(c.tab)} title={c.tip || `Open ${c.label}`}>
                   <div className="lbl">{c.label}</div>
                   <div className="vmd">{c.val}</div>
                   <div className={'sub ' + (c.cls || '')}>{c.sub}</div>

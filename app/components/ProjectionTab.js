@@ -330,7 +330,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
       <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
         Rolling {MAXY}-year window from today's live net worth (<span className="mono">{crPlain(nw)}</span>) + {crPlain(PROJECTION.monthly)}/mo
         stepping up {(PROJECTION.stepUp * 100).toFixed(0)}{NNBSP}%/yr. Monthly compounding at {PROJECTION.scenarios.map((s) => (s.rate * 100).toFixed(0) + NNBSP + '%').join(' / ')};
-        FD ceiling {crPlain(fdCeiling)} derived from your ladder; algo held at {(PROJECTION.allocRules.algo.target * 100).toFixed(0)}{NNBSP}%. Indicative, not advice.
+        FD ceiling {crPlain(fdCeiling)} derived from your ladder. Algo capital is tracked separately, outside net worth. Indicative, not advice.
       </div>
     </div>
   );
