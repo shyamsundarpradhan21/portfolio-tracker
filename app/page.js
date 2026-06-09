@@ -430,6 +430,8 @@ export default function Page() {
 
       {/* MAIN CONTENT */}
       <main className="main">
+        {/* STICKY FROSTED HEADER */}
+        <div className="main-header">
         {/* TOPBAR */}
         <div className="topbar">
           <div className="topbar-left">
@@ -469,6 +471,7 @@ export default function Page() {
               <div className="hkpi-val"><InrC n={mf.totVal} /></div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* TAB CONTENT */}
