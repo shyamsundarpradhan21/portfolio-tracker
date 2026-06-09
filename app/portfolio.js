@@ -194,14 +194,20 @@ export const US_CORP_ACTIONS = [
 // Korea / India) plus Gold. Uses USD-denominated country ETFs (not local-
 // currency indices) so every return is FX-inclusive and comparable to the USD
 // portfolio. Spanning many markets keeps the set decorrelated.
-// Trimmed to the four that actually matter for a USD tech-tilted book held by an
-// Indian investor: broad US, the tech-heavy index (closest to the holdings), the
-// home-market opportunity cost, and an uncorrelated store of value.
+// Nine benchmarks for a USD tech-tilted book held by an Indian investor: broad
+// US + the tech-heavy index, the major tech-exporting regions (Japan, China,
+// Taiwan, Korea), Europe's largest market, the home-market opportunity cost, and
+// an uncorrelated store of value. (Dropped UK/France/Hong Kong as redundant.)
 export const US_BENCHMARKS = [
-  { key: 'sp500',  label: 'S&P 500 · US',    color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
-  { key: 'nasdaq', label: 'Nasdaq 100 · US', color: 'var(--pur)', yahooSyms: ['QQQ', '^NDX'] },
-  { key: 'india',  label: 'India · Nifty',   color: 'var(--grn)', yahooSyms: ['INDA', 'EPI'] },
-  { key: 'gold',   label: 'Gold',            color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
+  { key: 'sp500',   label: 'S&P 500 · US',    color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
+  { key: 'nasdaq',  label: 'Nasdaq 100 · US', color: 'var(--pur)', yahooSyms: ['QQQ', '^NDX'] },
+  { key: 'germany', label: 'Germany · DAX',   color: 'var(--cyn)', yahooSyms: ['EWG'] },
+  { key: 'japan',   label: 'Japan · Nikkei',  color: '#7A8CA8',    yahooSyms: ['EWJ'] },
+  { key: 'china',   label: 'China · SSE',      color: 'var(--pnk)', yahooSyms: ['FXI', 'MCHI'] },
+  { key: 'taiwan',  label: 'Taiwan · TAIEX',   color: 'var(--grn)', yahooSyms: ['EWT'] },
+  { key: 'korea',   label: 'Korea · KOSPI',    color: 'var(--blu)', yahooSyms: ['EWY'] },
+  { key: 'india',   label: 'India · Nifty',    color: 'var(--pur)', yahooSyms: ['INDA', 'EPI'] },
+  { key: 'gold',    label: 'Gold',             color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
 ];
 export const US = [
   { sym: 'QQQM', name: 'Invesco NASDAQ 100',   cat: 'ETF',        qty: 3.21393889,  cost: 227.36 },
