@@ -1,10 +1,12 @@
 'use client';
 
-// Forward net-worth projection (1/5/10/30Y) — ECharts-powered, lazy-loaded so
-// the library only ships to this tab. NOTHING is hardcoded: starting net worth,
-// sleeve values and the FD ceiling all arrive live; only the forward assumptions
-// live in PROJECTION (app/portfolio.js). The model is a rolling window anchored
-// to "today", so the axis years roll forward on their own every year.
+// Forward net-worth projection (1/5/10/30Y). The scenario outlook is shown as a
+// card-based stack — one card per scenario (Conservative / Base / Optimistic),
+// each with the corpus at the scrubbed horizon plus a mini per-year sparkline.
+// The allocation panel stays ECharts-powered, lazy-loaded so the library only
+// ships to this tab. NOTHING is hardcoded: starting net worth, sleeve values and
+// the FD ceiling all arrive live; only the forward assumptions live in PROJECTION
+// (app/portfolio.js). The model is a rolling window anchored to "today".
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS, FD_PIPELINE } from '../portfolio';
@@ -15,6 +17,7 @@ const SC = {
   opt:  { c: '#E8A857', name: 'Optimistic' },
 };
 const HORIZONS = [{ key: '1Y', y: 1 }, { key: '5Y', y: 5 }, { key: '10Y', y: 10 }, { key: '30Y', y: 30 }];
+const SPARK_W = 240, SPARK_H = 48;
 
 // rupee formatters (Cr / L) — color conveys sign elsewhere; these are unsigned
 const cr = (n) => {
@@ -26,9 +29,7 @@ const cr = (n) => {
 const crPlain = (n) => cr(n).replace(/<[^>]+>/g, '');
 
 function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
-  const coneEl = useRef(null);
   const allocEl = useRef(null);
-  const coneRef = useRef(null);
   const allocRef = useRef(null);
   const echRef = useRef(null);
   const raf = useRef(null);
@@ -107,6 +108,12 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     return a[i] + (a[i + 1] - a[i]) * f;
   };
 
+  // sparkline polyline for a scenario's full 0→MAXY curve (scaled to its own max)
+  const sparkPts = (k) => {
+    const arr = model.arr[k].corpus; const n = arr.length; const mx = arr[n - 1] || 1;
+    return arr.map((v, i) => `${((i / (n - 1)) * SPARK_W).toFixed(1)},${(SPARK_H - (v / mx) * SPARK_H).toFixed(1)}`).join(' ');
+  };
+
   const AXIS = {
     axisLine: { lineStyle: { color: 'rgba(255,255,255,.12)' } },
     axisLabel: { color: '#6B6B7A', fontFamily: 'monospace', fontSize: 10 },
@@ -118,64 +125,31 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     extraCssText: 'border-radius:10px;box-shadow:0 18px 40px -20px #000;',
   };
 
-  // ── draw the cone (scenario lines + band) ─────────────────────────────────
-  function drawCone() {
-    const cone = coneRef.current; if (!cone) return;
-    const ech = echRef.current; const sc = st.current.sc;
-    const cons = model.arr.cons.corpus, base = model.arr.base.corpus, opt = model.arr.opt.corpus, inv = model.invested;
-    const pair = (a) => a.map((v, i) => [i, Math.round(v)]);
-    // safe gradient (hex → rgba) for the highlighted area
-    const grad = (hex, a) => {
-      const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-    };
-    const lineF = (k) => {
-      const on = sc === k; const arr = model.arr[k].corpus;
-      return {
-        name: SC[k].name, type: 'line', data: pair(arr), symbol: 'none', smooth: k === 'base',
-        lineStyle: { color: SC[k].c, width: on ? 3.2 : 1.1, type: on ? 'solid' : 'dashed', shadowColor: on ? SC[k].c : 'transparent', shadowBlur: on ? 12 : 0 },
-        areaStyle: on ? { color: new ech.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: grad(SC[k].c, 0.16) }, { offset: 1, color: grad(SC[k].c, 0) }]) } : undefined,
-        z: on ? 5 : 3,
-      };
-    };
-    cone.setOption({
-      backgroundColor: 'transparent', grid: { left: 48, right: 18, top: 14, bottom: 30 },
-      tooltip: {
-        trigger: 'axis', ...TT, formatter: (ps) => {
-          const i = ps[0].dataIndex;
-          let h = `<div style="font-family:var(--font-mono);font-size:11px;color:#4A4A57;margin-bottom:5px">${baseYear + i}</div>`;
-          [['opt', 'Optimistic'], ['base', 'Base'], ['cons', 'Conservative']].forEach(([k, nm]) =>
-            h += `<div style="display:flex;justify-content:space-between;gap:16px"><span style="color:${SC[k].c}">${nm}</span><b style="font-family:var(--font-mono)">${crPlain(model.arr[k].corpus[i])}</b></div>`);
-          return h + `<div style="display:flex;justify-content:space-between;gap:16px;color:#6B6B7A"><span>Invested</span><b style="font-family:var(--font-mono)">${crPlain(model.invested[i])}</b></div>`;
-        },
-      },
-      xAxis: { type: 'value', min: 0, max: MAXY, interval: 5, ...AXIS, axisLabel: { ...AXIS.axisLabel, formatter: (v) => baseYear + v } },
-      yAxis: { type: 'value', ...AXIS, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...AXIS.axisLabel, formatter: (v) => v >= 1e7 ? (v / 1e7).toFixed(0) + 'Cr' : (v / 1e5).toFixed(0) + 'L' } },
-      series: [
-        { name: '_lo', type: 'line', data: pair(cons), symbol: 'none', stack: 'b', lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, silent: true, z: 1 },
-        { name: '_bd', type: 'line', data: opt.map((v, i) => [i, Math.round(v - cons[i])]), symbol: 'none', stack: 'b', lineStyle: { opacity: 0 }, areaStyle: { color: 'rgba(255,255,255,.05)' }, silent: true, z: 1 },
-        lineF('opt'), lineF('cons'), lineF('base'),
-        { name: 'Invested', type: 'line', data: pair(inv), symbol: 'none', lineStyle: { color: '#6B6B7A', width: 1.2, type: 'dotted' }, z: 2 },
-        { id: 'head', type: 'scatter', data: [[st.current.t, Math.round(corpusAt(sc, st.current.t))]], symbolSize: 12, animation: false,
-          itemStyle: { color: SC[sc].c, borderColor: '#0C0C12', borderWidth: 2, shadowColor: SC[sc].c, shadowBlur: 10 }, z: 10, silent: true,
-          markLine: { symbol: 'none', silent: true, animation: false, data: [{ xAxis: st.current.t }], lineStyle: { color: '#E8A857', type: 'dashed', opacity: 0.5 } } },
-      ],
-    }, true);
-  }
-
-  // ── move just the playhead + KPI readouts (cheap, per-frame) ──────────────
+  // ── move the scrub readouts + scenario cards (cheap, per-frame) ──────────────
   function moveHead(t) {
-    const cone = coneRef.current; if (!cone) return;
-    const sc = st.current.sc; const corpus = corpusAt(sc, t);
-    cone.setOption({ series: [{ id: 'head', data: [[t, Math.round(corpus)]], itemStyle: { color: SC[sc].c, borderColor: '#0C0C12', borderWidth: 2 }, animation: false,
-      markLine: { symbol: 'none', silent: true, animation: false, data: [{ xAxis: t }], lineStyle: { color: '#E8A857', type: 'dashed', opacity: 0.5 } } }] });
+    const scn = st.current.sc; const corpus = corpusAt(scn, t);
     const yEl = document.getElementById('pj-year'); if (yEl) yEl.innerHTML = `${baseYear + Math.round(t)}<small>year ${Math.round(t)}</small>`;
     const real = corpus / Math.pow(1 + model.infl, t), inv = investedAt(t), growth = corpus - inv;
     const set = (id, html, col) => { const el = document.getElementById(id); if (el) { el.innerHTML = html; if (col) el.style.color = col; } };
-    set('pj-corpus', cr(corpus), SC[sc].c);
-    set('pj-scn', SC[sc].name.toLowerCase());
+    set('pj-corpus', cr(corpus), SC[scn].c);
+    set('pj-scn', SC[scn].name.toLowerCase());
     set('pj-range', `in ${baseYear + Math.round(t)} · range <span style="color:${SC.cons.c}">${cr(model.arr.cons.corpus[Math.round(t)])}</span> – <span style="color:${SC.opt.c}">${cr(model.arr.opt.corpus[Math.round(t)])}</span>`);
     set('pj-real', cr(real)); set('pj-inv', cr(inv)); set('pj-growth', cr(growth));
     set('pj-rng', `<span style="color:${SC.cons.c}">${cr(model.arr.cons.corpus[Math.round(t)])}</span><br><span style="color:${SC.opt.c}">${cr(model.arr.opt.corpus[Math.round(t)])}</span>`);
+
+    // per-scenario cards: corpus at the scrubbed year + moving playhead dot
+    PROJECTION.scenarios.forEach((s) => {
+      const k = s.key; const c = corpusAt(k, t);
+      set(`pj-scorp-${k}`, cr(c));
+      const yl = document.getElementById(`pj-syr-${k}`); if (yl) yl.textContent = `at ${baseYear + Math.round(t)} · year ${Math.round(t)}`;
+      const dot = document.getElementById(`pj-sdot-${k}`);
+      if (dot) {
+        const arr = model.arr[k].corpus; const mx = arr[arr.length - 1] || 1;
+        dot.setAttribute('cx', ((t / MAXY) * SPARK_W).toFixed(1));
+        dot.setAttribute('cy', (SPARK_H - (c / mx) * SPARK_H).toFixed(1));
+      }
+    });
+
     const aYr = document.getElementById('pj-ayr'); if (aYr) aYr.textContent = baseYear + Math.round(t);
     const kYr = document.getElementById('pj-kyr'); if (kYr) kYr.textContent = baseYear + Math.round(t);
     const sl = document.getElementById('pj-slider'); if (sl && document.activeElement !== sl) { sl.value = t; sl.style.setProperty('--p', (t / MAXY * 100) + '%'); }
@@ -235,34 +209,31 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
   useEffect(() => {
     let disposed = false;
     import('echarts').then((ech) => {
-      if (disposed || !coneEl.current) return;
+      if (disposed || !allocEl.current) return;
       echRef.current = ech;
-      coneRef.current = ech.init(coneEl.current);
       allocRef.current = ech.init(allocEl.current);
       st.current.lastAlloc = -1;
-      drawCone(); moveHead(st.current.t); drawAlloc(Math.round(st.current.t));
+      moveHead(st.current.t); drawAlloc(Math.round(st.current.t));
     });
-    const onResize = () => { coneRef.current && coneRef.current.resize(); allocRef.current && allocRef.current.resize(); };
+    const onResize = () => { allocRef.current && allocRef.current.resize(); };
     window.addEventListener('resize', onResize);
     return () => {
       disposed = true; stopPlay(); window.removeEventListener('resize', onResize);
-      coneRef.current && coneRef.current.dispose(); allocRef.current && allocRef.current.dispose();
+      allocRef.current && allocRef.current.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // redraw when the live model changes (prices refreshed)
   useEffect(() => {
-    if (!coneRef.current) return;
     st.current.lastAlloc = -1;
-    drawCone(); moveHead(st.current.t); drawAlloc(Math.round(st.current.t));
+    moveHead(st.current.t); if (allocRef.current) drawAlloc(Math.round(st.current.t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model]);
 
   // redraw on scenario / view change (state-driven; survives re-renders)
   useEffect(() => {
-    if (!coneRef.current) return;
-    drawCone(); moveHead(st.current.t); drawAlloc(Math.round(st.current.t));
+    moveHead(st.current.t); if (allocRef.current) drawAlloc(Math.round(st.current.t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sc]);
   useEffect(() => {
@@ -287,11 +258,6 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
           <div id="pj-year" className="pj-year">{baseYear + 10}<small>year 10</small></div>
           <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="10" onInput={onScrub} className="pj-range" />
           <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
-            {PROJECTION.scenarios.map((s) => (
-              <button key={s.key} className={'pj-seg' + (sc === s.key ? ' on' : '')} data-tone={s.key} onClick={() => onScenario(s.key)}>{SC[s.key].name}</button>
-            ))}
-          </div>
-          <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
             {HORIZONS.map((h) => (
               <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
             ))}
@@ -299,12 +265,35 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
         </div>
       </div>
 
-      {/* HERO cone */}
+      {/* HERO headline */}
       <div className="card sec pj-hero">
         <div className="lbl">Projected corpus · <span id="pj-scn">base</span></div>
         <div id="pj-corpus" className="pj-big" style={{ color: SC.base.c }}>—</div>
         <div id="pj-range" className="sub" style={{ marginTop: 6 }}>—</div>
-        <div ref={coneEl} style={{ width: '100%', height: 360, marginTop: 10 }} />
+      </div>
+
+      {/* SCENARIO CARD STACK — click to select; each shows corpus @ horizon + curve */}
+      <div className="g3 sec">
+        {PROJECTION.scenarios.map((s) => {
+          const k = s.key; const arr = model.arr[k].corpus; const final = arr[arr.length - 1];
+          return (
+            <div key={k} className={'card pj-scard' + (sc === k ? ' on' : '')} onClick={() => onScenario(k)}
+              style={{ cursor: 'pointer', borderColor: sc === k ? SC[k].c : undefined }}>
+              <div className="fxc" style={{ alignItems: 'baseline' }}>
+                <div className="lbl" style={{ margin: 0, color: SC[k].c }}>{SC[k].name}</div>
+                <div className="sub mono" style={{ margin: 0 }}>{(s.rate * 100).toFixed(0)}%/yr</div>
+              </div>
+              <div id={`pj-scorp-${k}`} className="vlg" style={{ color: SC[k].c, marginTop: 8 }}>—</div>
+              <div id={`pj-syr-${k}`} className="sub" style={{ margin: '2px 0 10px' }}>—</div>
+              <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none" style={{ width: '100%', height: 48, display: 'block', overflow: 'visible' }}>
+                <polyline points={sparkPts(k)} fill="none" stroke={SC[k].c} strokeWidth={k === sc ? 2.2 : 1.4}
+                  strokeLinejoin="round" strokeLinecap="round" opacity={k === sc ? 1 : 0.55} vectorEffect="non-scaling-stroke" />
+                <circle id={`pj-sdot-${k}`} r="3.2" fill={SC[k].c} stroke="var(--bg)" strokeWidth="1.5" cx="0" cy={SPARK_H} />
+              </svg>
+              <div className="sub mono" style={{ marginTop: 8 }}>{baseYear + MAXY}: <span dangerouslySetInnerHTML={{ __html: cr(final) }} /></div>
+            </div>
+          );
+        })}
       </div>
 
       {/* KPIs | allocation */}
