@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
+import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
@@ -93,7 +93,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
               <div key={s.label} style={{ marginBottom: 12 }}>
                 <div className="fxc" style={{ marginBottom: 5 }}>
                   <span style={{ fontSize: 13, color: 'var(--txt2)' }}>{s.label}</span>
-                  <span className="mono" style={{ fontSize: 13 }}><InrC n={s.val} /> · {pct.toFixed(1)}%</span>
+                  <span className="mono" style={{ fontSize: 13 }}><InrC n={s.val} /> · <Pct n={pct} d={1} /></span>
                 </div>
                 <span className="bar-trk" style={{ display: 'block' }}>
                   <span className="bar-fil" style={{ width: pct + '%', background: s.color }} />
@@ -118,7 +118,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
                 <span style={{ fontSize: 13, color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                   <span className="mf-dot" style={{ background: s.color }} />{s.label}
                 </span>
-                <span className="mono" style={{ fontSize: 13 }}><InrC n={s.val} /> · {((s.val / capTot) * 100).toFixed(1)}%</span>
+                <span className="mono" style={{ fontSize: 13 }}><InrC n={s.val} /> · <Pct n={(s.val / capTot) * 100} d={1} /></span>
               </div>
             ))}
           </div>
@@ -149,7 +149,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
                 <tr key={f.id}>
                   <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
                     {f.name}
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{f.cat} · {f.share.toFixed(1)}%</div>
+                    <div style={{ fontSize: 11, color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{f.cat} · <Pct n={f.share} d={1} /></div>
                   </td>
                   <td><span className="mf-pill" style={platStyle(f.platform)}>{f.platform}</span></td>
                   <td className="ra mono mut">{f.units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>

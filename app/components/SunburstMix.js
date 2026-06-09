@@ -86,7 +86,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle"
           style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov ? hov.color : 'var(--txt3)', fontWeight: 700 }}>
-          {hov ? `${hov.label} · ${hov.pct.toFixed(0)}%` : 'Deployed'}
+          {hov ? `${hov.label} · ${hov.pct.toFixed(0)} %` : 'Deployed'}
         </text>
       </svg>
 
@@ -97,13 +97,13 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
             onMouseEnter={() => setHov({ key: 's:' + s.label, label: s.label, val: s.val, pct: s.pct, color: s.color })}
             onMouseLeave={() => setHov(null)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--txt2)', cursor: 'default', opacity: hov && hov.key !== 's:' + s.label ? 0.4 : 1, transition: 'opacity .15s' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flex: '0 0 auto' }} />{s.label} {s.pct.toFixed(0)}%
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flex: '0 0 auto' }} />{s.label} {s.pct.toFixed(0)} %
           </span>
         ))}
       </div>
       {/* cap-mix line */}
       <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
-        Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)}%`).join('  ·  ')}
+        Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)} %`).join('  ·  ')}
       </div>
     </div>
   );

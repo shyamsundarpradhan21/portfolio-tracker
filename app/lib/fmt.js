@@ -4,7 +4,9 @@ import { Fragment } from 'react';
 
 export const cl  = (n) => (n >= 0 ? 'grn' : 'red');
 export const sg  = (n) => (n >= 0 ? '+' : '-');
-export const pctS = (n) => Math.abs(n).toFixed(2) + '%';
+//   = narrow no-break space, the typographic separator before a % sign so
+// it doesn't jam against the digits.
+export const pctS = (n) => Math.abs(n).toFixed(2) + ' %';
 
 export const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -45,9 +47,15 @@ export const isoOf = (d) => d.toISOString().slice(0, 10);
 export const Rs = () => <span className="rs">₹</span>;
 
 export const InrC  = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(n)}</span>;
-export const InrF  = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}>{inrFd(n)}</span>;
+export const InrF  = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(n)}</span>;
 export const SInrC = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(Math.abs(n))}</span>;
-export const SInrF = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}>{inrFd(Math.abs(n))}</span>;
+export const SInrF = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(Math.abs(n))}</span>;
+
+// Percent with a hair of breathing room before the % glyph so it doesn't jam
+// against the digits. `d` = decimal places (default 2).
+export const Pct = ({ n, d = 2 }) => (
+  <span style={{ whiteSpace: 'nowrap' }}>{Number(n).toFixed(d)}<span className="pct">%</span></span>
+);
 
 export function RsText({ children }) {
   const s = String(children ?? '');

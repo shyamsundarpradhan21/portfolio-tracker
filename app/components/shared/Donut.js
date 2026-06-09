@@ -1,5 +1,5 @@
 'use client';
-import { inrCd } from '../../lib/fmt';
+import { inrCd, Pct } from '../../lib/fmt';
 
 export default function Donut({ segments }) {
   const total = segments.reduce((s, x) => s + x.value, 0);
@@ -39,7 +39,7 @@ export default function Donut({ segments }) {
               </span>
             </span>
             <span className="mono" style={{ fontSize: 12, color: 'var(--txt)' }}>
-              {total ? ((seg.value/total)*100).toFixed(1) : '0'}%
+              <Pct n={total ? (seg.value / total) * 100 : 0} d={1} />
             </span>
           </div>
         ))}

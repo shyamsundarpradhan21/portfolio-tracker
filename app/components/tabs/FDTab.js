@@ -1,5 +1,5 @@
 'use client';
-import { InrC, InrF, fmtNavDate, fmtDateObj } from '../../lib/fmt';
+import { InrC, InrF, Pct, fmtNavDate, fmtDateObj } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 
@@ -29,7 +29,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         </div>
         <div className="csm">
           <div className="lbl">blended rate</div>
-          <div className="vmd">{fds.blendedRate.toFixed(2)}%</div>
+          <div className="vmd"><Pct n={fds.blendedRate} /></div>
           <div className="sub">weighted by principal</div>
         </div>
       </div>
@@ -55,10 +55,10 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
                     <span className="bar-trk" style={{ display: 'block', height: 4 }}>
                       <span className="bar-fil" style={{ width: f.progress.toFixed(1) + '%', height: 4, background: 'linear-gradient(90deg, var(--grn), #5FE3B0)' }} />
                     </span>
-                    <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 3 }}>{f.progress.toFixed(0)}% elapsed</div>
+                    <div style={{ fontSize: 11, color: 'var(--txt3)', marginTop: 3 }}><Pct n={f.progress} d={0} /> elapsed</div>
                   </td>
                   <td className="ra mono"><InrC n={f.principal} /></td>
-                  <td className="ra grn mono">{f.rate.toFixed(2)}%</td>
+                  <td className="ra grn mono"><Pct n={f.rate} /></td>
                   <td className="ra grn mono"><InrF n={f.accruedSoFar} /></td>
                   <td className="ra">
                     <div className="mono"><InrC n={f.maturityValue} /></div>
@@ -69,7 +69,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
               <tr className="tot">
                 <td colSpan={3}>Total — {fds.rows.length} FDs</td>
                 <td className="ra"><InrC n={fds.principal} /></td>
-                <td className="ra">{fds.blendedRate.toFixed(2)}%</td>
+                <td className="ra mono"><Pct n={fds.blendedRate} /></td>
                 <td className="ra grn"><InrF n={fds.accrued} /></td>
                 <td className="ra"><InrC n={fds.maturity} /></td>
               </tr>
