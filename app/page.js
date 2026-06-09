@@ -11,6 +11,7 @@ import FY from '../data/fy2526_verified.json';
 import ProjectionTab from './ProjectionTab';
 import RealizedPanel from './RealizedPanel';
 import InsightsCard from './InsightsCard';
+import SunburstMix from './SunburstMix';
 
 // ─── formatting helpers ───
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
@@ -1451,22 +1452,14 @@ export default function Page() {
 
             <div className="card">
               <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              {inStats.sectors.map((s, i) => (
-                <div key={s.label} className="seg-row">
-                  <span className="seg-lbl">{s.label}</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, s.pct) + '%', background: secColors[i % secColors.length] }} /></span>
-                  <span className="seg-val"><InrC n={s.val} /> · {s.pct.toFixed(0)}%</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
-              {inStats.caps.map((c) => (
-                <div key={c.label} className="seg-row">
-                  <span className="seg-lbl">{c.label} cap</span>
-                  <span className="seg-trk"><span className="seg-fil" style={{ width: Math.min(100, c.pct) + '%', background: capColor[c.label] }} /></span>
-                  <span className="seg-val"><InrC n={c.val} /> · {c.pct.toFixed(0)}%</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--brd)', margin: '14px 0' }} />
+              <SunburstMix
+                sectors={inStats.sectors}
+                caps={inStats.caps}
+                total={inStats.value}
+                secColors={secColors}
+                capColor={capColor}
+              />
+              <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 14px' }} />
               <div className="g3">
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
