@@ -538,25 +538,73 @@ body {
 body { padding: 0; }
 
 .layout {
-  display: flex;
+  display: block; /* sidebar is fixed, main fills full width */
   min-height: 100vh;
   background: var(--bg);
 }
 
-/* Sidebar */
+/* ── Sidebar — auto-hide with frosted glass ────────────────────────────────── */
 .sidebar {
-  width: 220px;
+  /* Collapses to a 4px accent strip; slides out on hover */
+  width: 4px;
   flex-shrink: 0;
-  background: rgba(255,255,255,.022);
-  border-right: .5px solid var(--brd);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  overflow: hidden;
+  /* Frosted glass */
+  background: color-mix(in srgb, var(--acc) 3%, rgba(var(--hdr-bg-base), .7));
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  backdrop-filter: saturate(160%) blur(20px);
+  border-right: .5px solid color-mix(in srgb, var(--acc) 18%, var(--brd));
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-  z-index: 10;
+  /* Smooth slide */
+  transition: width .28s cubic-bezier(.4,0,.2,1),
+              background .6s ease,
+              border-color .6s ease,
+              box-shadow .28s ease;
 }
+.sidebar:hover {
+  width: 220px;
+  box-shadow: 4px 0 32px -8px rgba(0,0,0,.45),
+              0 0 0 .5px color-mix(in srgb, var(--acc) 20%, transparent);
+  overflow-y: auto;
+}
+/* Hide all content while collapsed; fade in as it opens */
+.sidebar-brand,
+.sidebar-nav,
+.sidebar-footer {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+  min-width: 220px; /* prevents layout reflow during slide */
+}
+.sidebar:hover .sidebar-brand,
+.sidebar:hover .sidebar-nav,
+.sidebar:hover .sidebar-footer {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity .2s ease .12s; /* slight delay — wait for slide to open */
+}
+
+/* Accent tab visible when collapsed — a thin glowing strip */
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60px;
+  border-radius: 0 3px 3px 0;
+  background: var(--acc);
+  opacity: .7;
+  transition: opacity .28s, background .6s;
+}
+.sidebar:hover::before { opacity: 0; }
 
 .sidebar-brand {
   display: flex;
@@ -570,17 +618,20 @@ body { padding: 0; }
   color: var(--acc);
   flex-shrink: 0;
   line-height: 1;
+  transition: color .6s;
 }
 .sidebar-title {
   font-size: 15px;
   font-weight: 700;
   color: var(--txt);
   letter-spacing: -.2px;
+  white-space: nowrap;
 }
 .sidebar-sub {
   font-size: 11px;
   color: var(--txt3);
   margin-top: 1px;
+  white-space: nowrap;
 }
 
 .sidebar-nav {
@@ -594,7 +645,7 @@ body { padding: 0; }
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 9px 12px;
   border-radius: 8px;
   background: transparent;
@@ -605,15 +656,28 @@ body { padding: 0; }
   cursor: pointer;
   text-align: left;
   width: 100%;
+  white-space: nowrap;
   transition: background .12s, color .12s, box-shadow .3s;
 }
-.nav-item:hover { background: var(--sur2); color: var(--txt2); }
+.nav-item:hover { background: color-mix(in srgb, var(--acc) 8%, var(--sur2)); color: var(--txt2); }
 .nav-item.active {
   background: var(--acc-bg);
   color: var(--acc);
   box-shadow: inset 3px 0 0 var(--acc);
 }
-.nav-icon { font-size: 16px; flex-shrink: 0; line-height: 1; }
+
+/* Icon column — fixed 20px box so all icons sit on the same vertical axis */
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .7;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-icon svg { width: 16px; height: 16px; display: block; }
 .nav-label { line-height: 1; }
 
 .sidebar-footer {
@@ -622,6 +686,7 @@ body { padding: 0; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 220px;
 }
 .sidebar-market {
   display: flex;
@@ -633,22 +698,24 @@ body { padding: 0; }
   padding: 7px 12px;
   border-radius: 7px;
   border: .5px solid var(--brd2);
-  background: var(--sur2);
+  background: color-mix(in srgb, var(--acc) 5%, var(--sur2));
   color: var(--txt2);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all .15s;
   text-align: left;
+  white-space: nowrap;
 }
-.sidebar-ai-btn:hover, .sidebar-refresh-btn:hover { color: var(--txt); border-color: var(--txt3); }
+.sidebar-ai-btn:hover, .sidebar-refresh-btn:hover { color: var(--txt); border-color: color-mix(in srgb, var(--acc) 40%, var(--brd2)); }
 .sidebar-refresh-btn.loading { opacity: .5; pointer-events: none; }
 
 /* Main content area */
 .main {
   flex: 1;
   min-width: 0;
-  padding: 0 28px 40px;
+  /* 4px sidebar strip + breathing room */
+  padding: 0 28px 40px 36px;
   max-width: 1220px;
   overflow-y: auto;
   height: 100vh;
@@ -741,9 +808,11 @@ body { padding: 0; }
 /* Override old body padding that conflicts with sidebar layout */
 @media (max-width: 720px) {
   body { padding: 0; }
-  .sidebar {
-    display: none; /* hidden on mobile — hamburger menu out of scope */
-  }
+  .sidebar { display: none; }
   .main { padding: 12px 14px 32px; }
   .main .topbar { padding: 12px 0 10px; }
 }
+
+/* When sidebar is open it sits above content — prevent main from jumping */
+.sidebar:hover ~ .main,
+.layout:has(.sidebar:hover) .main { padding-left: 36px; }

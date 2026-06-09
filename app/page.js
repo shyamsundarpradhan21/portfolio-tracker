@@ -105,7 +105,23 @@ function mfXirr(mf, mfNav) {
 
 // ─── tabs config ──────────────────────────────────────────────────────────────
 const TABS = ['Overview', 'Indian', 'Fixed Deposits', 'Mutual Funds', 'US Stocks', 'Algo', 'Projection'];
-const TAB_ICONS = ['◈', '₹', '🏦', '◎', '$', '⚡', '→'];
+// Consistent 16×16 SVG icons — uniform stroke weight so they optically align
+const TAB_ICONS = [
+  // Overview — grid
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>,
+  // Indian — rupee
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 3h8M4 7h8M7 7l-3 6" strokeLinecap="round"/><path d="M4 5c0 1.657 1.343 2 3 2s3-.343 3-2-1.343-2-3-2" strokeLinecap="round"/></svg>,
+  // Fixed Deposits — bank/column
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 6l6-3 6 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 6v5M8 6v5M12 6v5" strokeLinecap="round"/><path d="M2 11h12" strokeLinecap="round"/><path d="M1.5 13.5h13" strokeLinecap="round"/></svg>,
+  // Mutual Funds — pie chart
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v6l4.5 4.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="8" cy="8" r="5.5"/></svg>,
+  // US Stocks — trend arrow
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 12l4-4 3 2 5-6" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 4h4v4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  // Algo — cpu/circuit
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6 1v3M10 1v3M6 12v3M10 12v3M1 6h3M1 10h3M12 6h3M12 10h3" strokeLinecap="round"/></svg>,
+  // Projection — rocket
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2c0 0 4 2 4 7H4c0-5 4-7 4-7z" strokeLinejoin="round"/><path d="M6 9v3a2 2 0 004 0V9" strokeLinecap="round"/><path d="M4 9c-1 .5-2 1.5-2 2.5h3M12 9c1 .5 2 1.5 2 2.5h-3" strokeLinecap="round"/></svg>,
+];
 
 // ─── page component ───────────────────────────────────────────────────────────
 export default function Page() {
