@@ -6,7 +6,7 @@
 // live in PROJECTION (app/portfolio.js). The model is a rolling window anchored
 // to "today", so the axis years roll forward on their own every year.
 
-import { useEffect, useRef, useMemo, memo } from 'react';
+import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS, FD_PIPELINE } from './portfolio';
 
 const SC = {
@@ -32,7 +32,13 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
   const allocRef = useRef(null);
   const echRef = useRef(null);
   const raf = useRef(null);
-  const st = useRef({ sc: 'base', view: 'rose', t: 10, horizon: 10, lastAlloc: -1, playing: false });
+  const st = useRef({ t: 10, lastAlloc: -1, playing: false, sc: 'base', view: 'rose' });
+  // Scenario / view / horizon live in React state so their button highlights
+  // survive a live-price re-render; the fast-changing play time stays in a ref.
+  const [sc, setSc] = useState('base');
+  const [view, setView] = useState('rose');
+  const [hsel, setHsel] = useState(10);
+  st.current.sc = sc; st.current.view = view;
 
   const MAXY = PROJECTION.horizonYears;
   const fdCeiling = useMemo(
@@ -249,21 +255,22 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model]);
 
-  // ── handlers ──────────────────────────────────────────────────────────────
-  const onScenario = (k) => {
-    st.current.sc = k;
-    document.querySelectorAll('[data-pjscn]').forEach((b) => b.classList.toggle('on', b.dataset.pjscn === k));
+  // redraw on scenario / view change (state-driven; survives re-renders)
+  useEffect(() => {
+    if (!coneRef.current) return;
     drawCone(); moveHead(st.current.t); drawAlloc(Math.round(st.current.t));
-  };
-  const onView = (v) => {
-    st.current.view = v;
-    document.querySelectorAll('[data-pjview]').forEach((b) => b.classList.toggle('on', b.dataset.pjview === v));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sc]);
+  useEffect(() => {
+    if (!allocRef.current) return;
     drawAlloc(Math.round(st.current.t));
-  };
-  const onHorizon = (y) => {
-    stopPlay(); st.current.t = y; st.current.lastAlloc = -1; moveHead(y);
-    document.querySelectorAll('[data-pjh]').forEach((b) => b.classList.toggle('on', +b.dataset.pjh === y));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  // ── handlers ──────────────────────────────────────────────────────────────
+  const onScenario = (k) => setSc(k);
+  const onView = (v) => setView(v);
+  const onHorizon = (y) => { stopPlay(); setHsel(y); st.current.t = y; st.current.lastAlloc = -1; moveHead(y); };
   const onScrub = (e) => { stopPlay(); st.current.t = +e.target.value; moveHead(st.current.t); };
   const onPlay = () => { st.current.playing ? stopPlay() : startPlay(); };
 
@@ -277,12 +284,12 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
           <input id="pj-slider" type="range" min="0" max={MAXY} step="0.1" defaultValue="10" onInput={onScrub} className="pj-range" />
           <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
             {PROJECTION.scenarios.map((s) => (
-              <button key={s.key} data-pjscn={s.key} className={'pj-seg' + (s.key === 'base' ? ' on' : '')} data-tone={s.key} onClick={() => onScenario(s.key)}>{SC[s.key].name}</button>
+              <button key={s.key} className={'pj-seg' + (sc === s.key ? ' on' : '')} data-tone={s.key} onClick={() => onScenario(s.key)}>{SC[s.key].name}</button>
             ))}
           </div>
           <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
             {HORIZONS.map((h) => (
-              <button key={h.key} data-pjh={h.y} className={'pj-seg' + (h.y === 10 ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
+              <button key={h.key} className={'pj-seg' + (hsel === h.y ? ' on' : '')} onClick={() => onHorizon(h.y)}>{h.key}</button>
             ))}
           </div>
         </div>
@@ -313,8 +320,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear }) {
             <div><div className="ctitle" style={{ fontSize: 15 }}>Allocation · <span id="pj-ayr" className="acc">{baseYear + 10}</span></div>
               <div className="sub">FD &amp; algo dilute · equities scale up</div></div>
             <div className="seg" style={{ display: 'inline-flex', background: 'rgba(0,0,0,.3)', border: '.5px solid var(--brd2)', borderRadius: 9, padding: 3, gap: 2 }}>
-              <button data-pjview="rose" className="pj-seg on" onClick={() => onView('rose')}>Rose %</button>
-              <button data-pjview="race" className="pj-seg" onClick={() => onView('race')}>Race ₹</button>
+              <button className={'pj-seg' + (view === 'rose' ? ' on' : '')} onClick={() => onView('rose')}>Rose %</button>
+              <button className={'pj-seg' + (view === 'race' ? ' on' : '')} onClick={() => onView('race')}>Race ₹</button>
             </div>
           </div>
           <div ref={allocEl} style={{ width: '100%', height: 270, marginTop: 8 }} />
