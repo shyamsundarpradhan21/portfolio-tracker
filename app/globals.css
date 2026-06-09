@@ -42,7 +42,7 @@ body {
   padding: 18px 24px;
 }
 
-.wrap { width: 100%; max-width: none; margin: 0; }
+.wrap { width: 100%; max-width: 1440px; margin: 0 auto; }
 
 .topbar {
   display: flex;
@@ -95,7 +95,7 @@ body {
   color: var(--txt3); margin-bottom: 5px;
 }
 .hdr-val {
-  font-size: clamp(24px, 3.2vw, 32px); font-weight: 800; font-family: var(--mono);
+  font-size: 32px; font-weight: 800; font-family: var(--mono);
   color: var(--grn); letter-spacing: -1px;
 }
 .hdr-sub { font-size: 13px; color: var(--txt2); margin-top: 4px; }
@@ -118,25 +118,22 @@ body {
 .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; }
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
 .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: stretch; }
-/* Density pass: let grid children shrink below their content width so mono
-   numbers and tables scale to fit instead of overflowing the card/viewport. */
 .g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: var(--sur); border: .5px solid var(--brd); border-radius: 16px; padding: 20px clamp(16px, 1.8vw, 24px); }
+.card { background: var(--sur); border: .5px solid var(--brd); border-radius: 16px; padding: 20px 24px; }
 /* Summary card (Section 0a): radius 14px. */
-.csm { background: var(--sur); border: .5px solid var(--brd); border-radius: 14px; padding: 16px clamp(14px, 1.6vw, 20px); }
+.csm { background: var(--sur); border: .5px solid var(--brd); border-radius: 14px; padding: 16px 20px; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
 .lbl {
   font-size: 12px; color: var(--txt2); text-transform: uppercase;
   letter-spacing: .09em; margin-bottom: 6px; font-weight: 500;
 }
 /* Summary-card value (Section 0a): 24px mono. */
-/* Display numbers scale with viewport so they never overflow narrow cards. */
-.vlg { font-size: clamp(21px, 2.3vw, 27px); font-weight: 800; font-family: var(--mono); letter-spacing: -.5px; }
-.vmd { font-size: clamp(21px, 2.3vw, 27px); font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
-.vsm { font-size: clamp(15px, 1.5vw, 18px); font-weight: 600; font-family: var(--mono); }
+.vlg { font-size: 27px; font-weight: 800; font-family: var(--mono); letter-spacing: -.5px; }
+.vmd { font-size: 27px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+.vsm { font-size: 18px; font-weight: 600; font-family: var(--mono); }
 .vlg, .vmd, .vsm { overflow-wrap: anywhere; }
 .sub { font-size: 13px; color: var(--txt2); margin-top: 4px; }
 .fxc { display: flex; justify-content: space-between; align-items: center; }
@@ -155,7 +152,7 @@ body {
    wide multi-column tables fit narrower cards/viewports without overflowing. */
 .tbl th {
   font-size: 12px; color: var(--txt3); text-transform: uppercase;
-  letter-spacing: .7px; padding: 9px clamp(10px, 1.4vw, 24px); text-align: left;
+  letter-spacing: .7px; padding: 9px 16px; text-align: left;
   border-bottom: .5px solid var(--brd2); font-weight: 500;
   white-space: nowrap; cursor: pointer; user-select: none;
 }
@@ -163,7 +160,7 @@ body {
 .tbl th:last-child { padding-right: 4px; }
 .tbl th:hover { color: var(--txt2); }
 .tbl td {
-  padding: 12px clamp(10px, 1.4vw, 24px); border-bottom: .5px solid var(--brd);
+  padding: 12px 16px; border-bottom: .5px solid var(--brd);
   color: var(--txt2); font-size: 13.5px; vertical-align: middle;
 }
 .tbl td:first-child { padding-left: 4px; }
@@ -212,7 +209,7 @@ body {
 @keyframes sk { from { opacity: .4; } to { opacity: .9; } }
 
 .scroll-tbl {
-  max-height: 460px; overflow: auto; -webkit-overflow-scrolling: touch;
+  overflow: auto; -webkit-overflow-scrolling: touch;
   border-radius: 5px; border: .5px solid var(--brd);
 }
 /* dense per-sleeve grid on the Overview landing page (Section 0g) */
@@ -247,8 +244,7 @@ body {
    with a row-count limit (~440px) and a sticky header, so long tables (US, etc.)
    stay compact instead of running off the page. Short tables just don't scroll. */
 .ovx {
-  overflow: auto; -webkit-overflow-scrolling: touch;
-  max-height: 440px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
 }
 .ovx thead th {
   position: sticky; top: 0; z-index: 1;
@@ -315,7 +311,7 @@ body {
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 10px; }
-  .hdr-val { font-size: 26px; }
+  .hdr-val { font-size: 24px; }
 }
 
 /* ─── sparkles ✨ — tasteful dark-theme polish ─── */
