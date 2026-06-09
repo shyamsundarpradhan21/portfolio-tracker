@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, InrC, InrF, SInrC, SInrF, inrCd, sFull, fmtNavDate } from '../../lib/fmt';
+import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, inrCd, sFull, fmtNavDate } from '../../lib/fmt';
 import { SECTOR_PALETTE } from '../../lib/constants';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -21,7 +21,7 @@ const IN_COLS = [
   { key: 'day',  label: 'Day %',    num: true  },
 ];
 const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' };
-const fmtX = (n) => n == null ? '—' : Math.abs(n).toFixed(1) + '%';
+const fmtX = pct1;
 
 export default function IndianTab({
   indian, indianDayPl, indianDayPct, inStats, indianRisk, inSorted, inSort, sortIn,
@@ -39,7 +39,7 @@ export default function IndianTab({
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
           <div className="vmd"><InrC n={indian.inv} /></div>
-          <div className="sub">{INDIAN.length} positions · ~₹30K equal-weight</div>
+          <div className="sub">{INDIAN.length} positions · ~<Rs />30K equal-weight</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
@@ -79,7 +79,7 @@ export default function IndianTab({
       <div className="g2 sec">
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
-          <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your ₹{inrCd(inStats.totalInvested)} deployed into each instead.</div>
+          <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your <Rs />{inrCd(inStats.totalInvested)} deployed into each instead.</div>
           <table className="tbl">
             <thead>
               <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
@@ -105,7 +105,7 @@ export default function IndianTab({
             </tbody>
           </table>
           <div className="sub" style={{ marginTop: 12 }}>
-            CAGR {inStats.cagr != null ? Math.abs(inStats.cagr).toFixed(1) + '%' : '—'}
+            CAGR {pct1(inStats.cagr)}
             {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
           </div>
           <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>

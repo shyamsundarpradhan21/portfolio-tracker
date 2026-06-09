@@ -466,9 +466,19 @@ export default function Page() {
   const mktPill  = (open) => open == null ? 'mkt-closed' : open ? 'mkt-open' : 'mkt-closed';
   const mktTxt   = (open) => open == null ? '—' : open ? 'OPEN' : 'CLOSED';
 
+  // Mobile nav drawer (the sidebar is hover-only on desktop; touch/mobile needs
+  // an explicit toggle, otherwise navigation is unreachable below 720px).
+  const [navOpen, setNavOpen] = useState(false);
+
   // ─── render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="layout">
+    <div className="layout" data-nav={navOpen ? 'open' : 'closed'}>
+      {/* Mobile nav toggle — hidden on desktop via CSS */}
+      <button className="nav-toggle" aria-label="Toggle navigation" aria-expanded={navOpen} onClick={() => setNavOpen((o) => !o)}>
+        {navOpen ? '✕' : '☰'}
+      </button>
+      {navOpen && <div className="nav-scrim" onClick={() => setNavOpen(false)} />}
+
       {/* SIDEBAR NAV */}
       <aside className="sidebar">
         <div className="sidebar-brand">
@@ -481,7 +491,7 @@ export default function Page() {
 
         <nav className="sidebar-nav">
           {TABS.map((t, i) => (
-            <button key={t} className={'nav-item' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>
+            <button key={t} className={'nav-item' + (tab === i ? ' active' : '')} onClick={() => { setTab(i); setNavOpen(false); }}>
               <span className="nav-icon">{TAB_ICONS[i]}</span>
               <span className="nav-label">{t}</span>
             </button>

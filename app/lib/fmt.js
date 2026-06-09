@@ -6,7 +6,10 @@ export const cl  = (n) => (n >= 0 ? 'grn' : 'red');
 export const sg  = (n) => (n >= 0 ? '+' : '-');
 //   = narrow no-break space, the typographic separator before a % sign so
 // it doesn't jam against the digits.
-export const pctS = (n) => Math.abs(n).toFixed(2) + ' %';
+export const NNBSP = ' ';
+export const pctS = (n) => Math.abs(n).toFixed(2) + NNBSP + '%';
+// 1-decimal percent (CAGR/XIRR style); returns an em-dash for null.
+export const pct1 = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + NNBSP + '%');
 
 export const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 

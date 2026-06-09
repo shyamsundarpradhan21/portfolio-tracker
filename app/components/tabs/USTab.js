@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, usd, InrC, SInrF, Rs } from '../../lib/fmt';
+import { cl, pctS, pct1, usd, InrC, SInrF, Rs } from '../../lib/fmt';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -8,7 +8,7 @@ import SunburstMix from '../SunburstMix';
 import RealizedPanel from '../RealizedPanel';
 import Skel from '../shared/Skel';
 
-const fmtX = (n) => n == null ? '—' : Math.abs(n).toFixed(1) + '%';
+const fmtX = pct1;
 
 export default function USTab({
   usData, usStats, usSorted, usSort, sortUs, ov, fxRate, flash, markets,
@@ -83,7 +83,7 @@ export default function USTab({
             </tbody>
           </table>
           <div className="sub" style={{ marginTop: 12 }}>
-            CAGR {usStats.cagr != null ? Math.abs(usStats.cagr).toFixed(1) + '%' : '—'}
+            CAGR {pct1(usStats.cagr)}
             {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
           </div>
           <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />

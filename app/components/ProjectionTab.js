@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS, FD_PIPELINE } from '../portfolio';
+import { NNBSP } from '../lib/fmt';
 
 const SC = {
   cons: { c: '#5B9BE8', name: 'Conservative' },
@@ -281,7 +282,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
               style={{ cursor: 'pointer', borderColor: sc === k ? SC[k].c : undefined }}>
               <div className="fxc" style={{ alignItems: 'baseline' }}>
                 <div className="lbl" style={{ margin: 0, color: SC[k].c }}>{SC[k].name}</div>
-                <div className="sub mono" style={{ margin: 0 }}>{(s.rate * 100).toFixed(0)}%/yr</div>
+                <div className="sub mono" style={{ margin: 0 }}>{(s.rate * 100).toFixed(0)}{NNBSP}%/yr</div>
               </div>
               <div id={`pj-scorp-${k}`} className="vlg" style={{ color: SC[k].c, marginTop: 8 }}>—</div>
               <div id={`pj-syr-${k}`} className="sub" style={{ margin: '2px 0 10px' }}>—</div>
@@ -323,8 +324,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
 
       <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
         Rolling {MAXY}-year window from today's live net worth (<span className="mono">{crPlain(nw)}</span>) + {crPlain(PROJECTION.monthly)}/mo
-        stepping up {(PROJECTION.stepUp * 100).toFixed(0)}%/yr. Monthly compounding at {PROJECTION.scenarios.map((s) => (s.rate * 100).toFixed(0) + '%').join(' / ')};
-        FD ceiling {crPlain(fdCeiling)} derived from your ladder; algo held at {(PROJECTION.allocRules.algo.target * 100).toFixed(0)}%. Indicative, not advice.
+        stepping up {(PROJECTION.stepUp * 100).toFixed(0)}{NNBSP}%/yr. Monthly compounding at {PROJECTION.scenarios.map((s) => (s.rate * 100).toFixed(0) + NNBSP + '%').join(' / ')};
+        FD ceiling {crPlain(fdCeiling)} derived from your ladder; algo held at {(PROJECTION.allocRules.algo.target * 100).toFixed(0)}{NNBSP}%. Indicative, not advice.
       </div>
     </div>
   );

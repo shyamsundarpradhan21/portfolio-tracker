@@ -619,7 +619,8 @@ body { padding: 0; }
               border-color .6s ease,
               box-shadow .28s ease;
 }
-.sidebar:hover {
+.sidebar:hover,
+.sidebar:focus-within {
   width: 220px;
   box-shadow: 4px 0 32px -8px rgba(0,0,0,.45),
               0 0 0 .5px color-mix(in srgb, var(--acc) 20%, transparent);
@@ -636,11 +637,19 @@ body { padding: 0; }
 }
 .sidebar:hover .sidebar-brand,
 .sidebar:hover .sidebar-nav,
-.sidebar:hover .sidebar-footer {
+.sidebar:hover .sidebar-footer,
+.sidebar:focus-within .sidebar-brand,
+.sidebar:focus-within .sidebar-nav,
+.sidebar:focus-within .sidebar-footer {
   opacity: 1;
   pointer-events: auto;
   transition: opacity .2s ease .12s; /* slight delay — wait for slide to open */
 }
+
+/* Mobile nav toggle (hamburger) — desktop hides it; the sidebar's hover/focus
+   behaviour covers desktop. */
+.nav-toggle { display: none; }
+.nav-scrim { display: none; }
 
 /* Accent tab visible when collapsed — a thin glowing strip */
 .sidebar::before {
@@ -877,9 +886,37 @@ body { padding: 0; }
 /* Override old body padding that conflicts with sidebar layout */
 @media (max-width: 720px) {
   body { padding: 0; }
-  .sidebar { display: none; }
-  .main { padding: 12px 14px 32px; }
+  .main { padding: 54px 14px 32px; }
   .main .topbar { padding: 12px 0 10px; }
+
+  /* Hamburger toggle, fixed top-left */
+  .nav-toggle {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 10px; left: 10px; z-index: 130;
+    width: 38px; height: 38px; border-radius: 9px;
+    background: color-mix(in srgb, var(--acc) 8%, rgba(var(--hdr-bg-base), .9));
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border: .5px solid color-mix(in srgb, var(--acc) 25%, var(--brd));
+    color: var(--txt); font-size: 17px; cursor: pointer;
+  }
+
+  /* Sidebar becomes a slide-in drawer driven by [data-nav] */
+  .sidebar {
+    width: 244px; overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar::before { display: none; } /* hide the 4px accent strip on mobile */
+  .layout[data-nav="open"] .sidebar { transform: none; }
+  .layout[data-nav="open"] .sidebar .sidebar-brand,
+  .layout[data-nav="open"] .sidebar .sidebar-nav,
+  .layout[data-nav="open"] .sidebar .sidebar-footer {
+    opacity: 1; pointer-events: auto;
+  }
+  .nav-scrim {
+    display: block; position: fixed; inset: 0; z-index: 120;
+    background: rgba(0,0,0,.45);
+  }
 }
 
 /* When sidebar is open it sits above content — prevent main from jumping */
