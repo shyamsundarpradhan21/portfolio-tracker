@@ -28,6 +28,9 @@
   --acc-bg: rgba(52,211,153,.12);
   --side-bg: rgba(255,255,255,.022);
   --hdr-bg-base: 12,12,18;   /* used as rgb(...) inside calc */
+  /* Sticky table-header fill — opaque so scrolling rows don't bleed through,
+     but subtle so the header doesn't read as a hard bar. */
+  --thead-bg: #15151d;
 }
 
 /* ── Layer 2: Day palette override ─────────────────────────────────────────── */
@@ -51,6 +54,7 @@
   --blu-bg: rgba(46,111,230,.1);
   --side-bg: #FFFFFF;
   --hdr-bg-base: 244,246,250;
+  --thead-bg: #EDF1F7;
 }
 
 /* ── Layer 3: Per-tab accent colors (night) ─────────────────────────────────
@@ -111,7 +115,10 @@
 
 /* Rupee glyph: render every ₹ inside this span so the substitute glyph isn't
    oversized in monospace contexts (Section 0f). */
-.rs { font-size: 0.72em; font-variant-numeric: normal; display: inline-block; transform: translateY(-0.04em); margin-right: 0.04em; }
+/* Sized down to match digit height. No transform/inline-block here — those
+   break -webkit-background-clip:text on the gradient net-worth headline and
+   make the glyph vanish. Baseline alignment is good enough at this size. */
+.rs { font-size: 0.78em; font-variant-numeric: normal; margin-right: 0.02em; }
 
 /* Percent glyph: a sliver of left margin so % doesn't jam into the digits. */
 .pct { margin-left: 0.12em; font-size: 0.92em; }
@@ -347,7 +354,7 @@ body {
 }
 .ovx thead th {
   position: sticky; top: 0; z-index: 1;
-  background: #15151d; /* opaque so scrolling rows don't bleed through */
+  background: var(--thead-bg); /* opaque so scrolling rows don't bleed through */
 }
 .verdict { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; letter-spacing: .3px; }
 
@@ -440,12 +447,25 @@ body {
     color-mix(in srgb, var(--acc) 60%, #fff) 62%,
     var(--acc2, var(--acc)) 100%
   );
-  background-size: 280% 100%;
+  background-size: 220% 100%;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: nw-shine 4s ease-in-out infinite;
+  animation: nw-shine 11s ease-in-out infinite;
   transition: background 0.6s ease;
-  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--acc) 55%, transparent));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--acc) 28%, transparent));
+}
+/* Day theme: a white gradient midpoint is invisible on the light background and
+   reads as a distracting flicker. Use a darker, contrasty accent gradient and
+   drop the glow. */
+:root[data-time="day"] .hdr-val {
+  background: linear-gradient(105deg,
+    var(--acc) 0%,
+    color-mix(in srgb, var(--acc) 75%, #000) 50%,
+    var(--acc2, var(--acc)) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  filter: none;
 }
 @keyframes nw-shine {
   0%   { background-position: 0% 0; }
@@ -769,6 +789,21 @@ body { padding: 0; }
   /* border fades in */
   border-bottom: .5px solid rgba(255, 255, 255, calc(var(--hdr-t) * .07));
   transition: background .05s linear, border-color .05s linear;
+}
+/* Soft fade band below the header so the frosted glass tapers off gradually
+   into the content instead of ending on a hard edge. Both the tint and the
+   blur are masked to transparent over 32px. */
+.main-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .82)), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--hdr-t) * 10px));
+  backdrop-filter: blur(calc(var(--hdr-t) * 10px));
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+  mask-image: linear-gradient(to bottom, #000, transparent);
 }
 .main-header .topbar { margin-bottom: 0; }
 .main-header .page-header { margin-bottom: 16px; }
