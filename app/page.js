@@ -1991,7 +1991,7 @@ export default function Page() {
               data={US_REALIZED}
               currency="usd"
               fxRate={fxRate}
-              note="Avg-cost realised from the trade ledger. Filed foreign-STCG is in the ITR-verified card below."
+              note="Realised gains from Vested's lot-level P&L report (split/lot-adjusted). Filed foreign-STCG is in the ITR-verified card below."
             />
 
             {/* Dividend income (from the Vested statement) */}
