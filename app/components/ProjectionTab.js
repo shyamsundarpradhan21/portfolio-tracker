@@ -115,16 +115,33 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     return arr.map((v, i) => `${((i / (n - 1)) * SPARK_W).toFixed(1)},${(SPARK_H - (v / mx) * SPARK_H).toFixed(1)}`).join(' ');
   };
 
-  const AXIS = {
-    axisLine: { lineStyle: { color: 'rgba(255,255,255,.12)' } },
-    axisLabel: { color: '#6B6B7A', fontFamily: 'monospace', fontSize: 10 },
-    splitLine: { lineStyle: { color: 'rgba(255,255,255,.05)' } },
+  // ECharts is canvas-rendered, so CSS variables don't reach it — read the live
+  // theme tokens off <html> and build day/night-aware chart styles each draw.
+  const palette = () => {
+    const cs = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+    const v = (n, f) => (cs ? cs.getPropertyValue(n).trim() || f : f);
+    const day = typeof document !== 'undefined' && document.documentElement.dataset.time === 'day';
+    return {
+      txt: v('--txt', '#E8E8EC'),
+      txt2: v('--txt2', '#6B6B7A'),
+      bg: v('--bg', '#0C0C12'),
+      axisLine: day ? 'rgba(40,60,90,.22)' : 'rgba(255,255,255,.12)',
+      splitLine: day ? 'rgba(40,60,90,.10)' : 'rgba(255,255,255,.05)',
+      ttBg: day ? 'rgba(255,255,255,.97)' : 'rgba(18,18,26,.96)',
+      ttBorder: day ? 'rgba(40,60,90,.16)' : 'rgba(255,255,255,.1)',
+      shadow: day ? 'rgba(40,60,90,.22)' : '#000',
+    };
   };
-  const TT = {
-    backgroundColor: 'rgba(18,18,26,.96)', borderColor: 'rgba(255,255,255,.1)', borderWidth: 0.5,
-    textStyle: { color: '#E8E8EC', fontSize: 12 },
-    extraCssText: 'border-radius:10px;box-shadow:0 18px 40px -20px #000;',
-  };
+  const axisOf = (p) => ({
+    axisLine: { lineStyle: { color: p.axisLine } },
+    axisLabel: { color: p.txt2, fontFamily: 'monospace', fontSize: 10 },
+    splitLine: { lineStyle: { color: p.splitLine } },
+  });
+  const ttOf = (p) => ({
+    backgroundColor: p.ttBg, borderColor: p.ttBorder, borderWidth: 0.5,
+    textStyle: { color: p.txt, fontSize: 12 },
+    extraCssText: `border-radius:10px;box-shadow:0 18px 40px -20px ${p.shadow};`,
+  });
 
   // ── move the scrub readouts + scenario cards (cheap, per-frame) ──────────────
   function moveHead(t) {
@@ -162,22 +179,23 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
   function drawAlloc(y) {
     const alloc = allocRef.current; if (!alloc) return;
     const sc = st.current.sc, view = st.current.view;
+    const p = palette(); const AXIS = axisOf(p);
     const { out } = model.allocAt(model.arr[sc].corpus[y], y);
     const data = sleeves.map((s) => ({ value: Math.round(out[s.key]), name: s.label, itemStyle: { color: s.color } }));
     if (view === 'rose') {
       alloc.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', ...TT, formatter: (p) => `${p.name}<br><b style="font-family:var(--font-mono)">${crPlain(p.value)}</b> · ${p.percent}%` },
-        series: [{ type: 'pie', roseType: 'area', radius: ['22%', '84%'], center: ['50%', '52%'], itemStyle: { borderColor: '#0C0C12', borderWidth: 2, borderRadius: 4 },
-          label: { color: '#6B6B7A', fontSize: 10, formatter: '{b}\n{d}%' }, labelLine: { lineStyle: { color: 'rgba(255,255,255,.15)' }, length: 6, length2: 6 }, data }],
+        tooltip: { trigger: 'item', ...ttOf(p), formatter: (pt) => `${pt.name}<br><b style="font-family:var(--font-mono)">${crPlain(pt.value)}</b> · ${pt.percent}%` },
+        series: [{ type: 'pie', roseType: 'area', radius: ['22%', '84%'], center: ['50%', '52%'], itemStyle: { borderColor: p.bg, borderWidth: 2, borderRadius: 4 },
+          label: { color: p.txt2, fontSize: 10, formatter: '{b}\n{d}%' }, labelLine: { lineStyle: { color: p.axisLine }, length: 6, length2: 6 }, data }],
       }, true);
     } else {
       alloc.setOption({
         backgroundColor: 'transparent', grid: { left: 96, right: 76, top: 8, bottom: 18 },
         xAxis: { type: 'value', ...AXIS, axisLabel: { ...AXIS.axisLabel, formatter: (v) => v >= 1e7 ? (v / 1e7).toFixed(1) + 'Cr' : (v / 1e5).toFixed(0) + 'L' }, max: 'dataMax' },
-        yAxis: { type: 'category', data: sleeves.map((s) => s.label), inverse: true, ...AXIS, axisLabel: { ...AXIS.axisLabel, fontSize: 11, color: '#E8E8EC' }, animationDurationUpdate: 300 },
+        yAxis: { type: 'category', data: sleeves.map((s) => s.label), inverse: true, ...AXIS, axisLabel: { ...AXIS.axisLabel, fontSize: 11, color: p.txt }, animationDurationUpdate: 300 },
         series: [{ type: 'bar', realtimeSort: true, barWidth: '58%', data: data.map((d) => ({ value: d.value, itemStyle: { color: d.itemStyle.color, borderRadius: [0, 4, 4, 0] } })),
-          label: { show: true, position: 'right', valueAnimation: true, formatter: (p) => crPlain(p.value), color: '#6B6B7A', fontFamily: 'monospace', fontSize: 11 } }],
+          label: { show: true, position: 'right', valueAnimation: true, formatter: (pt) => crPlain(pt.value), color: p.txt2, fontFamily: 'monospace', fontSize: 11 } }],
         animationDuration: 0, animationDurationUpdate: 600, animationEasing: 'linear', animationEasingUpdate: 'linear',
       }, true);
     }
@@ -231,6 +249,15 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     moveHead(st.current.t); if (allocRef.current) drawAlloc(Math.round(st.current.t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model]);
+
+  // redraw the canvas chart when the day/night theme flips (data-time on <html>);
+  // CSS vars don't reach ECharts, so we re-pull the palette and redraw.
+  useEffect(() => {
+    const obs = new MutationObserver(() => { if (allocRef.current) drawAlloc(Math.round(st.current.t)); });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-time'] });
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // redraw on scenario / view change (state-driven; survives re-renders)
   useEffect(() => {
