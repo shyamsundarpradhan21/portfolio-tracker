@@ -1457,18 +1457,7 @@ export default function Page() {
                 Annualised over a ~5-month average holding — a short window; indicative, not proven edge.
                 Index returns are price-only (ex-dividend).
               </div>
-            </div>
-
-            <div className="card">
-              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              <SunburstMix
-                sectors={inStats.sectors}
-                caps={inStats.caps}
-                total={inStats.value}
-                secColors={secColors}
-                capColor={capColor}
-              />
-              <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 14px' }} />
+              <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
               <div className="g3">
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
@@ -1486,6 +1475,17 @@ export default function Page() {
                   <div className="sub">{inStats.topPos && indian.val ? ((inStats.topPos.val / indian.val) * 100).toFixed(0) + '% of book' : 'by value'}</div>
                 </div>
               </div>
+            </div>
+
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
+              <SunburstMix
+                sectors={inStats.sectors}
+                caps={inStats.caps}
+                total={inStats.value}
+                secColors={secColors}
+                capColor={capColor}
+              />
             </div>
           </div>
 
@@ -1971,20 +1971,7 @@ export default function Page() {
                 Money-weighted on net external capital from the Vested statement. Index returns are price-only (ex-dividend);
                 your portfolio's total return includes reinvested dividends, so it is modestly flattered in comparison.
               </div>
-            </div>
-            <div className="card">
-              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
-              <SunburstMix
-                sectors={usStats.sectors}
-                caps={usStats.caps}
-                total={usStats.value}
-                secColors={SECTOR_PALETTE}
-                capColor={{ Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }}
-                currency="usd"
-                othersColor={OTHERS_COLOR}
-              />
-              <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
-              <div style={{ fontSize: 10.5, color: 'var(--txt3)', marginBottom: 10, lineHeight: 1.5 }}>Sector &amp; cap use ETF look-through to align with Vested (equity only); direct stocks by GICS.</div>
+              <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
               <div className="g3">
                 <div className="mini">
                   <div className="lbl" style={{ marginBottom: 4 }}>Winner</div>
@@ -2002,6 +1989,20 @@ export default function Page() {
                   <div className="sub">{usStats.topPos && usData.val ? ((usStats.topPos.liveVal / usData.val) * 100).toFixed(0) + '% of book' : 'by value'}</div>
                 </div>
               </div>
+            </div>
+            <div className="card">
+              <div className="ctitle" style={{ marginBottom: 14 }}>Sector &amp; Cap Mix</div>
+              <SunburstMix
+                sectors={usStats.sectors}
+                caps={usStats.caps}
+                total={usStats.value}
+                secColors={SECTOR_PALETTE}
+                capColor={{ Mega: 'var(--blu)', Large: 'var(--pur)', Mid: 'var(--cyn)', Small: 'var(--pnk)' }}
+                currency="usd"
+                othersColor={OTHERS_COLOR}
+              />
+              <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
+              <div style={{ fontSize: 10.5, color: 'var(--txt3)', textAlign: 'center', lineHeight: 1.5 }}>Sector &amp; cap use ETF look-through to align with Vested (equity only); direct stocks by GICS.</div>
             </div>
           </div>
 

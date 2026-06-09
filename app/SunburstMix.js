@@ -53,7 +53,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 300, height: 'auto', overflow: 'visible' }}>
+      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 340, height: 'auto', overflow: 'visible' }}>
         {/* outer ring — sectors */}
         {secArcs.map((s) => {
           const key = 's:' + s.label;
