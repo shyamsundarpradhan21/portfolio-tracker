@@ -59,13 +59,13 @@ export const INDIAN_REALIZED = {
   ytd: 3996,
   total: -22491,
   fy: [
-    { label: 'FY24-25', amt: 1370,
+    { label: 'FY24-25', amt: 1370, n: 65,
       winners: [{ sym: 'ARE&M', amt: 1728 }, { sym: 'GOLDBEES', amt: 1416 }, { sym: 'NATIONALUM', amt: 1386 }],
       losers:  [{ sym: 'EMAMILTD', amt: -1546 }, { sym: 'CROMPTON', amt: -1291 }, { sym: 'MOTHERSON', amt: -1167 }] },
-    { label: 'FY25-26', amt: -27966,
+    { label: 'FY25-26', amt: -27966, n: 64,
       winners: [{ sym: 'GOLDBEES', amt: 5843 }, { sym: 'LAURUSLABS', amt: 1260 }, { sym: 'LTF', amt: 916 }],
       losers:  [{ sym: 'TINNARUBR', amt: -7984 }, { sym: 'ZYDUSLIFE', amt: -2870 }, { sym: 'TECHNOE', amt: -2820 }] },
-    { label: 'FY26-27', amt: 3996,
+    { label: 'FY26-27', amt: 3996, n: 6,
       winners: [{ sym: 'SUPRIYA', amt: 6045 }, { sym: 'NATCOPHARM', amt: 4025 }, { sym: 'FIEMIND', amt: 1456 }],
       losers:  [{ sym: 'HDFCBANK', amt: -3985 }, { sym: 'VSTTILLERS', amt: -1974 }, { sym: 'TCS', amt: -1572 }] },
   ],
@@ -140,13 +140,13 @@ export const US_REALIZED = {
   ytdLabel: 'FY26-27',
   ytdUsd: 14.24,
   fy: [
-    { label: 'FY24-25', amt: 11.13,
+    { label: 'FY24-25', amt: 11.13, n: 44,
       winners: [{ sym: 'SCHD', amt: 7.48 }, { sym: 'VGT', amt: 7.06 }, { sym: 'VOO', amt: 1.79 }],
       losers:  [{ sym: 'BITO', amt: -2.78 }, { sym: 'MSTR', amt: -2.17 }, { sym: 'ASML', amt: -1.84 }] },
-    { label: 'FY25-26', amt: 318.19,
+    { label: 'FY25-26', amt: 318.19, n: 66,
       winners: [{ sym: 'MSTR', amt: 76.91 }, { sym: 'HOOD', amt: 66.41 }, { sym: 'IREN', amt: 36.58 }],
       losers:  [{ sym: 'BTBT', amt: -21.04 }, { sym: 'NOW', amt: -11.72 }, { sym: 'IRDM', amt: -11.52 }] },
-    { label: 'FY26-27', amt: 14.24,
+    { label: 'FY26-27', amt: 14.24, n: 5,
       winners: [{ sym: 'EEM', amt: 13.31 }, { sym: 'IVV', amt: 0.62 }, { sym: 'IUSB', amt: 0.30 }],
       losers:  [] },
   ],
@@ -194,19 +194,14 @@ export const US_CORP_ACTIONS = [
 // Korea / India) plus Gold. Uses USD-denominated country ETFs (not local-
 // currency indices) so every return is FX-inclusive and comparable to the USD
 // portfolio. Spanning many markets keeps the set decorrelated.
+// Trimmed to the four that actually matter for a USD tech-tilted book held by an
+// Indian investor: broad US, the tech-heavy index (closest to the holdings), the
+// home-market opportunity cost, and an uncorrelated store of value.
 export const US_BENCHMARKS = [
-  { key: 'sp500',    label: 'S&P 500 · US',       color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
-  { key: 'nasdaq',   label: 'Nasdaq 100 · US',    color: 'var(--pur)', yahooSyms: ['QQQ', '^NDX'] },
-  { key: 'germany',  label: 'Germany · DAX',      color: 'var(--cyn)', yahooSyms: ['EWG'] },
-  { key: 'uk',       label: 'UK · FTSE',          color: 'var(--grn)', yahooSyms: ['EWU'] },
-  { key: 'france',   label: 'France · CAC',       color: 'var(--pnk)', yahooSyms: ['EWQ'] },
-  { key: 'japan',    label: 'Japan · Nikkei',     color: '#7A8CA8',    yahooSyms: ['EWJ'] },
-  { key: 'hongkong', label: 'Hong Kong · HSI',    color: 'var(--blu)', yahooSyms: ['EWH'] },
-  { key: 'china',    label: 'China · SSE',        color: 'var(--pur)', yahooSyms: ['FXI', 'MCHI'] },
-  { key: 'taiwan',   label: 'Taiwan · TAIEX',     color: 'var(--cyn)', yahooSyms: ['EWT'] },
-  { key: 'korea',    label: 'Korea · KOSPI',      color: 'var(--grn)', yahooSyms: ['EWY'] },
-  { key: 'india',    label: 'India · Nifty',      color: 'var(--pnk)', yahooSyms: ['INDA', 'EPI'] },
-  { key: 'gold',     label: 'Gold',               color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
+  { key: 'sp500',  label: 'S&P 500 · US',    color: 'var(--blu)', yahooSyms: ['IVV', '^GSPC'] },
+  { key: 'nasdaq', label: 'Nasdaq 100 · US', color: 'var(--pur)', yahooSyms: ['QQQ', '^NDX'] },
+  { key: 'india',  label: 'India · Nifty',   color: 'var(--grn)', yahooSyms: ['INDA', 'EPI'] },
+  { key: 'gold',   label: 'Gold',            color: 'var(--acc)', yahooSyms: ['GLD', 'GC=F'] },
 ];
 export const US = [
   { sym: 'QQQM', name: 'Invesco NASDAQ 100',   cat: 'ETF',        qty: 3.21393889,  cost: 227.36 },
@@ -268,6 +263,7 @@ export const FDS = [
   { bank: 'Slice', label: 'I', principal: 125000, rate: 7.75, open: '2025-12-08', matures: '2027-06-09' },
   { bank: 'ICICI', label: 'I', principal: 135000, rate: 6.60, open: '2025-12-09', matures: '2027-12-10' },
   { bank: 'HDFC',  label: 'I', principal: 235000, rate: 6.45, open: '2026-03-08', matures: '2027-09-09' },
+  { bank: 'SBI',   label: 'I', principal: 150000, rate: 6.40, open: '2026-06-09', matures: '2028-06-10' },
 ];
 
 // Other static assets and liabilities (INR).
@@ -282,7 +278,6 @@ export const STATIC = {
 // "deployed" totals until the deploy date arrives. The countdown badge on the
 // nearest upcoming deploy is derived live (see deriveFds).
 export const FD_PIPELINE = [
-  { bank: 'SBI',   label: 'I',   deploy: '2026-06-09', maturity: '2028-06-10', tenure: '2y+1d',  amount: 150000 },
   { bank: 'Slice', label: 'II',  deploy: '2026-09-08', maturity: '2028-03-09', tenure: '18m+1d', amount: 275000 },
   { bank: 'ICICI', label: 'II',  deploy: '2026-12-09', maturity: '2028-12-10', tenure: '2y+1d',  amount: 165000 },
   { bank: 'HDFC',  label: 'II',  deploy: '2027-03-08', maturity: '2028-09-09', tenure: '18m+1d', amount: 245000 },
