@@ -10,6 +10,7 @@ import {
 import FY from '../data/fy2526_verified.json';
 
 import { nseOpenNow, nyseOpenNow } from './lib/market';
+import { dayOrNight } from './lib/suntimes';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -153,16 +154,43 @@ export default function Page() {
 
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'projection'];
+
+  // Theme mode: 'auto' (sunrise/sunset), 'day', or 'night'. Persisted.
+  const [themeMode, setThemeMode] = useState(() => {
+    try { return localStorage.getItem('nwTracker.theme') || 'auto'; } catch { return 'auto'; }
+  });
+  // Geolocation for accurate sunrise/sunset; falls back to India's centroid.
+  const [geo, setGeo] = useState(null);
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (p) => setGeo({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { timeout: 8000, maximumAge: 3600_000 }
+    );
+  }, []);
+  const cycleTheme = () => setThemeMode((m) => {
+    const next = m === 'auto' ? 'day' : m === 'day' ? 'night' : 'auto';
+    try { localStorage.setItem('nwTracker.theme', next); } catch {}
+    return next;
+  });
+
   useEffect(() => {
     const apply = () => {
-      const h = new Date().getHours();
-      document.documentElement.dataset.time = (h >= 7 && h < 19) ? 'day' : 'night';
+      let time;
+      if (themeMode === 'day' || themeMode === 'night') {
+        time = themeMode;
+      } else {
+        const lat = geo?.lat ?? 20.59, lng = geo?.lng ?? 78.96; // India centroid fallback
+        time = dayOrNight(new Date(), lat, lng);
+      }
+      document.documentElement.dataset.time = time;
     };
     apply();
-    // Re-check every minute so it flips automatically at 7am/7pm
+    // Re-check every minute so auto mode flips at the real sunrise/sunset
     const id = setInterval(apply, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [themeMode, geo]);
   useEffect(() => {
     document.documentElement.dataset.tab = TAB_KEYS[tab] ?? 'overview';
   }, [tab]);
@@ -467,6 +495,9 @@ export default function Page() {
           </div>
           <button className="sidebar-ai-btn" onClick={toggleInsights} style={{ opacity: insightsOn ? 1 : 0.45 }}>
             ✨ AI {insightsOn ? 'ON' : 'OFF'}
+          </button>
+          <button className="sidebar-ai-btn" onClick={cycleTheme} title="Theme: auto follows sunrise/sunset">
+            {themeMode === 'auto' ? '🌗 Auto' : themeMode === 'day' ? '☀️ Day' : '🌙 Night'}
           </button>
           <button className={'sidebar-refresh-btn' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })}>
             ↻ {loading ? 'Updating…' : 'Refresh'}
