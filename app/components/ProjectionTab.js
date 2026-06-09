@@ -306,6 +306,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
           const k = s.key; const arr = model.arr[k].corpus; const final = arr[arr.length - 1];
           return (
             <div key={k} className={'card pj-scard' + (sc === k ? ' on' : '')} onClick={() => onScenario(k)}
+              role="button" tabIndex={0} aria-pressed={sc === k}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onScenario(k); } }}
               style={{ cursor: 'pointer', borderColor: sc === k ? SC[k].c : undefined }}>
               <div className="fxc" style={{ alignItems: 'baseline' }}>
                 <div className="lbl" style={{ margin: 0, color: SC[k].c }}>{SC[k].name}</div>

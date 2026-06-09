@@ -145,12 +145,15 @@ export default function IndianTab({
               : 'loading live prices…'}
           </div>
         </div>
-        <div className="ovx">
+        <div className="ovx" style={{ maxHeight: 460, overflowY: 'auto' }}>
           <table className="tbl" style={{ minWidth: 860 }}>
             <thead>
               <tr>
                 {IN_COLS.map((c) => (
-                  <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortIn(c.key)}>
+                  <th key={c.key} className={c.num ? 'ra' : ''} scope="col" tabIndex={0} role="button"
+                    aria-sort={inSort.key === c.key ? (inSort.dir < 0 ? 'descending' : 'ascending') : 'none'}
+                    onClick={() => sortIn(c.key)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortIn(c.key); } }}>
                     {c.label} {inSort.key === c.key ? (inSort.dir < 0 ? '↓' : '↑') : '↕'}
                   </th>
                 ))}

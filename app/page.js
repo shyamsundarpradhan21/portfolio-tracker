@@ -16,7 +16,7 @@ import {
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
 } from './lib/calc';
 import {
-  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, SInrC, SInrF, sFull,
+  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, SInrC, SInrF, sFull, Rs,
 } from './lib/fmt';
 import { ETF_LOOKTHROUGH, ETF_CAP, US_CAP, usSectorOf } from './lib/constants';
 const COLORS = ALLOC_COLORS;
@@ -526,7 +526,7 @@ export default function Page() {
             <span className="status-txt">{status.msg}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 13, color: 'var(--txt2)' }}>USD/INR: <strong style={{ color: 'var(--txt)' }}>{usdInr ? '₹' + usdInr.toFixed(2) : '—'}</strong></span>
+            <span style={{ fontSize: 13, color: 'var(--txt2)' }}>USD/INR: <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
             <span style={{ fontSize: 12, color: 'var(--txt3)' }}>{lastUpdate}</span>
           </div>
         </div>
@@ -537,7 +537,7 @@ export default function Page() {
             <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
             <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={160} h={36} />}</div>
             <div className="page-header-sub">
-              Total assets <strong><InrC n={ov.totalAssets} /></strong> · Loan ~₹7.50L · excl. savings &amp; EPF
+              Total assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong> · Loan ~<Rs />7.50L · excl. savings &amp; EPF
             </div>
           </div>
         </div>

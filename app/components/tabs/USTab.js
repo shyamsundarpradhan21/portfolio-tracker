@@ -131,7 +131,10 @@ export default function USTab({
             <thead>
               <tr>
                 {US_COLS.map((c) => (
-                  <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortUs(c.key)}>
+                  <th key={c.key} className={c.num ? 'ra' : ''} scope="col" tabIndex={0} role="button"
+                    aria-sort={usSort.col === c.key ? (usSort.dir < 0 ? 'descending' : 'ascending') : 'none'}
+                    onClick={() => sortUs(c.key)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortUs(c.key); } }}>
                     {c.label} {usSort.col === c.key ? (usSort.dir < 0 ? '↓' : '↑') : '↕'}
                   </th>
                 ))}
