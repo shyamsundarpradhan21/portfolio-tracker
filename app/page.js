@@ -120,6 +120,20 @@ export default function Page() {
   const [hist, setHist]             = useState(null);
   const [flash, setFlash]           = useState({});
   const prevPrices                  = useRef({});
+  const headerRef                   = useRef(null);
+
+  // Scroll-driven header fade: transparent at top → frosted at ~120px scrolled
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const t = Math.min(1, (el.parentElement?.scrollTop ?? window.scrollY) / 120);
+      el.style.setProperty('--hdr-t', t);
+    };
+    const scroller = el.closest('.main') || window;
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, []);
   const [now, setNow]               = useState(() => new Date());
 
   // sorts
@@ -431,7 +445,7 @@ export default function Page() {
       {/* MAIN CONTENT */}
       <main className="main">
         {/* STICKY FROSTED HEADER */}
-        <div className="main-header">
+        <div className="main-header" ref={headerRef}>
         {/* TOPBAR */}
         <div className="topbar">
           <div className="topbar-left">
