@@ -36,7 +36,7 @@ function ring(items, total, pad) {
   });
 }
 
-export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)' }) {
+export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap' }) {
   const [hov, setHov] = useState(null);
   const W = 260, cx = 130, cy = 130;
   const fmtAmt = fmtFor(currency);
@@ -89,7 +89,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
           return (
             <path key={key} d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
-              onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
+              onMouseEnter={() => setHov({ key, label: c.label + innerSuffix, val: c.val, pct: c.pct, color: c.color })}
               onMouseLeave={() => setHov(null)} />
           );
         })}
@@ -136,7 +136,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
       </div>
       {/* cap-mix line */}
       <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
-        Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)}%`).join('  ·  ')}
+        {innerTitle}&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)}%`).join('  ·  ')}
       </div>
     </div>
   );

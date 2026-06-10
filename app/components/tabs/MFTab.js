@@ -114,19 +114,20 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
 
       {/* Dual-ring sunburst (outer = asset class, inner = cap mix) on the left;
           multi-benchmark XIRR chart on the right. */}
-      <div className="g2 sec">
+      <div className="mf-g2 sec">
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="ctitle" style={{ marginBottom: 14 }}>Asset Allocation &amp; Market Cap</div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <SunburstMix
-              sectors={allocSegs.filter((s) => s.val > 0).map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
-              caps={capSegs.map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
+              sectors={capSegs.filter((s) => s.val > 0).map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
+              caps={allocSegs.map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
               total={mf.totVal}
-              secColors={allocSegs.filter((s) => s.val > 0).map((s) => s.color)}
-              capColor={Object.fromEntries(capSegs.map((s) => [s.label, s.color]))} />
+              secColors={capSegs.filter((s) => s.val > 0).map((s) => s.color)}
+              capColor={Object.fromEntries(allocSegs.map((s) => [s.label, s.color]))}
+              innerTitle="Class" innerSuffix="" />
           </div>
           <div className="sub" style={{ marginTop: 10 }}>
-            Outer ring asset class · inner ring market cap by mandate (Flexi &amp; ELSS multi-cap). Arbitrage held as a cash-like sleeve.
+            Outer ring market cap by mandate (Flexi &amp; ELSS multi-cap) · inner ring asset class. Arbitrage held as a cash-like sleeve.
           </div>
         </div>
 
