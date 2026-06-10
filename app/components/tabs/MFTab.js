@@ -42,7 +42,7 @@ function AllocDonut({ segs, total }) {
         })}
         <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
           style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          <tspan fontSize="17" fontFamily="var(--body)">₹</tspan>{inrCd(centre.val)}
+          <tspan fontSize="26" fontFamily="var(--body)">₹</tspan>{inrCd(centre.val)}
         </text>
         <text x={size / 2} y={size / 2 + 16} textAnchor="middle"
           style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
@@ -161,7 +161,7 @@ function SipCard() {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (sal >= 70 ? 'red' : sal >= 50 ? '' : 'grn')}>{fK(total)}</div>
+          <div className={'vmd ' + (sal >= 70 ? 'red' : sal >= 50 ? '' : 'grn')}><RsText>{fK(total)}</RsText></div>
           <div className="sub" style={{ margin: 0 }}>{sal}% of salary</div>
         </div>
       </div>
@@ -175,7 +175,7 @@ function SipCard() {
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         {[['var(--grn)', `JioBLK ₹20K · ${p1}%`], ['var(--blu)', `Vested ₹19K · ${p2}%`], ['var(--acc)', picks ? `Picks ${fK(picks)} · ${t} trig` : 'Picks ₹0 · 0 trig']].map(([c, txt]) => (
           <span key={txt} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: c, flexShrink: 0 }} />{txt}
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: c, flexShrink: 0 }} /><RsText>{txt}</RsText>
           </span>
         ))}
       </div>
@@ -198,7 +198,7 @@ function SipCard() {
               style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
               <div style={{ height: 22, background: bg, opacity: op, borderRadius: 1 }} />
               <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em' }}>{m.mn}</div>
-              <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)' }}>{moTotal === null ? '—' : fK(moTotal)}</div>
+              <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)' }}>{moTotal === null ? '—' : <RsText>{fK(moTotal)}</RsText>}</div>
             </div>
           );
         })}
@@ -208,19 +208,19 @@ function SipCard() {
       <div className="g4">
         <div className="mini">
           <div className="lbl">floor</div>
-          <div className="vsm grn">{fK(SIP_AUTO)}/mo</div>
+          <div className="vsm grn"><RsText>{fK(SIP_AUTO)}</RsText>/mo</div>
         </div>
         <div className="mini">
           <div className="lbl">trig YTD</div>
-          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · {fK(trigYTD * SIP_EACH)}</div>
+          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · <RsText>{fK(trigYTD * SIP_EACH)}</RsText></div>
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
-          <div className="vsm">{fK(Math.round(ytdTot / closed.length))}</div>
+          <div className="vsm"><RsText>{fK(Math.round(ytdTot / closed.length))}</RsText></div>
         </div>
         <div className="mini">
           <div className="lbl">peak mo</div>
-          <div className="vsm">{peak.mn} {fK(SIP_AUTO + peak.t * SIP_EACH)}</div>
+          <div className="vsm">{peak.mn} <RsText>{fK(SIP_AUTO + peak.t * SIP_EACH)}</RsText></div>
         </div>
       </div>
     </div>

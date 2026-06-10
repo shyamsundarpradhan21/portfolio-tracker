@@ -50,6 +50,15 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
 
   const op = (key, base) => (hov && hov.key !== key ? 0.16 : base);
 
+  // Split long labels near midpoint on a space
+  const splitLabel = (s) => {
+    if (s.length <= 18) return [s];
+    const mid = Math.floor(s.length / 2);
+    let sp = s.lastIndexOf(' ', mid);
+    if (sp < 4) sp = s.indexOf(' ', mid);
+    return sp > 0 ? [s.slice(0, sp), s.slice(sp + 1)] : [s];
+  };
+
   // Separate currency symbol: it renders in the body font (the mono face has
   // no ₹ glyph) scaled 1.1× to match the mono digits' cap height — same
   // treatment as the global .rs class.
@@ -57,6 +66,9 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   const cm = /^([₹$])(.*)$/.exec(amtStr);
   const symC = cm ? cm[1] : '';
   const numC = cm ? cm[2] : amtStr;
+
+  const lines = hov ? splitLabel(hov.label) : null;
+  const twoLine = lines && lines.length === 2;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -81,15 +93,32 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
               onMouseLeave={() => setHov(null)} />
           );
         })}
-        {/* centre readout — figures only; names live in the legend below */}
-        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
+        {/* centre readout */}
+        <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
           {symC ? <tspan fontFamily="var(--body)" fontSize="25">{symC}</tspan> : null}
           <tspan fontFamily="var(--mono)" fontSize="23">{numC}</tspan>
         </text>
-        {hov && (
-          <text x={cx} y={cy + 16} textAnchor="middle"
-            style={{ fontSize: 11, letterSpacing: '0.8px', fill: hov.color, fontWeight: 700, fontFamily: 'var(--mono)' }}>
-            {hov.pct.toFixed(0)}%
+        {hov ? (
+          <>
+            <text x={cx} y={twoLine ? cy + 4 : cy + 14} textAnchor="middle"
+              style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
+              {lines[0]}
+            </text>
+            {twoLine && (
+              <text x={cx} y={cy + 14} textAnchor="middle"
+                style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
+                {lines[1]}
+              </text>
+            )}
+            <text x={cx} y={twoLine ? cy + 25 : cy + 24} textAnchor="middle"
+              style={{ fontSize: 9, letterSpacing: '0.8px', fill: hov.color, fontWeight: 700, fontFamily: 'var(--mono)' }}>
+              {hov.pct.toFixed(0)}%
+            </text>
+          </>
+        ) : (
+          <text x={cx} y={cy + 14} textAnchor="middle"
+            style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
+            Deployed
           </text>
         )}
       </svg>
