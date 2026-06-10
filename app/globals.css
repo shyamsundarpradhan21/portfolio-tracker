@@ -156,7 +156,13 @@
    near-invisible grey on the night theme and in the system font everywhere. */
 button { font: inherit; color: inherit; }
 
-html { overflow-x: hidden; }
+html {
+  overflow-x: hidden;
+  /* Fluid type: every --fs-* token is rem-based, so scaling the root scales
+     the whole dashboard. 16px at ~1280w → 19px at ~1820w, clamped both ends
+     so laptops aren't cramped and ultrawides aren't shouting. */
+  font-size: clamp(15px, 9px + 0.55vw, 19px);
+}
 
 /* Themed scrollbars — the OS default chrome bars clash with the dark surface.
    Slim translucent thumbs, no track, slightly brighter on hover. */
