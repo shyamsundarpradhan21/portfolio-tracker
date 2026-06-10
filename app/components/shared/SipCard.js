@@ -1,13 +1,14 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { RsText } from '../../lib/fmt';
+import { useEffect, useMemo, useState } from 'react';
+import { RsText, inrFull } from '../../lib/fmt';
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS } from '../../portfolio';
 import PLAN from '../../../data/sip_deployment.json';
 
 // ── SIP deployment calendar ───────────────────────────────────────────────────
 // Derived entirely from the ledgers in portfolio.js — no recorded month data:
-//   JioBLK = MF_CASHFLOWS outflows · Vested = US_CASHFLOWS deposits × live FX ·
-//   Picks  = TRANSACTIONS buys (each buy = one trigger).
+//   JioBLK = MF_CASHFLOWS outflows · Picks = TRANSACTIONS buys ·
+//   Vested = US_CASHFLOWS deposits, each converted at the USD/INR close of its
+//   own outflow date (from /api/fx-history); live rate only while that loads.
 // Months before the current one are closed actuals (₹0 if nothing fired), the
 // current month is running, future months are planned. Clicking a month shows
 // its composition; the FY chip shows the overall (YTD) aggregate.
@@ -16,9 +17,28 @@ const STREAM_COLORS = { JioBLK: 'var(--grn)', Vested: 'var(--blu)', Picks: 'var(
 const monthKey = (d) => d.slice(0, 7);
 const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
 
+// Rate for a date = that day's close, else the nearest prior trading day's.
+function rateFor(rates, date) {
+  if (!rates) return null;
+  if (rates[date] != null) return rates[date];
+  const keys = Object.keys(rates).filter((k) => k < date).sort();
+  return keys.length ? rates[keys[keys.length - 1]] : null;
+}
+
 export default function SipCard({ fx }) {
   const now = new Date();
   const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  // Historical USD/INR closes covering the FY window.
+  const [fxHist, setFxHist] = useState(null);
+  useEffect(() => {
+    let dead = false;
+    fetch(`/api/fx-history?start=${PLAN.fyStartMonth}-01`)
+      .then((r) => r.json())
+      .then((j) => { if (!dead && j.rates) setFxHist(j.rates); })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, []);
 
   const { MONTHS, committedMo } = useMemo(() => {
     const [startY, startM] = PLAN.fyStartMonth.split('-').map(Number);
@@ -28,9 +48,9 @@ export default function SipCard({ fx }) {
       const jio = MF_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.amount < 0)
         .reduce((s, c) => s - c.amount, 0);
       const vested = US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0)
-        .reduce((s, c) => s + c.invested, 0) * fx;
-      const pickTx = TRANSACTIONS.filter((t) => monthKey(t.date) === key);
-      const picks = pickTx.reduce((s, t) => s + t.invested, 0);
+        .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
+      const picks = TRANSACTIONS.filter((t) => monthKey(t.date) === key)
+        .reduce((s, t) => s + t.invested, 0);
       const streams = [
         { label: 'JioBLK', amount: Math.round(jio) },
         { label: 'Vested', amount: Math.round(vested) },
@@ -42,13 +62,12 @@ export default function SipCard({ fx }) {
         yy: String(d.getFullYear()).slice(2),
         streams,
         total: streams.reduce((s, x) => s + x.amount, 0),
-        trig: pickTx.length,
         state: key < curKey ? 'closed' : key === curKey ? 'current' : 'planned',
       };
     });
     const committedMo = PLAN.committed.reduce((s, c) => s + (c.inr ?? Math.round(c.usd * fx)), 0);
     return { MONTHS: months, committedMo };
-  }, [fx]);
+  }, [fx, fxHist]);
 
   // sel: month index, or 'fy' for the overall aggregate
   const defaultSel = (() => {
@@ -70,7 +89,6 @@ export default function SipCard({ fx }) {
       }, {}))
     : (mo.streams || []);
   const viewTotal = overall ? ytdTot : mo.total;
-  const viewTrig = overall ? elapsed.reduce((a, m) => a + m.trig, 0) : mo.trig;
   const planned = !overall && mo.state === 'planned';
   const segs = viewTotal ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pur)', pct: Math.round(s.amount / viewTotal * 100) })) : [];
 
@@ -92,7 +110,7 @@ export default function SipCard({ fx }) {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (viewTotal ? 'grn' : '')}>{viewTotal ? <RsText>{fK(viewTotal)}</RsText> : '—'}</div>
+          <div className={'vmd ' + (viewTotal ? 'grn' : '')}>{viewTotal ? <RsText>{inrFull(viewTotal)}</RsText> : '—'}</div>
           <div className="sub" style={{ margin: 0 }}>{overall ? 'deployed FY to date' : viewTotal ? 'deployed this month' : planned ? 'not yet deployed' : 'nothing deployed'}</div>
         </div>
       </div>
@@ -106,12 +124,11 @@ export default function SipCard({ fx }) {
       </div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
         {!segs.length ? (
-          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>{planned ? 'No deployment planned data — month not reached.' : 'No flows recorded.'}</span>
+          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.map((s) => (
           <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-            <RsText>{`${s.label} ${fK(s.amount)} · ${s.pct}%`}</RsText>
-            {s.label === 'Picks' && viewTrig > 0 ? <span style={{ color: 'var(--txt3)' }}>· {viewTrig} trig</span> : null}
+            <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
         ))}
       </div>
@@ -127,13 +144,13 @@ export default function SipCard({ fx }) {
           {PLAN.fyLabel} · overall
         </span>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
-          YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{fK(ytdTot)}</RsText></strong>
+          YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{inrFull(ytdTot)}</RsText></strong>
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
         {MONTHS.map((m, i) => {
           const bg = m.state === 'planned' ? 'var(--brd2)' : m.total ? 'var(--grn)' : 'var(--sur2)';
-          const op = m.state === 'planned' ? 1 : m.trig === 0 ? .35 : m.trig === 1 ? .65 : 1;
+          const op = m.state === 'planned' ? 1 : m.total ? Math.max(.45, Math.min(1, m.total / (committedMo * 2 || 1))) : .35;
           return (
             <div key={m.key} onClick={() => setSel(i)}
               style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
@@ -149,7 +166,7 @@ export default function SipCard({ fx }) {
       <div className="g4">
         <div className="mini">
           <div className="lbl">deployed</div>
-          <div className="vsm grn">{elapsed.length ? <RsText>{fK(ytdTot)}</RsText> : '—'}</div>
+          <div className="vsm grn">{elapsed.length ? <RsText>{inrFull(ytdTot)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">deployed vs committed</div>
@@ -157,11 +174,11 @@ export default function SipCard({ fx }) {
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
-          <div className="vsm">{avgMo != null ? <RsText>{fK(avgMo)}</RsText> : '—'}</div>
+          <div className="vsm">{avgMo != null ? <RsText>{inrFull(avgMo)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">annual</div>
-          <div className="vsm">{annual != null ? <RsText>{fK(annual)}</RsText> : '—'}</div>
+          <div className="vsm">{annual != null ? <RsText>{inrFull(annual)}</RsText> : '—'}</div>
         </div>
       </div>
     </div>
