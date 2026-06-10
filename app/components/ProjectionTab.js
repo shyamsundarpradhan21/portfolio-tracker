@@ -183,8 +183,9 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
       alloc.setOption({
         backgroundColor: 'transparent',
         tooltip: { trigger: 'item', ...ttOf(p), formatter: (pt) => `${pt.name}<br><b style="font-family:var(--font-mono)">${crPlain(pt.value)}</b> · ${pt.percent}%` },
-        series: [{ type: 'pie', roseType: 'area', radius: ['22%', '84%'], center: ['50%', '52%'], itemStyle: { borderColor: p.bg, borderWidth: 2, borderRadius: 4 },
-          label: { color: p.txt2, fontSize: 10, formatter: '{b}\n{d}%' }, labelLine: { lineStyle: { color: p.axisLine }, length: 6, length2: 6 }, data }],
+        series: [{ type: 'pie', roseType: 'area', radius: ['20%', '68%'], center: ['50%', '52%'], avoidLabelOverlap: true, itemStyle: { borderColor: p.bg, borderWidth: 2, borderRadius: 4 },
+          label: { color: p.txt2, fontSize: 10, formatter: '{b}\n{d}%', alignTo: 'edge', edgeDistance: '6%', minMargin: 6 },
+          labelLine: { lineStyle: { color: p.axisLine }, length: 14, length2: 16, maxSurfaceAngle: 80 }, data }],
       }, true);
     } else {
       alloc.setOption({
