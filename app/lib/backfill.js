@@ -13,7 +13,9 @@
 //         each ticker's dated net flows become units at that week's close;
 //         value(t) = units(t) × close(t) + actual cash balance + exited
 //         positions at net cost. Converted at fx(t).
-//   MF  — carried at cost (small sleeve; no per-fund NAV history ledgered).
+//   MF  — units × NAV(t) per fund from its `bought` date, using the weekly
+//         NAV history served by /api/mf-nav (api.mfapi.in). At cost until the
+//         NAV payload arrives or for any fund whose history is missing.
 //   FD  — deterministic quarterly compounding from each open date, clamped at
 //         maturity (matches deriveFds).
 //   nw  — assets − loanOutstanding(t): zero before disbursement (Sep 2025),
@@ -22,7 +24,7 @@
 // Output: [{ d, nw, assets, invested, synth: true }] — callers must only use
 // dates BEFORE the first real snapshot; real dailies always win.
 
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS, loanOutstanding } from '../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, loanOutstanding } from '../portfolio';
 import US_TRADES from '../../data/us_trades.json';
 import INDIAN_EXITS from '../../data/indian_exits.json';
 
@@ -49,9 +51,22 @@ function fxAt(rates, date) {
 }
 
 // series: hist.series from /api/history · fxRates: /api/fx-history rates map
-export function buildBackfill(series, fxRates, fxLive) {
+// mfNav: /api/mf-nav payload (funds[id].hist = [[iso, nav], …] ascending)
+export function buildBackfill(series, fxRates, fxLive, mfNav) {
   if (!series) return [];
   const fx = (d) => fxAt(fxRates, d) ?? fxLive ?? 84;
+
+  // MF: last NAV on-or-before d per fund, null when no history is available.
+  const mfHist = Object.fromEntries(
+    MF_FUNDS.map((f) => [f.id, mfNav?.funds?.[f.id]?.hist || null]),
+  );
+  const mfNavAt = (id, d) => {
+    const h = mfHist[id];
+    if (!h?.length || h[0][0] > d) return null;
+    let v = null;
+    for (const [hd, nav] of h) { if (hd > d) break; v = nav; }
+    return v;
+  };
 
   const flows = [
     ...TRANSACTIONS.map((t) => ({ date: t.date, inr: t.invested })),
@@ -113,8 +128,13 @@ export function buildBackfill(series, fxRates, fxLive) {
     for (const [fd, amt] of US_TRADES.other) { if (fd <= d) otherCost += amt; }
     usd += Math.max(0, otherCost);
     const us = usd * fx(d);
-    // MF at cost
-    const mf = MF_CASHFLOWS.filter((c) => c.date <= d && c.amount < 0).reduce((s, c) => s - c.amount, 0);
+    // MF: units × NAV(t) per fund from its bought date; cost when NAV missing
+    let mf = 0;
+    for (const f of MF_FUNDS) {
+      if (!f.bought || f.bought > d) continue;
+      const nav = mfNavAt(f.id, d);
+      mf += nav != null ? f.units * nav : f.cost;
+    }
     // FD: compound each open deposit, clamp at maturity
     let fd = 0;
     for (const f of FDS.filter((f) => f.status !== 'pipeline' && f.open <= d)) {

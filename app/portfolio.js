@@ -389,16 +389,20 @@ const MF_EXC_BASE = ['regular', 'idcw', 'dividend'];
 // without a factsheet — it carries no `mcap` and sits in the honest "Multi"
 // bucket. To show Flexi's real breakup, paste its latest Morningstar/factsheet
 // allocation here as e.g. mcap: { large: .55, mid: .30, small: .15 }.
+// `bought` = purchase date, matched to MF_CASHFLOWS: ELSS is the 2024-02-26
+// seed; Flexi alone is the 2026-01-13 ₹20K lumpsum; the five index/arbitrage
+// funds (11+8+5+3+3 = ₹30K) are the 2026-03-20 lumpsum. Used by the history
+// backfill to value each fund as units × NAV(t) from its own start date.
 export const MF_FUNDS = [
   // JioBlackRock — Folio 2088065, Direct Growth
-  { id: 'flexi',   platform: 'JioBLK',  name: 'Flexi Cap',          cat: 'Multi Cap',         units: 2097.894, cost: 20000, casNav: 9.5724,  q: 'JioBlackRock Flexi Cap',          inc: ['flexi cap', 'direct', 'growth'],      exc: [] },
-  { id: 'nifty50', platform: 'JioBLK',  name: 'Nifty 50 Index',     cat: 'Large Cap · Index', units: 1134.852, cost: 11000, casNav: 9.4283,  q: 'JioBlackRock Nifty 50 Index',     inc: ['nifty 50 index', 'direct', 'growth'], exc: ['next', 'value', 'midcap', 'smallcap'], mcap: { large: 1 } },
-  { id: 'midcap',  platform: 'JioBLK',  name: 'Nifty Midcap 150',   cat: 'Mid Cap · Index',   units: 815.370,  cost: 8000,  casNav: 10.4744, q: 'JioBlackRock Nifty Midcap 150',   inc: ['midcap 150', 'direct', 'growth'],     exc: [], mcap: { mid: 1 } },
-  { id: 'arb',     platform: 'JioBLK',  name: 'Arbitrage',          cat: 'Arbitrage · Hedged',units: 493.038,  cost: 5000,  casNav: 10.3087, q: 'JioBlackRock Arbitrage',          inc: ['arbitrage', 'direct', 'growth'],      exc: [], mcap: { hedged: 1 } },
-  { id: 'next50',  platform: 'JioBLK',  name: 'Nifty Next 50',      cat: 'Large Cap · Index', units: 307.856,  cost: 3000,  casNav: 10.4525, q: 'JioBlackRock Nifty Next 50',      inc: ['next 50', 'direct', 'growth'],        exc: [], mcap: { large: 1 } },
-  { id: 'small',   platform: 'JioBLK',  name: 'Nifty Smallcap 250', cat: 'Small Cap · Index', units: 330.775,  cost: 3000,  casNav: 10.0992, q: 'JioBlackRock Nifty Smallcap 250', inc: ['smallcap 250', 'direct', 'growth'],   exc: [], mcap: { small: 1 } },
+  { id: 'flexi',   platform: 'JioBLK',  name: 'Flexi Cap',          cat: 'Multi Cap',         units: 2097.894, cost: 20000, bought: '2026-01-13', casNav: 9.5724,  q: 'JioBlackRock Flexi Cap',          inc: ['flexi cap', 'direct', 'growth'],      exc: [] },
+  { id: 'nifty50', platform: 'JioBLK',  name: 'Nifty 50 Index',     cat: 'Large Cap · Index', units: 1134.852, cost: 11000, bought: '2026-03-20', casNav: 9.4283,  q: 'JioBlackRock Nifty 50 Index',     inc: ['nifty 50 index', 'direct', 'growth'], exc: ['next', 'value', 'midcap', 'smallcap'], mcap: { large: 1 } },
+  { id: 'midcap',  platform: 'JioBLK',  name: 'Nifty Midcap 150',   cat: 'Mid Cap · Index',   units: 815.370,  cost: 8000,  bought: '2026-03-20', casNav: 10.4744, q: 'JioBlackRock Nifty Midcap 150',   inc: ['midcap 150', 'direct', 'growth'],     exc: [], mcap: { mid: 1 } },
+  { id: 'arb',     platform: 'JioBLK',  name: 'Arbitrage',          cat: 'Arbitrage · Hedged',units: 493.038,  cost: 5000,  bought: '2026-03-20', casNav: 10.3087, q: 'JioBlackRock Arbitrage',          inc: ['arbitrage', 'direct', 'growth'],      exc: [], mcap: { hedged: 1 } },
+  { id: 'next50',  platform: 'JioBLK',  name: 'Nifty Next 50',      cat: 'Large Cap · Index', units: 307.856,  cost: 3000,  bought: '2026-03-20', casNav: 10.4525, q: 'JioBlackRock Nifty Next 50',      inc: ['next 50', 'direct', 'growth'],        exc: [], mcap: { large: 1 } },
+  { id: 'small',   platform: 'JioBLK',  name: 'Nifty Smallcap 250', cat: 'Small Cap · Index', units: 330.775,  cost: 3000,  bought: '2026-03-20', casNav: 10.0992, q: 'JioBlackRock Nifty Smallcap 250', inc: ['smallcap 250', 'direct', 'growth'],   exc: [], mcap: { small: 1 } },
   // Zerodha — ELSS tracks Nifty LargeMidcap 250 (50/50 large/mid by index)
-  { id: 'elss',    platform: 'Zerodha', name: 'ELSS Tax Saver',     cat: 'ELSS · LargeMid 250', units: 42.390,   cost: 500,   casNav: 13.9096, q: 'Zerodha ELSS Tax Saver',          inc: ['elss', 'direct', 'growth'],           exc: [], mcap: { large: 0.5, mid: 0.5 } },
+  { id: 'elss',    platform: 'Zerodha', name: 'ELSS Tax Saver',     cat: 'ELSS · LargeMid 250', units: 42.390,   cost: 500,   bought: '2024-02-26', casNav: 13.9096, q: 'Zerodha ELSS Tax Saver',          inc: ['elss', 'direct', 'growth'],           exc: [], mcap: { large: 0.5, mid: 0.5 } },
 ].map((f) => ({ ...f, exc: [...MF_EXC_BASE, ...f.exc] }));
 
 // Dated cashflows for XIRR (rupees out are negative). ELSS seed, then the two

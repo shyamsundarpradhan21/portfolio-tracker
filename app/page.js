@@ -606,11 +606,11 @@ export default function Page() {
     return () => { dead = true; };
   }, []);
   const chartSnapshots = useMemo(() => {
-    const synth = buildBackfill(hist?.series, fxHist, usdInr);
+    const synth = buildBackfill(hist?.series, fxHist, usdInr, mfNav);
     if (!synth.length) return snapshots;
     const firstReal = snapshots[0]?.d;
     return [...synth.filter((s) => !firstReal || s.d < firstReal), ...snapshots];
-  }, [hist, fxHist, usdInr, snapshots]);
+  }, [hist, fxHist, usdInr, snapshots, mfNav]);
   useEffect(() => {
     if (!(indian.valued && usdInr)) return;
     setSnapshots(recordSnapshot({

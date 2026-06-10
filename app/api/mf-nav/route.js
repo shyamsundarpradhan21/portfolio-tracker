@@ -2,11 +2,14 @@
 // so this route is cached for 24h — do NOT refetch per request.
 //
 //   GET /api/mf-nav
-//   → { funds: { id: { nav, date, fresh } }, benchmark: {...}, asOf }
+//   → { funds: { id: { nav, date, fresh, hist: [[iso, nav], …] } }, benchmark: {...}, asOf }
 //
 // For each fund we resolve the AMFI scheme code at runtime by name (via
-// api.mfapi.in/mf/search), then read the latest NAV. On any failure we fall
-// back to the last-known casNav (date null, fresh false) so the UI never breaks.
+// api.mfapi.in/mf/search), then read its full NAV series: latest NAV for the
+// live view plus a weekly-downsampled history (from the first MF cashflow)
+// that the Overview backfill uses to value the sleeve as units × NAV(t).
+// On any failure we fall back to the last-known casNav (date null, fresh
+// false, no hist) so the UI never breaks.
 
 import { MF_FUNDS, MF_BENCHMARK, MF_CASHFLOWS } from '../../portfolio';
 
@@ -42,19 +45,40 @@ async function resolveCode(spec) {
   return match ? match.schemeCode : null;
 }
 
-async function latestNav(code) {
-  const j = await jget(`https://api.mfapi.in/mf/${code}/latest`);
-  const d = j?.data?.[0];
-  return d ? { nav: +d.nav, date: toIso(d.date) } : null;
+// History window starts at the earliest MF cashflow (with a small lead so the
+// purchase-day NAV itself resolves).
+const HIST_FROM = MF_CASHFLOWS.map((c) => c.date).sort()[0];
+
+// Full NAV series for a scheme → latest point + weekly-downsampled history.
+async function fundSeries(code) {
+  const j = await jget(`https://api.mfapi.in/mf/${code}`);
+  const rows = (j?.data || [])
+    .map((r) => ({ iso: toIso(r.date), nav: +r.nav }))
+    .filter((r) => r.iso && isFinite(r.nav))
+    .sort((a, b) => (a.iso < b.iso ? -1 : 1)); // ascending
+  if (!rows.length) return null;
+  const latest = rows[rows.length - 1];
+  const hist = [];
+  let lastKept = '';
+  for (const r of rows) {
+    if (r.iso < HIST_FROM) continue;
+    // keep ~weekly points: at least 6 days since the last kept NAV
+    if (!lastKept || (new Date(r.iso) - new Date(lastKept)) / 86400000 >= 6) {
+      hist.push([r.iso, r.nav]);
+      lastKept = r.iso;
+    }
+  }
+  if (lastKept !== latest.iso) hist.push([latest.iso, latest.nav]);
+  return { latest, hist };
 }
 
 async function resolveFund(f) {
   try {
     const code = await resolveCode(f);
     if (!code) throw new Error('no code');
-    const latest = await latestNav(code);
-    if (!latest || !isFinite(latest.nav)) throw new Error('no nav');
-    return [f.id, { nav: latest.nav, date: latest.date, fresh: true }];
+    const s = await fundSeries(code);
+    if (!s || !isFinite(s.latest.nav)) throw new Error('no nav');
+    return [f.id, { nav: s.latest.nav, date: s.latest.iso, fresh: true, hist: s.hist }];
   } catch {
     return [f.id, { nav: f.casNav, date: null, fresh: false }];
   }
