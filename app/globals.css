@@ -642,7 +642,12 @@ body { padding: 0; }
 .hdr-toggle:active { transform: scale(.92); }
 .hdr-toggle.loading { opacity: .5; pointer-events: none; }
 
-.hdr-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+/* Always one row of 5 — on narrow screens the row scrolls sideways rather
+   than wrapping, so the header keeps its desktop shape. */
+.hdr-cards {
+  display: grid; grid-template-columns: repeat(5, minmax(148px, 1fr)); gap: 10px;
+  overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px;
+}
 .hdr-card {
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
@@ -664,11 +669,8 @@ body { padding: 0; }
 .hdr-card .sub { font-size: var(--fs-2xs); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 1080px) {
-  .hdr-grid { grid-template-columns: 1fr; }
-  .hdr-cards { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 600px) {
-  .hdr-cards { grid-template-columns: repeat(2, 1fr); }
+  .hdr-grid { grid-template-columns: minmax(170px, 220px) 1fr; gap: 12px; }
+  .hdr-val { font-size: 32px; }
 }
 @media (max-width: 900px) {
   .pj-outlook { grid-template-columns: 1fr; }
