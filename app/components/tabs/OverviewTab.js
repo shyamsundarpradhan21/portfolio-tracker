@@ -25,8 +25,7 @@ export default function OverviewTab({
         baseYear={baseYear} invested0={projInvested0}
       />
 
-      {/* SIP deployment calendar (moved from the MF tab; replaces the old
-          monthly-SIP commitment card, which it supersedes) */}
+      {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />
 
       <CFMemo

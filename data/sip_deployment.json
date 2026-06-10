@@ -1,9 +1,0 @@
-{
-  "_note": "SIP plan config. Deployments themselves are derived live from portfolio.js (TRANSACTIONS = stock picks, US_CASHFLOWS = Vested in USD x live FX, MF_CASHFLOWS = JioBLK) — nothing monthly is recorded here. 'committed' is the planned monthly commitment used for the Deployed-vs-Committed stat; USD legs convert at the live rate.",
-  "fyLabel": "FY 26–27",
-  "fyStartMonth": "2026-04",
-  "committed": [
-    { "label": "JioBLK", "inr": 20000 },
-    { "label": "Vested", "usd": 200 }
-  ]
-}
