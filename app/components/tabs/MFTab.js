@@ -77,40 +77,41 @@ function XirrChart({ port, bench, delta }) {
   ];
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="fxc" style={{ marginBottom: 20 }}>
-        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>XIRR vs Benchmark · zero-anchored</span>
+      <div className="fxc" style={{ marginBottom: 14 }}>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>XIRR vs Benchmark</span>
         {delta != null && (
           <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: delta >= 0 ? 'var(--grn)' : 'var(--red)' }}>
             {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} pts {delta >= 0 ? 'ahead' : 'behind'}
           </span>
         )}
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18 }}>
         {bars.map(({ label, val, color, dim }) => {
-          if (val == null) return <div key={label} style={{ height: 28 }} />;
+          if (val == null) return <div key={label} style={{ height: 42 }} />;
           const w = Math.min(Math.abs(val) / max * 100, 100) + '%';
           const pos = val >= 0;
           return (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', height: 28 }}>
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, paddingRight: 2 }}>
-                {!pos && <>
-                  <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--txt2)', whiteSpace: 'nowrap' }}>{label} {val.toFixed(1)}%</span>
-                  <div style={{ width: w, height: 22, background: color, borderRadius: '4px 0 0 4px', opacity: dim ? .65 : .85, flexShrink: 0 }} />
-                </>}
+            <div key={label}>
+              <div className="fxc" style={{ marginBottom: 6 }}>
+                <span className="mono" style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>
+                <span className="mono" style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color }}>{val >= 0 ? '+' : ''}{val.toFixed(1)}%</span>
               </div>
-              <div style={{ width: 1, height: 32, background: 'var(--brd2)', flexShrink: 0 }} />
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 2 }}>
-                {pos && <>
-                  <div style={{ width: w, height: 22, background: color, borderRadius: '0 4px 4px 0', opacity: dim ? .65 : .85, flexShrink: 0 }} />
-                  <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--txt2)', whiteSpace: 'nowrap' }}>{label} +{val.toFixed(1)}%</span>
-                </>}
+              <div style={{ display: 'flex', height: 20 }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'stretch' }}>
+                  {!pos && <div style={{ width: w, background: color, opacity: dim ? .65 : .9, borderRadius: '3px 0 0 3px', flexShrink: 0 }} />}
+                </div>
+                <div style={{ width: 1, background: 'var(--brd)', flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
+                  {pos && <div style={{ width: w, background: color, opacity: dim ? .65 : .9, borderRadius: '0 3px 3px 0', flexShrink: 0 }} />}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', position: 'relative' }}>
-        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontFamily: 'var(--mono)' }}>0%</span>
+      {/* "0%" centered over the axis line using absolute positioning */}
+      <div style={{ position: 'relative', height: 16, marginTop: 10 }}>
+        <span className="mono" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>0%</span>
       </div>
     </div>
   );

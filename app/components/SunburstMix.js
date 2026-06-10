@@ -80,19 +80,47 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
             </g>
           );
         })}
-        {/* centre readout */}
-        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          {(() => {
-            const s = fmtAmt(hov ? hov.val : T);
-            const m = /^([₹$])(.*)$/.exec(s);
-            // Render the currency symbol smaller so ₹/$ matches the digit height.
-            return m ? <><tspan fontSize="17">{m[1]}</tspan>{m[2]}</> : s;
-          })()}
-        </text>
-        <text x={cx} y={cy + 14} textAnchor="middle"
-          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov ? hov.color : 'var(--txt3)', fontWeight: 700 }}>
-          {hov ? `${hov.label} · ${hov.pct.toFixed(0)} %` : 'Deployed'}
-        </text>
+        {/* centre readout — split long hover labels into two tspan lines to stay inside the hole */}
+        {(() => {
+          const s = fmtAmt(hov ? hov.val : T);
+          const m = /^([₹$])(.*)$/.exec(s);
+          const valEl = m ? <><tspan fontSize="17">{m[1]}</tspan>{m[2]}</> : s;
+          const lines = (() => {
+            if (!hov) return [];
+            const lb = hov.label;
+            if (lb.length <= 12) return [lb];
+            const mid = Math.floor(lb.length / 2);
+            const sp = lb.lastIndexOf(' ', mid + 3);
+            return sp > 0 ? [lb.slice(0, sp), lb.slice(sp + 1)] : [lb];
+          })();
+          const twoLine = lines.length > 1;
+          const vy = hov ? cy - 10 : cy - 3;
+          return (
+            <>
+              <text x={cx} y={vy} textAnchor="middle"
+                style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
+                {valEl}
+              </text>
+              {hov ? (
+                <>
+                  <text x={cx} y={cy + 8} textAnchor="middle"
+                    style={{ fontSize: 8.5, letterSpacing: '0.6px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700, pointerEvents: 'none' }}>
+                    {lines.map((ln, i) => <tspan key={i} x={cx} dy={i === 0 ? 0 : 10}>{ln}</tspan>)}
+                  </text>
+                  <text x={cx} y={cy + (twoLine ? 32 : 22)} textAnchor="middle"
+                    style={{ fontSize: 9, fontFamily: 'var(--mono)', fill: 'var(--txt3)', fontWeight: 600, pointerEvents: 'none' }}>
+                    {hov.pct.toFixed(1)}%
+                  </text>
+                </>
+              ) : (
+                <text x={cx} y={cy + 14} textAnchor="middle"
+                  style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
+                  Deployed
+                </text>
+              )}
+            </>
+          );
+        })()}
       </svg>
 
       {/* sector legend */}
