@@ -2,10 +2,11 @@
 import { fmtNavDate } from '../../lib/fmt';
 
 export default function FreshnessTag({ mode, date, marketState }) {
-  let dot = 'var(--txt3)', text = '';
+  let dot = 'var(--txt3)', text = '', blink = false;
   if (mode === 'live') {
     const open = marketState && marketState.open;
     dot  = open ? 'var(--grn)' : 'var(--txt3)';
+    blink = !!open;
     text = (open ? 'LIVE · ' : '') + (marketState ? marketState.label : '');
   } else if (mode === 'nav') {
     const f = fmtNavDate(date);
@@ -16,7 +17,7 @@ export default function FreshnessTag({ mode, date, marketState }) {
   }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', fontWeight: 500, whiteSpace: 'nowrap' }}>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+      <span className={blink ? 'live-dot on' : ''} style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0, margin: 0 }} />
       {text}
     </span>
   );
