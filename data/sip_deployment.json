@@ -1,5 +1,5 @@
 {
-  "_note": "SIP deployment sheet — update monthly. 'base' SIPs fire automatically every month; 'triggers' = number of discretionary ₹triggerSize picks fired that month. Add a row to 'months' when a month closes (or to record the running month). Months of the FY not listed here render as planned (base only). fyLabel/fyStartMonth drive the 12-cell calendar.",
+  "_note": "SIP deployment sheet — update monthly. Only months listed here count as deployed; everything else renders as planned at ₹0 (nothing is assumed). 'base' (top-level) is the committed stream split used for the composition bar and floor stat; each month row records actuals: 'base' = base amount that actually fired, 'triggers' = number of discretionary ₹triggerSize picks fired. fyLabel/fyStartMonth drive the 12-cell calendar.",
   "fyLabel": "FY 26–27",
   "fyStartMonth": "2026-04",
   "triggerSize": 30000,
@@ -8,8 +8,8 @@
     { "label": "Vested", "amount": 19000 }
   ],
   "months": [
-    { "month": "2026-04", "triggers": 1 },
-    { "month": "2026-05", "triggers": 2 },
-    { "month": "2026-06", "triggers": 0 }
+    { "month": "2026-04", "base": 39000, "triggers": 1 },
+    { "month": "2026-05", "base": 39000, "triggers": 2 },
+    { "month": "2026-06", "base": 39000, "triggers": 0 }
   ]
 }
