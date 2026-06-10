@@ -1,11 +1,14 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Source_Sans_3, Playfair_Display, Fira_Code } from 'next/font/google';
+import { Source_Sans_3, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 
+// latin-ext is required for the rupee sign — U+20B9 is not in Google's latin
+// subset, so without it every ₹ falls back to a system font with different
+// metrics and looks misaligned next to the digits.
 const body = Source_Sans_3({ subsets: ['latin', 'latin-ext'], variable: '--font-body', display: 'swap' });
 const serif = Playfair_Display({ subsets: ['latin', 'latin-ext'], weight: ['500','600','700','800'], variable: '--font-title', display: 'swap' });
-const mono = Fira_Code({ subsets: ['latin', 'latin-ext'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
+const mono = JetBrains_Mono({ subsets: ['latin', 'latin-ext'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
 
 export const metadata = {
   title: 'Net Worth — Live',
