@@ -617,7 +617,9 @@ export default function Page() {
               <div className="page-header-sub">
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
                 {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
-                {' · '}excl. algo
+                {indian.valued && usdInr ? (
+                  <span style={{ color: 'var(--txt3)' }}>{' · '}incl. algo <InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></span>
+                ) : <>{' · '}excl. algo</>}
               </div>
             </button>
 
