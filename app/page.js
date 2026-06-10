@@ -5,7 +5,7 @@ import {
   INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
-  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED,
+  US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -477,7 +477,8 @@ export default function Page() {
     // can't honestly sit next to the live-priced sleeves. It stays fully
     // tracked on the Algo tab and the header card.
     const totalAssets = indian.val + usInr + fdValue + mf.totVal;
-    return { usInr, fdValue, totalAssets, nw: totalAssets - STATIC.loan };
+    const loan = loanOutstanding(new Date());
+    return { usInr, fdValue, totalAssets, loan, nw: totalAssets - loan };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
@@ -506,7 +507,7 @@ export default function Page() {
       asOf: new Date().toISOString().slice(0, 16) + 'Z',
       usdInr: +usdInr.toFixed(2),
       overview:
-        `net worth ₹${L(ov.nw)} (assets ₹${L(ov.totalAssets)} − loan ₹7.5L) · ` +
+        `net worth ₹${L(ov.nw)} (assets ₹${L(ov.totalAssets)} − loan ₹${L(ov.loan)}) · ` +
         `Indian P&L ${r1(indian.pct)}% (day ${r1(indianDay.dayPct)}%) · US P&L ${r1(usData.pct)}% (day ${r1(usStats.dayPct)}%)`,
       indian:
         `${INDIAN.length} stocks ₹${L(indian.inv)}→₹${L(indian.val)} · XIRR ${r1(inStats.portXirr)}% vs ${inStats.benchmarks[0]?.label || 'benchmark'} ${r1(inStats.benchmarks[0]?.xirr)}% · ` +
@@ -669,7 +670,7 @@ export default function Page() {
               <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
               <div className="page-header-sub">
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
-                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
+                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
                 {indian.valued && usdInr ? (
                   <span>{' · '}incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong></span>
                 ) : <>{' · '}excl. algo</>}
@@ -695,7 +696,7 @@ export default function Page() {
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={chartSnapshots}
-              projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />
+              projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}

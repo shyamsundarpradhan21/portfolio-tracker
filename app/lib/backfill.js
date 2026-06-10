@@ -15,12 +15,13 @@
 //   MF  — carried at cost (small sleeve; no per-fund NAV history ledgered).
 //   FD  — deterministic quarterly compounding from each open date, clamped at
 //         maturity (matches deriveFds).
-//   nw  — assets − STATIC.loan (loan treated as constant history).
+//   nw  — assets − loanOutstanding(t): zero before disbursement (Sep 2025),
+//         actual SBI statement balances thereafter.
 //
 // Output: [{ d, nw, assets, invested, synth: true }] — callers must only use
 // dates BEFORE the first real snapshot; real dailies always win.
 
-import { TRANSACTIONS, INDIAN, US, US_CASHFLOWS, MF_CASHFLOWS, FDS, STATIC } from '../portfolio';
+import { TRANSACTIONS, INDIAN, US, US_CASHFLOWS, MF_CASHFLOWS, FDS, loanOutstanding } from '../portfolio';
 
 const DAY = 24 * 3600 * 1000;
 const YEAR = 365.25 * DAY;
@@ -104,6 +105,6 @@ export function buildBackfill(series, fxRates, fxLive) {
     }
     const invested = flows.filter((f) => f.date <= d).reduce((s, f) => s + f.inr, 0);
     const assets = Math.round(ind + us + mf + fd);
-    return { d, nw: assets - STATIC.loan, assets, invested: Math.round(invested), synth: true };
+    return { d, nw: assets - loanOutstanding(d), assets, invested: Math.round(invested), synth: true };
   });
 }

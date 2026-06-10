@@ -314,13 +314,60 @@ export const fdRedemptions = (now = new Date()) => [
 // Other static assets and liabilities (INR).
 export const STATIC = {
   algo: 730000,        // own algo capital = S01 ₹3.9L + S02 ₹3.4L — EXCLUDED from net worth (no daily mark-to-market); tracked on the Algo tab + header card only
-  loan: 750000,        // personal loan liability
+  loan: 750000,        // DEPRECATED — superseded by LOAN below (kept as last-resort fallback)
   // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
   // FD value (principal + accrued interest) is now computed live — see deriveFds.
 };
 
 // (FD pipeline now lives inside FDS as status: 'pipeline' — single lifecycle,
 // promotion to active is a one-word edit on booking day.)
+
+// ── SBI personal loan — from the account statement (11-06-2026) ──────────────
+// `balances` are the ACTUAL ledger balances after every statement event
+// (EMI on the 5th, interest capitalised at month-end). Past dates read straight
+// off this series; dates beyond the last entry are projected with the same
+// EMI/daily-interest mechanics. Refresh `balances` from a new statement
+// occasionally to re-anchor the projection.
+export const LOAN = {
+  sanctioned: 800000,
+  open: '2025-09-08',
+  rate: 13.55,       // % p.a., accrues daily, capitalised at month-end
+  emi: 14794,        // debited on the 5th
+  termMonths: 84,
+  balances: [
+    ['2025-09-08', 800000], ['2025-09-30', 806831], ['2025-10-05', 777243],
+    ['2025-10-31', 786232], ['2025-11-05', 771438], ['2025-11-30', 780051],
+    ['2025-12-05', 765257], ['2025-12-31', 774086], ['2026-01-05', 759292],
+    ['2026-01-31', 768052], ['2026-02-05', 753258], ['2026-02-28', 761110],
+    ['2026-03-05', 746316], ['2026-03-31', 754927], ['2026-04-05', 740133],
+    ['2026-04-30', 748398], ['2026-05-05', 733604], ['2026-05-31', 742069],
+    ['2026-06-05', 727275],
+  ],
+};
+
+// Outstanding loan balance on any date: 0 before disbursement, the actual
+// statement balance through the recorded window, then a projected EMI/interest
+// simulation beyond it (down to 0 when the schedule pays off).
+export function loanOutstanding(date = new Date()) {
+  const d = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
+  if (d < LOAN.open) return 0;
+  const B = LOAN.balances;
+  let bal = null, lastD = null;
+  for (const [bd, bv] of B) { if (bd <= d) { bal = bv; lastD = bd; } else break; }
+  if (bal == null) return 0;
+  // Project past the statement window: daily accrual capitalised monthly, EMI on the 5th.
+  let cur = new Date(lastD + 'T00:00:00Z');
+  const end = new Date(d + 'T00:00:00Z');
+  let accr = 0;
+  while (cur < end && bal > 0) {
+    cur = new Date(cur.getTime() + 86400000);
+    accr += (bal * LOAN.rate) / 36500;
+    if (cur.getUTCDate() === 5) bal = Math.max(0, bal - LOAN.emi);
+    const next = new Date(cur.getTime() + 86400000);
+    if (next.getUTCMonth() !== cur.getUTCMonth()) { bal += accr; accr = 0; }
+  }
+  return Math.round(bal);
+}
 
 // Mutual funds. Units / cost / casNav are AUTHORITATIVE from the CAS statement
 // (consolidated account statement) dated 05-Jun-2026. NAV is fetched live once
