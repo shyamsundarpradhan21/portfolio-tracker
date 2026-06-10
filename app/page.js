@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INDIAN, US, FDS, FD_PIPELINE, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
+  INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
   ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED,
@@ -70,7 +70,9 @@ function deriveMf(mfNav) {
 function deriveFds(now) {
   const t = now.getTime();
   let principal = 0, accrued = 0, maturity = 0, weightedRate = 0;
-  const rows = FDS.map((f) => {
+  // Only 'active' rows earn and count toward net worth; 'closed' rows are
+  // history (deployment calendar, matured section), 'pipeline' is future cash.
+  const rows = FDS.filter((f) => f.status === 'active').map((f) => {
     const openT        = new Date(f.open).getTime();
     const matT         = new Date(f.matures).getTime();
     const totalYears   = (matT - openT) / YEAR_MS;
@@ -80,14 +82,20 @@ function deriveFds(now) {
     principal += f.principal; accrued += accruedSoFar; maturity += maturityValue; weightedRate += f.principal * f.rate;
     return { ...f, totalYears, elapsedYears, maturityValue, maturityInterest: maturityValue - f.principal, accruedSoFar, progress: totalYears ? (elapsedYears / totalYears) * 100 : 0 };
   });
-  const pipeline = FD_PIPELINE.map((f) => ({ ...f, days: Math.ceil((new Date(f.deploy).getTime() - t) / DAY_MS) }));
+  const closed = FDS.filter((f) => f.status === 'closed').map((f) => {
+    const totalYears = (new Date(f.matures).getTime() - new Date(f.open).getTime()) / YEAR_MS;
+    const maturityValue = f.rate != null ? compound(f.principal, f.rate, totalYears) : f.principal;
+    return { ...f, maturityValue, maturityInterest: maturityValue - f.principal };
+  });
+  const pipeline = FDS.filter((f) => f.status === 'pipeline')
+    .map((f) => ({ ...f, deploy: f.open, maturity: f.matures, amount: f.principal, days: Math.ceil((new Date(f.open).getTime() - t) / DAY_MS) }));
   let nextIdx = -1;
   pipeline.forEach((f, i) => { if (f.days >= 0 && (nextIdx === -1 || f.days < pipeline[nextIdx].days)) nextIdx = i; });
   if (nextIdx >= 0) {
     const d = pipeline[nextIdx].days;
     pipeline[nextIdx] = { ...pipeline[nextIdx], badge: d === 0 ? 'NEXT · TODAY' : d === 1 ? 'NEXT · 1 DAY' : `NEXT · ${d} DAYS` };
   }
-  return { rows, principal, accrued, maturity, blendedRate: principal ? weightedRate / principal : 0, pipeline, pipelineTotal: FD_PIPELINE.reduce((s, f) => s + f.amount, 0), nextPipeline: nextIdx >= 0 ? pipeline[nextIdx] : null };
+  return { rows, closed, principal, accrued, maturity, blendedRate: principal ? weightedRate / principal : 0, pipeline, pipelineTotal: pipeline.reduce((s, f) => s + f.amount, 0), nextPipeline: nextIdx >= 0 ? pipeline[nextIdx] : null };
 }
 
 function mfXirr(mf, mfNav) {
@@ -506,7 +514,7 @@ export default function Page() {
         `mix equity ${r1((mf.alloc.equity / (mf.totVal || 1)) * 100)}% arbitrage ${r1((mf.alloc.arbitrage / (mf.totVal || 1)) * 100)}% · ` +
         `SIP ₹20K/mo JioBLK, ELSS locked to Feb-27 · CAVEAT very small base + short window`,
       fixedDeposits:
-        `₹${L(fds.principal)} across ${FDS.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
+        `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
         `own capital ₹7.3L (off-NW) · FY27 realised S01 +₹${FY.s01.fy2627.net} S02 +₹${FY.s02.fy2627.net}` +
@@ -665,7 +673,7 @@ export default function Page() {
               INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY} />
           )}
           {tab === 2 && (
-            <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} FDS={FDS} FD_PIPELINE={FD_PIPELINE} />
+            <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
           )}
           {tab === 3 && (
             <MFTab mf={mf} mfx={mfx} mfBench={mfBench} mfSorted={mfSorted} mfSort={mfSort} sortMf={sortMf}

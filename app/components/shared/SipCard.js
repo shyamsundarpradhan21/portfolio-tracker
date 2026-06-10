@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS } from '../../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions } from '../../portfolio';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
 // Derived entirely from the ledgers in portfolio.js — nothing monthly recorded:
@@ -45,7 +45,7 @@ export default function SipCard({ fx }) {
       ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
-      ...FDS.map((f) => f.open),
+      ...fdFlows().map((f) => f.date),
     ];
     const first = dates.length ? fyOf(dates.sort()[0]) : curFY;
     return Array.from({ length: curFY - first + 1 }, (_, i) => first + i);
@@ -70,7 +70,7 @@ export default function SipCard({ fx }) {
     const us = US_CASHFLOWS.filter((c) => c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
     const ind = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
-    const fd = FDS.reduce((s, f) => s + f.principal, 0);
+    const fd = fdFlows().reduce((s, f) => s + f.amount, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
       { label: 'US', amount: Math.round(us) },
@@ -81,7 +81,7 @@ export default function SipCard({ fx }) {
       ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
-      ...FDS.map((f) => f.open),
+      ...fdFlows().map((f) => f.date),
     ].sort();
     const first = dates[0];
     // inclusive month count from first flow to now
@@ -100,8 +100,8 @@ export default function SipCard({ fx }) {
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
     const ind = TRANSACTIONS.filter((t) => monthKey(t.date) === key)
       .reduce((s, t) => s + t.invested, 0);
-    const fd = FDS.filter((f) => monthKey(f.open) === key)
-      .reduce((s, f) => s + f.principal, 0);
+    const fd = fdFlows().filter((f) => monthKey(f.date) === key)
+      .reduce((s, f) => s + f.amount, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
       { label: 'US', amount: Math.round(us) },
@@ -152,6 +152,12 @@ export default function SipCard({ fx }) {
   const avgMo = statMonths ? Math.round(statTot / statMonths) : null;
   const runRate = avgMo != null ? avgMo * 12 : null;
   const maxMonth = Math.max(...MONTHS.map((m) => m.total), 1);
+
+  // FD redemptions in the view's scope — cash coming back, never mixed into
+  // the deployed figure. The mini only renders once one exists.
+  const redeemed = fdRedemptions()
+    .filter((r) => allFys || fyOf(r.date) === fySel)
+    .reduce((s, r) => s + r.amount, 0);
 
   const headSub = allFys
     ? `deployed all-time · ${allTime.months} months`
@@ -244,7 +250,7 @@ export default function SipCard({ fx }) {
       </div>
 
       {/* summary stats — all derived from ledger flows */}
-      <div className="g3">
+      <div className={redeemed > 0 ? 'g4' : 'g3'}>
         <div className="mini">
           <div className="lbl">{allFys ? 'deployed all-time' : 'deployed'}</div>
           <div className="vsm grn">{statMonths ? <RsText>{inrFull(statTot)}</RsText> : '—'}</div>
@@ -257,6 +263,12 @@ export default function SipCard({ fx }) {
           <div className="lbl">run-rate (annualised)</div>
           <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
         </div>
+        {redeemed > 0 && (
+          <div className="mini">
+            <div className="lbl">redeemed</div>
+            <div className="vsm red"><RsText>{inrFull(redeemed)}</RsText></div>
+          </div>
+        )}
       </div>
     </div>
   );

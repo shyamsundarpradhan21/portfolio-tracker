@@ -3,7 +3,8 @@ import { InrC, InrF, Pct, fmtNavDate, fmtDateObj } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 
-export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoad, FDS, FD_PIPELINE }) {
+export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoad }) {
+  const banks = [...new Set(fds.rows.map((f) => f.bank))].join(', ');
   return (
     <div>
       <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
@@ -15,7 +16,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         <div className="csm">
           <div className="lbl">active deployed</div>
           <div className="vmd"><InrC n={fds.principal} /></div>
-          <div className="sub">{FDS.length} FDs · Slice, ICICI, HDFC</div>
+          <div className="sub">{fds.rows.length} FDs · {banks}</div>
         </div>
         <div className="csm">
           <div className="lbl">accrued interest</div>
@@ -116,6 +117,34 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
           below the <span className="rs">₹</span>40,000 Sec 194A TDS threshold. Pipeline stays out of net worth until its deploy date arrives.
         </div>
       </div>
+
+      {fds.closed.length > 0 && (
+        <div className="card sec">
+          <div className="lbl" style={{ marginBottom: 10 }}>Matured &amp; Redeemed</div>
+          <div className="ovx">
+            <table className="tbl" style={{ minWidth: 600 }}>
+              <thead>
+                <tr>
+                  <th>Bank</th><th>FD</th><th>Held</th>
+                  <th className="ra">Principal</th><th className="ra">Rate</th><th className="ra">Interest earned</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fds.closed.map((f) => (
+                  <tr key={f.id}>
+                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                    <td className="mut">{f.label}</td>
+                    <td className="mut">{fmtNavDate(f.open)} → {fmtNavDate(f.closedOn || f.matures)}</td>
+                    <td className="ra mono"><InrC n={f.principal} /></td>
+                    <td className="ra mono">{f.rate != null ? <Pct n={f.rate} /> : '—'}</td>
+                    <td className="ra grn mono"><InrF n={f.maturityInterest} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

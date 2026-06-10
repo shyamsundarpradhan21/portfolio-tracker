@@ -12,7 +12,7 @@
 // (app/portfolio.js). The model is a rolling window anchored to "today".
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
-import { PROJECTION, FDS, FD_PIPELINE } from '../portfolio';
+import { PROJECTION, FDS } from '../portfolio';
 import { NNBSP, RsText } from '../lib/fmt';
 
 // Scenario accents come from the theme so the day palette can deepen them
@@ -48,7 +48,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
 
   const MAXY = PROJECTION.horizonYears;
   const fdCeiling = useMemo(
-    () => FDS.reduce((a, f) => a + f.principal, 0) + FD_PIPELINE.reduce((a, f) => a + f.amount, 0),
+    () => FDS.filter((f) => f.status !== 'closed').reduce((a, f) => a + f.principal, 0),
     [],
   );
 

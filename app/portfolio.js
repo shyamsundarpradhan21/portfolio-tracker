@@ -262,15 +262,40 @@ export const US = [
 ].map((s) => ({ ...s, inv: +(s.qty * s.cost).toFixed(2) }));
 
 // Fixed deposits — quarterly-compounding cumulative FDs, no external feed.
+// One row per deposit covering its WHOLE lifecycle:
+//   status   — 'pipeline' (committed, cash not yet out) → 'active' (earning,
+//              in net worth) → 'closed' (redeemed; kept for history, out of
+//              all live totals).
+//   newMoney — the slice of principal that is FRESH cash, used by the
+//              deployment calendar. Defaults to principal. On a rollover set
+//              it to whatever wasn't recycled from the matured FD (usually
+//              just the capitalised interest) and point `rolledFrom` at the
+//              matured row's id — this is what stops double-counting.
+//   closedOn — set when status flips to 'closed' (redemption date).
 // `open`/`matures` are ISO dates; accrued interest, value-at-maturity and
 // progress are derived live from the system clock (see deriveFds in page.js —
 // quarterly compounding only, simple interest is never used).
 export const FDS = [
-  { bank: 'Slice', label: 'I', principal: 125000, rate: 7.75, open: '2025-12-08', matures: '2027-06-09' },
-  { bank: 'ICICI', label: 'I', principal: 135000, rate: 6.60, open: '2025-12-09', matures: '2027-12-10' },
-  { bank: 'HDFC',  label: 'I', principal: 235000, rate: 6.45, open: '2026-03-08', matures: '2027-09-09' },
-  { bank: 'SBI',   label: 'I', principal: 150000, rate: 6.40, open: '2026-06-09', matures: '2028-06-10' },
+  { id: 'slice-1', bank: 'Slice', label: 'I', status: 'active', principal: 125000, rate: 7.75, open: '2025-12-08', matures: '2027-06-09' },
+  { id: 'icici-1', bank: 'ICICI', label: 'I', status: 'active', principal: 135000, rate: 6.60, open: '2025-12-09', matures: '2027-12-10' },
+  { id: 'hdfc-1',  bank: 'HDFC',  label: 'I', status: 'active', principal: 235000, rate: 6.45, open: '2026-03-08', matures: '2027-09-09' },
+  { id: 'sbi-1',   bank: 'SBI',   label: 'I', status: 'active', principal: 150000, rate: 6.40, open: '2026-06-09', matures: '2028-06-10' },
+  // Pipeline — maturities laddered quarterly across 4 banks; rates set on booking.
+  { id: 'slice-2', bank: 'Slice', label: 'II',  status: 'pipeline', principal: 275000, tenure: '18m+1d', open: '2026-09-08', matures: '2028-03-09' },
+  { id: 'icici-2', bank: 'ICICI', label: 'II',  status: 'pipeline', principal: 165000, tenure: '2y+1d',  open: '2026-12-09', matures: '2028-12-10' },
+  { id: 'hdfc-2',  bank: 'HDFC',  label: 'II',  status: 'pipeline', principal: 245000, tenure: '18m+1d', open: '2027-03-08', matures: '2028-09-09' },
+  { id: 'sbi-2',   bank: 'SBI',   label: 'II',  status: 'pipeline', principal: 155000, tenure: '2y+1d',  open: '2027-06-09', matures: '2029-06-10' },
+  { id: 'icici-3', bank: 'ICICI', label: 'III', status: 'pipeline', principal: 170000, tenure: '2y+1d',  open: '2027-09-08', matures: '2029-09-10' },
+  { id: 'sbi-3',   bank: 'SBI',   label: 'III', status: 'pipeline', principal: 165000, tenure: '2y+1d',  open: '2027-12-09', matures: '2029-12-10' },
 ];
+
+// Dated deployment flows for the Capital Deployment calendar: fresh cash only
+// (newMoney), never pipeline (cash hasn't left yet), closed rows included so
+// history survives redemption. Redemptions = closed rows' principal on closedOn.
+export const fdFlows = () =>
+  FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, amount: f.newMoney ?? f.principal }));
+export const fdRedemptions = () =>
+  FDS.filter((f) => f.status === 'closed' && f.closedOn).map((f) => ({ date: f.closedOn, amount: f.principal }));
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
@@ -280,17 +305,8 @@ export const STATIC = {
   // FD value (principal + accrued interest) is now computed live — see deriveFds.
 };
 
-// FD pipeline — committed but not yet deployed; excluded from net worth and
-// "deployed" totals until the deploy date arrives. The countdown badge on the
-// nearest upcoming deploy is derived live (see deriveFds).
-export const FD_PIPELINE = [
-  { bank: 'Slice', label: 'II',  deploy: '2026-09-08', maturity: '2028-03-09', tenure: '18m+1d', amount: 275000 },
-  { bank: 'ICICI', label: 'II',  deploy: '2026-12-09', maturity: '2028-12-10', tenure: '2y+1d',  amount: 165000 },
-  { bank: 'HDFC',  label: 'II',  deploy: '2027-03-08', maturity: '2028-09-09', tenure: '18m+1d', amount: 245000 },
-  { bank: 'SBI',   label: 'II',  deploy: '2027-06-09', maturity: '2029-06-10', tenure: '2y+1d',  amount: 155000 },
-  { bank: 'ICICI', label: 'III', deploy: '2027-09-08', maturity: '2029-09-10', tenure: '2y+1d',  amount: 170000 },
-  { bank: 'SBI',   label: 'III', deploy: '2027-12-09', maturity: '2029-12-10', tenure: '2y+1d',  amount: 165000 },
-];
+// (FD pipeline now lives inside FDS as status: 'pipeline' — single lifecycle,
+// promotion to active is a one-word edit on booking day.)
 
 // Mutual funds. Units / cost / casNav are AUTHORITATIVE from the CAS statement
 // (consolidated account statement) dated 05-Jun-2026. NAV is fetched live once
