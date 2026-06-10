@@ -1,80 +1,22 @@
 'use client';
-import { useState } from 'react';
-import { cl, pctS, Pct, InrC, InrF, SInrF, Rs, inrCd } from '../../lib/fmt';
+import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
-import TreeMap from '../shared/TreeMap';
+import SunburstMix from '../SunburstMix';
 
 const platStyle = (p) => p === 'JioBLK'
   ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
   : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
-// ── Asset-allocation donut — wider ring, larger legend ───────────────────────
-function AllocDonut({ segs, total }) {
-  const [hov, setHov] = useState(null);
-  const size = 200, thick = 32, r = (size - thick) / 2, C = 2 * Math.PI * r;
-  const live = segs.filter((s) => s.val > 0);
-  const gapFrac = live.length > 1 ? 2.5 / 360 : 0;
-  const tot = total || live.reduce((s, x) => s + x.val, 0) || 1;
-  const centre = hov || { label: 'invested', val: tot };
-  let acc = 0;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg className="svgchart" viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 240, height: 'auto' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
-        {live.map((s) => {
-          const frac = s.val / tot;
-          const arc = Math.max(frac - gapFrac, 0.004) * C;
-          const rot = acc * 360 - 90 + (gapFrac * 360) / 2;
-          acc += frac;
-          return (
-            <circle key={s.label} cx={size / 2} cy={size / 2} r={r} fill="none"
-              stroke={s.color} strokeWidth={thick}
-              strokeDasharray={`${arc} ${C}`}
-              transform={`rotate(${rot} ${size / 2} ${size / 2})`}
-              opacity={hov && hov.label !== s.label ? 0.2 : 1}
-              style={{ transition: 'opacity .15s', cursor: 'pointer' }}
-              onMouseEnter={() => setHov({ label: s.label, val: s.val })}
-              onMouseLeave={() => setHov(null)} />
-          );
-        })}
-        <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
-          style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          <tspan fontSize="26" fontFamily="var(--body)">₹</tspan>{inrCd(centre.val)}
-        </text>
-        <text x={size / 2} y={size / 2 + 16} textAnchor="middle"
-          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
-          {centre.label}
-        </text>
-      </svg>
-      <div style={{ width: '100%', marginTop: 16 }}>
-        {segs.map((s) => (
-          <div key={s.label} className="fxc"
-            style={{ marginBottom: 9, opacity: s.val > 0 ? 1 : 0.4, cursor: 'default' }}
-            onMouseEnter={() => s.val > 0 && setHov({ label: s.label, val: s.val })}
-            onMouseLeave={() => setHov(null)}>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 11, height: 11, borderRadius: 3, background: s.color, flexShrink: 0 }} />{s.label}
-            </span>
-            <span className="mono" style={{ fontSize: 'var(--fs-sm)' }}>
-              <InrC n={s.val} /> · <Pct n={(s.val / tot) * 100} d={1} />
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Zero-anchored XIRR bar chart ──────────────────────────────────────────────
-function XirrChart({ port, bench, delta }) {
-  const max = Math.max(Math.abs(port ?? 0), Math.abs(bench ?? 0), 8) * 1.2;
+// ── Zero-anchored XIRR bar chart — portfolio vs several index counterfactuals ─
+function XirrChart({ port, bench, delta, extra = [] }) {
   const bars = [
-    { label: 'YOU',   val: port,  color: (port ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)' },
-    { label: 'NIFTY', val: bench, color: (bench ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)', dim: true },
-  ];
+    { label: 'YOU',      val: port,  color: (port ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)' },
+    { label: 'NIFTY 50', val: bench, color: (bench ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)', dim: true },
+    ...extra.map((b) => ({ label: b.label.toUpperCase(), val: b.xirr, color: b.color, dim: true })),
+  ].filter((b) => b.val != null || b.label === 'YOU' || b.label === 'NIFTY 50');
+  const max = Math.max(...bars.map((b) => Math.abs(b.val ?? 0)), 8) * 1.2;
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="fxc" style={{ marginBottom: 14 }}>
@@ -85,9 +27,9 @@ function XirrChart({ port, bench, delta }) {
           </span>
         )}
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 13 }}>
         {bars.map(({ label, val, color, dim }) => {
-          if (val == null) return <div key={label} style={{ height: 42 }} />;
+          if (val == null) return <div key={label} style={{ height: 38 }} />;
           const w = Math.min(Math.abs(val) / max * 100, 100) + '%';
           const pos = val >= 0;
           return (
@@ -128,7 +70,7 @@ const MF_COLS = [
   { key: 'ret',      label: 'Return',       num: true  },
 ];
 
-export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, insightsOn, insightsFirstLoad, MF_FUNDS, UNITS_AS_OF, FY }) {
+export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf, insights, insightsOn, insightsFirstLoad, MF_FUNDS, UNITS_AS_OF, FY }) {
   const mfDate = (mf.rows.find((r) => r.navDate) || {}).navDate || null;
   const delta   = mfx.port != null && mfx.bench != null ? mfx.port - mfx.bench : null;
 
@@ -170,26 +112,26 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
         </div>
       </div>
 
-      {/* Asset Allocation spans both rows on the left; XIRR and Market Cap
-          stack top/bottom on the right (.mf-g3 grid). */}
-      <div className="mf-g3">
-        <div className="card mf-alloc" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 14 }}>Asset Allocation</div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <AllocDonut segs={allocSegs} total={mf.totVal} />
-          </div>
-          <div className="sub" style={{ marginTop: 10 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
-        </div>
-
-        <XirrChart port={mfx.port} bench={mfx.bench} delta={delta} />
-
+      {/* Dual-ring sunburst (outer = asset class, inner = cap mix) on the left;
+          multi-benchmark XIRR chart on the right. */}
+      <div className="g2 sec">
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 4 }}>Market Cap</div>
-          <div className="sub" style={{ marginBottom: 12 }}>Each fund bucketed by mandate; Flexi Cap &amp; ELSS are multi-cap.</div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <TreeMap items={capSegs} height={252} />
+          <div className="ctitle" style={{ marginBottom: 14 }}>Asset Allocation &amp; Market Cap</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <SunburstMix
+              sectors={allocSegs.filter((s) => s.val > 0).map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
+              caps={capSegs.map((s) => ({ ...s, pct: mf.totVal ? (s.val / mf.totVal) * 100 : 0 }))}
+              total={mf.totVal}
+              secColors={allocSegs.filter((s) => s.val > 0).map((s) => s.color)}
+              capColor={Object.fromEntries(capSegs.map((s) => [s.label, s.color]))} />
+          </div>
+          <div className="sub" style={{ marginTop: 10 }}>
+            Outer ring asset class · inner ring market cap by mandate (Flexi &amp; ELSS multi-cap). Arbitrage held as a cash-like sleeve.
           </div>
         </div>
+
+        <XirrChart port={mfx.port} bench={mfx.bench} delta={delta}
+          extra={mfBench.filter((b) => b.key !== 'nifty50')} />
       </div>
 
 

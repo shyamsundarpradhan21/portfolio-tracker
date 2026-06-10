@@ -425,6 +425,21 @@ export default function Page() {
   // ─── derived: MF / FD / overview ────────────────────────────────────────────
   const mf = useMemo(() => deriveMf(mfNav), [mfNav]);
   const mfx = useMemo(() => mfXirr(mf, mfNav), [mf, mfNav]);
+
+  // Counterfactual XIRRs for the MF cashflows against the Indian index series
+  // already fetched for the equity tab — extra benchmarks beyond Nifty 50.
+  const mfBench = useMemo(() => {
+    if (!hist?.series) return [];
+    const txs = MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => ({ date: c.date, invested: -c.amount }));
+    if (!txs.length) return [];
+    return INDIAN_BENCHMARKS.map((b) => {
+      for (const sym of b.yahooSyms) {
+        const cf = benchCounterfactual(hist.series[sym], txs, now);
+        if (cf) return { key: b.key, label: b.label, color: b.color, xirr: cf.xirr };
+      }
+      return { key: b.key, label: b.label, color: b.color, xirr: null };
+    });
+  }, [hist, now]);
   const fds = useMemo(() => deriveFds(now), [now]);
 
   const mfSorted = useMemo(() => {
@@ -654,7 +669,7 @@ export default function Page() {
             <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} FDS={FDS} FD_PIPELINE={FD_PIPELINE} />
           )}
           {tab === 3 && (
-            <MFTab mf={mf} mfx={mfx} mfSorted={mfSorted} mfSort={mfSort} sortMf={sortMf}
+            <MFTab mf={mf} mfx={mfx} mfBench={mfBench} mfSorted={mfSorted} mfSort={mfSort} sortMf={sortMf}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               MF_FUNDS={MF_FUNDS} UNITS_AS_OF={UNITS_AS_OF} FY={FY} />
           )}
