@@ -154,11 +154,17 @@
    near-invisible grey on the night theme and in the system font everywhere. */
 button { font: inherit; color: inherit; }
 
+html { overflow-x: hidden; }
+
 body {
   background: var(--bg);
   color: var(--txt);
   font-family: var(--body);
   font-size: var(--fs-md);
+  /* Reserve scrollbar gutter so layout doesn't shift when the scrollbar
+     appears/disappears, and prevent the vertical scrollbar from triggering
+     a spurious horizontal scroll. */
+  scrollbar-gutter: stable;
   line-height: 1.55;
   padding: 0;
   /* Smooth sunrise/sunset flip when data-time changes */
@@ -586,6 +592,7 @@ body { padding: 0; }
   /* Centre the content column on wide screens (no sidebar in flow). */
   margin: 0 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   height: 100vh;
 }
 
