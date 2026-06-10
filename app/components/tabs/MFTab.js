@@ -1,70 +1,28 @@
 'use client';
-import { useState } from 'react';
-import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs, inrCd } from '../../lib/fmt';
+import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
-import TreeMap from '../shared/TreeMap';
 
-// Platform pills derive from theme vars — the old hardcoded light-on-light
-// tints were near-invisible on the day theme.
 const platStyle = (p) => p === 'JioBLK'
   ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
   : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
-// Asset-allocation donut — segment arcs with a live centre readout that swaps
-// to the hovered sleeve. Stroke-dasharray circles, no chart library.
-function AllocDonut({ segs, total }) {
-  const [hov, setHov] = useState(null);
-  const size = 190, thick = 23, r = (size - thick) / 2, C = 2 * Math.PI * r;
-  const live = segs.filter((s) => s.val > 0);
-  const gapFrac = live.length > 1 ? 2.5 / 360 : 0;
-  const tot = total || live.reduce((s, x) => s + x.val, 0) || 1;
-
-  const centre = hov || { label: 'invested', val: tot };
-  let acc = 0;
-
+// Reusable bar row: colored dot · label · bar track · value + %
+function AllocRow({ label, color, pct, value, opacity = 1 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg className="svgchart" viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 230, height: 'auto' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
-        {live.map((s) => {
-          const frac = s.val / tot;
-          const arc = Math.max(frac - gapFrac, 0.004) * C;
-          const rot = acc * 360 - 90 + (gapFrac * 360) / 2;
-          acc += frac;
-          return (
-            <circle key={s.label} cx={size / 2} cy={size / 2} r={r} fill="none"
-              stroke={s.color} strokeWidth={thick}
-              strokeDasharray={`${arc} ${C}`}
-              transform={`rotate(${rot} ${size / 2} ${size / 2})`}
-              opacity={hov && hov.label !== s.label ? 0.25 : 1}
-              style={{ transition: 'opacity .15s', cursor: 'pointer' }}
-              onMouseEnter={() => setHov({ label: s.label, val: s.val })}
-              onMouseLeave={() => setHov(null)} />
-          );
-        })}
-        <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
-          style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 23, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          <tspan fontSize="16">₹</tspan>{inrCd(centre.val)}
-        </text>
-        <text x={size / 2} y={size / 2 + 15} textAnchor="middle"
-          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
-          {centre.label}
-        </text>
-      </svg>
-      <div style={{ width: '100%', marginTop: 14 }}>
-        {segs.map((s) => (
-          <div key={s.label} className="fxc" style={{ marginBottom: 7, opacity: s.val > 0 ? 1 : 0.45, cursor: 'default' }}
-            onMouseEnter={() => s.val > 0 && setHov({ label: s.label, val: s.val })}
-            onMouseLeave={() => setHov(null)}>
-            <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <span className="mf-dot" style={{ background: s.color }} />{s.label}
-            </span>
-            <span className="mono" style={{ fontSize: 'var(--fs-xs)' }}><InrC n={s.val} /> · <Pct n={(s.val / tot) * 100} d={1} /></span>
-          </div>
-        ))}
+    <div style={{ marginBottom: 13, opacity }}>
+      <div className="fxc" style={{ marginBottom: 5 }}>
+        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span className="mf-dot" style={{ background: color }} />{label}
+        </span>
+        <span className="mono" style={{ fontSize: 'var(--fs-xs)' }}>
+          <InrC n={value} /> · <Pct n={pct} d={1} />
+        </span>
       </div>
+      <span className="bar-trk" style={{ display: 'block' }}>
+        <span className="bar-fil" style={{ width: pct + '%', background: color }} />
+      </span>
     </div>
   );
 }
@@ -95,6 +53,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
     { label: 'Multi/Flexi', val: mf.cap.multi,  color: 'var(--pnk)' },
     { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
   ];
+  const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
   return (
     <div>
       <InsightBanner text={insightsOn ? insights?.mutual_funds : null} loading={insightsOn && insightsFirstLoad} />
@@ -144,18 +103,24 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 12 }}>Asset Allocation</div>
+          <div className="ctitle" style={{ marginBottom: 16 }}>Asset Allocation</div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <AllocDonut segs={allocSegs} total={mf.totVal} />
+            {allocSegs.map((s) => {
+              const pct = mf.totVal ? (s.val / mf.totVal) * 100 : 0;
+              return <AllocRow key={s.label} label={s.label} color={s.color} pct={pct} value={s.val} opacity={s.val > 0 ? 1 : 0.4} />;
+            })}
           </div>
-          <div className="sub" style={{ marginTop: 10 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
+          <div className="sub" style={{ marginTop: 4 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 4 }}>Market Cap</div>
-          <div className="sub" style={{ marginBottom: 12 }}>Each fund bucketed by mandate; Flexi Cap &amp; ELSS are multi-cap.</div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <TreeMap items={capSegs} height={252} />
+          <div className="ctitle" style={{ marginBottom: 6 }}>Market Cap</div>
+          <div className="sub" style={{ marginBottom: 16 }}>Each fund bucketed by mandate; Flexi Cap &amp; ELSS are multi-cap.</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {capSegs.map((s) => {
+              const pct = capTot ? (s.val / capTot) * 100 : 0;
+              return <AllocRow key={s.label} label={s.label} color={s.color} pct={pct} value={s.val} opacity={s.val > 0 ? 1 : 0.4} />;
+            })}
           </div>
         </div>
       </div>

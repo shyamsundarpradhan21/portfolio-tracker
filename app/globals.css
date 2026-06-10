@@ -381,7 +381,7 @@ body {
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 0; }
-  .hdr-val { font-size: 36px !important; letter-spacing: -1.5px !important; }
+  .hdr-val { font-size: 40px !important; letter-spacing: -2px !important; }
 }
 
 /* ─── sparkles ✨ — tasteful dark-theme polish ─── */
@@ -401,15 +401,15 @@ body {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  font-size: 56px !important;
-  font-weight: 800 !important;
-  letter-spacing: -2.5px;
+  font-size: 64px !important;
+  font-weight: 900 !important;
+  letter-spacing: -3px;
   line-height: 1;
   background: linear-gradient(105deg,
     var(--acc) 0%,
-    color-mix(in srgb, var(--acc) 55%, #fff) 35%,
+    color-mix(in srgb, var(--acc) 50%, #fff) 38%,
     #ffffff 50%,
-    color-mix(in srgb, var(--acc) 55%, #fff) 65%,
+    color-mix(in srgb, var(--acc) 50%, #fff) 62%,
     var(--acc2, var(--acc)) 100%
   );
   background-size: 320% 100%;
@@ -417,7 +417,6 @@ body {
   -webkit-text-fill-color: transparent;
   animation: nw-shine 11s ease-in-out infinite;
   transition: background 0.6s ease;
-  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--acc) 70%, transparent));
 }
 /* Day theme: a white gradient midpoint is invisible on the light background and
    reads as a distracting flicker. Use a darker, contrasty accent gradient and
