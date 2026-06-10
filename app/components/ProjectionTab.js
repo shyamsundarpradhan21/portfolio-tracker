@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS, FD_PIPELINE } from '../portfolio';
-import { NNBSP } from '../lib/fmt';
+import { NNBSP, RsText } from '../lib/fmt';
 
 // Scenario accents come from the theme so the day palette can deepen them
 // (see --sc-* in globals.css). Never fed to ECharts (canvas needs raw hex).
@@ -182,7 +182,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     if (view === 'rose') {
       alloc.setOption({
         backgroundColor: 'transparent',
-        tooltip: { trigger: 'item', ...ttOf(p), formatter: (pt) => `${pt.name}<br><b style="font-family:var(--font-mono)">${crPlain(pt.value)}</b> · ${pt.percent}%` },
+        tooltip: { trigger: 'item', ...ttOf(p), formatter: (pt) => `${pt.name}<br><b style="font-family:var(--font-mono)">${cr(pt.value)}</b> · ${pt.percent}%` },
         series: [{ type: 'pie', roseType: 'area', radius: ['20%', '68%'], center: ['50%', '52%'], avoidLabelOverlap: true, itemStyle: { borderColor: p.bg, borderWidth: 2, borderRadius: 4 },
           label: { color: p.txt2, fontSize: 10, formatter: '{b}\n{d}%', alignTo: 'edge', edgeDistance: '6%', minMargin: 6 },
           labelLine: { lineStyle: { color: p.axisLine }, length: 14, length2: 16, maxSurfaceAngle: 80 }, data }],
@@ -331,9 +331,9 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
       </div>
 
       <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
-        Rolling {MAXY}-year window from today's live net worth (<span className="mono">{crPlain(nw)}</span>) + {crPlain(PROJECTION.monthly)}/mo
+        Rolling {MAXY}-year window from today's live net worth (<span className="mono"><RsText>{crPlain(nw)}</RsText></span>) + <RsText>{crPlain(PROJECTION.monthly)}</RsText>/mo
         stepping up {(PROJECTION.stepUp * 100).toFixed(0)}{NNBSP}%/yr. Monthly compounding at {PROJECTION.scenarios.map((s) => (s.rate * 100).toFixed(0) + NNBSP + '%').join(' / ')};
-        FD ceiling {crPlain(fdCeiling)} derived from your ladder. Algo capital is tracked separately, outside net worth. Indicative, not advice.
+        FD ceiling <RsText>{crPlain(fdCeiling)}</RsText> derived from your ladder. Algo capital is tracked separately, outside net worth. Indicative, not advice.
       </div>
     </div>
   );

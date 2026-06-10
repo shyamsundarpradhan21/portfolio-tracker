@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs, inrCd } from '../../lib/fmt';
+import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs, RsText, inrCd } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
@@ -42,7 +42,7 @@ function AllocDonut({ segs, total }) {
         })}
         <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
           style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-          <tspan fontSize="17">₹</tspan>{inrCd(centre.val)}
+          <tspan fontSize="17" fontFamily="var(--body)">₹</tspan>{inrCd(centre.val)}
         </text>
         <text x={size / 2} y={size / 2 + 16} textAnchor="middle"
           style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
@@ -184,8 +184,8 @@ function SipCard() {
       <div className="fxc" style={{ marginBottom: 8 }}>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>FY 26–27 · click month</span>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
-          YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}>{fK(ytdTot)}</strong>
-          {' · '}est FY <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}>₹{(estFY / 100000).toFixed(1)}L</strong>
+          YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{fK(ytdTot)}</RsText></strong>
+          {' · '}est FY <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><Rs />{(estFY / 100000).toFixed(1)}L</strong>
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>

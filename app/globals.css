@@ -137,8 +137,11 @@
    oversized in monospace contexts (Section 0f). */
 /* Sized down to match digit height. No transform/inline-block here — those
    break -webkit-background-clip:text on the gradient net-worth headline and
-   make the glyph vanish. Baseline alignment is good enough at this size. */
-.rs { font-size: 0.78em; font-variant-numeric: normal; margin-right: 0.02em; }
+   make the glyph vanish. Baseline alignment is good enough at this size.
+   font-family is forced to the body font because JetBrains Mono has no ₹
+   glyph (U+20B9) — without this, every rupee inside mono-set numbers falls
+   back to a random system font and looks misaligned. */
+.rs { font-family: var(--body); font-size: 0.78em; font-variant-numeric: normal; margin-right: 0.02em; }
 
 /* Hand-rolled SVG charts share one rhythm: block-centered, uniform breathing
    room, never clipped at the card edge. */

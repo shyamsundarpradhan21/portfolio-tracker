@@ -1,5 +1,5 @@
 'use client';
-import { inrFull, inrC } from '../../lib/fmt';
+import { inrFull, inrC, RsText } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
@@ -28,13 +28,13 @@ export default function OverviewTab({
       <div className="card sec ov-fill">
         <div className="fxc" style={{ marginBottom: 12 }}>
           <div className="lbl" style={{ margin: 0 }}>monthly SIP commitment</div>
-          <div className="vmd" style={{ color: 'var(--acc)' }}>{MF.sip.total}</div>
+          <div className="vmd" style={{ color: 'var(--acc)' }}><RsText>{MF.sip.total}</RsText></div>
         </div>
         <div className="g3">
           {MF.sip.items.map((s, i) => (
             <div className="mini" key={s.label} style={{ borderLeft: `3px solid ${['var(--blu)','var(--grn)','var(--acc)'][i] || 'var(--brd2)'}` }}>
               <div className="sub" style={{ margin: 0 }}>{s.label}</div>
-              <div className="vsm" style={{ marginTop: 4 }}>{s.val}</div>
+              <div className="vsm" style={{ marginTop: 4 }}><RsText>{s.val}</RsText></div>
             </div>
           ))}
         </div>
