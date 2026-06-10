@@ -328,8 +328,10 @@ body {
 .ctitle { font-family: var(--title); font-size: var(--fs-xl); font-weight: 600; letter-spacing: -.2px; color: var(--txt); }
 
 /* mutual-funds tab utilities — equal-height analytical cards (Section 0c). */
-.mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
-@media (max-width: 1000px) { .mf-g3 { grid-template-columns: 1fr; } }
+/* Allocation donut left (full height), XIRR + Market Cap stacked right. */
+.mf-g3 { display: grid; grid-template-columns: 1.15fr 1fr; grid-template-rows: auto auto; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+.mf-g3 .mf-alloc { grid-row: 1 / 3; }
+@media (max-width: 1000px) { .mf-g3 { grid-template-columns: 1fr; } .mf-g3 .mf-alloc { grid-row: auto; } }
 .mf-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
 .mf-stack { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; background: var(--sur2); }
 .mf-stack > span { height: 100%; }

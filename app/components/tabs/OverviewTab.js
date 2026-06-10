@@ -1,10 +1,10 @@
 'use client';
-import { inrFull, inrC, RsText } from '../../lib/fmt';
+import { inrFull, inrC } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
 import HistoryCurve from '../shared/HistoryCurve';
-import { MF } from '../../portfolio';
+import SipCard from '../shared/SipCard';
 
 export default function OverviewTab({
   ov, insights, insightsOn, insightsFirstLoad, FY, snapshots,
@@ -25,23 +25,9 @@ export default function OverviewTab({
         baseYear={baseYear} invested0={projInvested0}
       />
 
-      <div className="card sec ov-fill">
-        <div className="fxc" style={{ marginBottom: 12 }}>
-          <div className="lbl" style={{ margin: 0 }}>monthly SIP commitment</div>
-          <div className="vmd" style={{ color: 'var(--acc)' }}><RsText>{MF.sip.total}</RsText></div>
-        </div>
-        <div className="g3">
-          {MF.sip.items.map((s, i) => (
-            <div className="mini" key={s.label} style={{ borderLeft: `3px solid ${['var(--blu)','var(--grn)','var(--acc)'][i] || 'var(--brd2)'}` }}>
-              <div className="sub" style={{ margin: 0 }}>{s.label}</div>
-              <div className="vsm" style={{ marginTop: 4 }}><RsText>{s.val}</RsText></div>
-            </div>
-          ))}
-        </div>
-        <div className="sub" style={{ marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
-          ✦ Auto-deployed every month · {MF.sip.items.length} streams feeding equities, US SIP &amp; conviction picks
-        </div>
-      </div>
+      {/* SIP deployment calendar (moved from the MF tab; replaces the old
+          monthly-SIP commitment card, which it supersedes) */}
+      <SipCard />
 
       <CFMemo
         title="Loss Carryforward — Tax Asset"
