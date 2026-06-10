@@ -28,7 +28,7 @@ export default function AlgoTab({
         <div className="csm">
           <div className="lbl">FY 2025-26</div>
           <div className={'vmd ' + cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></div>
-          <div className="sub">realised value</div>
+          <div className="sub">net realised · ITR-verified</div>
         </div>
         <div className="csm">
           <div className="lbl">FY26-27 YTD</div>

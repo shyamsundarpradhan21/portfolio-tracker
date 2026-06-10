@@ -35,14 +35,14 @@ export default function USTab({
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
           <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <UsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
-          <div className="sub">{usData.val ? <>{pctS(usData.pct)} · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
+          <div className="sub">{usData.val ? <>{pctS(usData.pct)} on cost · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
         </div>
       </div>
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
           <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <UsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>
-          <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'since prev close'}</div>
+          <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} vs prev close · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'vs prev close'}</div>
         </div>
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
@@ -168,7 +168,7 @@ export default function USTab({
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live prices from Yahoo Finance, flash on each tick, converted at live USD/INR.</div>
+        <div className="sub" style={{ marginTop: 10 }}>click headers to sort · live Yahoo quotes, flash on each tick · converted at live USD/INR</div>
       </div>
 
       <div className="g2 sec">

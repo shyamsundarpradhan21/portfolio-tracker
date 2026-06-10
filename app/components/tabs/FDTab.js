@@ -20,7 +20,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         <div className="csm">
           <div className="lbl">accrued interest</div>
           <div className="vmd grn"><InrF n={fds.accrued} /></div>
-          <div className="sub">compounding quarterly · live</div>
+          <div className="sub">accruing live · quarterly compounding</div>
         </div>
         <div className="csm">
           <div className="lbl">value at maturity</div>
@@ -30,7 +30,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         <div className="csm">
           <div className="lbl">blended rate</div>
           <div className="vmd"><Pct n={fds.blendedRate} /></div>
-          <div className="sub">weighted by principal</div>
+          <div className="sub">principal-weighted avg rate</div>
         </div>
       </div>
 

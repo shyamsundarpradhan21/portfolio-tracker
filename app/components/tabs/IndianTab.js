@@ -38,19 +38,19 @@ export default function IndianTab({
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
           <div className="vmd"><InrC n={indian.inv} /></div>
-          <div className="sub">{INDIAN.length} positions · ~<Rs />30K equal-weight</div>
+          <div className="sub">{INDIAN.length} positions · ~<Rs />30K each, equal-weight</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
           <div className="vmd">{indian.valued ? <InrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
-          <div className="sub">live NSE · LTP × qty</div>
+          <div className="sub">marked live · NSE LTP</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
           <div className={'vmd ' + (indian.valued ? cl(indian.pl) : '')}>
             {indian.valued ? <SInrC n={indian.pl} /> : <Skel w={80} h={20} />}
           </div>
-          <div className="sub">{indian.valued ? pctS(indian.pct) + ' · value − invested' : 'value − invested'}</div>
+          <div className="sub">{indian.valued ? pctS(indian.pct) + ' on cost' : 'value − invested'}</div>
         </div>
       </div>
       <div className="g3 sec">
@@ -59,19 +59,19 @@ export default function IndianTab({
           <div className={'vmd ' + (indian.valued ? cl(indianDayPl) : '')}>
             {indian.valued ? <SInrC n={indianDayPl} /> : <Skel w={80} h={20} />}
           </div>
-          <div className="sub">{indian.valued ? `${pctS(indianDayPct)} since prev close` : 'intraday move'}</div>
+          <div className="sub">{indian.valued ? `${pctS(indianDayPct)} vs prev close` : 'intraday move'}</div>
         </div>
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
           <div className={'vmd ' + (inStats.cagr != null ? cl(inStats.cagr) : '')}>
             {inStats.cagr != null ? pct1(inStats.cagr) : <Skel w={70} h={20} />}
           </div>
-          <div className="sub">money-weighted · ~5mo window</div>
+          <div className="sub">money-weighted · ~5-month history</div>
         </div>
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
           <div className={'vmd ' + cl(INDIAN_REALIZED.ytd)}><SInrF n={INDIAN_REALIZED.ytd} /></div>
-          <div className="sub">{INDIAN_REALIZED.ytdLabel} · overall below</div>
+          <div className="sub">{INDIAN_REALIZED.ytdLabel} · full history below</div>
         </div>
       </div>
 
@@ -187,7 +187,7 @@ export default function IndianTab({
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: 10 }}>Click headers to sort · live LTP from NSE, flashes on each tick.</div>
+        <div className="sub" style={{ marginTop: 10 }}>click headers to sort · live NSE LTP, flashes on each tick</div>
       </div>
 
       <div className="g2 sec">

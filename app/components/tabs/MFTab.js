@@ -144,7 +144,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         <div className="csm">
           <div className="lbl">total return</div>
           <div className={'vmd ' + cl(mf.totRet)}>{pctS(mf.totRet)}</div>
-          <div className="sub"><SInrF n={mf.totVal - mf.totCost} /> abs</div>
+          <div className="sub"><SInrF n={mf.totVal - mf.totCost} /> unrealised</div>
         </div>
       </div>
 

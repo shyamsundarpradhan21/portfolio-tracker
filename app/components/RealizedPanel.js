@@ -104,12 +104,12 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           {sel == null ? (
             <>
               <div className="lbl" style={{ marginBottom: 4 }}>Profitable years</div>
-              <div className="vsm">{winYears} / {fy.length}</div><div className="sub">of total</div>
+              <div className="vsm">{winYears} / {fy.length}</div><div className="sub">FYs ended green</div>
             </>
           ) : (
             <>
               <div className="lbl" style={{ marginBottom: 4 }}>Trades booked</div>
-              <div className="vsm">{fy[sel].n != null ? fy[sel].n : '—'}</div><div className="sub">positions</div>
+              <div className="vsm">{fy[sel].n != null ? fy[sel].n : '—'}</div><div className="sub">positions closed</div>
             </>
           )}
         </div>
