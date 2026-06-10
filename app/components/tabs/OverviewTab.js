@@ -16,8 +16,9 @@ export default function OverviewTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
 
-      {/* Historical growth from persisted daily snapshots */}
-      <HistoryCurve snapshots={snapshots} />
+      {/* Trajectory: reconstructed + real history flowing into the live-anchored
+          projection fan (same model as the outlook card below) */}
+      <HistoryCurve snapshots={snapshots} nw={Math.round(ov.nw)} invested0={projInvested0} />
 
       {/* Forward outlook: allocation share + scenario stack. Defaults to today. */}
       <ProjectionTab

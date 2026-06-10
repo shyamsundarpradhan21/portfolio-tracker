@@ -14,6 +14,7 @@
 import { useEffect, useRef, useMemo, useState, memo } from 'react';
 import { PROJECTION, FDS } from '../portfolio';
 import { NNBSP, RsText } from '../lib/fmt';
+import { simMonthly } from '../lib/projection';
 
 // Scenario accents come from the theme so the day palette can deepen them
 // (see --sc-* in globals.css). Never fed to ECharts (canvas needs raw hex).
@@ -59,17 +60,14 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0 }) {
     // net worth only if a cost basis isn't supplied — otherwise the gap between
     // corpus and invested at year 0 reflects the gains already in the book.
     const inv0 = invested0 != null ? invested0 : base;
-    const M0 = PROJECTION.monthly, step = PROJECTION.stepUp, infl = PROJECTION.inflation;
+    const infl = PROJECTION.inflation;
     const assetTotal0 = sleeves.reduce((a, s) => a + (s.value || 0), 0) || (base + loan);
+    // Shared model (lib/projection) at monthly resolution, sampled yearly for
+    // the scrubber's interpolation.
     const sim = (rate) => {
-      const mr = rate / 12; let c = base, inv = inv0;
-      const corpus = [c], invested = [inv];
-      for (let m = 1; m <= MAXY * 12; m++) {
-        const x = M0 * Math.pow(1 + step, Math.floor((m - 1) / 12));
-        c = c * (1 + mr) + x; inv += x;
-        if (m % 12 === 0) { corpus.push(c); invested.push(inv); }
-      }
-      return { corpus, invested };
+      const m = simMonthly(rate, base, inv0, MAXY * 12);
+      const yearly = (a) => a.filter((_, i) => i % 12 === 0);
+      return { corpus: yearly(m.corpus), invested: yearly(m.invested) };
     };
     const arr = {};
     PROJECTION.scenarios.forEach((s) => { arr[s.key] = sim(s.rate); });
