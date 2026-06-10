@@ -618,7 +618,7 @@ export default function Page() {
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
                 {' · '}Liabilities <strong style={{ color: 'var(--red)' }}>~<Rs />7.50L</strong>
                 {indian.valued && usdInr ? (
-                  <span style={{ color: 'var(--txt3)' }}>{' · '}incl. algo <InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></span>
+                  <span>{' · '}incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong></span>
                 ) : <>{' · '}excl. algo</>}
               </div>
             </button>
