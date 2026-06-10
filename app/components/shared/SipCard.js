@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS } from '../../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS } from '../../portfolio';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
 // Derived entirely from the ledgers in portfolio.js — nothing monthly recorded:
-//   MF = MF_CASHFLOWS outflows · IND = TRANSACTIONS buys ·
-//   US = US_CASHFLOWS deposits, each converted at the USD/INR close of its own
-//   outflow date (from /api/fx-history); live rate only while that loads.
+//   MF = MF_CASHFLOWS outflows · IND = TRANSACTIONS buys · FD = FDS principal
+//   on its open date · US = US_CASHFLOWS deposits, each converted at the
+//   USD/INR close of its own outflow date (from /api/fx-history); live rate
+//   only while that loads.
 // Every FY touched by the ledgers gets a chip; selecting one rebuilds the
 // 12-month grid for that year. Months before the current one are closed
 // actuals (₹0 if nothing fired), the current month is running, future months
@@ -16,7 +17,7 @@ import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS } from '../../portfolio';
 
 // Fixed per-stream palette from the base tokens — deliberately NOT --acc
 // (changes per tab) and NOT --grn (means profit everywhere else).
-const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)' };
+const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--pnk)' };
 const monthKey = (d) => d.slice(0, 7);
 const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
 // Indian FY: Apr–Mar. fyOf('2026-02-…') → 2025 (i.e. FY 25-26).
@@ -42,6 +43,7 @@ export default function SipCard({ fx }) {
       ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
+      ...FDS.map((f) => f.open),
     ];
     const first = dates.length ? fyOf(dates.sort()[0]) : curFY;
     return Array.from({ length: curFY - first + 1 }, (_, i) => first + i);
@@ -66,15 +68,18 @@ export default function SipCard({ fx }) {
     const us = US_CASHFLOWS.filter((c) => c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
     const ind = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+    const fd = FDS.reduce((s, f) => s + f.principal, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
       { label: 'US', amount: Math.round(us) },
       { label: 'IND', amount: Math.round(ind) },
+      { label: 'FD', amount: Math.round(fd) },
     ].filter((s) => s.amount > 0);
     const dates = [
       ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
+      ...FDS.map((f) => f.open),
     ].sort();
     const first = dates[0];
     // inclusive month count from first flow to now
@@ -93,10 +98,13 @@ export default function SipCard({ fx }) {
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
     const ind = TRANSACTIONS.filter((t) => monthKey(t.date) === key)
       .reduce((s, t) => s + t.invested, 0);
+    const fd = FDS.filter((f) => monthKey(f.open) === key)
+      .reduce((s, f) => s + f.principal, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
       { label: 'US', amount: Math.round(us) },
       { label: 'IND', amount: Math.round(ind) },
+      { label: 'FD', amount: Math.round(fd) },
     ].filter((s) => s.amount > 0);
     return {
       key,
