@@ -589,14 +589,8 @@ body { padding: 0; }
   min-width: 0;
   padding: 0 28px 40px;
   max-width: 1500px;
-  /* Centre the content column on wide screens (no sidebar in flow). */
+  /* Centre the content column on wide screens. */
   margin: 0 auto;
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* Permanently reserve scrollbar lane so content width stays constant
-     whether the scrollbar is visible or not — no layout shift on page load. */
-  scrollbar-gutter: stable;
-  height: 100vh;
 }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */

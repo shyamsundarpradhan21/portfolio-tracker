@@ -127,7 +127,7 @@ export default function Page() {
     const el = headerRef.current;
     if (!el) return;
     const onScroll = () => {
-      const t = Math.min(1, (el.parentElement?.scrollTop ?? window.scrollY) / 120);
+      const t = Math.min(1, window.scrollY / 120);
       el.style.setProperty('--hdr-t', t);
     };
     const scroller = el.closest('.main') || window;
