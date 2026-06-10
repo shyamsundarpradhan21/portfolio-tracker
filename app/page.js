@@ -122,19 +122,6 @@ export default function Page() {
   const prevPrices                  = useRef({});
   const headerRef                   = useRef(null);
 
-  // Scroll-driven header fade
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const t = Math.min(1, window.scrollY / 120);
-      el.style.setProperty('--hdr-t', t);
-    };
-    const scroller = el.closest('.main') || window;
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    return () => scroller.removeEventListener('scroll', onScroll);
-  }, []);
-
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo'];
 

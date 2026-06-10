@@ -652,22 +652,17 @@ body { padding: 0; }
   .pj-outlook { grid-template-columns: 1fr; }
 }
 
-/* Sticky frosted header — starts transparent at scroll-top, fades to a
-   frosted dark glass as you scroll down. --hdr-t (0→1) is driven by JS. */
+/* Sticky frosted header — always-on at 60% opacity with blur haze. */
 .main-header {
-  --hdr-t: 0;
   position: sticky;
   top: 0;
   z-index: 8;
   margin: 0 -28px 20px;
   padding: 0 28px;
-  /* bg opacity: 0 at top → 0.78 when fully scrolled */
-  background: rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .82));
-  -webkit-backdrop-filter: saturate(calc(1 + var(--hdr-t) * .6)) blur(calc(var(--hdr-t) * 18px));
-  backdrop-filter: saturate(calc(1 + var(--hdr-t) * .6)) blur(calc(var(--hdr-t) * 18px));
-  /* border fades in */
-  border-bottom: .5px solid rgba(255, 255, 255, calc(var(--hdr-t) * .07));
-  transition: background .05s linear, border-color .05s linear;
+  background: rgba(var(--hdr-bg-base), .6);
+  -webkit-backdrop-filter: saturate(1.5) blur(18px);
+  backdrop-filter: saturate(1.5) blur(18px);
+  border-bottom: .5px solid rgba(255, 255, 255, .06);
 }
 /* Soft fade band below the header so the frosted glass tapers off gradually
    into the content instead of ending on a hard edge. Both the tint and the
