@@ -47,12 +47,12 @@ export default function HistoryCurve({ snapshots }) {
     <div className="card sec">
       <div className="fxc">
         <div className="lbl" style={{ margin: 0 }}>Portfolio growth</div>
-        <div className="sub" style={{ margin: 0 }}>{first.d} → {last.d} · {n} snapshots</div>
+        <div className="sub" style={{ margin: 0 }}>{first.d} → {last.d} · {n} points{pts.some((s) => s.synth) ? ' · early history reconstructed from ledgers' : ''}</div>
       </div>
       <div className="pj-big" style={{ color: up ? 'var(--grn)' : 'var(--red)', marginTop: 6 }}>
         <InrC n={Math.abs(change)} />
       </div>
-      <div className="sub">net worth change since first snapshot</div>
+      <div className="sub">net worth change since {pts[0].synth ? 'first deployment' : 'first snapshot'}</div>
 
       <svg className="svgchart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
         style={{ width: '100%', height: 168, marginTop: 14 }}>

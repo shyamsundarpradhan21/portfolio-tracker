@@ -12,6 +12,7 @@ import FY from '../data/fy2526_verified.json';
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot } from './lib/snapshots';
+import { buildBackfill } from './lib/backfill';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -250,7 +251,7 @@ export default function Page() {
   const fetchMfNav = async () => { try { const res = await fetch('/api/mf-nav', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
   const fetchHistory = async () => {
     try {
-      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`)])].join(',');
+      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`), ...US.map((h) => h.sym)])].join(',');
       const res = await fetch('/api/history?range=5y&symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       return res.ok ? await res.json() : null;
     } catch { return null; }
@@ -589,6 +590,26 @@ export default function Page() {
   // Daily net-worth snapshots → the historical growth curve on Overview.
   const [snapshots, setSnapshots] = useState([]);
   useEffect(() => { setSnapshots(getSnapshots()); }, []);
+
+  // Ledger-reconstructed weekly history fills the curve before real dailies
+  // began. Computed fresh per load (nothing synthetic is persisted); real
+  // snapshots always win from their first date onward.
+  const [fxHist, setFxHist] = useState(null);
+  useEffect(() => {
+    let dead = false;
+    const dates = [...TRANSACTIONS.map((t) => t.date), ...US_CASHFLOWS.map((c) => c.date), ...MF_CASHFLOWS.map((c) => c.date)].sort();
+    fetch(`/api/fx-history?start=${(dates[0] || '2024-01-01').slice(0, 7)}-01`)
+      .then((r) => r.json())
+      .then((j) => { if (!dead && j.rates) setFxHist(j.rates); })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, []);
+  const chartSnapshots = useMemo(() => {
+    const synth = buildBackfill(hist?.series, fxHist, usdInr);
+    if (!synth.length) return snapshots;
+    const firstReal = snapshots[0]?.d;
+    return [...synth.filter((s) => !firstReal || s.d < firstReal), ...snapshots];
+  }, [hist, fxHist, usdInr, snapshots]);
   useEffect(() => {
     if (!(indian.valued && usdInr)) return;
     setSnapshots(recordSnapshot({
@@ -673,7 +694,7 @@ export default function Page() {
           {tab === 0 && (
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              FY={FY} snapshots={snapshots}
+              FY={FY} snapshots={chartSnapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />
           )}
           {tab === 1 && (
