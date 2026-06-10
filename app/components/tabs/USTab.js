@@ -24,12 +24,12 @@ export default function USTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
-          <div className="vmd">${usData.inv.toFixed(2)}</div>
+          <div className="vmd acc"><span className="rs">$</span>{usData.inv.toFixed(2)}</div>
           <div className="sub">≈<span className="mut"><InrC n={usData.inv * fxRate} /></span> · {US.length} holdings</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd">{usData.val ? '$' + usData.val.toFixed(2) : <Skel w={90} h={20} />}</div>
+          <div className="vmd acc">{usData.val ? <><span className="rs">$</span>{usData.val.toFixed(2)}</> : <Skel w={90} h={20} />}</div>
           <div className="sub">{usData.val && fxRate ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
         </div>
         <div className="csm">
@@ -51,7 +51,7 @@ export default function USTab({
         </div>
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
-          <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}>${Math.abs(US_REALIZED.ytdUsd).toFixed(2)}</div>
+          <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}><span className="rs">$</span>{Math.abs(US_REALIZED.ytdUsd).toFixed(2)}</div>
           <div className="sub">{US_REALIZED.ytdLabel} · ≈<span className="mut"><InrC n={Math.abs(US_REALIZED.ytdUsd) * fxRate} /></span></div>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function USTab({
               <div className="sub" style={{ margin: 0 }}>Vested statement · as of {US_DIVIDENDS.asOf}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div className="vmd grn">${US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+              <div className="vmd grn"><span className="rs">$</span>{US_DIVIDENDS.netAllTime.toFixed(2)}</div>
               <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
             </div>
           </div>

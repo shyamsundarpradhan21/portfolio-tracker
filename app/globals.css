@@ -279,6 +279,7 @@ body {
 .ra { text-align: right; }
 .grn { color: var(--grn) !important; font-weight: 600; }
 .red { color: var(--red) !important; font-weight: 600; }
+.acc { color: var(--acc) !important; font-weight: 600; }
 .mut { color: var(--txt3) !important; }
 .mono { font-family: var(--mono); }
 

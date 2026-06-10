@@ -51,14 +51,33 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   const op = (key, base) => (hov && hov.key !== key ? 0.16 : base);
   const lp = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
 
+  // Split long labels near midpoint on a space
+  const splitLabel = (s) => {
+    if (s.length <= 18) return [s];
+    const mid = Math.floor(s.length / 2);
+    let sp = s.lastIndexOf(' ', mid);
+    if (sp < 4) sp = s.indexOf(' ', mid);
+    return sp > 0 ? [s.slice(0, sp), s.slice(sp + 1)] : [s];
+  };
+
+  // Separate currency symbol so it can be rendered smaller
+  const amtStr = fmtAmt(hov ? hov.val : T);
+  const cm = /^([₹$])(.*)$/.exec(amtStr);
+  const symC = cm ? cm[1] : '';
+  const numC = cm ? cm[2] : amtStr;
+
+  const hovLabel = hov ? hov.label : null;
+  const lines = hovLabel ? splitLabel(hovLabel) : null;
+  const twoLine = lines && lines.length === 2;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg className="svgchart" viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto' }}>
+      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto', overflow: 'visible' }}>
         {/* outer ring — sectors */}
         {secArcs.map((s) => {
           const key = 's:' + s.label;
           return (
-            <path key={key} d={arc(cx, cy, 82, 128, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
+            <path key={key} d={arc(cx, cy, 86, 120, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
               onMouseEnter={() => setHov({ key, label: s.label, val: s.val, pct: s.pct, color: s.color })}
               onMouseLeave={() => setHov(null)} />
@@ -67,60 +86,47 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {/* inner ring — cap mix */}
         {capArcs.map((c) => {
           const key = 'c:' + c.label;
-          const [lx, ly] = lp(59, c.mid);
+          const [lx, ly] = lp(64, c.mid);
           return (
             <g key={key}>
-              <path d={arc(cx, cy, 46, 72, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
+              <path d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
                 style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
                 onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
                 onMouseLeave={() => setHov(null)} />
               {c.pct >= 9 && (!hov || hov.key === key) ? (
-                <text x={lx} y={ly + 3.5} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#0A0C10" style={{ pointerEvents: 'none' }}>{c.label[0]}</text>
+                <text x={lx} y={ly + 3.5} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#0A0C10" style={{ pointerEvents: 'none' }}>{c.label[0]}</text>
               ) : null}
             </g>
           );
         })}
-        {/* centre readout — split long hover labels into two tspan lines to stay inside the hole */}
-        {(() => {
-          const s = fmtAmt(hov ? hov.val : T);
-          const m = /^([₹$])(.*)$/.exec(s);
-          const valEl = m ? <><tspan fontSize="17">{m[1]}</tspan>{m[2]}</> : s;
-          const lines = (() => {
-            if (!hov) return [];
-            const lb = hov.label;
-            if (lb.length <= 12) return [lb];
-            const mid = Math.floor(lb.length / 2);
-            const sp = lb.lastIndexOf(' ', mid + 3);
-            return sp > 0 ? [lb.slice(0, sp), lb.slice(sp + 1)] : [lb];
-          })();
-          const twoLine = lines.length > 1;
-          const vy = hov ? cy - 10 : cy - 3;
-          return (
-            <>
-              <text x={cx} y={vy} textAnchor="middle"
-                style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
-                {valEl}
+        {/* centre readout */}
+        <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--title)', fill: 'var(--txt)' }}>
+          {symC ? <tspan fontSize="17">{symC}</tspan> : null}
+          <tspan fontSize="23">{numC}</tspan>
+        </text>
+        {hov ? (
+          <>
+            <text x={cx} y={twoLine ? cy + 4 : cy + 14} textAnchor="middle"
+              style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
+              {lines[0]}
+            </text>
+            {twoLine && (
+              <text x={cx} y={cy + 14} textAnchor="middle"
+                style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
+                {lines[1]}
               </text>
-              {hov ? (
-                <>
-                  <text x={cx} y={cy + 8} textAnchor="middle"
-                    style={{ fontSize: 8.5, letterSpacing: '0.6px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700, pointerEvents: 'none' }}>
-                    {lines.map((ln, i) => <tspan key={i} x={cx} dy={i === 0 ? 0 : 10}>{ln}</tspan>)}
-                  </text>
-                  <text x={cx} y={cy + (twoLine ? 32 : 22)} textAnchor="middle"
-                    style={{ fontSize: 9, fontFamily: 'var(--mono)', fill: 'var(--txt3)', fontWeight: 600, pointerEvents: 'none' }}>
-                    {hov.pct.toFixed(1)}%
-                  </text>
-                </>
-              ) : (
-                <text x={cx} y={cy + 14} textAnchor="middle"
-                  style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
-                  Deployed
-                </text>
-              )}
-            </>
-          );
-        })()}
+            )}
+            <text x={cx} y={twoLine ? cy + 25 : cy + 24} textAnchor="middle"
+              style={{ fontSize: 9, letterSpacing: '0.8px', fill: hov.color, fontWeight: 700 }}>
+              {hov.pct.toFixed(0)}%
+            </text>
+          </>
+        ) : (
+          <text x={cx} y={cy + 14} textAnchor="middle"
+            style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
+            Deployed
+          </text>
+        )}
       </svg>
 
       {/* sector legend */}
@@ -129,14 +135,14 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
           <span key={s.label}
             onMouseEnter={() => setHov({ key: 's:' + s.label, label: s.label, val: s.val, pct: s.pct, color: s.color })}
             onMouseLeave={() => setHov(null)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', cursor: 'default', opacity: hov && hov.key !== 's:' + s.label ? 0.4 : 1, transition: 'opacity .15s' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flex: '0 0 auto' }} />{s.label} {s.pct.toFixed(0)} %
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--txt2)', cursor: 'default', opacity: hov && hov.key !== 's:' + s.label ? 0.4 : 1, transition: 'opacity .15s' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flex: '0 0 auto' }} />{s.label} {s.pct.toFixed(0)}%
           </span>
         ))}
       </div>
       {/* cap-mix line */}
-      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
-        Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)} %`).join('  ·  ')}
+      <div style={{ fontSize: 10, color: 'var(--txt3)', marginTop: 8, letterSpacing: '0.3px' }}>
+        Cap&nbsp;&nbsp;{capList.map((c) => `${c.label} ${c.pct.toFixed(0)}%`).join('  ·  ')}
       </div>
     </div>
   );

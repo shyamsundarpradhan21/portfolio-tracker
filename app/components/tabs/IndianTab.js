@@ -37,12 +37,12 @@ export default function IndianTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
-          <div className="vmd"><InrC n={indian.inv} /></div>
+          <div className="vmd acc"><InrC n={indian.inv} /></div>
           <div className="sub">{INDIAN.length} positions · ~<Rs />30K equal-weight</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd">{indian.valued ? <InrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
+          <div className="vmd acc">{indian.valued ? <InrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">live NSE · LTP × qty</div>
         </div>
         <div className="csm">
