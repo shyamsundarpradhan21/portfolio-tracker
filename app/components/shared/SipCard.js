@@ -4,13 +4,14 @@ import { Rs, RsText } from '../../lib/fmt';
 import SIP from '../../../data/sip_deployment.json';
 
 // ── SIP deployment calendar ───────────────────────────────────────────────────
-// Fully data-driven from data/sip_deployment.json (updated monthly). Only
-// months present in the sheet count as deployed — each row records the base
-// amount that actually fired plus the number of triggerSize picks. Months
-// without a row are planned and contribute nothing (₹0, no assumptions).
+// Fully data-driven from data/sip_deployment.json (uploaded monthly). Each
+// recorded month lists the streams that actually deployed; the composition
+// bar, legend and every stat derive from those rows. Months without a row are
+// planned and contribute nothing. "Picks" streams count as dip-buy triggers.
 
-const COMMIT = SIP.base.reduce((s, b) => s + b.amount, 0); // committed stream split
-const BASE_COLORS = ['var(--grn)', 'var(--blu)', 'var(--pur)', 'var(--pnk)'];
+const STREAM_COLORS = ['var(--grn)', 'var(--blu)', 'var(--pur)', 'var(--pnk)', 'var(--cyn)'];
+const isPicks = (s) => /pick/i.test(s.label);
+const streamColor = (label, idx) => (/pick/i.test(label) ? 'var(--acc)' : STREAM_COLORS[idx % STREAM_COLORS.length]);
 
 // Build the 12 FY months from fyStartMonth, joining recorded sheet rows.
 const [startY, startM] = SIP.fyStartMonth.split('-').map(Number);
@@ -21,13 +22,14 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => {
   const d = new Date(startY, startM - 1 + i, 1);
   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   const rec = byMonth[key] || null;
+  const streams = rec ? rec.streams : null;
+  const total = streams ? streams.reduce((s, x) => s + x.amount, 0) : null;
+  const trig = streams ? Math.round(streams.filter(isPicks).reduce((s, x) => s + x.amount, 0) / SIP.triggerSize) : null;
   return {
     key,
     mn: d.toLocaleString('en', { month: 'short' }).toUpperCase(),
     yy: String(d.getFullYear()).slice(2),
-    base: rec ? rec.base : null,
-    t: rec ? rec.triggers : null,
-    total: rec ? rec.base + rec.triggers * SIP.triggerSize : null,
+    streams, total, trig,
     cur: key === curKey,
   };
 });
@@ -41,18 +43,14 @@ export default function SipCard() {
   const [sel, setSel] = useState(defaultSel >= 0 ? defaultSel : 0);
   const mo = MONTHS[sel];
   const planned = mo.total === null;
-  const t = mo.t ?? 0;
-  const picks = t * SIP.triggerSize;
-  const total = mo.total ?? 0;
-  // Composition: split the recorded base across the committed streams pro-rata.
-  const basePcts = total ? SIP.base.map((b) => Math.round((mo.base * (b.amount / COMMIT)) / total * 100)) : SIP.base.map(() => 0);
-  const pickPct = picks && total ? 100 - basePcts.reduce((a, p) => a + p, 0) : 0;
+  const segs = (mo.streams || []).map((s, i) => ({ ...s, color: streamColor(s.label, i), pct: Math.round(s.amount / mo.total * 100) }));
 
   const closed = MONTHS.filter((m) => m.total !== null);
   const ytdTot = closed.reduce((a, m) => a + m.total, 0);
-  const trigYTD = closed.reduce((a, m) => a + m.t, 0);
-  const estFY = closed.length ? Math.round(ytdTot / closed.length * 12) : 0;
-  const peak = closed.length ? closed.reduce((b, m) => m.total > b.total ? m : b, closed[0]) : null;
+  const committedYTD = SIP.committedMonthly * closed.length;
+  const vsCommitted = committedYTD ? Math.round(ytdTot / committedYTD * 100) : null;
+  const avgMo = closed.length ? Math.round(ytdTot / closed.length) : null;
+  const annual = avgMo != null ? avgMo * 12 : null;
 
   return (
     <div className="card sec">
@@ -67,26 +65,26 @@ export default function SipCard() {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (total ? 'grn' : '')}>{total ? <RsText>{fK(total)}</RsText> : '—'}</div>
-          <div className="sub" style={{ margin: 0 }}>{total ? 'deployed this month' : 'not yet deployed'}</div>
+          <div className={'vmd ' + (planned ? '' : 'grn')}>{planned ? '—' : <RsText>{fK(mo.total)}</RsText>}</div>
+          <div className="sub" style={{ margin: 0 }}>{planned ? 'not yet deployed' : 'deployed this month'}</div>
         </div>
       </div>
 
-      {/* composition bar */}
+      {/* composition bar — rendered from the selected month's sheet streams */}
       <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
-        {SIP.base.map((b, i) => {
-          const left = basePcts.slice(0, i).reduce((a, p) => a + p, 0);
-          return <div key={b.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: basePcts[i] + '%', background: BASE_COLORS[i % BASE_COLORS.length], transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
+        {segs.map((s, i) => {
+          const left = segs.slice(0, i).reduce((a, x) => a + x.pct, 0);
+          return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: s.color, opacity: isPicks(s) ? .75 : .95, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
         })}
-        {pickPct > 0 && <div style={{ position: 'absolute', left: basePcts.reduce((a, p) => a + p, 0) + '%', top: 0, height: '100%', width: pickPct + '%', background: 'var(--acc)', opacity: .75, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />}
       </div>
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[
-          ...SIP.base.map((b, i) => [BASE_COLORS[i % BASE_COLORS.length], planned ? `${b.label} —` : `${b.label} ${fK(Math.round(mo.base * (b.amount / COMMIT)))} · ${basePcts[i]}%`]),
-          ['var(--acc)', picks ? `Picks ${fK(picks)} · ${t} trig` : planned ? 'Picks —' : 'Picks ₹0 · 0 trig'],
-        ].map(([c, txt]) => (
-          <span key={txt} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: c, flexShrink: 0 }} /><RsText>{txt}</RsText>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
+        {planned ? (
+          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>No deployment recorded for this month yet.</span>
+        ) : segs.map((s) => (
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+            <RsText>{`${s.label} ${fK(s.amount)} · ${s.pct}%`}</RsText>
+            {isPicks(s) && mo.trig > 0 ? <span style={{ color: 'var(--txt3)' }}>· {mo.trig} trig</span> : null}
           </span>
         ))}
       </div>
@@ -96,13 +94,12 @@ export default function SipCard() {
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{SIP.fyLabel} · click month</span>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
           YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{fK(ytdTot)}</RsText></strong>
-          {' · '}est FY <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><Rs />{(estFY / 100000).toFixed(1)}L</strong>
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
         {MONTHS.map((m, i) => {
           const bg = m.total === null ? 'var(--brd2)' : 'var(--grn)';
-          const op = m.total === null ? 1 : m.t === 0 ? .3 : m.t === 1 ? .65 : 1;
+          const op = m.total === null ? 1 : m.trig === 0 ? .3 : m.trig === 1 ? .65 : 1;
           return (
             <div key={m.key} onClick={() => setSel(i)}
               style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
@@ -114,23 +111,23 @@ export default function SipCard() {
         })}
       </div>
 
-      {/* summary stats — all derived from sheet rows only */}
+      {/* summary stats — all derived from sheet rows */}
       <div className="g4">
         <div className="mini">
-          <div className="lbl">committed /mo</div>
-          <div className="vsm grn"><RsText>{fK(COMMIT)}</RsText></div>
+          <div className="lbl">deployed</div>
+          <div className="vsm grn">{closed.length ? <RsText>{fK(ytdTot)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">trig YTD</div>
-          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · <RsText>{fK(trigYTD * SIP.triggerSize)}</RsText></div>
+          <div className="lbl">deployed vs committed</div>
+          <div className="vsm" style={{ color: 'var(--acc)' }}>{vsCommitted != null && closed.length ? vsCommitted + '%' : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
-          <div className="vsm">{closed.length ? <RsText>{fK(Math.round(ytdTot / closed.length))}</RsText> : '—'}</div>
+          <div className="vsm">{avgMo != null ? <RsText>{fK(avgMo)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">peak mo</div>
-          <div className="vsm">{peak ? <>{peak.mn} <RsText>{fK(peak.total)}</RsText></> : '—'}</div>
+          <div className="lbl">annual</div>
+          <div className="vsm">{annual != null ? <RsText>{fK(annual)}</RsText> : '—'}</div>
         </div>
       </div>
     </div>
