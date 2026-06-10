@@ -1,25 +1,9 @@
 {
-  "_note": "SIP deployment sheet — update monthly. Add one row per closed month; each row lists the streams that actually deployed (any labels, any count — legends and the composition bar render from these). 'Picks' streams count as triggers of size triggerSize. Months not listed render as planned at ₹0. committedMonthly is the planned base commitment used for the Deployed-vs-Committed stat.",
+  "_note": "SIP plan config. Deployments themselves are derived live from portfolio.js (TRANSACTIONS = stock picks, US_CASHFLOWS = Vested in USD x live FX, MF_CASHFLOWS = JioBLK) — nothing monthly is recorded here. 'committed' is the planned monthly commitment used for the Deployed-vs-Committed stat; USD legs convert at the live rate.",
   "fyLabel": "FY 26–27",
   "fyStartMonth": "2026-04",
-  "triggerSize": 30000,
-  "committedMonthly": 39000,
-  "months": [
-    {
-      "month": "2026-04",
-      "streams": [
-        { "label": "JioBLK", "amount": 20000 },
-        { "label": "Vested", "amount": 19000 },
-        { "label": "Picks", "amount": 30000 }
-      ]
-    },
-    {
-      "month": "2026-05",
-      "streams": [
-        { "label": "JioBLK", "amount": 20000 },
-        { "label": "Vested", "amount": 19000 },
-        { "label": "Picks", "amount": 60000 }
-      ]
-    }
+  "committed": [
+    { "label": "JioBLK", "inr": 20000 },
+    { "label": "Vested", "usd": 200 }
   ]
 }

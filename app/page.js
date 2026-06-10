@@ -627,7 +627,7 @@ export default function Page() {
         {/* TAB CONTENT */}
         <div className="tab-content">
           {tab === 0 && (
-            <OverviewTab ov={ov}
+            <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={snapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={STATIC.loan} baseYear={now.getFullYear()} />

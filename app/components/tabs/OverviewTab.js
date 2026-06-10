@@ -7,7 +7,7 @@ import HistoryCurve from '../shared/HistoryCurve';
 import SipCard from '../shared/SipCard';
 
 export default function OverviewTab({
-  ov, insights, insightsOn, insightsFirstLoad, FY, snapshots,
+  ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, loan, baseYear,
 }) {
   const sFull = (n) => (n >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -27,7 +27,7 @@ export default function OverviewTab({
 
       {/* SIP deployment calendar (moved from the MF tab; replaces the old
           monthly-SIP commitment card, which it supersedes) */}
-      <SipCard />
+      <SipCard fx={fx} />
 
       <CFMemo
         title="Loss Carryforward — Tax Asset"
