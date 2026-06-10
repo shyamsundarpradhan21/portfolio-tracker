@@ -150,7 +150,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
 
       {/* Dual-ring sunburst (outer = asset class, inner = cap mix) on the left;
           multi-benchmark XIRR chart on the right. */}
-      <div className="mf-g2 sec">
+      <div className="g2 sec">
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="ctitle" style={{ marginBottom: 14 }}>Asset Allocation &amp; Market Cap</div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
