@@ -8,10 +8,11 @@
 //   IND — each TRANSACTIONS buy replayed at its own stock's closes:
 //         value(t) = invested × close(t)/close(buy). Falls back to cost if the
 //         series is missing.
-//   US  — deposits replayed into TODAY'S basket as an index:
-//         value(t) = Σ_τ≤t usd_τ × basket(t)/basket(τ), converted at fx(t).
-//         (Per-symbol buy dates aren't ledgered; the current basket is the
-//         best available proxy for the sleeve's path.)
+//   US  — exact per-symbol replay from the Vested tradebook
+//         (data/us_trades.json, generated from the DriveWealth statement):
+//         each ticker's dated net flows become units at that week's close;
+//         value(t) = units(t) × close(t) + actual cash balance + exited
+//         positions at net cost. Converted at fx(t).
 //   MF  — carried at cost (small sleeve; no per-fund NAV history ledgered).
 //   FD  — deterministic quarterly compounding from each open date, clamped at
 //         maturity (matches deriveFds).
@@ -21,7 +22,8 @@
 // Output: [{ d, nw, assets, invested, synth: true }] — callers must only use
 // dates BEFORE the first real snapshot; real dailies always win.
 
-import { TRANSACTIONS, INDIAN, US, US_CASHFLOWS, MF_CASHFLOWS, FDS, loanOutstanding } from '../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS, loanOutstanding } from '../portfolio';
+import US_TRADES from '../../data/us_trades.json';
 
 const DAY = 24 * 3600 * 1000;
 const YEAR = 365.25 * DAY;
@@ -65,18 +67,13 @@ export function buildBackfill(series, fxRates, fxLive) {
     .filter((d) => d >= first);
   if (!grid.length) return [];
 
-  // US basket index at date t: today's holdings priced at t.
-  const basket = (d) => {
-    let v = 0, ok = false;
-    for (const h of US) {
-      const c = closeAt(series[h.sym], d);
-      if (c != null) { v += h.qty * c; ok = true; }
-    }
-    return ok ? v : null;
+  // US: actual cash balance at t (last statement balance ≤ t)
+  const cashDays = Object.keys(US_TRADES.cash).sort();
+  const cashAt = (d) => {
+    let v = 0;
+    for (const k of cashDays) { if (k > d) break; v = US_TRADES.cash[k]; }
+    return v;
   };
-  const today = grid[grid.length - 1];
-  const basketCache = {};
-  const basketAt = (d) => (basketCache[d] ??= basket(d));
 
   return grid.map((d) => {
     // IND: replay each buy at its own closes
@@ -86,13 +83,24 @@ export function buildBackfill(series, fxRates, fxLive) {
       const c0 = closeAt(s, tx.date), c1 = closeAt(s, d);
       ind += c0 && c1 ? tx.invested * (c1 / c0) : tx.invested;
     }
-    // US: deposits replayed into the current basket, valued at fx(d)
-    let usd = 0;
-    for (const c of US_CASHFLOWS.filter((c) => c.date <= d)) {
-      const b0 = basketAt(c.date), b1 = basketAt(d);
-      usd += b0 && b1 ? c.invested * (b1 / b0) : c.invested;
+    // US: per-ticker unit replay from the tradebook + cash + exited-at-cost
+    let usd = cashAt(d);
+    for (const [sym, fls] of Object.entries(US_TRADES.flows)) {
+      const s = series[sym];
+      let units = 0, costFallback = 0;
+      for (const [fd, amt] of fls) {
+        if (fd > d) break;
+        const c = closeAt(s, fd);
+        if (c) units += amt / c; else costFallback += amt;
+      }
+      const c1 = closeAt(s, d);
+      usd += Math.max(0, c1 ? units * c1 : 0) + Math.max(0, costFallback);
     }
-    const us = Math.max(0, usd) * fx(d);
+    // exited positions (no price history fetched): carry at net cost ≥ 0
+    let otherCost = 0;
+    for (const [fd, amt] of US_TRADES.other) { if (fd <= d) otherCost += amt; }
+    usd += Math.max(0, otherCost);
+    const us = usd * fx(d);
     // MF at cost
     const mf = MF_CASHFLOWS.filter((c) => c.date <= d && c.amount < 0).reduce((s, c) => s - c.amount, 0);
     // FD: compound each open deposit, clamp at maturity
