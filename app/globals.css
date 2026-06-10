@@ -135,6 +135,9 @@
    Sized 1.1em so the symbol's cap height matches the mono digits: JetBrains
    digit height is 0.751em vs Source Sans ₹ at 0.64em → 0.751/0.64 ≈ 1.1. */
 .rs { font-family: var(--body); font-size: 1.1em; font-variant-numeric: normal; margin-right: 0.02em; }
+/* In the net-worth headline the 900-weight Source Sans ₹ reads far heavier
+   than the mono digits — pull it back to match. */
+.hdr-val .rs { font-weight: 500; }
 
 /* Hand-rolled SVG charts share one rhythm: block-centered, uniform breathing
    room, never clipped at the card edge. */

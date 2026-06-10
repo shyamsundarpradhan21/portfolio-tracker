@@ -60,6 +60,30 @@ export default function SipCard({ fx }) {
 
   const [fySel, setFySel] = useState(curFY);
 
+  // All-time aggregate (the "overall" view) — straight off the full ledgers.
+  const allTime = useMemo(() => {
+    const mf = MF_CASHFLOWS.filter((c) => c.amount < 0).reduce((s, c) => s - c.amount, 0);
+    const us = US_CASHFLOWS.filter((c) => c.invested > 0)
+      .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
+    const ind = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+    const streams = [
+      { label: 'MF', amount: Math.round(mf) },
+      { label: 'US', amount: Math.round(us) },
+      { label: 'IND', amount: Math.round(ind) },
+    ].filter((s) => s.amount > 0);
+    const dates = [
+      ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
+      ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
+      ...TRANSACTIONS.map((t) => t.date),
+    ].sort();
+    const first = dates[0];
+    // inclusive month count from first flow to now
+    const months = first
+      ? (now.getFullYear() - +first.slice(0, 4)) * 12 + (now.getMonth() + 1 - +first.slice(5, 7)) + 1
+      : 0;
+    return { streams, total: streams.reduce((s, x) => s + x.amount, 0), months };
+  }, [fx, fxHist]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const MONTHS = useMemo(() => Array.from({ length: 12 }, (_, i) => {
     const d = new Date(fySel, 3 + i, 1); // Apr = month index 3
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -84,7 +108,7 @@ export default function SipCard({ fx }) {
     };
   }), [fySel, fx, fxHist]);
 
-  // sel: month index, or 'fy' for the year aggregate
+  // sel: month index, 'fy' for the year aggregate, 'all' for every FY combined
   const defaultSel = (() => {
     const i = MONTHS.findIndex((m) => m.state === 'current');
     return i >= 0 ? i : 'fy';
@@ -96,24 +120,32 @@ export default function SipCard({ fx }) {
   const fyTot = elapsed.reduce((a, m) => a + m.total, 0);
   const isCurFY = fySel === curFY;
 
-  // Selected view: a single month, or the FY aggregate
-  const overall = sel === 'fy';
-  const mo = overall ? null : MONTHS[sel];
-  const viewStreams = overall
+  // Selected view: a single month, the FY aggregate, or all-time
+  const allFys = sel === 'all';
+  const yearView = sel === 'fy';
+  const mo = allFys || yearView ? null : MONTHS[sel];
+  const viewStreams = allFys
+    ? allTime.streams
+    : yearView
     ? Object.values(elapsed.flatMap((m) => m.streams).reduce((acc, s) => {
         (acc[s.label] ||= { label: s.label, amount: 0 }).amount += s.amount;
         return acc;
       }, {}))
     : (mo.streams || []);
-  const viewTotal = overall ? fyTot : mo.total;
-  const planned = !overall && mo.state === 'planned';
+  const viewTotal = allFys ? allTime.total : yearView ? fyTot : mo.total;
+  const planned = mo && mo.state === 'planned';
   const segs = viewTotal ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewTotal * 100) })) : [];
 
-  const avgMo = elapsed.length ? Math.round(fyTot / elapsed.length) : null;
+  // Minis follow the view: all-time when "overall", else the selected FY
+  const statTot   = allFys ? allTime.total : fyTot;
+  const statMonths = allFys ? allTime.months : elapsed.length;
+  const avgMo = statMonths ? Math.round(statTot / statMonths) : null;
   const runRate = avgMo != null ? avgMo * 12 : null;
   const maxMonth = Math.max(...MONTHS.map((m) => m.total), 1);
 
-  const headSub = overall
+  const headSub = allFys
+    ? `deployed all-time · ${allTime.months} months`
+    : yearView
     ? (isCurFY ? 'deployed FY to date' : 'deployed across the year')
     : planned ? 'not yet deployed'
     : !viewTotal ? 'nothing deployed'
@@ -127,9 +159,9 @@ export default function SipCard({ fx }) {
           <div className="ctitle">Capital Deployment</div>
           <div className="sub" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
             <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, background: 'var(--sur2)', border: '.5px solid var(--brd2)', borderRadius: 3, padding: '1px 8px' }}>
-              {overall ? fyLabel(fySel) : `${mo.mn} ${mo.yy}`}
+              {allFys ? 'ALL FYS' : yearView ? fyLabel(fySel) : `${mo.mn} ${mo.yy}`}
             </span>
-            {overall ? (isCurFY ? 'FY to date' : 'full year') : planned ? 'planned' : mo.state === 'current' ? 'current month' : 'closed'}
+            {allFys ? 'since first flow' : yearView ? (isCurFY ? 'FY to date' : 'full year') : planned ? 'planned' : mo.state === 'current' ? 'current month' : 'closed'}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -147,9 +179,9 @@ export default function SipCard({ fx }) {
       </div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
         {!segs.length ? (
-          <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
+          <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.map((s) => (
-          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
@@ -162,11 +194,11 @@ export default function SipCard({ fx }) {
       <div className="fxc" style={{ marginBottom: 8, gap: 14 }}>
         <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0 }}>
           {FYS.map((y) => {
-            const active = y === fySel;
+            const active = y === fySel && !allFys;
             return (
               <span key={y} onClick={() => pickFY(y)}
                 style={{
-                  fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
+                  fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
                   color: active ? 'var(--acc)' : 'var(--txt3)',
                   borderBottom: active ? '1px solid var(--acc)' : '1px solid transparent',
                 }}>
@@ -175,11 +207,11 @@ export default function SipCard({ fx }) {
             );
           })}
         </div>
-        <span onClick={() => setSel('fy')}
+        <span onClick={() => setSel('all')}
           style={{
-            fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
-            color: overall ? 'var(--acc)' : 'var(--txt3)',
-            borderBottom: overall ? '1px solid var(--acc)' : '1px solid transparent',
+            fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
+            color: allFys ? 'var(--acc)' : 'var(--txt3)',
+            borderBottom: allFys ? '1px solid var(--acc)' : '1px solid transparent',
           }}>
           overall
         </span>
@@ -188,12 +220,14 @@ export default function SipCard({ fx }) {
         {MONTHS.map((m, i) => {
           const bg = m.state === 'planned' ? 'var(--brd2)' : m.total ? 'var(--acc)' : 'var(--sur2)';
           const op = m.state === 'planned' ? 1 : m.total ? Math.max(.4, m.total / maxMonth) : .35;
+          const seld = sel === i;
+          const glow = { color: 'var(--acc)', textShadow: '0 0 9px color-mix(in srgb, var(--acc) 70%, transparent)' };
           return (
             <div key={m.key} onClick={() => setSel(i)}
-              style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
+              style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: seld ? '.5px solid var(--acc)' : '.5px solid transparent', transition: 'border-color .15s' }}>
               <div style={{ height: 22, background: bg, opacity: op, borderRadius: 1 }} />
-              <div style={{ fontSize: '0.6rem', textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em' }}>{m.mn}</div>
-              <div style={{ fontSize: '0.6rem', textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)' }}>{m.state === 'planned' ? '—' : <RsText>{fK(m.total)}</RsText>}</div>
+              <div style={{ fontSize: '0.7rem', textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em', transition: 'color .15s, text-shadow .15s', ...(seld ? glow : null) }}>{m.mn}</div>
+              <div style={{ fontSize: '0.7rem', textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)', transition: 'color .15s, text-shadow .15s', ...(seld ? glow : null) }}>{m.state === 'planned' ? '—' : <RsText>{fK(m.total)}</RsText>}</div>
             </div>
           );
         })}
@@ -202,8 +236,8 @@ export default function SipCard({ fx }) {
       {/* summary stats — all derived from ledger flows */}
       <div className="g3">
         <div className="mini">
-          <div className="lbl">deployed</div>
-          <div className="vsm grn">{elapsed.length ? <RsText>{inrFull(fyTot)}</RsText> : '—'}</div>
+          <div className="lbl">{allFys ? 'deployed all-time' : 'deployed'}</div>
+          <div className="vsm grn">{statMonths ? <RsText>{inrFull(statTot)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
