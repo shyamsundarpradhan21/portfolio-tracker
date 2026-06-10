@@ -133,15 +133,14 @@
   --acc: #6D28D9; --acc2: #7C3AED; --acc-bg: rgba(109,40,217,.1);
 }
 
-/* Rupee glyph: render every ₹ inside this span so the substitute glyph isn't
-   oversized in monospace contexts (Section 0f). */
-/* Sized down to match digit height. No transform/inline-block here — those
-   break -webkit-background-clip:text on the gradient net-worth headline and
-   make the glyph vanish. Baseline alignment is good enough at this size.
-   font-family is forced to the body font because JetBrains Mono has no ₹
-   glyph (U+20B9) — without this, every rupee inside mono-set numbers falls
-   back to a random system font and looks misaligned. */
-.rs { font-family: var(--body); font-size: 0.78em; font-variant-numeric: normal; margin-right: 0.02em; }
+/* Currency symbols (₹/$). No transform/inline-block here — those break
+   -webkit-background-clip:text on the gradient net-worth headline and make
+   the glyph vanish. font-family is forced to the body font because JetBrains
+   Mono has no ₹ glyph (U+20B9) — without this, every rupee inside mono-set
+   numbers falls back to a random system font.
+   Sized 1.1em so the symbol's cap height matches the mono digits: JetBrains
+   digit height is 0.751em vs Source Sans ₹ at 0.64em → 0.751/0.64 ≈ 1.1. */
+.rs { font-family: var(--body); font-size: 1.1em; font-variant-numeric: normal; margin-right: 0.02em; }
 
 /* Hand-rolled SVG charts share one rhythm: block-centered, uniform breathing
    room, never clipped at the card edge. */

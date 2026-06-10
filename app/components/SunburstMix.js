@@ -49,26 +49,14 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   const capArcs = ring(capList.map((c) => ({ ...c, color: capColor[c.label] || 'var(--txt2)' })), capTot, 0.03);
 
   const op = (key, base) => (hov && hov.key !== key ? 0.16 : base);
-  const lp = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
 
-  // Split long labels near midpoint on a space
-  const splitLabel = (s) => {
-    if (s.length <= 18) return [s];
-    const mid = Math.floor(s.length / 2);
-    let sp = s.lastIndexOf(' ', mid);
-    if (sp < 4) sp = s.indexOf(' ', mid);
-    return sp > 0 ? [s.slice(0, sp), s.slice(sp + 1)] : [s];
-  };
-
-  // Separate currency symbol so it can be rendered smaller
+  // Separate currency symbol: it renders in the body font (the mono face has
+  // no ₹ glyph) scaled 1.1× to match the mono digits' cap height — same
+  // treatment as the global .rs class.
   const amtStr = fmtAmt(hov ? hov.val : T);
   const cm = /^([₹$])(.*)$/.exec(amtStr);
   const symC = cm ? cm[1] : '';
   const numC = cm ? cm[2] : amtStr;
-
-  const hovLabel = hov ? hov.label : null;
-  const lines = hovLabel ? splitLabel(hovLabel) : null;
-  const twoLine = lines && lines.length === 2;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -86,45 +74,22 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {/* inner ring — cap mix */}
         {capArcs.map((c) => {
           const key = 'c:' + c.label;
-          const [lx, ly] = lp(64, c.mid);
           return (
-            <g key={key}>
-              <path d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
-                style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
-                onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
-                onMouseLeave={() => setHov(null)} />
-              {c.pct >= 9 && (!hov || hov.key === key) ? (
-                <text x={lx} y={ly + 3.5} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#0A0C10" style={{ pointerEvents: 'none' }}>{c.label[0]}</text>
-              ) : null}
-            </g>
+            <path key={key} d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
+              style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
+              onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
+              onMouseLeave={() => setHov(null)} />
           );
         })}
-        {/* centre readout */}
-        <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fontFamily: 'var(--title)', fill: 'var(--txt)' }}>
-          {symC ? <tspan fontSize="17">{symC}</tspan> : null}
-          <tspan fontSize="23">{numC}</tspan>
+        {/* centre readout — figures only; names live in the legend below */}
+        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
+          {symC ? <tspan fontFamily="var(--body)" fontSize="25">{symC}</tspan> : null}
+          <tspan fontFamily="var(--mono)" fontSize="23">{numC}</tspan>
         </text>
-        {hov ? (
-          <>
-            <text x={cx} y={twoLine ? cy + 4 : cy + 14} textAnchor="middle"
-              style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
-              {lines[0]}
-            </text>
-            {twoLine && (
-              <text x={cx} y={cy + 14} textAnchor="middle"
-                style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
-                {lines[1]}
-              </text>
-            )}
-            <text x={cx} y={twoLine ? cy + 25 : cy + 24} textAnchor="middle"
-              style={{ fontSize: 9, letterSpacing: '0.8px', fill: hov.color, fontWeight: 700 }}>
-              {hov.pct.toFixed(0)}%
-            </text>
-          </>
-        ) : (
-          <text x={cx} y={cy + 14} textAnchor="middle"
-            style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
-            Deployed
+        {hov && (
+          <text x={cx} y={cy + 16} textAnchor="middle"
+            style={{ fontSize: 11, letterSpacing: '0.8px', fill: hov.color, fontWeight: 700, fontFamily: 'var(--mono)' }}>
+            {hov.pct.toFixed(0)}%
           </text>
         )}
       </svg>
