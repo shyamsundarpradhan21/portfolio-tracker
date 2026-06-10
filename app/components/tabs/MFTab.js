@@ -1,28 +1,227 @@
 'use client';
-import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
+import { useState } from 'react';
+import { cl, pctS, pct1, Pct, InrC, InrF, SInrF, Rs, inrCd } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
+import TreeMap from '../shared/TreeMap';
 
 const platStyle = (p) => p === 'JioBLK'
   ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
   : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
-// Reusable bar row: colored dot · label · bar track · value + %
-function AllocRow({ label, color, pct, value, opacity = 1 }) {
+// ── Asset-allocation donut — wider ring, larger legend ───────────────────────
+function AllocDonut({ segs, total }) {
+  const [hov, setHov] = useState(null);
+  const size = 200, thick = 32, r = (size - thick) / 2, C = 2 * Math.PI * r;
+  const live = segs.filter((s) => s.val > 0);
+  const gapFrac = live.length > 1 ? 2.5 / 360 : 0;
+  const tot = total || live.reduce((s, x) => s + x.val, 0) || 1;
+  const centre = hov || { label: 'invested', val: tot };
+  let acc = 0;
+
   return (
-    <div style={{ marginBottom: 13, opacity }}>
-      <div className="fxc" style={{ marginBottom: 5 }}>
-        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span className="mf-dot" style={{ background: color }} />{label}
-        </span>
-        <span className="mono" style={{ fontSize: 'var(--fs-xs)' }}>
-          <InrC n={value} /> · <Pct n={pct} d={1} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <svg className="svgchart" viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 240, height: 'auto' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--sur2)" strokeWidth={thick} />
+        {live.map((s) => {
+          const frac = s.val / tot;
+          const arc = Math.max(frac - gapFrac, 0.004) * C;
+          const rot = acc * 360 - 90 + (gapFrac * 360) / 2;
+          acc += frac;
+          return (
+            <circle key={s.label} cx={size / 2} cy={size / 2} r={r} fill="none"
+              stroke={s.color} strokeWidth={thick}
+              strokeDasharray={`${arc} ${C}`}
+              transform={`rotate(${rot} ${size / 2} ${size / 2})`}
+              opacity={hov && hov.label !== s.label ? 0.2 : 1}
+              style={{ transition: 'opacity .15s', cursor: 'pointer' }}
+              onMouseEnter={() => setHov({ label: s.label, val: s.val })}
+              onMouseLeave={() => setHov(null)} />
+          );
+        })}
+        <text x={size / 2} y={size / 2 - 2} textAnchor="middle"
+          style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 24, letterSpacing: '-0.5px', fill: 'var(--txt)' }}>
+          <tspan fontSize="17">₹</tspan>{inrCd(centre.val)}
+        </text>
+        <text x={size / 2} y={size / 2 + 16} textAnchor="middle"
+          style={{ fontSize: 10, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, fill: 'var(--txt3)' }}>
+          {centre.label}
+        </text>
+      </svg>
+      <div style={{ width: '100%', marginTop: 16 }}>
+        {segs.map((s) => (
+          <div key={s.label} className="fxc"
+            style={{ marginBottom: 9, opacity: s.val > 0 ? 1 : 0.4, cursor: 'default' }}
+            onMouseEnter={() => s.val > 0 && setHov({ label: s.label, val: s.val })}
+            onMouseLeave={() => setHov(null)}>
+            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--txt2)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: s.color, flexShrink: 0 }} />{s.label}
+            </span>
+            <span className="mono" style={{ fontSize: 'var(--fs-sm)' }}>
+              <InrC n={s.val} /> · <Pct n={(s.val / tot) * 100} d={1} />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Zero-anchored XIRR bar chart ──────────────────────────────────────────────
+function XirrChart({ port, bench, delta }) {
+  const max = Math.max(Math.abs(port ?? 0), Math.abs(bench ?? 0), 8) * 1.2;
+  const bars = [
+    { label: 'YOU',   val: port,  color: (port ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)' },
+    { label: 'NIFTY', val: bench, color: (bench ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)', dim: true },
+  ];
+  return (
+    <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="fxc" style={{ marginBottom: 20 }}>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>XIRR vs Benchmark · zero-anchored</span>
+        {delta != null && (
+          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: delta >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} pts {delta >= 0 ? 'ahead' : 'behind'}
+          </span>
+        )}
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
+        {bars.map(({ label, val, color, dim }) => {
+          if (val == null) return <div key={label} style={{ height: 28 }} />;
+          const w = Math.min(Math.abs(val) / max * 100, 100) + '%';
+          const pos = val >= 0;
+          return (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', height: 28 }}>
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, paddingRight: 2 }}>
+                {!pos && <>
+                  <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--txt2)', whiteSpace: 'nowrap' }}>{label} {val.toFixed(1)}%</span>
+                  <div style={{ width: w, height: 22, background: color, borderRadius: '4px 0 0 4px', opacity: dim ? .65 : .85, flexShrink: 0 }} />
+                </>}
+              </div>
+              <div style={{ width: 1, height: 32, background: 'var(--brd2)', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 2 }}>
+                {pos && <>
+                  <div style={{ width: w, height: 22, background: color, borderRadius: '0 4px 4px 0', opacity: dim ? .65 : .85, flexShrink: 0 }} />
+                  <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--txt2)', whiteSpace: 'nowrap' }}>{label} +{val.toFixed(1)}%</span>
+                </>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', position: 'relative' }}>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontFamily: 'var(--mono)' }}>0%</span>
+      </div>
+    </div>
+  );
+}
+
+// ── SIP deployment calendar ───────────────────────────────────────────────────
+const SIP_JIO = 20000, SIP_VES = 19000, SIP_EACH = 30000, SIP_SAL = 117500;
+const SIP_AUTO = SIP_JIO + SIP_VES;
+const SIP_FY = [
+  { mn: 'APR', yy: '26', t: 1 },
+  { mn: 'MAY', yy: '26', t: 2 },
+  { mn: 'JUN', yy: '26', t: 0, cur: true },
+  { mn: 'JUL', yy: '26', t: null }, { mn: 'AUG', yy: '26', t: null }, { mn: 'SEP', yy: '26', t: null },
+  { mn: 'OCT', yy: '26', t: null }, { mn: 'NOV', yy: '26', t: null }, { mn: 'DEC', yy: '26', t: null },
+  { mn: 'JAN', yy: '27', t: null }, { mn: 'FEB', yy: '27', t: null }, { mn: 'MAR', yy: '27', t: null },
+];
+const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
+
+function SipCard() {
+  const [sel, setSel] = useState(SIP_FY.findIndex((m) => m.cur));
+  const mo = SIP_FY[sel];
+  const t = mo.t === null ? 0 : mo.t;
+  const picks = t * SIP_EACH, total = SIP_AUTO + picks;
+  const p1 = Math.round(SIP_JIO / total * 100);
+  const p2 = Math.round(SIP_VES / total * 100);
+  const p3 = picks ? 100 - p1 - p2 : 0;
+  const sal = Math.round(total / SIP_SAL * 100);
+  const planned = mo.t === null;
+
+  const closed = SIP_FY.filter((m) => m.t !== null);
+  const ytdTot = closed.reduce((a, m) => a + SIP_AUTO + m.t * SIP_EACH, 0);
+  const trigYTD = closed.reduce((a, m) => a + m.t, 0);
+  const avgT = trigYTD / closed.length;
+  const estFY = Math.round((SIP_AUTO + avgT * SIP_EACH) * 12);
+  const peak = closed.reduce((b, m) => m.t > b.t ? m : b, closed[0]);
+
+  return (
+    <div className="card sec">
+      <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div className="ctitle">SIP Deployment</div>
+          <div className="sub" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, background: 'var(--sur2)', border: '.5px solid var(--brd2)', borderRadius: 3, padding: '1px 8px' }}>
+              {mo.mn} {mo.yy}
+            </span>
+            {planned ? 'planned · base only' : mo.cur ? 'current month' : 'closed'}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div className={'vmd ' + (sal >= 70 ? 'red' : sal >= 50 ? '' : 'grn')}>{fK(total)}</div>
+          <div className="sub" style={{ margin: 0 }}>{sal}% of salary</div>
+        </div>
+      </div>
+
+      {/* composition bar */}
+      <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: p1 + '%', background: 'var(--grn)', transition: 'width .45s cubic-bezier(.16,1,.3,1)' }} />
+        <div style={{ position: 'absolute', left: p1 + '%', top: 0, height: '100%', width: p2 + '%', background: 'var(--blu)', transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />
+        {p3 > 0 && <div style={{ position: 'absolute', left: (p1 + p2) + '%', top: 0, height: '100%', width: p3 + '%', background: 'var(--acc)', opacity: .75, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />}
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+        {[['var(--grn)', `JioBLK ₹20K · ${p1}%`], ['var(--blu)', `Vested ₹19K · ${p2}%`], ['var(--acc)', picks ? `Picks ${fK(picks)} · ${t} trig` : 'Picks ₹0 · 0 trig']].map(([c, txt]) => (
+          <span key={txt} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: c, flexShrink: 0 }} />{txt}
+          </span>
+        ))}
+      </div>
+
+      {/* calendar grid */}
+      <div className="fxc" style={{ marginBottom: 8 }}>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>FY 26–27 · click month</span>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
+          YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}>{fK(ytdTot)}</strong>
+          {' · '}est FY <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}>₹{(estFY / 100000).toFixed(1)}L</strong>
         </span>
       </div>
-      <span className="bar-trk" style={{ display: 'block' }}>
-        <span className="bar-fil" style={{ width: pct + '%', background: color }} />
-      </span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
+        {SIP_FY.map((m, i) => {
+          const moTotal = m.t === null ? null : SIP_AUTO + m.t * SIP_EACH;
+          const bg = m.t === null ? 'var(--brd2)' : 'var(--grn)';
+          const op = m.t === null ? 1 : m.t === 0 ? .3 : m.t === 1 ? .65 : 1;
+          return (
+            <div key={i} onClick={() => setSel(i)}
+              style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
+              <div style={{ height: 22, background: bg, opacity: op, borderRadius: 1 }} />
+              <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em' }}>{m.mn}</div>
+              <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)' }}>{moTotal === null ? '—' : fK(moTotal)}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* summary stats */}
+      <div className="g4">
+        <div className="mini">
+          <div className="lbl">floor</div>
+          <div className="vsm grn">{fK(SIP_AUTO)}/mo</div>
+        </div>
+        <div className="mini">
+          <div className="lbl">trig YTD</div>
+          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · {fK(trigYTD * SIP_EACH)}</div>
+        </div>
+        <div className="mini">
+          <div className="lbl">avg / mo</div>
+          <div className="vsm">{fK(Math.round(ytdTot / closed.length))}</div>
+        </div>
+        <div className="mini">
+          <div className="lbl">peak mo</div>
+          <div className="vsm">{peak.mn} {fK(SIP_AUTO + peak.t * SIP_EACH)}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -53,7 +252,7 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
     { label: 'Multi/Flexi', val: mf.cap.multi,  color: 'var(--pnk)' },
     { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
   ];
-  const capTot = capSegs.reduce((s, x) => s + x.val, 0) || 1;
+
   return (
     <div>
       <InsightBanner text={insightsOn ? insights?.mutual_funds : null} loading={insightsOn && insightsFirstLoad} />
@@ -80,50 +279,26 @@ export default function MFTab({ mf, mfx, mfSorted, mfSort, sortMf, insights, ins
       </div>
 
       <div className="mf-g3">
+        <XirrChart port={mfx.port} bench={mfx.bench} delta={delta} />
+
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 12 }}>XIRR vs Nifty 50</div>
-          <div className="g2" style={{ flex: 1 }}>
-            {[
-              { label: 'Your portfolio', val: mfx.port, sub: 'annualised' },
-              { label: 'Nifty 50',       val: mfx.bench, sub: 'same dated rupees' },
-            ].map(({ label, val, sub }) => (
-              <div key={label} className="mini" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div className="lbl" style={{ marginBottom: 6 }}>{label}</div>
-                <div className={'mono ' + (val != null ? cl(val) : '')} style={{ fontSize: 'var(--fs-h1)', fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{pct1(val)}</div>
-                <div className="sub" style={{ marginTop: 6 }}>{sub}</div>
-              </div>
-            ))}
+          <div className="ctitle" style={{ marginBottom: 14 }}>Asset Allocation</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <AllocDonut segs={allocSegs} total={mf.totVal} />
           </div>
-          {delta != null && (
-            <div style={{ marginTop: 14, padding: '12px 14px', borderRadius: 10, textAlign: 'center', fontWeight: 700, fontSize: 'var(--fs-sm)',
-              ...(delta >= 0 ? { background: 'var(--grn-bg)', color: 'var(--grn)' } : { background: 'var(--red-bg)', color: 'var(--red)' }) }}>
-              {delta >= 0 ? '▲ Ahead' : '▼ Behind'} by {Math.abs(delta).toFixed(1)} pts
-            </div>
-          )}
+          <div className="sub" style={{ marginTop: 10 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 16 }}>Asset Allocation</div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            {allocSegs.map((s) => {
-              const pct = mf.totVal ? (s.val / mf.totVal) * 100 : 0;
-              return <AllocRow key={s.label} label={s.label} color={s.color} pct={pct} value={s.val} opacity={s.val > 0 ? 1 : 0.4} />;
-            })}
-          </div>
-          <div className="sub" style={{ marginTop: 4 }}>Arbitrage held as a cash-like sleeve, separate from equity.</div>
-        </div>
-
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="ctitle" style={{ marginBottom: 6 }}>Market Cap</div>
-          <div className="sub" style={{ marginBottom: 16 }}>Each fund bucketed by mandate; Flexi Cap &amp; ELSS are multi-cap.</div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            {capSegs.map((s) => {
-              const pct = capTot ? (s.val / capTot) * 100 : 0;
-              return <AllocRow key={s.label} label={s.label} color={s.color} pct={pct} value={s.val} opacity={s.val > 0 ? 1 : 0.4} />;
-            })}
+          <div className="ctitle" style={{ marginBottom: 4 }}>Market Cap</div>
+          <div className="sub" style={{ marginBottom: 12 }}>Each fund bucketed by mandate; Flexi Cap &amp; ELSS are multi-cap.</div>
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <TreeMap items={capSegs} height={252} />
           </div>
         </div>
       </div>
+
+      <SipCard />
 
       <div className="card sec">
         <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>

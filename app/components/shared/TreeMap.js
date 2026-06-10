@@ -75,8 +75,8 @@ export default function TreeMap({ items, height = 228, aspect = 1.5 }) {
               style={{
                 width: '100%', height: '100%', borderRadius: 9, overflow: 'hidden',
                 padding: '8px 10px', cursor: 'default',
-                background: `color-mix(in srgb, ${s.color} ${hov === s.label ? 27 : 16}%, transparent)`,
-                border: `.5px solid color-mix(in srgb, ${s.color} 45%, var(--brd))`,
+                background: `color-mix(in srgb, ${s.color} ${hov === s.label ? 42 : 26}%, transparent)`,
+                border: `.5px solid color-mix(in srgb, ${s.color} 65%, var(--brd))`,
                 opacity: dim ? 0.45 : 1,
                 transition: 'background .15s, opacity .15s',
               }}>
