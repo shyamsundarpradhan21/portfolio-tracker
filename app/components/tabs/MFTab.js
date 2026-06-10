@@ -48,7 +48,7 @@ function XirrChart({ port, bench, delta, extra = [] }) {
           return (
             <div key={label} style={grid}>
               <span style={{ fontSize: 'var(--fs-sm)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-              <div style={{ display: 'flex', height: you ? 26 : 20 }}>
+              <div style={{ display: 'flex', height: you ? 34 : 28 }}>
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                   {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px' }} />}
                 </div>
