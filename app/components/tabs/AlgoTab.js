@@ -34,8 +34,8 @@ export default function AlgoTab({
           <div className="lbl">FY26-27 YTD</div>
           <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <SInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
           <div className="sub">
-            <span className="grn">S01 <SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
-            <span className="grn">S02 <SInrF n={FY.s02.fy2627.net} /></span> ·{' '}
+            S01 <span className={cl(FY.s01.fy2627.net)}><SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
+            S02 <span className={cl(FY.s02.fy2627.net)}><SInrF n={FY.s02.fy2627.net} /></span> ·{' '}
             swing {swing.valued ? <span className={cl(swing.pl)}><SInrF n={swing.pl} /></span> : '…'}
           </div>
         </div>

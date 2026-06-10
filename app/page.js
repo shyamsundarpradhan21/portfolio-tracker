@@ -585,21 +585,19 @@ export default function Page() {
   const headerCards = [
     { label: 'Indian equity', tab: 1, live: markets.nse,
       val: indian.valued ? <InrC n={indian.val} /> : <Skel w={58} h={18} />,
-      cls: indian.valued ? cl(indian.pl) : '',
-      sub: indian.valued ? <><SInrC n={indian.pl} /> · {pctS(indian.pct)}</> : `${INDIAN.length} stocks` },
+      sub: indian.valued ? <span className={cl(indian.pl)}><SInrC n={indian.pl} /> · {pctS(indian.pct)}</span> : `${INDIAN.length} stocks` },
     { label: 'Mutual funds', tab: 3,
-      val: <InrC n={mf.totVal} />, cls: cl(mf.totRet),
-      sub: <>{pctS(mf.totRet)} · live NAV</> },
+      val: <InrC n={mf.totVal} />,
+      sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · live NAV</> },
     { label: 'Fixed deposits', tab: 2,
-      val: <InrC n={ov.fdValue} />, cls: 'grn',
-      sub: <><InrF n={fds.accrued} /> accrued</> },
+      val: <InrC n={ov.fdValue} />,
+      sub: <><span className="grn"><InrF n={fds.accrued} /></span> accrued</> },
     { label: 'US equity', tab: 4, live: markets.nyse,
       val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
-      cls: usData.val ? cl(usData.pl) : '',
-      sub: usData.val ? <>{pctS(usData.pct)} @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
+      sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
     { label: 'Algo capital', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
-      val: <InrC n={STATIC.algo} />, cls: ytdTotal != null ? cl(ytdTotal) : '',
-      sub: ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /> · off-NW</> : 'own capital · off-NW' },
+      val: <InrC n={STATIC.algo} />,
+      sub: ytdTotal != null ? <>FY27 <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
@@ -645,7 +643,7 @@ export default function Page() {
                 <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
                   <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
                   <div className="vmd">{c.val}</div>
-                  <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
+                  <div className="sub">{c.sub}</div>
                 </button>
               ))}
             </div>
