@@ -64,12 +64,22 @@ export default function SipCard({ fx }) {
 
   const [fySel, setFySel] = useState(curFY);
 
+  // Withdrawals — money coming BACK from the sleeves: MF redemptions
+  // (positive amounts), US withdrawals (negative invested), Indian sells
+  // (negative invested, if ever recorded) and FD redemptions. These net
+  // against deployment month by month — a heavy booking month goes negative.
+  const withdrawalsIn = (pred) =>
+    MF_CASHFLOWS.filter((c) => c.amount > 0 && pred(c.date)).reduce((s, c) => s + c.amount, 0) +
+    US_CASHFLOWS.filter((c) => c.invested < 0 && pred(c.date)).reduce((s, c) => s - c.invested * (rateFor(fxHist, c.date) ?? fx), 0) +
+    TRANSACTIONS.filter((t) => t.invested < 0 && pred(t.date)).reduce((s, t) => s - t.invested, 0) +
+    fdRedemptions().filter((r) => pred(r.date)).reduce((s, r) => s + r.amount, 0);
+
   // All-time aggregate (the "overall" view) — straight off the full ledgers.
   const allTime = useMemo(() => {
     const mf = MF_CASHFLOWS.filter((c) => c.amount < 0).reduce((s, c) => s - c.amount, 0);
     const us = US_CASHFLOWS.filter((c) => c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
-    const ind = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+    const ind = TRANSACTIONS.filter((t) => t.invested > 0).reduce((s, t) => s + t.invested, 0);
     const fd = fdFlows().reduce((s, f) => s + f.amount, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
@@ -77,6 +87,7 @@ export default function SipCard({ fx }) {
       { label: 'IND', amount: Math.round(ind) },
       { label: 'FD', amount: Math.round(fd) },
     ].filter((s) => s.amount > 0);
+    const out = Math.round(withdrawalsIn(() => true));
     const dates = [
       ...MF_CASHFLOWS.filter((c) => c.amount < 0).map((c) => c.date),
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
@@ -88,7 +99,8 @@ export default function SipCard({ fx }) {
     const months = first
       ? (now.getFullYear() - +first.slice(0, 4)) * 12 + (now.getMonth() + 1 - +first.slice(5, 7)) + 1
       : 0;
-    return { streams, total: streams.reduce((s, x) => s + x.amount, 0), months };
+    const gross = streams.reduce((s, x) => s + x.amount, 0);
+    return { streams, gross, out, total: gross - out, months };
   }, [fx, fxHist]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const MONTHS = useMemo(() => Array.from({ length: 12 }, (_, i) => {
@@ -98,7 +110,7 @@ export default function SipCard({ fx }) {
       .reduce((s, c) => s - c.amount, 0);
     const us = US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
-    const ind = TRANSACTIONS.filter((t) => monthKey(t.date) === key)
+    const ind = TRANSACTIONS.filter((t) => monthKey(t.date) === key && t.invested > 0)
       .reduce((s, t) => s + t.invested, 0);
     const fd = fdFlows().filter((f) => monthKey(f.date) === key)
       .reduce((s, f) => s + f.amount, 0);
@@ -108,15 +120,18 @@ export default function SipCard({ fx }) {
       { label: 'IND', amount: Math.round(ind) },
       { label: 'FD', amount: Math.round(fd) },
     ].filter((s) => s.amount > 0);
+    const gross = streams.reduce((s, x) => s + x.amount, 0);
+    const out = Math.round(withdrawalsIn((dt) => monthKey(dt) === key));
     return {
       key,
       mn: d.toLocaleString('en', { month: 'short' }).toUpperCase(),
       yy: String(d.getFullYear()).slice(2),
       streams,
-      total: streams.reduce((s, x) => s + x.amount, 0),
+      gross, out,
+      total: gross - out, // NET — a heavy booking/redemption month goes negative
       state: key < curKey ? 'closed' : key === curKey ? 'current' : 'planned',
     };
-  }), [fySel, fx, fxHist]);
+  }), [fySel, fx, fxHist]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // sel: month index, 'fy' for the year aggregate, 'all' for every FY combined
   const defaultSel = (() => {
@@ -142,29 +157,31 @@ export default function SipCard({ fx }) {
         return acc;
       }, {}))
     : (mo.streams || []);
-  const viewTotal = allFys ? allTime.total : yearView ? fyTot : mo.total;
+  const fyGross = elapsed.reduce((a, m) => a + m.gross, 0);
+  const fyOut   = elapsed.reduce((a, m) => a + m.out, 0);
+  const viewGross = allFys ? allTime.gross : yearView ? fyGross : mo.gross;
+  const viewOut   = allFys ? allTime.out   : yearView ? fyOut   : mo.out;
+  const viewTotal = viewGross - viewOut; // NET
   const planned = mo && mo.state === 'planned';
-  const segs = viewTotal ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewTotal * 100) })) : [];
+  // Composition stays gross — it shows where money went IN; withdrawals get
+  // their own legend line rather than distorting the split.
+  const segs = viewGross ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGross * 100) })) : [];
 
   // Minis follow the view: all-time when "overall", else the selected FY
-  const statTot   = allFys ? allTime.total : fyTot;
+  const statTot    = allFys ? allTime.total : fyTot; // net
+  const statOut    = allFys ? allTime.out   : fyOut;
   const statMonths = allFys ? allTime.months : elapsed.length;
   const avgMo = statMonths ? Math.round(statTot / statMonths) : null;
   const runRate = avgMo != null ? avgMo * 12 : null;
-  const maxMonth = Math.max(...MONTHS.map((m) => m.total), 1);
-
-  // FD redemptions in the view's scope — cash coming back, never mixed into
-  // the deployed figure. The mini only renders once one exists.
-  const redeemed = fdRedemptions()
-    .filter((r) => allFys || fyOf(r.date) === fySel)
-    .reduce((s, r) => s + r.amount, 0);
+  const maxMonth = Math.max(...MONTHS.map((m) => Math.abs(m.total)), 1);
 
   const headSub = allFys
-    ? `deployed all-time · ${allTime.months} months`
+    ? `net deployed all-time · ${allTime.months} months`
     : yearView
-    ? (isCurFY ? 'deployed FY to date' : 'deployed across the year')
+    ? (viewTotal < 0 ? 'net withdrawn this FY' : isCurFY ? 'net deployed FY to date' : 'net deployed across the year')
     : planned ? 'not yet deployed'
     : !viewTotal ? 'nothing deployed'
+    : viewTotal < 0 ? 'net withdrawn this month'
     : mo.state === 'current' ? 'deployed this month'
     : `deployed in ${mo.mn.charAt(0) + mo.mn.slice(1).toLowerCase()} ’${mo.yy}`;
 
@@ -181,7 +198,7 @@ export default function SipCard({ fx }) {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (viewTotal ? 'grn' : '')}>{viewTotal ? <RsText>{inrFull(viewTotal)}</RsText> : '—'}</div>
+          <div className={'vmd ' + (viewTotal > 0 ? 'grn' : viewTotal < 0 ? 'red' : '')}>{viewTotal ? <RsText>{inrFull(Math.abs(viewTotal))}</RsText> : '—'}</div>
           <div className="sub" style={{ margin: 0 }}>{headSub}</div>
         </div>
       </div>
@@ -202,6 +219,12 @@ export default function SipCard({ fx }) {
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
         ))}
+        {viewOut > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--red)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--red)', flexShrink: 0 }} />
+            <RsText>{`withdrawn ${inrFull(viewOut)}`}</RsText>
+          </span>
+        )}
       </div>
 
       {/* FY chips — every year the ledgers touch; the active one drives the
@@ -234,8 +257,8 @@ export default function SipCard({ fx }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
         {MONTHS.map((m, i) => {
-          const bg = m.state === 'planned' ? 'var(--brd2)' : m.total ? 'var(--acc)' : 'var(--sur2)';
-          const op = m.state === 'planned' ? 1 : m.total ? Math.max(.4, m.total / maxMonth) : .35;
+          const bg = m.state === 'planned' ? 'var(--brd2)' : m.total < 0 ? 'var(--red)' : m.total ? 'var(--acc)' : 'var(--sur2)';
+          const op = m.state === 'planned' ? 1 : m.total ? Math.max(.4, Math.abs(m.total) / maxMonth) : .35;
           const seld = sel === i;
           const glow = { color: 'var(--acc)', textShadow: '0 0 9px color-mix(in srgb, var(--acc) 70%, transparent)' };
           return (
@@ -243,17 +266,17 @@ export default function SipCard({ fx }) {
               style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: seld ? '.5px solid var(--acc)' : '.5px solid transparent', transition: 'border-color .15s' }}>
               <div style={{ height: 22, background: bg, opacity: op, borderRadius: 1 }} />
               <div style={{ fontSize: '0.7rem', textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em', transition: 'color .15s, text-shadow .15s', ...(seld ? glow : null) }}>{m.mn}</div>
-              <div style={{ fontSize: '0.7rem', textAlign: 'center', color: 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)', transition: 'color .15s, text-shadow .15s', ...(seld ? glow : null) }}>{m.state === 'planned' ? '—' : <RsText>{fK(m.total)}</RsText>}</div>
+              <div style={{ fontSize: '0.7rem', textAlign: 'center', color: m.total < 0 ? 'var(--red)' : 'var(--txt2)', marginTop: 1, fontFamily: 'var(--mono)', transition: 'color .15s, text-shadow .15s', ...(seld ? glow : null) }}>{m.state === 'planned' ? '—' : <RsText>{fK(Math.abs(m.total))}</RsText>}</div>
             </div>
           );
         })}
       </div>
 
       {/* summary stats — all derived from ledger flows */}
-      <div className={redeemed > 0 ? 'g4' : 'g3'}>
+      <div className={statOut > 0 ? 'g4' : 'g3'}>
         <div className="mini">
-          <div className="lbl">{allFys ? 'deployed all-time' : 'deployed'}</div>
-          <div className="vsm grn">{statMonths ? <RsText>{inrFull(statTot)}</RsText> : '—'}</div>
+          <div className="lbl">{allFys ? 'net deployed all-time' : 'net deployed'}</div>
+          <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{statMonths ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
@@ -263,10 +286,10 @@ export default function SipCard({ fx }) {
           <div className="lbl">run-rate (annualised)</div>
           <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
         </div>
-        {redeemed > 0 && (
+        {statOut > 0 && (
           <div className="mini">
-            <div className="lbl">redeemed</div>
-            <div className="vsm red"><RsText>{inrFull(redeemed)}</RsText></div>
+            <div className="lbl">withdrawn</div>
+            <div className="vsm red"><RsText>{inrFull(statOut)}</RsText></div>
           </div>
         )}
       </div>

@@ -294,8 +294,10 @@ export const FDS = [
 // history survives redemption. Redemptions = closed rows' principal on closedOn.
 export const fdFlows = () =>
   FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, amount: f.newMoney ?? f.principal }));
+// Redemption amount = actual payout when recorded (set `payout` on closing —
+// principal + interest received), else principal as the conservative floor.
 export const fdRedemptions = () =>
-  FDS.filter((f) => f.status === 'closed' && f.closedOn).map((f) => ({ date: f.closedOn, amount: f.principal }));
+  FDS.filter((f) => f.status === 'closed' && f.closedOn).map((f) => ({ date: f.closedOn, amount: f.payout ?? f.principal }));
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
