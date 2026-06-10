@@ -90,7 +90,7 @@ export default function SipCard({ fx }) {
     return i >= 0 ? i : 'fy';
   })();
   const [sel, setSel] = useState(defaultSel);
-  const pickFY = (y) => { setFySel(y); setSel(y === curFY ? defaultSel : 'fy'); };
+  const pickFY = (y) => { setFySel(y); setSel('fy'); };
 
   const elapsed = MONTHS.filter((m) => m.state !== 'planned');
   const fyTot = elapsed.reduce((a, m) => a + m.total, 0);
@@ -156,15 +156,17 @@ export default function SipCard({ fx }) {
         ))}
       </div>
 
-      {/* FY chips — every year the ledgers touch; the active one drives the grid */}
-      <div className="fxc" style={{ marginBottom: 8 }}>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      {/* FY chips — every year the ledgers touch; the active one drives the
+          grid. No-wrap + scroll so the row stays one line however many years
+          accumulate. Clicking a chip (or "overall") shows the year aggregate. */}
+      <div className="fxc" style={{ marginBottom: 8, gap: 14 }}>
+        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0 }}>
           {FYS.map((y) => {
             const active = y === fySel;
             return (
               <span key={y} onClick={() => pickFY(y)}
                 style={{
-                  fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer',
+                  fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
                   color: active ? 'var(--acc)' : 'var(--txt3)',
                   borderBottom: active ? '1px solid var(--acc)' : '1px solid transparent',
                 }}>
@@ -173,8 +175,13 @@ export default function SipCard({ fx }) {
             );
           })}
         </div>
-        <span onClick={() => setSel('fy')} style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', cursor: 'pointer' }}>
-          {isCurFY ? 'YTD' : 'Total'} <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{inrFull(fyTot)}</RsText></strong>
+        <span onClick={() => setSel('fy')}
+          style={{
+            fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
+            color: overall ? 'var(--acc)' : 'var(--txt3)',
+            borderBottom: overall ? '1px solid var(--acc)' : '1px solid transparent',
+          }}>
+          overall
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
