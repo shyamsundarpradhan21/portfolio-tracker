@@ -1,14 +1,11 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Source_Sans_3, Playfair_Display, IBM_Plex_Mono } from 'next/font/google';
+import { Source_Sans_3, Playfair_Display, Fira_Code } from 'next/font/google';
 
-// IBM Plex Mono natively covers U+20B9 (₹) and renders $ on the same baseline
-// as digits — verified via fontTools. Fira Code / Source Code Pro / JetBrains
-// Mono all lack the rupee glyph and fall back to a system font.
 const body = Source_Sans_3({ subsets: ['latin', 'latin-ext'], variable: '--font-body', display: 'swap' });
 const serif = Playfair_Display({ subsets: ['latin', 'latin-ext'], weight: ['500','600','700','800'], variable: '--font-title', display: 'swap' });
-const mono = IBM_Plex_Mono({ subsets: ['latin', 'latin-ext'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
+const mono = Fira_Code({ subsets: ['latin', 'latin-ext'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
 
 export const metadata = {
   title: 'Net Worth — Live',

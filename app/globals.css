@@ -1,6 +1,6 @@
 /* ── Layer 1: Base night tokens (always-on defaults) ───────────────────────── */
 :root {
-  --mono: var(--font-mono), 'IBM Plex Mono', 'Courier New', monospace;
+  --mono: var(--font-mono), 'Fira Code', 'Courier New', monospace;
   --body: var(--font-body), 'Source Sans 3', system-ui, sans-serif;
   --title: var(--font-title), 'Playfair Display', Georgia, serif;
 
@@ -109,10 +109,10 @@
   --acc: #6D28D9; --acc2: #7C3AED; --acc-bg: rgba(109,40,217,.1);
 }
 
-/* Currency symbols (₹/$): same font as the digits — IBM Plex Mono carries
-   both glyphs natively, so no fallback-font baseline mismatch. Slightly
-   smaller so the symbol doesn't shout over the numerals. */
-.rs { font-size: 0.85em; font-variant-numeric: normal; }
+/* Rupee glyph: render every ₹ inside this span so the substitute glyph isn't
+   oversized in monospace contexts (Section 0f). */
+/* font-family: forces body font so ₹ glyph is always available even in mono contexts */
+.rs { font-family: var(--body); font-size: 0.85em; font-variant-numeric: normal; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
