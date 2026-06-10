@@ -24,12 +24,12 @@ export default function USTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
-          <div className="vmd acc"><UsdF n={usData.inv} /></div>
+          <div className="vmd"><UsdF n={usData.inv} /></div>
           <div className="sub">≈<span className="mut"><InrC n={usData.inv * fxRate} /></span> · {US.length} holdings</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd acc">{usData.val ? <UsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
+          <div className="vmd">{usData.val ? <UsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">{usData.val && fxRate ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
         </div>
         <div className="csm">

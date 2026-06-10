@@ -216,7 +216,7 @@ body {
 .csm .vlg, .csm .vmd, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
 .lbl {
-  font-size: var(--fs-2xs); color: var(--txt2); text-transform: uppercase;
+  font-size: var(--fs-2xs); color: var(--acc); text-transform: uppercase;
   letter-spacing: .07em; margin-bottom: 6px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -708,7 +708,7 @@ body { padding: 0; }
   font-size: var(--fs-xs);
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--txt3);
+  color: var(--acc);
   margin-bottom: 4px;
   font-weight: 500;
 }
