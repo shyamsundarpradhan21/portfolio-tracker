@@ -118,6 +118,40 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         </div>
       </div>
 
+      {fds.matured.length > 0 && (
+        <div className="card sec" style={{ borderLeft: '2px solid var(--gld)' }}>
+          <div className="fxc" style={{ marginBottom: 10 }}>
+            <div className="lbl" style={{ margin: 0 }}>Matured — Cash In</div>
+            <div className="sub" style={{ margin: 0 }}>awaiting redeployment · <InrC n={fds.maturedCash} /> idle</div>
+          </div>
+          <div className="ovx">
+            <table className="tbl" style={{ minWidth: 600 }}>
+              <thead>
+                <tr>
+                  <th>Bank</th><th>FD</th><th>Matured on</th>
+                  <th className="ra">Principal</th><th className="ra">Rate</th><th className="ra">Cash in</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fds.matured.map((f) => (
+                  <tr key={f.id}>
+                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
+                    <td className="mut">{f.label}</td>
+                    <td className="mut">{fmtNavDate(f.matures)}</td>
+                    <td className="ra mono"><InrC n={f.principal} /></td>
+                    <td className="ra mono"><Pct n={f.rate} /></td>
+                    <td className="ra grn mono"><InrF n={f.maturityValue} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', marginTop: 10 }}>
+            Auto-derived: an active FD past maturity counts as cash from its maturity date — record a new row only when this is redeployed.
+          </div>
+        </div>
+      )}
+
       {fds.closed.length > 0 && (
         <div className="card sec">
           <div className="lbl" style={{ marginBottom: 10 }}>Matured &amp; Redeemed</div>

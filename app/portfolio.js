@@ -294,10 +294,22 @@ export const FDS = [
 // history survives redemption. Redemptions = closed rows' principal on closedOn.
 export const fdFlows = () =>
   FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, amount: f.newMoney ?? f.principal }));
-// Redemption amount = actual payout when recorded (set `payout` on closing —
-// principal + interest received), else principal as the conservative floor.
-export const fdRedemptions = () =>
-  FDS.filter((f) => f.status === 'closed' && f.closedOn).map((f) => ({ date: f.closedOn, amount: f.payout ?? f.principal }));
+// Redemptions = cash leaving the FD sleeve. Two sources:
+//   1. Explicitly closed rows — payout if recorded, else principal.
+//   2. AUTO-MATURED rows: an 'active' FD past its maturity date is treated as
+//      cash-in on the maturity date (full maturity value, quarterly
+//      compounding) with NO ledger edit needed. The ledger is only touched
+//      when the cash is redeployed (new row; old one → 'closed').
+const fdMaturityValue = (f) => {
+  const yrs = (new Date(f.matures) - new Date(f.open)) / (365.25 * 24 * 3600 * 1000);
+  return f.principal * Math.pow(1 + f.rate / 400, 4 * yrs);
+};
+export const fdRedemptions = (now = new Date()) => [
+  ...FDS.filter((f) => f.status === 'closed' && f.closedOn)
+    .map((f) => ({ date: f.closedOn, amount: f.payout ?? f.principal })),
+  ...FDS.filter((f) => f.status === 'active' && new Date(f.matures) <= now)
+    .map((f) => ({ date: f.matures, amount: Math.round(fdMaturityValue(f)) })),
+];
 
 // Other static assets and liabilities (INR).
 export const STATIC = {

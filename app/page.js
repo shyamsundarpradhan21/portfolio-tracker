@@ -70,9 +70,17 @@ function deriveMf(mfNav) {
 function deriveFds(now) {
   const t = now.getTime();
   let principal = 0, accrued = 0, maturity = 0, weightedRate = 0;
-  // Only 'active' rows earn and count toward net worth; 'closed' rows are
-  // history (deployment calendar, matured section), 'pipeline' is future cash.
-  const rows = FDS.filter((f) => f.status === 'active').map((f) => {
+  // Lifecycle is derived from the clock, not just the ledger: an 'active' row
+  // past maturity automatically becomes CASH IN (frozen at maturity value,
+  // out of the FD sleeve) — the ledger is only edited on redeployment.
+  // 'closed' rows are history; 'pipeline' is future cash.
+  const matured = FDS.filter((f) => f.status === 'active' && new Date(f.matures).getTime() <= t).map((f) => {
+    const totalYears = (new Date(f.matures).getTime() - new Date(f.open).getTime()) / YEAR_MS;
+    const maturityValue = compound(f.principal, f.rate, totalYears);
+    return { ...f, maturityValue, maturityInterest: maturityValue - f.principal };
+  });
+  const maturedCash = matured.reduce((s, f) => s + f.maturityValue, 0);
+  const rows = FDS.filter((f) => f.status === 'active' && new Date(f.matures).getTime() > t).map((f) => {
     const openT        = new Date(f.open).getTime();
     const matT         = new Date(f.matures).getTime();
     const totalYears   = (matT - openT) / YEAR_MS;
@@ -95,7 +103,7 @@ function deriveFds(now) {
     const d = pipeline[nextIdx].days;
     pipeline[nextIdx] = { ...pipeline[nextIdx], badge: d === 0 ? 'NEXT · TODAY' : d === 1 ? 'NEXT · 1 DAY' : `NEXT · ${d} DAYS` };
   }
-  return { rows, closed, principal, accrued, maturity, blendedRate: principal ? weightedRate / principal : 0, pipeline, pipelineTotal: pipeline.reduce((s, f) => s + f.amount, 0), nextPipeline: nextIdx >= 0 ? pipeline[nextIdx] : null };
+  return { rows, closed, matured, maturedCash, principal, accrued, maturity, blendedRate: principal ? weightedRate / principal : 0, pipeline, pipelineTotal: pipeline.reduce((s, f) => s + f.amount, 0), nextPipeline: nextIdx >= 0 ? pipeline[nextIdx] : null };
 }
 
 function mfXirr(mf, mfNav) {
@@ -459,7 +467,9 @@ export default function Page() {
   const sortMf = (key) => setMfSort((s) => s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'name' || key === 'platform' ? 1 : -1 });
 
   const ov = useMemo(() => {
-    const usInr = usData.val * fxRate; const fdValue = fds.principal + fds.accrued;
+    // maturedCash: auto-matured FDs awaiting redeployment — still wealth
+    // (cash in bank), just no longer earning in the FD sleeve.
+    const usInr = usData.val * fxRate; const fdValue = fds.principal + fds.accrued + fds.maturedCash;
     // Algo capital (STATIC.algo) is deliberately EXCLUDED from net worth: its
     // account equity isn't marked to market daily (profits sit in the pool,
     // get distributed to clients, or compound on no fixed schedule), so it
@@ -467,7 +477,7 @@ export default function Page() {
     // tracked on the Algo tab and the header card.
     const totalAssets = indian.val + usInr + fdValue + mf.totVal;
     return { usInr, fdValue, totalAssets, nw: totalAssets - STATIC.loan };
-  }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued]);
+  }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
     const gains = (indian.pl || 0) + (usData.pl || 0) * fxRate + (mf.totVal - mf.totCost) + (fds.accrued || 0);
