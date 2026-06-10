@@ -24,6 +24,7 @@
 
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS, loanOutstanding } from '../portfolio';
 import US_TRADES from '../../data/us_trades.json';
+import INDIAN_EXITS from '../../data/indian_exits.json';
 
 const DAY = 24 * 3600 * 1000;
 const YEAR = 365.25 * DAY;
@@ -57,6 +58,12 @@ export function buildBackfill(series, fxRates, fxLive) {
     ...MF_CASHFLOWS.map((c) => ({ date: c.date, inr: -c.amount })), // outflows positive
     ...US_CASHFLOWS.map((c) => ({ date: c.date, inr: c.invested * fx(c.date) })),
     ...FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, inr: f.newMoney ?? f.principal })),
+    // Exited Indian delivery trades (Zerodha tax P&L): buy in at entry,
+    // proceeds out at exit — keeps "invested" a true net-deployed line.
+    ...INDIAN_EXITS.trades.flatMap(([e, x, buy, sell]) => [
+      { date: e, inr: buy },
+      { date: x, inr: -sell },
+    ]),
   ].sort((a, b) => (a.date < b.date ? -1 : 1));
   if (!flows.length) return [];
   const first = flows[0].date;
@@ -76,12 +83,17 @@ export function buildBackfill(series, fxRates, fxLive) {
   };
 
   return grid.map((d) => {
-    // IND: replay each buy at its own closes
+    // IND: replay each live buy at its own closes; exited trades are carried
+    // at buy value while held (no price history for exited names — their
+    // realized P&L lands on the invested line at exit instead).
     let ind = 0;
     for (const tx of TRANSACTIONS.filter((t) => t.date <= d && t.invested > 0)) {
       const s = series[`${tx.sym}.NS`];
       const c0 = closeAt(s, tx.date), c1 = closeAt(s, d);
       ind += c0 && c1 ? tx.invested * (c1 / c0) : tx.invested;
+    }
+    for (const [e, x, buy] of INDIAN_EXITS.trades) {
+      if (e <= d && d < x) ind += buy;
     }
     // US: per-ticker unit replay from the tradebook + cash + exited-at-cost
     let usd = cashAt(d);

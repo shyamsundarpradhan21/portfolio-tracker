@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions } from '../../portfolio';
+import INDIAN_EXITS from '../../../data/indian_exits.json';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
 // Derived entirely from the ledgers in portfolio.js — nothing monthly recorded:
@@ -46,6 +47,7 @@ export default function SipCard({ fx }) {
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
       ...fdFlows().map((f) => f.date),
+      ...INDIAN_EXITS.trades.map(([e]) => e),
     ];
     const first = dates.length ? fyOf(dates.sort()[0]) : curFY;
     return Array.from({ length: curFY - first + 1 }, (_, i) => first + i);
@@ -72,14 +74,19 @@ export default function SipCard({ fx }) {
     MF_CASHFLOWS.filter((c) => c.amount > 0 && pred(c.date)).reduce((s, c) => s + c.amount, 0) +
     US_CASHFLOWS.filter((c) => c.invested < 0 && pred(c.date)).reduce((s, c) => s - c.invested * (rateFor(fxHist, c.date) ?? fx), 0) +
     TRANSACTIONS.filter((t) => t.invested < 0 && pred(t.date)).reduce((s, t) => s - t.invested, 0) +
-    fdRedemptions().filter((r) => pred(r.date)).reduce((s, r) => s + r.amount, 0);
+    fdRedemptions().filter((r) => pred(r.date)).reduce((s, r) => s + r.amount, 0) +
+    INDIAN_EXITS.trades.filter(([, x]) => pred(x)).reduce((s, [, , , sell]) => s + sell, 0);
+  // Exited Indian delivery buys (Zerodha tax P&L) — deployment at entry date
+  const exitBuysIn = (pred) =>
+    INDIAN_EXITS.trades.filter(([e]) => pred(e)).reduce((s, [, , buy]) => s + buy, 0);
 
   // All-time aggregate (the "overall" view) — straight off the full ledgers.
   const allTime = useMemo(() => {
     const mf = MF_CASHFLOWS.filter((c) => c.amount < 0).reduce((s, c) => s - c.amount, 0);
     const us = US_CASHFLOWS.filter((c) => c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
-    const ind = TRANSACTIONS.filter((t) => t.invested > 0).reduce((s, t) => s + t.invested, 0);
+    const ind = TRANSACTIONS.filter((t) => t.invested > 0).reduce((s, t) => s + t.invested, 0)
+      + exitBuysIn(() => true);
     const fd = fdFlows().reduce((s, f) => s + f.amount, 0);
     const streams = [
       { label: 'MF', amount: Math.round(mf) },
@@ -93,6 +100,7 @@ export default function SipCard({ fx }) {
       ...US_CASHFLOWS.filter((c) => c.invested > 0).map((c) => c.date),
       ...TRANSACTIONS.map((t) => t.date),
       ...fdFlows().map((f) => f.date),
+      ...INDIAN_EXITS.trades.map(([e]) => e),
     ].sort();
     const first = dates[0];
     // inclusive month count from first flow to now
@@ -111,7 +119,8 @@ export default function SipCard({ fx }) {
     const us = US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0)
       .reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0);
     const ind = TRANSACTIONS.filter((t) => monthKey(t.date) === key && t.invested > 0)
-      .reduce((s, t) => s + t.invested, 0);
+      .reduce((s, t) => s + t.invested, 0)
+      + exitBuysIn((dt) => monthKey(dt) === key);
     const fd = fdFlows().filter((f) => monthKey(f.date) === key)
       .reduce((s, f) => s + f.amount, 0);
     const streams = [
