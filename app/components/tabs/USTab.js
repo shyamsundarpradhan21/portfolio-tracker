@@ -70,7 +70,7 @@ export default function USTab({
                 <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{pct1(usStats.xirr)}</td>
                 <td className="ra mono">{usData.val ? <UsdF n={usData.val} d={0} /> : '—'}</td>
               </tr>
-              {usStats.benchmarks.slice(0, 7).map((b) => (
+              {usStats.benchmarks.slice(0, 5).map((b) => (
                 <tr key={b.key}>
                   <td className="mut">{b.label}</td>
                   <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>

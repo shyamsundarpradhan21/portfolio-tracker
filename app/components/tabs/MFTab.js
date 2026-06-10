@@ -13,7 +13,7 @@ const platStyle = (p) => p === 'JioBLK'
 // One row per series: name | bar around a shared 0% axis, with the percentage
 // printed beside the axis on the side opposite the bar. Your bar takes the tab
 // accent; benchmarks share a neutral fill so colour encodes "you vs market".
-function XirrChart({ port, bench, delta, extra = [] }) {
+function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
   const rows = [
     { label: 'You',      val: port, you: true },
     { label: 'Nifty 50', val: bench },
@@ -66,6 +66,20 @@ function XirrChart({ port, bench, delta, extra = [] }) {
         })}
       </div>
 
+      {minis.length > 0 && (
+        <>
+          <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
+          <div className="g3">
+            {minis.map(({ label, cls, name, sub, subCls }) => (
+              <div className="mini" key={label}>
+                <div className="lbl" style={{ marginBottom: 4 }}>{label}</div>
+                <div className={'vsm ' + (cls || '')} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name || '—'}</div>
+                <div className={'sub ' + (subCls || '')}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -96,6 +110,17 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
     { label: 'Small',       val: mf.cap.small,  color: 'var(--grn)' },
     { label: 'Multi/Flexi', val: mf.cap.multi,  color: 'var(--pnk)' },
     { label: 'Hedged',      val: mf.cap.hedged, color: 'var(--acc)' },
+  ];
+
+  // Winner / Drag / Largest minis — same trio as the equity tabs, by fund.
+  const funded  = mf.rows.filter((r) => r.cost > 0);
+  const winner  = funded.length ? funded.reduce((a, b) => (b.ret > a.ret ? b : a)) : null;
+  const laggard = funded.length ? funded.reduce((a, b) => (b.ret < a.ret ? b : a)) : null;
+  const largest = funded.length ? funded.reduce((a, b) => (b.value > a.value ? b : a)) : null;
+  const minis = [
+    { label: 'Winner',  cls: 'grn', name: winner?.cat,  sub: winner  ? pctS(winner.ret)  : 'by return', subCls: winner  ? cl(winner.ret)  : '' },
+    { label: 'Drag',    cls: 'red', name: laggard?.cat, sub: laggard ? pctS(laggard.ret) : 'by return', subCls: laggard ? cl(laggard.ret) : '' },
+    { label: 'Largest', cls: '',    name: largest?.cat, sub: largest ? `${largest.share.toFixed(0)}% of book` : 'by value' },
   ];
 
   return (
@@ -143,7 +168,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         </div>
 
         <XirrChart port={mfx.port} bench={mfx.bench} delta={delta}
-          extra={mfBench.filter((b) => b.key !== 'nifty50')} />
+          extra={mfBench.filter((b) => b.key !== 'nifty50')} minis={minis} />
       </div>
 
 
