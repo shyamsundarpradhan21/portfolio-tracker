@@ -20,7 +20,7 @@ function XirrChart({ port, bench, delta, extra = [] }) {
     ...extra.map((b) => ({ label: b.label, val: b.xirr })),
   ];
   const max = Math.max(...rows.map((r) => Math.abs(r.val ?? 0)), 8) * 1.15;
-  const grid = { display: 'grid', gridTemplateColumns: '128px 1fr 76px 76px', gap: 12, alignItems: 'center' };
+  const grid = { display: 'grid', gridTemplateColumns: 'minmax(118px, 9.5em) 1fr 4.5em 4.5em', gap: 12, alignItems: 'center' };
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="fxc" style={{ marginBottom: 2, flexWrap: 'wrap', gap: 8 }}>
@@ -68,13 +68,6 @@ function XirrChart({ port, bench, delta, extra = [] }) {
         })}
       </div>
 
-      <div style={{ ...grid, marginTop: 10 }}>
-        <span />
-        <div style={{ position: 'relative', height: 14 }}>
-          <span className="mono" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>0%</span>
-        </div>
-        <span /><span />
-      </div>
     </div>
   );
 }
