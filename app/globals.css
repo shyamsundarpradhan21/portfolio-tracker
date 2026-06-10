@@ -90,9 +90,9 @@
 :root[data-tab="indian"] {
   --acc: #5B9BE8; --acc2: #7CB8FF; --acc-bg: rgba(91,155,232,.14);
 }
-/* Fixed Deposits — warm amber */
+/* Fixed Deposits — golden yellow (pulled away from orange) */
 :root[data-tab="fd"] {
-  --acc: #E8A857; --acc2: #FFCA7A; --acc-bg: rgba(232,168,87,.13);
+  --acc: #E6C04A; --acc2: #F5D878; --acc-bg: rgba(230,192,74,.13);
 }
 /* Mutual Funds — soft violet */
 :root[data-tab="mf"] {
@@ -100,38 +100,31 @@
 }
 /* US Stocks — electric cyan */
 :root[data-tab="us"] {
-  --acc: #06B6D4; --acc2: #38D4EE; --acc-bg: rgba(6,182,212,.13);
+  --acc: #22D3EE; --acc2: #5CE4F7; --acc-bg: rgba(34,211,238,.13);
 }
-/* Algo — vivid orange-rose */
+/* Algo — vivid fuchsia (was orange; sat between FD amber and red) */
 :root[data-tab="algo"] {
-  --acc: #F97316; --acc2: #FFA552; --acc-bg: rgba(249,115,22,.13);
-}
-/* Projection — cosmic purple-teal */
-:root[data-tab="projection"] {
-  --acc: #A78BFA; --acc2: #C4B5FD; --acc-bg: rgba(167,139,250,.13);
+  --acc: #E879F9; --acc2: #F2A6FF; --acc-bg: rgba(232,121,249,.13);
 }
 
 /* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
 :root[data-time="day"][data-tab="overview"] {
-  --acc: #C2477E; --acc2: #DB5F96; --acc-bg: rgba(194,71,126,.1);
+  --acc: #C2477E; --acc2: #DB5F96; --acc-bg: rgba(194,71,126,.12);
 }
 :root[data-time="day"][data-tab="indian"] {
-  --acc: #2563EB; --acc2: #3B82F6; --acc-bg: rgba(37,99,235,.1);
+  --acc: #2563EB; --acc2: #3B82F6; --acc-bg: rgba(37,99,235,.12);
 }
 :root[data-time="day"][data-tab="fd"] {
-  --acc: #D97706; --acc2: #F59E0B; --acc-bg: rgba(217,119,6,.1);
+  --acc: #A16207; --acc2: #CA8A04; --acc-bg: rgba(161,98,7,.12);
 }
 :root[data-time="day"][data-tab="mf"] {
-  --acc: #7C3AED; --acc2: #8B5CF6; --acc-bg: rgba(124,58,237,.1);
+  --acc: #7C3AED; --acc2: #8B5CF6; --acc-bg: rgba(124,58,237,.12);
 }
 :root[data-time="day"][data-tab="us"] {
-  --acc: #0891B2; --acc2: #06B6D4; --acc-bg: rgba(8,145,178,.1);
+  --acc: #0E7490; --acc2: #0891B2; --acc-bg: rgba(14,116,144,.12);
 }
 :root[data-time="day"][data-tab="algo"] {
-  --acc: #EA580C; --acc2: #F97316; --acc-bg: rgba(234,88,12,.1);
-}
-:root[data-time="day"][data-tab="projection"] {
-  --acc: #6D28D9; --acc2: #7C3AED; --acc-bg: rgba(109,40,217,.1);
+  --acc: #A21CAF; --acc2: #C026D3; --acc-bg: rgba(162,28,175,.12);
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
