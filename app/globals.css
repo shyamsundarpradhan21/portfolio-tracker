@@ -158,6 +158,18 @@ button { font: inherit; color: inherit; }
 
 html { overflow-x: hidden; }
 
+/* Themed scrollbars — the OS default chrome bars clash with the dark surface.
+   Slim translucent thumbs, no track, slightly brighter on hover. */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--txt3) 30%, transparent) transparent; }
+*::-webkit-scrollbar { width: 7px; height: 7px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--txt3) 30%, transparent);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--txt3) 55%, transparent); }
+
 body {
   background: var(--bg);
   color: var(--txt);
@@ -646,8 +658,9 @@ body { padding: 0; }
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
   display: grid; grid-template-columns: repeat(5, minmax(148px, 1fr)); gap: 10px;
-  overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px;
+  overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
 }
+.hdr-cards::-webkit-scrollbar { display: none; }
 .hdr-card {
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
