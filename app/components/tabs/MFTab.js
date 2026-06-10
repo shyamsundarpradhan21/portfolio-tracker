@@ -9,51 +9,71 @@ const platStyle = (p) => p === 'JioBLK'
   ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
   : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
-// ── Zero-anchored XIRR bar chart — portfolio vs several index counterfactuals ─
+// ── Zero-anchored XIRR bar chart — portfolio vs several index counterfactuals.
+// One compact row per series: name | bar around a shared 0% axis | XIRR | Δ vs
+// you. Your bar takes the tab accent; every benchmark uses the same neutral
+// fill so colour only ever encodes "you vs the market".
 function XirrChart({ port, bench, delta, extra = [] }) {
-  const bars = [
-    { label: 'YOU',      val: port,  color: (port ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)' },
-    { label: 'NIFTY 50', val: bench, color: (bench ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)', dim: true },
-    ...extra.map((b) => ({ label: b.label.toUpperCase(), val: b.xirr, color: b.color, dim: true })),
-  ].filter((b) => b.val != null || b.label === 'YOU' || b.label === 'NIFTY 50');
-  const max = Math.max(...bars.map((b) => Math.abs(b.val ?? 0)), 8) * 1.2;
+  const rows = [
+    { label: 'You',      val: port, you: true },
+    { label: 'Nifty 50', val: bench },
+    ...extra.map((b) => ({ label: b.label, val: b.xirr })),
+  ];
+  const max = Math.max(...rows.map((r) => Math.abs(r.val ?? 0)), 8) * 1.15;
+  const grid = { display: 'grid', gridTemplateColumns: '108px 1fr 64px 64px', gap: 10, alignItems: 'center' };
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="fxc" style={{ marginBottom: 14 }}>
-        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>XIRR vs Benchmark</span>
+      <div className="fxc" style={{ marginBottom: 2, flexWrap: 'wrap', gap: 8 }}>
+        <div className="ctitle">XIRR vs Benchmarks</div>
         {delta != null && (
           <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: delta >= 0 ? 'var(--grn)' : 'var(--red)' }}>
-            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} pts {delta >= 0 ? 'ahead' : 'behind'}
+            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} pts vs Nifty 50
           </span>
         )}
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 13 }}>
-        {bars.map(({ label, val, color, dim }) => {
-          if (val == null) return <div key={label} style={{ height: 38 }} />;
-          const w = Math.min(Math.abs(val) / max * 100, 100) + '%';
-          const pos = val >= 0;
+      <div className="sub" style={{ marginBottom: 14 }}>Your MF cashflows replayed into each index · annualised</div>
+
+      <div style={{ ...grid, marginBottom: 8 }}>
+        {['Benchmark', '', 'XIRR', 'Δ you'].map((h, i) => (
+          <span key={i} style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.07em', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9 }}>
+        {rows.map(({ label, val, you }) => {
+          const pos = (val ?? 0) >= 0;
+          const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
+          const fill = you ? 'var(--acc)' : 'color-mix(in srgb, var(--txt3) 55%, transparent)';
+          const d = !you && val != null && port != null ? port - val : null;
           return (
-            <div key={label}>
-              <div className="fxc" style={{ marginBottom: 6 }}>
-                <span className="mono" style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt2)', fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>
-                <span className="mono" style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color }}>{val >= 0 ? '+' : ''}{val.toFixed(1)}%</span>
-              </div>
-              <div style={{ display: 'flex', height: 20 }}>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'stretch' }}>
-                  {!pos && <div style={{ width: w, background: color, opacity: dim ? .65 : .9, borderRadius: '3px 0 0 3px', flexShrink: 0 }} />}
+            <div key={label} style={grid}>
+              <span style={{ fontSize: 'var(--fs-xs)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+              <div style={{ display: 'flex', height: you ? 16 : 12 }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                  {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '3px 0 0 3px' }} />}
                 </div>
-                <div style={{ width: 1, background: 'var(--brd)', flexShrink: 0 }} />
-                <div style={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
-                  {pos && <div style={{ width: w, background: color, opacity: dim ? .65 : .9, borderRadius: '0 3px 3px 0', flexShrink: 0 }} />}
+                <div style={{ width: 1, background: 'var(--brd2)', flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex' }}>
+                  {val != null && pos && <div style={{ width: w, background: fill, borderRadius: '0 3px 3px 0' }} />}
                 </div>
               </div>
+              <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+                {val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%'}
+              </span>
+              <span className="mono" style={{ fontSize: 'var(--fs-xs)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+                {d == null ? (you ? '·' : '—') : (d >= 0 ? '+' : '') + d.toFixed(1)}
+              </span>
             </div>
           );
         })}
       </div>
-      {/* "0%" centered over the axis line using absolute positioning */}
-      <div style={{ position: 'relative', height: 16, marginTop: 10 }}>
-        <span className="mono" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>0%</span>
+
+      <div style={{ ...grid, marginTop: 10 }}>
+        <span />
+        <div style={{ position: 'relative', height: 14 }}>
+          <span className="mono" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>0%</span>
+        </div>
+        <span /><span />
       </div>
     </div>
   );
