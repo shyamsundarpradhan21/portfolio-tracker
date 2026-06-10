@@ -39,7 +39,7 @@ function XirrChart({ port, bench, delta, extra = [] }) {
         ))}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
         {rows.map(({ label, val, you }) => {
           const pos = (val ?? 0) >= 0;
           const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
@@ -47,8 +47,8 @@ function XirrChart({ port, bench, delta, extra = [] }) {
           const d = !you && val != null && port != null ? port - val : null;
           return (
             <div key={label} style={grid}>
-              <span style={{ fontSize: 'var(--fs-sm)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-              <div style={{ display: 'flex', height: you ? 34 : 28 }}>
+              <span style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+              <div style={{ display: 'flex', height: you ? '3.2em' : '2.6em' }}>
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
                   {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px' }} />}
                 </div>
@@ -57,10 +57,10 @@ function XirrChart({ port, bench, delta, extra = [] }) {
                   {val != null && pos && <div style={{ width: w, background: fill, borderRadius: '0 4px 4px 0' }} />}
                 </div>
               </div>
-              <span className="mono" style={{ fontSize: 'var(--fs-sm)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+              <span className="mono" style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
                 {val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%'}
               </span>
-              <span className="mono" style={{ fontSize: 'var(--fs-sm)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+              <span className="mono" style={{ fontSize: 'var(--fs-md)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
                 {d == null ? (you ? '·' : '—') : (d >= 0 ? '+' : '') + d.toFixed(1)}
               </span>
             </div>
