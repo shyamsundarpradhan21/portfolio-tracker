@@ -37,7 +37,7 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
           const pos = (val ?? 0) >= 0;
           const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
           const fill = you ? 'var(--acc)' : 'color-mix(in srgb, var(--txt3) 55%, transparent)';
-          const pctTxt = val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%';
+          const pctTxt = val == null ? '—' : Math.abs(val).toFixed(1) + '%';
           const pctEl = (
             <span className="mono" style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 600, padding: '0 10px', whiteSpace: 'nowrap', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
               {pctTxt}

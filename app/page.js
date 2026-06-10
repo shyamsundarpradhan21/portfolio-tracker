@@ -480,7 +480,7 @@ export default function Page() {
     const movers = (rows, key) => {
       const v = rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
       if (!v.length) return 'n/a';
-      const f = (r) => `${r.sym} ${r[key] >= 0 ? '+' : ''}${r[key].toFixed(1)}%`;
+      const f = (r) => `${r.sym} ${r[key].toFixed(1)}%`;
       return `best ${v.slice(0, 3).map(f).join(', ')}; worst ${v.slice(-3).reverse().map(f).join(', ')}`;
     };
     const payload = {
@@ -592,7 +592,7 @@ export default function Page() {
       sub: <>{pctS(mf.totRet)} · live NAV</> },
     { label: 'Fixed deposits', tab: 2,
       val: <InrC n={ov.fdValue} />, cls: 'grn',
-      sub: <>+<InrF n={fds.accrued} /> accrued</> },
+      sub: <><InrF n={fds.accrued} /> accrued</> },
     { label: 'US equity', tab: 4, live: markets.nyse,
       val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       cls: usData.val ? cl(usData.pl) : '',

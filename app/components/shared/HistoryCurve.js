@@ -50,7 +50,7 @@ export default function HistoryCurve({ snapshots }) {
         <div className="sub" style={{ margin: 0 }}>{first.d} → {last.d} · {n} snapshots</div>
       </div>
       <div className="pj-big" style={{ color: up ? 'var(--grn)' : 'var(--red)', marginTop: 6 }}>
-        {up ? '+' : '−'}<InrC n={Math.abs(change)} />
+        <InrC n={Math.abs(change)} />
       </div>
       <div className="sub">net worth change since first snapshot</div>
 

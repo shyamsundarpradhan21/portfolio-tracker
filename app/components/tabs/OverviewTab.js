@@ -10,7 +10,7 @@ export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, loan, baseYear,
 }) {
-  const sFull = (n) => (n >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+  const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 
   return (
     <div>

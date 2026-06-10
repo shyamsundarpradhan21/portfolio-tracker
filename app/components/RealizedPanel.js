@@ -75,7 +75,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           const cls = 'rz-col' + (sel === i ? ' sel' : '') + (sel != null && sel !== i ? ' dim' : '');
           return (
             <div key={b.label} className={cls}
-              title={`${b.label}  ${up ? '+' : '−'}${currency === 'usd' ? '$' + Math.abs(b.amt).toFixed(2) : '₹' + compactInr(b.amt)}`}
+              title={`${b.label}  ${currency === 'usd' ? '$' + Math.abs(b.amt).toFixed(2) : '₹' + compactInr(b.amt)}`}
               onClick={() => setSel(sel === i ? null : i)}>
               <div className="rz-half t"><div className="rz-up" style={{ height: up ? h : 0 }} /></div>
               <div className="rz-zero" />

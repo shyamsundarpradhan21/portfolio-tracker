@@ -25,7 +25,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         <div className="csm">
           <div className="lbl">value at maturity</div>
           <div className="vmd"><InrC n={fds.maturity} /></div>
-          <div className="sub">+<InrF n={fds.maturity - fds.principal} /> total interest</div>
+          <div className="sub"><InrF n={fds.maturity - fds.principal} /> total interest</div>
         </div>
         <div className="csm">
           <div className="lbl">blended rate</div>
@@ -62,7 +62,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
                   <td className="ra grn mono"><InrF n={f.accruedSoFar} /></td>
                   <td className="ra">
                     <div className="mono"><InrC n={f.maturityValue} /></div>
-                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>+<InrF n={f.maturityInterest} /></div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}><InrF n={f.maturityInterest} /> interest</div>
                   </td>
                 </tr>
               ))}

@@ -22,10 +22,11 @@
   --grn-bg: rgba(52,211,153,.1);
   --red-bg: rgba(248,113,113,.1);
   --blu-bg: rgba(91,155,232,.1);
-  /* Default tab accent — Overview: emerald */
-  --acc:    #34D399;
-  --acc2:   #5FE3B0;
-  --acc-bg: rgba(52,211,153,.12);
+  /* Default tab accent — Overview: rose gold (kept distinct from the green
+     used for positive numbers) */
+  --acc:    #F0A6C0;
+  --acc2:   #FFC2D8;
+  --acc-bg: rgba(240,166,192,.12);
   --hdr-bg-base: 12,12,18;   /* used as rgb(...) inside calc */
   /* Sticky table-header fill — opaque so scrolling rows don't bleed through,
      but subtle so the header doesn't read as a hard bar. */
@@ -81,9 +82,9 @@
    Each tab gets a distinct accent that drives: active nav highlight,
    card accent borders, badge colors, hdr-val gradient, and hkpi underlines. */
 
-/* Overview — emerald teal (default, already set above) */
+/* Overview — rose gold (default, already set above; ≠ positive-number green) */
 :root[data-tab="overview"] {
-  --acc: #34D399; --acc2: #5FE3B0; --acc-bg: rgba(52,211,153,.12);
+  --acc: #F0A6C0; --acc2: #FFC2D8; --acc-bg: rgba(240,166,192,.12);
 }
 /* Indian Stocks — sapphire blue */
 :root[data-tab="indian"] {
@@ -112,7 +113,7 @@
 
 /* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
 :root[data-time="day"][data-tab="overview"] {
-  --acc: #059669; --acc2: #10B981; --acc-bg: rgba(5,150,105,.1);
+  --acc: #C2477E; --acc2: #DB5F96; --acc-bg: rgba(194,71,126,.1);
 }
 :root[data-time="day"][data-tab="indian"] {
   --acc: #2563EB; --acc2: #3B82F6; --acc-bg: rgba(37,99,235,.1);
@@ -161,7 +162,7 @@ html {
   /* Fluid type: every --fs-* token is rem-based, so scaling the root scales
      the whole dashboard. 16px at ~1280w → 19px at ~1820w, clamped both ends
      so laptops aren't cramped and ultrawides aren't shouting. */
-  font-size: clamp(15px, 7px + 0.85vw, 23px);
+  font-size: clamp(15px, 8px + 0.7vw, 21px);
 }
 
 /* Themed scrollbars — the OS default chrome bars clash with the dark surface.

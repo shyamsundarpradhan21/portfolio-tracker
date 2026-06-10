@@ -52,7 +52,7 @@ export default function InsightsCard({ stats, swot, loading }) {
         <div className="ins-stat">
           <div className="lbl">Alpha (α)</div>
           <div className={'v ' + (s.alpha == null ? '' : s.alpha >= 0 ? 'grn' : 'red')}>
-            {s.alpha == null ? '—' : <>{s.alpha >= 0 ? '+' : '−'}{f2(Math.abs(s.alpha))}</>}
+            {s.alpha == null ? '—' : f2(Math.abs(s.alpha))}
           </div>
           <div className="sub" style={{ marginTop: 2 }}>0.00 = Nifty</div>
           <span className={'ins-badge ' + alphaBadge[0]}>{alphaBadge[1]}</span>

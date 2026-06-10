@@ -33,7 +33,8 @@ export const inrFd  = (n) => Math.round(n).toLocaleString('en-IN');
 export const inrFull = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
 export const usd     = (n) => '$' + Math.abs(n).toFixed(2);
 export const numC    = (n) => Math.round(n).toLocaleString('en-IN');
-export const sFull   = (n) => (n >= 0 ? '+' : '-') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+// Sign dropped — colour (grn/red) carries direction everywhere this is shown.
+export const sFull   = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 
 export function fmtNavDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
