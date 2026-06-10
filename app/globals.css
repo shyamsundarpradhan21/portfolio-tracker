@@ -593,6 +593,9 @@ body { padding: 0; }
   margin: 0 auto;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Permanently reserve scrollbar lane so content width stays constant
+     whether the scrollbar is visible or not — no layout shift on page load. */
+  scrollbar-gutter: stable;
   height: 100vh;
 }
 
