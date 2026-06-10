@@ -9,7 +9,7 @@ import {
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
-import { nseOpenNow, nyseOpenNow } from './lib/market';
+import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot } from './lib/snapshots';
 import {
@@ -211,9 +211,19 @@ export default function Page() {
 
   useEffect(() => { const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000); return () => clearInterval(id); }, []);
   useEffect(() => {
-    const upd = () => setMarkets({ nse: nseOpenNow(), nyse: nyseOpenNow() });
+    // Yahoo's marketState is holiday-aware; the wall-clock check is only a
+    // fallback for the window before the first quote batch lands.
+    const upd = () => {
+      const nseSt  = marketStateFromQuotes(prices, (s) => s.endsWith('.NS'));
+      const nyseSt = marketStateFromQuotes(prices, (s) => !s.endsWith('.NS') && !s.includes('='));
+      setMarkets({
+        nse:  nseSt  ? nseSt  === 'REGULAR' : nseOpenNow(),
+        nyse: nyseSt ? nyseSt === 'REGULAR' : nyseOpenNow(),
+        nseState: nseSt, nyseState: nyseSt,
+      });
+    };
     upd(); const id = setInterval(upd, 60 * 1000); return () => clearInterval(id);
-  }, []);
+  }, [prices]);
 
   // ─── fetch ──────────────────────────────────────────────────────────────────
   const fetchBatch = async (symbols) => {
@@ -539,8 +549,8 @@ export default function Page() {
   );
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
-  const mktPill  = (open) => open == null ? 'mkt-closed' : open ? 'mkt-open' : 'mkt-closed';
-  const mktTxt   = (open) => open == null ? '—' : open ? 'OPEN' : 'CLOSED';
+  const mktPill = (open, st) => (st === 'PRE' || st === 'POST') ? 'mkt-pre' : open ? 'mkt-open' : 'mkt-closed';
+  const mktTxt  = (open, st) => st === 'PRE' ? 'PRE' : st === 'POST' ? 'POST' : open == null ? '—' : open ? 'OPEN' : 'CLOSED';
 
   // Daily net-worth snapshots → the historical growth curve on Overview.
   const [snapshots, setSnapshots] = useState([]);
@@ -557,7 +567,7 @@ export default function Page() {
 
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
-    { label: 'Indian equity', tab: 1,
+    { label: 'Indian equity', tab: 1, live: markets.nse,
       val: indian.valued ? <InrC n={indian.val} /> : <Skel w={58} h={18} />,
       cls: indian.valued ? cl(indian.pl) : '',
       sub: indian.valued ? <><SInrC n={indian.pl} /> · {pctS(indian.pct)}</> : `${INDIAN.length} stocks` },
@@ -567,11 +577,11 @@ export default function Page() {
     { label: 'Fixed deposits', tab: 2,
       val: <InrC n={ov.fdValue} />, cls: 'grn',
       sub: <>+<InrF n={fds.accrued} /> accrued</> },
-    { label: 'US equity', tab: 4,
+    { label: 'US equity', tab: 4, live: markets.nyse,
       val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       cls: usData.val ? cl(usData.pl) : '',
       sub: usData.val ? <>{pctS(usData.pct)} @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
-    { label: 'Algo capital', tab: 5, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
+    { label: 'Algo capital', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
       val: <InrC n={STATIC.algo} />, cls: ytdTotal != null ? cl(ytdTotal) : '',
       sub: ytdTotal != null ? <>FY27 <SInrC n={ytdTotal} /> · off-NW</> : 'own capital · off-NW' },
   ];
@@ -589,8 +599,8 @@ export default function Page() {
               <span className="status-txt">{status.msg}</span>
             </div>
             <div className="topbar-right">
-              <span className={'mkt-pill ' + mktPill(markets.nse)}>NSE {mktTxt(markets.nse)}</span>
-              <span className={'mkt-pill ' + mktPill(markets.nyse)}>NYSE {mktTxt(markets.nyse)}</span>
+              <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
+              <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
               <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
@@ -615,7 +625,7 @@ export default function Page() {
             <div className="hdr-cards">
               {headerCards.map((c) => (
                 <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
-                  <div className="lbl">{c.label}</div>
+                  <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
                   <div className="vmd">{c.val}</div>
                   <div className={'sub ' + (c.cls || '')}>{c.sub}</div>
                 </button>

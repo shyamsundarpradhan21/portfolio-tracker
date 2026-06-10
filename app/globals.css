@@ -199,6 +199,21 @@ body {
 }
 .mkt-open { background: var(--grn-bg); color: var(--grn); }
 .mkt-closed { background: rgba(90, 90, 114, .2); color: var(--txt3); }
+.mkt-pre { background: rgba(245, 158, 11, .12); color: #D9970F; }
+
+/* Live-market dot — blinks green when the exchange is in regular session,
+   sits grey otherwise. Used inside topbar pills and header-card labels. */
+.live-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--txt3); margin-right: 5px; vertical-align: 1px; flex: 0 0 auto;
+}
+.mkt-pill .live-dot { background: currentColor; }
+.live-dot.on, .mkt-open .live-dot { background: var(--grn); animation: liveBlink 1.4s ease-in-out infinite; }
+.hdr-card .lbl .live-dot { margin-right: 0; margin-left: 6px; }
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .25; }
+}
 
 
 /* 2-col / 3-col / 4-col grids — single grid, equal-height rows (Section 0a/0c). */
@@ -479,7 +494,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hdr-val, .spark, .pulse, .insight-shimmer { animation: none !important; }
+  .hdr-val, .spark, .pulse, .insight-shimmer, .live-dot { animation: none !important; }
   .hdr-val { -webkit-text-fill-color: var(--acc); }
 }
 
