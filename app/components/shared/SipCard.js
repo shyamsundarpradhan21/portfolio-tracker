@@ -17,7 +17,9 @@ import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, FDS } from '../../portfolio';
 
 // Fixed per-stream palette from the base tokens — deliberately NOT --acc
 // (changes per tab) and NOT --grn (means profit everywhere else).
-const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--pnk)' };
+// Each stream wears its own tab's accent: MF violet, IND sapphire, US cyan,
+// FD gold — uniform with the rest of the dashboard.
+const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)' };
 const monthKey = (d) => d.slice(0, 7);
 const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
 // Indian FY: Apr–Mar. fyOf('2026-02-…') → 2025 (i.e. FY 25-26).

@@ -19,6 +19,7 @@
   --pur:  #9B8AFB;
   --pnk:  #E85F8F;
   --cyn:  #06B6D4;
+  --gld:  #E6C04A; /* FD-tab gold, usable as a data colour outside that tab */
   --grn-bg: rgba(52,211,153,.1);
   --red-bg: rgba(248,113,113,.1);
   --blu-bg: rgba(91,155,232,.1);
@@ -68,6 +69,7 @@
   --pur:  #7B5FD0;
   --pnk:  #D43F7B;
   --cyn:  #0891B2;
+  --gld:  #A16207;
   --grn-bg: rgba(19,168,113,.1);
   --red-bg: rgba(225,69,59,.09);
   --blu-bg: rgba(46,111,230,.1);
