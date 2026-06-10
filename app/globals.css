@@ -161,7 +161,7 @@ html {
   /* Fluid type: every --fs-* token is rem-based, so scaling the root scales
      the whole dashboard. 16px at ~1280w → 19px at ~1820w, clamped both ends
      so laptops aren't cramped and ultrawides aren't shouting. */
-  font-size: clamp(15px, 8px + 0.7vw, 21px);
+  font-size: clamp(15px, 7px + 0.85vw, 23px);
 }
 
 /* Themed scrollbars — the OS default chrome bars clash with the dark surface.
@@ -628,7 +628,7 @@ body { padding: 0; }
 .main {
   min-width: 0;
   padding: 0 28px 40px;
-  max-width: 1760px;
+  max-width: 1920px;
   /* Centre the content column on wide screens. */
   margin: 0 auto;
 }
