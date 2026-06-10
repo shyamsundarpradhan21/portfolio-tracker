@@ -303,6 +303,15 @@ body {
 
 .div { border: 0; border-top: .5px solid var(--brd); margin: 10px 0; }
 
+/* chips (swing positions, sub-allocations) */
+.chip {
+  display: inline-block; padding: 3px 9px; margin: 2px;
+  background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2));
+  border-radius: 12px; font-size: 12px; color: var(--txt2);
+  font-family: var(--mono); white-space: nowrap;
+}
+
+
 /* left-accent cards (algo strategies) */
 .card-accent { border-left-width: 3px; border-left-style: solid; }
 
@@ -313,7 +322,9 @@ body {
 .mf-g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
 @media (max-width: 1000px) { .mf-g3 { grid-template-columns: 1fr; } }
 .mf-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
-.mf-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: var(--sur2); border: .5px solid var(--brd2); border-radius: 8px; font-size: var(--fs-xs); color: var(--txt2); }
+.mf-stack { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; background: var(--sur2); }
+.mf-stack > span { height: 100%; }
+.mf-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 8px; font-size: var(--fs-xs); color: var(--txt2); }
 .mf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 /* Table scroll wrapper — every holdings table on every tab. Scrolls both axes
    with a row-count limit (~440px) and a sticky header, so long tables (US, etc.)
@@ -370,7 +381,7 @@ body {
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 0; }
-  .hdr-val { font-size: var(--fs-2xl) !important; }
+  .hdr-val { font-size: 36px !important; letter-spacing: -1.5px !important; }
 }
 
 /* ─── sparkles ✨ — tasteful dark-theme polish ─── */
@@ -390,23 +401,23 @@ body {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  font-size: var(--fs-h0) !important;
-  font-weight: 700 !important;
-  letter-spacing: -2px;
+  font-size: 56px !important;
+  font-weight: 800 !important;
+  letter-spacing: -2.5px;
   line-height: 1;
   background: linear-gradient(105deg,
     var(--acc) 0%,
-    color-mix(in srgb, var(--acc) 60%, #fff) 38%,
+    color-mix(in srgb, var(--acc) 55%, #fff) 35%,
     #ffffff 50%,
-    color-mix(in srgb, var(--acc) 60%, #fff) 62%,
+    color-mix(in srgb, var(--acc) 55%, #fff) 65%,
     var(--acc2, var(--acc)) 100%
   );
-  background-size: 220% 100%;
+  background-size: 320% 100%;
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: nw-shine 11s ease-in-out infinite;
   transition: background 0.6s ease;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--acc) 28%, transparent));
+  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--acc) 70%, transparent));
 }
 /* Day theme: a white gradient midpoint is invisible on the light background and
    reads as a distracting flicker. Use a darker, contrasty accent gradient and
@@ -417,7 +428,7 @@ body {
     color-mix(in srgb, var(--acc) 75%, #000) 50%,
     var(--acc2, var(--acc)) 100%
   );
-  background-size: 220% 100%;
+  background-size: 280% 100%;
   -webkit-background-clip: text; background-clip: text;
   filter: none;
 }
@@ -519,12 +530,12 @@ body {
   font-size: var(--fs-xs); font-weight: 600; padding: 4px 11px; border-radius: 8px;
   border: .5px solid var(--brd2); background: transparent; color: var(--txt3); cursor: pointer; transition: all .12s;
 }
-.rz-tab.on { background: var(--sur2); color: var(--txt); box-shadow: inset 0 -2px 0 -.5px var(--acc); }
+.rz-tab.on { background: color-mix(in srgb, var(--acc) 5%, var(--sur2)); color: var(--txt); box-shadow: inset 0 -2px 0 -.5px var(--acc); border-color: color-mix(in srgb, var(--acc) 12%, var(--brd2)); }
 
 /* ── Portfolio Insights card (Indian) — Section I ─────────────────────────── */
 .ins-ai { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .6px; color: var(--pur); background: rgba(155,138,251,.14); border: .5px solid rgba(155,138,251,.3); border-radius: 5px; padding: 2px 6px; }
 .ins-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-.ins-stat { background: var(--sur2); border: .5px solid var(--brd2); border-radius: 11px; padding: 12px 13px; }
+.ins-stat { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 11px; padding: 12px 13px; }
 .ins-stat .v { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); letter-spacing: -.5px; margin-top: 3px; }
 .ins-stat .v small { font-size: var(--fs-xs); font-weight: 600; color: var(--txt2); }
 .ins-badge { display: inline-block; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .5px; border-radius: 5px; padding: 2px 7px; margin-top: 7px; }
@@ -532,10 +543,10 @@ body {
 .ins-badge.med  { color: var(--acc); background: rgba(232,168,87,.12);  border: .5px solid rgba(232,168,87,.3); }
 .ins-badge.high { color: var(--red); background: rgba(248,113,113,.12); border: .5px solid rgba(248,113,113,.3); }
 .ins-badge.flat { color: var(--txt2); background: var(--sur2); border: .5px solid var(--brd2); }
-.ins-macro { margin-top: 12px; font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55; background: var(--sur2); border: .5px solid var(--brd2); border-radius: 10px; padding: 9px 11px; }
+.ins-macro { margin-top: 12px; font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55; background: color-mix(in srgb, var(--acc) 4%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd2)); border-radius: 10px; padding: 9px 11px; }
 .ins-macro .mh { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .6px; color: var(--acc); margin-right: 7px; }
 .ins-swot { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
-.ins-q { border: .5px solid var(--brd2); border-radius: 10px; padding: 10px 11px; background: var(--sur2); }
+.ins-q { border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 10px; padding: 10px 11px; background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); }
 .ins-q .qh { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
 .ins-q .qt { font-size: var(--fs-xs); color: var(--txt2); margin-top: 5px; line-height: 1.5; }
 .ins-q.s .qh { color: var(--grn); } .ins-q.w .qh { color: var(--red); }

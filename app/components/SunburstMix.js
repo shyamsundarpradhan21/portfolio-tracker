@@ -58,7 +58,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {secArcs.map((s) => {
           const key = 's:' + s.label;
           return (
-            <path key={key} d={arc(cx, cy, 84, 126, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
+            <path key={key} d={arc(cx, cy, 82, 128, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
               onMouseEnter={() => setHov({ key, label: s.label, val: s.val, pct: s.pct, color: s.color })}
               onMouseLeave={() => setHov(null)} />
@@ -67,10 +67,10 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {/* inner ring — cap mix */}
         {capArcs.map((c) => {
           const key = 'c:' + c.label;
-          const [lx, ly] = lp(62, c.mid);
+          const [lx, ly] = lp(59, c.mid);
           return (
             <g key={key}>
-              <path d={arc(cx, cy, 46, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
+              <path d={arc(cx, cy, 46, 72, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
                 style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
                 onMouseEnter={() => setHov({ key, label: c.label + ' cap', val: c.val, pct: c.pct, color: c.color })}
                 onMouseLeave={() => setHov(null)} />

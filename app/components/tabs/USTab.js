@@ -186,11 +186,23 @@ export default function USTab({
               <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
             </div>
           </div>
-          <div className="g2 sec">
-            <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>gross all-time</div><div className="vsm grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div></div>
-            <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>tax withheld</div><div className="vsm red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div></div>
-            <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>last 12 months</div><div className="vsm grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div></div>
-            <div className="mini"><div className="lbl" style={{ marginBottom: 4 }}>this FY (26-27)</div><div className="vsm">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div></div>
+          <div className="g2" style={{ flex: 1, margin: '0 0 14px', alignItems: 'stretch' }}>
+            <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="lbl">gross all-time</div>
+              <div className="vmd grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div>
+            </div>
+            <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="lbl">tax withheld</div>
+              <div className="vmd red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
+            </div>
+            <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="lbl">last 12 months</div>
+              <div className="vmd grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div>
+            </div>
+            <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="lbl">this FY (26-27)</div>
+              <div className="vmd">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignContent: 'flex-start', flex: 1 }}>
             {US_DIVIDENDS.top.map((t, i) => (
