@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, pct1, usd, InrC, SInrF, Rs } from '../../lib/fmt';
+import { cl, pctS, pct1, InrC, SInrF, Rs, UsdF } from '../../lib/fmt';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -24,24 +24,24 @@ export default function USTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
-          <div className="vmd acc"><span className="rs">$</span>{usData.inv.toFixed(2)}</div>
+          <div className="vmd acc"><UsdF n={usData.inv} /></div>
           <div className="sub">≈<span className="mut"><InrC n={usData.inv * fxRate} /></span> · {US.length} holdings</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd acc">{usData.val ? <><span className="rs">$</span>{usData.val.toFixed(2)}</> : <Skel w={90} h={20} />}</div>
+          <div className="vmd acc">{usData.val ? <UsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">{usData.val && fxRate ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
-          <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? usd(usData.pl) : <Skel w={80} h={20} />}</div>
+          <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <UsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
           <div className="sub">{usData.val ? <>{pctS(usData.pct)} · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
         </div>
       </div>
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
-          <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? usd(usStats.dayPl) : <Skel w={80} h={20} />}</div>
+          <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <UsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>
           <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'since prev close'}</div>
         </div>
         <div className="csm">
@@ -51,7 +51,7 @@ export default function USTab({
         </div>
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
-          <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}><span className="rs">$</span>{Math.abs(US_REALIZED.ytdUsd).toFixed(2)}</div>
+          <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}><UsdF n={US_REALIZED.ytdUsd} /></div>
           <div className="sub">{US_REALIZED.ytdLabel} · ≈<span className="mut"><InrC n={Math.abs(US_REALIZED.ytdUsd) * fxRate} /></span></div>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function USTab({
       <div className="g2 sec">
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
-          <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your ${Math.round(usStats.netInvested)} <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
+          <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your <UsdF n={usStats.netInvested} d={0} /> <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
           <table className="tbl">
             <thead>
               <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
@@ -68,7 +68,7 @@ export default function USTab({
               <tr>
                 <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
                 <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{pct1(usStats.xirr)}</td>
-                <td className="ra mono">{usData.val ? '$' + usData.val.toFixed(0) : '—'}</td>
+                <td className="ra mono">{usData.val ? <UsdF n={usData.val} d={0} /> : '—'}</td>
               </tr>
               {usStats.benchmarks.slice(0, 7).map((b) => (
                 <tr key={b.key}>
@@ -76,7 +76,7 @@ export default function USTab({
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />{b.label}
                   </span></td>
                   <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
-                  <td className="ra mono mut">{b.value != null ? '$' + b.value.toFixed(0) : '—'}</td>
+                  <td className="ra mono mut">{b.value != null ? <UsdF n={b.value} d={0} /> : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -121,8 +121,8 @@ export default function USTab({
         <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div className="ctitle">Holdings</div>
           <div className="sub" style={{ margin: 0 }}>
-            {usData.val ? `$${usData.inv.toFixed(2)} → $${usData.val.toFixed(2)} · ` : 'loading… '}
-            <span className={cl(usData.pl)}>{usData.val ? usd(usData.pl) + ` (${pctS(usData.pct)})` : ''}</span>
+            {usData.val ? <><UsdF n={usData.inv} /> → <UsdF n={usData.val} /> · </> : 'loading… '}
+            <span className={cl(usData.pl)}>{usData.val ? <><UsdF n={usData.pl} /> ({pctS(usData.pct)})</> : ''}</span>
           </div>
         </div>
         <div className="ovx" style={{ maxHeight: 460, overflowY: 'auto' }}>
@@ -149,21 +149,21 @@ export default function USTab({
                   <td><span className="mf-pill" style={{ background: 'var(--sur2)', color: 'var(--txt2)' }}>{s.cat}</span></td>
                   <td className="ra mono">
                     {s.livePrice != null
-                      ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}>${s.livePrice.toFixed(2)}</span>
+                      ? <span key={s.sym + '-' + s.livePrice} className={flash[s.sym] ? 'flash-' + flash[s.sym] : ''}><UsdF n={s.livePrice} /></span>
                       : <Skel w={40} h={11} />}
                   </td>
-                  <td className="ra mono">{s.liveVal != null ? usd(s.liveVal) : '—'}</td>
-                  <td className="ra mono mut">${s.inv.toFixed(2)}</td>
-                  <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>{s.livePl != null ? usd(s.livePl) : '—'}</td>
+                  <td className="ra mono">{s.liveVal != null ? <UsdF n={s.liveVal} /> : '—'}</td>
+                  <td className="ra mono mut"><UsdF n={s.inv} /></td>
+                  <td className={'ra mono ' + (s.livePl != null ? cl(s.livePl) : 'mut')}>{s.livePl != null ? <UsdF n={s.livePl} /> : '—'}</td>
                   <td className={'ra mono ' + (s.livePct != null ? cl(s.livePct) : 'mut')}>{s.livePct != null ? pctS(s.livePct) : '—'}</td>
                   <td className={'ra mono ' + (s.dayPct != null ? cl(s.dayPct) : 'mut')}>{s.dayPct != null ? pctS(s.dayPct) : '—'}</td>
                 </tr>
               ))}
               <tr className="tot">
                 <td colSpan={3}>Total — {US.length} holdings</td>
-                <td className="ra">{usData.val ? '$' + usData.val.toFixed(2) : '…'}</td>
-                <td className="ra">${usData.inv.toFixed(2)}</td>
-                <td className={'ra ' + cl(usData.pl)}>{usData.val ? usd(usData.pl) : '…'}</td>
+                <td className="ra">{usData.val ? <UsdF n={usData.val} /> : '…'}</td>
+                <td className="ra"><UsdF n={usData.inv} /></td>
+                <td className={'ra ' + cl(usData.pl)}>{usData.val ? <UsdF n={usData.pl} /> : '…'}</td>
                 <td className={'ra ' + cl(usData.pl)}>{usData.val ? pctS(usData.pct) : '…'}</td>
                 <td />
               </tr>
@@ -182,31 +182,31 @@ export default function USTab({
               <div className="sub" style={{ margin: 0 }}>Vested statement · as of {US_DIVIDENDS.asOf}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div className="vmd grn"><span className="rs">$</span>{US_DIVIDENDS.netAllTime.toFixed(2)}</div>
+              <div className="vmd grn"><UsdF n={US_DIVIDENDS.netAllTime} /></div>
               <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
             </div>
           </div>
           <div className="g2" style={{ flex: 1, margin: '0 0 14px', alignItems: 'stretch' }}>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">gross all-time</div>
-              <div className="vmd grn">${US_DIVIDENDS.grossAllTime.toFixed(2)}</div>
+              <div className="vmd grn"><UsdF n={US_DIVIDENDS.grossAllTime} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">tax withheld</div>
-              <div className="vmd red">${US_DIVIDENDS.taxAllTime.toFixed(2)}</div>
+              <div className="vmd red"><UsdF n={US_DIVIDENDS.taxAllTime} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">last 12 months</div>
-              <div className="vmd grn">${US_DIVIDENDS.last12Gross.toFixed(2)}</div>
+              <div className="vmd grn"><UsdF n={US_DIVIDENDS.last12Gross} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">this FY (26-27)</div>
-              <div className="vmd">${(US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0).toFixed(2)}</div>
+              <div className="vmd"><UsdF n={US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0} /></div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignContent: 'flex-start', flex: 1 }}>
             {US_DIVIDENDS.top.map((t, i) => (
-              <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} ${t.amt.toFixed(2)}</span>
+              <span key={t.sym} className="mf-chip"><span className="mf-dot" style={{ background: SECTOR_PALETTE[i % SECTOR_PALETTE.length] }} />{t.sym} <UsdF n={t.amt} /></span>
             ))}
           </div>
           <div className="sub" style={{ marginTop: 'auto', paddingTop: 12, color: 'var(--txt3)' }}>25% US withholding at source; creditable against Indian tax via the DTAA.</div>

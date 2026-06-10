@@ -31,7 +31,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
   const ytd = currency === 'usd' ? data.ytdUsd : data.ytd;
 
   const Money = ({ n }) => currency === 'usd'
-    ? <>${Math.abs(n).toFixed(2)}</>
+    ? <><span className="rs">$</span>{Math.abs(n).toFixed(2)}</>
     : <><span className="rs">₹</span>{compactInr(n)}</>;
 
   // active scope

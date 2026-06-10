@@ -47,7 +47,14 @@ export function fmtDateObj(d) {
 export const isoOf = (d) => d.toISOString().slice(0, 10);
 
 // JSX helpers — need 'use client' context
-export const Rs = () => <span className="rs">₹</span>;
+export const Rs  = () => <span className="rs">₹</span>;
+export const Usd = () => <span className="rs">$</span>;
+
+// UsdF — renders a dollar amount with the $ symbol sized via .rs so it sits flush
+// against the numerals. `d` controls decimal places (default 2).
+export const UsdF = ({ n, d = 2 }) => (
+  <span style={{ whiteSpace: 'nowrap' }}><Usd />{Math.abs(n).toFixed(d)}</span>
+);
 
 export const InrC  = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrCd(n)}</span>;
 export const InrF  = ({ n }) => <span style={{ whiteSpace: 'nowrap' }}><Rs />{inrFd(n)}</span>;

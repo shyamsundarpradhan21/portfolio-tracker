@@ -113,7 +113,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         </div>
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', marginTop: 10, paddingTop: 10, borderTop: '.5px solid var(--brd)' }}>
           Strategy: maturities laddered quarterly across 4 banks — spreads reinvestment risk and keeps each bank's annual interest
-          below the ₹40,000 Sec 194A TDS threshold. Pipeline stays out of net worth until its deploy date arrives.
+          below the <span className="rs">₹</span>40,000 Sec 194A TDS threshold. Pipeline stays out of net worth until its deploy date arrives.
         </div>
       </div>
     </div>
