@@ -94,9 +94,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
           );
         })}
         {/* centre readout */}
-        {/* Anchor the digits on the true centre; the currency symbol hangs to the
-            left (offset = half its width) so the figures don't read right-shifted. */}
-        <text x={symC ? cx - 7 : cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
+        <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
           {symC ? <tspan fontFamily="var(--body)" fontSize="25">{symC}</tspan> : null}
           <tspan fontFamily="var(--mono)" fontSize="23">{numC}</tspan>
         </text>
