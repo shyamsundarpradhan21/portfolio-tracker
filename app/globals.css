@@ -640,7 +640,9 @@ body { padding: 0; }
   box-shadow: inset 0 -2px 0 -.5px var(--acc);
 }
 .hdr-card.active .lbl { color: var(--acc); }
-.hdr-card .lbl { font-size: var(--fs-2xs); margin-bottom: 4px; }
+/* Inactive header cards keep muted labels — only the active one takes the
+   tab accent (rule above wins on specificity). */
+.hdr-card .lbl { font-size: var(--fs-2xs); margin-bottom: 4px; color: var(--txt2); }
 .hdr-card .vmd { font-size: var(--fs-lg); letter-spacing: -.3px; }
 .hdr-card .sub { font-size: var(--fs-2xs); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
