@@ -10,9 +10,9 @@ const platStyle = (p) => p === 'JioBLK'
   : { background: 'color-mix(in srgb, var(--grn) 14%, transparent)', color: 'var(--grn)' };
 
 // ── Zero-anchored XIRR bar chart — portfolio vs several index counterfactuals.
-// One compact row per series: name | bar around a shared 0% axis | XIRR | Δ vs
-// you. Your bar takes the tab accent; every benchmark uses the same neutral
-// fill so colour only ever encodes "you vs the market".
+// One row per series: name | bar around a shared 0% axis, with the percentage
+// printed beside the axis on the side opposite the bar. Your bar takes the tab
+// accent; benchmarks share a neutral fill so colour encodes "you vs market".
 function XirrChart({ port, bench, delta, extra = [] }) {
   const rows = [
     { label: 'You',      val: port, you: true },
@@ -20,7 +20,6 @@ function XirrChart({ port, bench, delta, extra = [] }) {
     ...extra.map((b) => ({ label: b.label, val: b.xirr })),
   ];
   const max = Math.max(...rows.map((r) => Math.abs(r.val ?? 0)), 8) * 1.15;
-  const grid = { display: 'grid', gridTemplateColumns: 'minmax(118px, 9.5em) 1fr 4.5em 4.5em', gap: 12, alignItems: 'center' };
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="fxc" style={{ marginBottom: 2, flexWrap: 'wrap', gap: 8 }}>
@@ -31,38 +30,37 @@ function XirrChart({ port, bench, delta, extra = [] }) {
           </span>
         )}
       </div>
-      <div className="sub" style={{ marginBottom: 14 }}>Your MF cashflows replayed into each index · annualised</div>
-
-      <div style={{ ...grid, marginBottom: 8 }}>
-        {['Benchmark', '', 'XIRR', 'Δ you'].map((h, i) => (
-          <span key={i} style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.07em', textAlign: i >= 2 ? 'right' : 'left' }}>{h}</span>
-        ))}
-      </div>
+      <div className="sub" style={{ marginBottom: 16 }}>Your MF cashflows replayed into each index · annualised</div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
         {rows.map(({ label, val, you }) => {
           const pos = (val ?? 0) >= 0;
           const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
           const fill = you ? 'var(--acc)' : 'color-mix(in srgb, var(--txt3) 55%, transparent)';
-          const d = !you && val != null && port != null ? port - val : null;
+          const pctTxt = val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%';
+          const pctEl = (
+            <span className="mono" style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 600, padding: '0 10px', whiteSpace: 'nowrap', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+              {pctTxt}
+            </span>
+          );
           return (
-            <div key={label} style={grid}>
+            <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, 9.5em) 1fr', gap: 12, alignItems: 'center' }}>
               <span style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-              <div style={{ display: 'flex', height: you ? '3.2em' : '2.6em' }}>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                  {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px' }} />}
+              <div style={{ display: 'flex', height: you ? '3.2em' : '2.6em', alignItems: 'center' }}>
+                {/* left half: negative bar grows from the axis; % sits here for positive rows */}
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', alignSelf: 'stretch' }}>
+                  {val != null && !pos
+                    ? <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px', alignSelf: 'stretch' }} />
+                    : pctEl}
                 </div>
-                <div style={{ width: 1, background: 'var(--brd2)', flexShrink: 0 }} />
-                <div style={{ flex: 1, display: 'flex' }}>
-                  {val != null && pos && <div style={{ width: w, background: fill, borderRadius: '0 4px 4px 0' }} />}
+                <div style={{ width: 1, background: 'var(--brd2)', flexShrink: 0, alignSelf: 'stretch' }} />
+                {/* right half: positive bar grows from the axis; % sits here for negative rows */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', alignSelf: 'stretch' }}>
+                  {val != null && pos
+                    ? <div style={{ width: w, background: fill, borderRadius: '0 4px 4px 0', alignSelf: 'stretch' }} />
+                    : val != null ? pctEl : null}
                 </div>
               </div>
-              <span className="mono" style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
-                {val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%'}
-              </span>
-              <span className="mono" style={{ fontSize: 'var(--fs-md)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
-                {d == null ? (you ? '·' : '—') : (d >= 0 ? '+' : '') + d.toFixed(1)}
-              </span>
             </div>
           );
         })}
