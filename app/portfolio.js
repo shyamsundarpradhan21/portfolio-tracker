@@ -343,18 +343,6 @@ export const MF_BENCHMARK = {
   proxy: { '2024-02-26': 10.3449, '2026-01-13': 10.3449, '2026-03-20': 9.3013 },
 };
 
-// SIP commitments shown on the Overview tab.
-export const MF = {
-  sip: {
-    items: [
-      { label: 'JioBLK SIP',  val: '₹20,000/mo' },
-      { label: 'Vested US',   val: '$200/mo (~₹19K)' },
-      { label: 'Stock picks', val: '₹30K/trigger' },
-    ],
-    total: '₹39,000+/mo',
-  },
-};
-
 // Algo trading strategies. FY financials live in data/fy2526_verified.json
 // (static, ITR-verified). Swing positions below carry live NSE prices.
 export const ALGO = {

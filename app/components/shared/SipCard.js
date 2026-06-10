@@ -1,41 +1,56 @@
 'use client';
 import { useState } from 'react';
 import { Rs, RsText } from '../../lib/fmt';
+import SIP from '../../../data/sip_deployment.json';
 
 // ── SIP deployment calendar ───────────────────────────────────────────────────
-// Base SIPs (Jio + Vested) fire automatically every month; on top of that,
-// 0–2 discretionary "trigger" picks of ₹30K each get deployed on dips.
-// Clicking a month shows its composition; closed months drive the YTD,
+// Fully data-driven from data/sip_deployment.json (updated monthly): base SIPs
+// fire automatically every month; on top, 0–n discretionary trigger picks of
+// triggerSize each. Months without a sheet row render as planned (base only).
+// Clicking a month shows its composition; recorded months drive the YTD,
 // average and full-year estimate figures.
-const SIP_JIO = 20000, SIP_VES = 19000, SIP_EACH = 30000, SIP_SAL = 117500;
-const SIP_AUTO = SIP_JIO + SIP_VES;
-const SIP_FY = [
-  { mn: 'APR', yy: '26', t: 1 },
-  { mn: 'MAY', yy: '26', t: 2 },
-  { mn: 'JUN', yy: '26', t: 0, cur: true },
-  { mn: 'JUL', yy: '26', t: null }, { mn: 'AUG', yy: '26', t: null }, { mn: 'SEP', yy: '26', t: null },
-  { mn: 'OCT', yy: '26', t: null }, { mn: 'NOV', yy: '26', t: null }, { mn: 'DEC', yy: '26', t: null },
-  { mn: 'JAN', yy: '27', t: null }, { mn: 'FEB', yy: '27', t: null }, { mn: 'MAR', yy: '27', t: null },
-];
+
+const SIP_AUTO = SIP.base.reduce((s, b) => s + b.amount, 0);
+const BASE_COLORS = ['var(--grn)', 'var(--blu)', 'var(--pur)', 'var(--pnk)'];
+
+// Build the 12 FY months from fyStartMonth, joining recorded sheet rows.
+const [startY, startM] = SIP.fyStartMonth.split('-').map(Number);
+const byMonth = Object.fromEntries(SIP.months.map((m) => [m.month, m]));
+const now = new Date();
+const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+const MONTHS = Array.from({ length: 12 }, (_, i) => {
+  const d = new Date(startY, startM - 1 + i, 1);
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const rec = byMonth[key];
+  return {
+    key,
+    mn: d.toLocaleString('en', { month: 'short' }).toUpperCase(),
+    yy: String(d.getFullYear()).slice(2),
+    t: rec ? rec.triggers : null,
+    cur: key === curKey,
+  };
+});
 const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
 
 export default function SipCard() {
-  const [sel, setSel] = useState(SIP_FY.findIndex((m) => m.cur));
-  const mo = SIP_FY[sel];
+  const defaultSel = (() => {
+    const i = MONTHS.findIndex((m) => m.cur);
+    return i >= 0 ? i : MONTHS.findIndex((m) => m.t !== null);
+  })();
+  const [sel, setSel] = useState(defaultSel >= 0 ? defaultSel : 0);
+  const mo = MONTHS[sel];
   const t = mo.t === null ? 0 : mo.t;
-  const picks = t * SIP_EACH, total = SIP_AUTO + picks;
-  const p1 = Math.round(SIP_JIO / total * 100);
-  const p2 = Math.round(SIP_VES / total * 100);
-  const p3 = picks ? 100 - p1 - p2 : 0;
-  const sal = Math.round(total / SIP_SAL * 100);
+  const picks = t * SIP.triggerSize, total = SIP_AUTO + picks;
+  const basePcts = SIP.base.map((b) => Math.round(b.amount / total * 100));
+  const pickPct = picks ? 100 - basePcts.reduce((a, p) => a + p, 0) : 0;
   const planned = mo.t === null;
 
-  const closed = SIP_FY.filter((m) => m.t !== null);
-  const ytdTot = closed.reduce((a, m) => a + SIP_AUTO + m.t * SIP_EACH, 0);
+  const closed = MONTHS.filter((m) => m.t !== null);
+  const ytdTot = closed.reduce((a, m) => a + SIP_AUTO + m.t * SIP.triggerSize, 0);
   const trigYTD = closed.reduce((a, m) => a + m.t, 0);
-  const avgT = trigYTD / closed.length;
-  const estFY = Math.round((SIP_AUTO + avgT * SIP_EACH) * 12);
-  const peak = closed.reduce((b, m) => m.t > b.t ? m : b, closed[0]);
+  const avgT = closed.length ? trigYTD / closed.length : 0;
+  const estFY = Math.round((SIP_AUTO + avgT * SIP.triggerSize) * 12);
+  const peak = closed.length ? closed.reduce((b, m) => m.t > b.t ? m : b, closed[0]) : null;
 
   return (
     <div className="card sec">
@@ -50,19 +65,24 @@ export default function SipCard() {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (sal >= 70 ? 'red' : sal >= 50 ? '' : 'grn')}><RsText>{fK(total)}</RsText></div>
-          <div className="sub" style={{ margin: 0 }}>{sal}% of salary</div>
+          <div className="vmd grn"><RsText>{fK(total)}</RsText></div>
+          <div className="sub" style={{ margin: 0 }}>deployed this month</div>
         </div>
       </div>
 
       {/* composition bar */}
       <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: p1 + '%', background: 'var(--grn)', transition: 'width .45s cubic-bezier(.16,1,.3,1)' }} />
-        <div style={{ position: 'absolute', left: p1 + '%', top: 0, height: '100%', width: p2 + '%', background: 'var(--blu)', transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />
-        {p3 > 0 && <div style={{ position: 'absolute', left: (p1 + p2) + '%', top: 0, height: '100%', width: p3 + '%', background: 'var(--acc)', opacity: .75, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />}
+        {SIP.base.map((b, i) => {
+          const left = basePcts.slice(0, i).reduce((a, p) => a + p, 0);
+          return <div key={b.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: basePcts[i] + '%', background: BASE_COLORS[i % BASE_COLORS.length], transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
+        })}
+        {pickPct > 0 && <div style={{ position: 'absolute', left: basePcts.reduce((a, p) => a + p, 0) + '%', top: 0, height: '100%', width: pickPct + '%', background: 'var(--acc)', opacity: .75, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />}
       </div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[['var(--grn)', `JioBLK ₹20K · ${p1}%`], ['var(--blu)', `Vested ₹19K · ${p2}%`], ['var(--acc)', picks ? `Picks ${fK(picks)} · ${t} trig` : 'Picks ₹0 · 0 trig']].map(([c, txt]) => (
+        {[
+          ...SIP.base.map((b, i) => [BASE_COLORS[i % BASE_COLORS.length], `${b.label} ${fK(b.amount)} · ${basePcts[i]}%`]),
+          ['var(--acc)', picks ? `Picks ${fK(picks)} · ${t} trig` : 'Picks ₹0 · 0 trig'],
+        ].map(([c, txt]) => (
           <span key={txt} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', color: 'var(--txt2)' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: c, flexShrink: 0 }} /><RsText>{txt}</RsText>
           </span>
@@ -71,19 +91,19 @@ export default function SipCard() {
 
       {/* calendar grid */}
       <div className="fxc" style={{ marginBottom: 8 }}>
-        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>FY 26–27 · click month</span>
+        <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{SIP.fyLabel} · click month</span>
         <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
           YTD <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><RsText>{fK(ytdTot)}</RsText></strong>
           {' · '}est FY <strong style={{ color: 'var(--txt)', fontFamily: 'var(--mono)' }}><Rs />{(estFY / 100000).toFixed(1)}L</strong>
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
-        {SIP_FY.map((m, i) => {
-          const moTotal = m.t === null ? null : SIP_AUTO + m.t * SIP_EACH;
+        {MONTHS.map((m, i) => {
+          const moTotal = m.t === null ? null : SIP_AUTO + m.t * SIP.triggerSize;
           const bg = m.t === null ? 'var(--brd2)' : 'var(--grn)';
           const op = m.t === null ? 1 : m.t === 0 ? .3 : m.t === 1 ? .65 : 1;
           return (
-            <div key={i} onClick={() => setSel(i)}
+            <div key={m.key} onClick={() => setSel(i)}
               style={{ cursor: 'pointer', borderRadius: 2, padding: 2, border: sel === i ? '.5px solid var(--txt)' : '.5px solid transparent', transition: 'border-color .1s' }}>
               <div style={{ height: 22, background: bg, opacity: op, borderRadius: 1 }} />
               <div style={{ fontSize: 7.5, textAlign: 'center', color: 'var(--txt3)', marginTop: 3, fontFamily: 'var(--mono)', letterSpacing: '.04em' }}>{m.mn}</div>
@@ -101,15 +121,15 @@ export default function SipCard() {
         </div>
         <div className="mini">
           <div className="lbl">trig YTD</div>
-          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · <RsText>{fK(trigYTD * SIP_EACH)}</RsText></div>
+          <div className="vsm" style={{ color: 'var(--acc)' }}>{trigYTD} · <RsText>{fK(trigYTD * SIP.triggerSize)}</RsText></div>
         </div>
         <div className="mini">
           <div className="lbl">avg / mo</div>
-          <div className="vsm"><RsText>{fK(Math.round(ytdTot / closed.length))}</RsText></div>
+          <div className="vsm">{closed.length ? <RsText>{fK(Math.round(ytdTot / closed.length))}</RsText> : '—'}</div>
         </div>
         <div className="mini">
           <div className="lbl">peak mo</div>
-          <div className="vsm">{peak.mn} <RsText>{fK(SIP_AUTO + peak.t * SIP_EACH)}</RsText></div>
+          <div className="vsm">{peak ? <>{peak.mn} <RsText>{fK(SIP_AUTO + peak.t * SIP.triggerSize)}</RsText></> : '—'}</div>
         </div>
       </div>
     </div>
