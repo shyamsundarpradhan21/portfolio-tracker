@@ -20,7 +20,7 @@ function XirrChart({ port, bench, delta, extra = [] }) {
     ...extra.map((b) => ({ label: b.label, val: b.xirr })),
   ];
   const max = Math.max(...rows.map((r) => Math.abs(r.val ?? 0)), 8) * 1.15;
-  const grid = { display: 'grid', gridTemplateColumns: '108px 1fr 64px 64px', gap: 10, alignItems: 'center' };
+  const grid = { display: 'grid', gridTemplateColumns: '128px 1fr 76px 76px', gap: 12, alignItems: 'center' };
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="fxc" style={{ marginBottom: 2, flexWrap: 'wrap', gap: 8 }}>
@@ -39,7 +39,7 @@ function XirrChart({ port, bench, delta, extra = [] }) {
         ))}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' }}>
         {rows.map(({ label, val, you }) => {
           const pos = (val ?? 0) >= 0;
           const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
@@ -47,20 +47,20 @@ function XirrChart({ port, bench, delta, extra = [] }) {
           const d = !you && val != null && port != null ? port - val : null;
           return (
             <div key={label} style={grid}>
-              <span style={{ fontSize: 'var(--fs-xs)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-              <div style={{ display: 'flex', height: you ? 16 : 12 }}>
+              <span style={{ fontSize: 'var(--fs-sm)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+              <div style={{ display: 'flex', height: you ? 26 : 20 }}>
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                  {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '3px 0 0 3px' }} />}
+                  {val != null && !pos && <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px' }} />}
                 </div>
                 <div style={{ width: 1, background: 'var(--brd2)', flexShrink: 0 }} />
                 <div style={{ flex: 1, display: 'flex' }}>
-                  {val != null && pos && <div style={{ width: w, background: fill, borderRadius: '0 3px 3px 0' }} />}
+                  {val != null && pos && <div style={{ width: w, background: fill, borderRadius: '0 4px 4px 0' }} />}
                 </div>
               </div>
-              <span className="mono" style={{ fontSize: 'var(--fs-xs)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+              <span className="mono" style={{ fontSize: 'var(--fs-sm)', fontWeight: you ? 700 : 600, textAlign: 'right', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
                 {val == null ? '—' : (val >= 0 ? '+' : '') + val.toFixed(1) + '%'}
               </span>
-              <span className="mono" style={{ fontSize: 'var(--fs-xs)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
+              <span className="mono" style={{ fontSize: 'var(--fs-sm)', textAlign: 'right', color: d == null ? 'var(--txt3)' : d >= 0 ? 'var(--grn)' : 'var(--red)' }}>
                 {d == null ? (you ? '·' : '—') : (d >= 0 ? '+' : '') + d.toFixed(1)}
               </span>
             </div>

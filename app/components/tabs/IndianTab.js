@@ -91,12 +91,7 @@ export default function IndianTab({
               </tr>
               {inStats.benchmarks.map((b) => (
                 <tr key={b.key}>
-                  <td>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: b.color, flexShrink: 0 }} />
-                      {b.label}
-                    </span>
-                  </td>
+                  <td className="mut">{b.label}</td>
                   <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
                   <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
                 </tr>

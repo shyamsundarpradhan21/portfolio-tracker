@@ -369,7 +369,8 @@ export default function Page() {
     let sectors = Object.entries(secMap).map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 })).sort((a, b) => b.val - a.val);
     if (sectors.length > 7) {
       const head = sectors.slice(0, 6).filter((x) => x.label !== 'All Others');
-      sectors = [...head, { label: 'All Others', val: value - head.reduce((s, x) => s + x.val, 0), pct: 0, other: true }];
+      const restVal = value - head.reduce((s, x) => s + x.val, 0);
+      sectors = [...head, { label: 'All Others', val: restVal, pct: value ? (restVal / value) * 100 : 0, other: true }];
     }
     const capMap = { Mega: 0, Large: 0, Mid: 0, Small: 0 }; let equityVal = 0;
     usData.rows.forEach((r) => {
