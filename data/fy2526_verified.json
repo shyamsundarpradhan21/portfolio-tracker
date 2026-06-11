@@ -1,0 +1,50 @@
+{
+  "_note": "Static, ITR-verified F&O figures. INR. Net = Gross - Charges. Update manually from broker statements / ITR. CF figures reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model).",
+  "s01": {
+    "fy2526": {
+      "rows": [
+        { "broker": "Dhan",    "gross": 186496, "charges": 29364, "net": 157132 },
+        { "broker": "Zerodha", "gross": 23029,  "charges": 716,   "net": 22313 }
+      ],
+      "total": { "gross": 209524, "charges": 30079, "net": 179445 }
+    },
+    "fy2627": { "label": "Dhan F&O", "gross": 14586, "charges": 9086, "net": 5500 }
+  },
+  "s02": {
+    "fy2526": {
+      "rows": [
+        { "broker": "Upstox", "gross": 277072,  "charges": 22733, "net": 254339 },
+        { "broker": "Fyers",  "gross": -405615, "charges": 40788, "net": -446403 }
+      ],
+      "total": { "gross": -128544, "charges": 63520, "net": -192064 }
+    },
+    "fy2627": { "label": "Fyers F&O", "gross": 101267, "charges": 8756, "net": 92512 }
+  },
+  "combined2526": { "gross": 80980, "charges": 93600, "net": -12619 },
+  "carryforward": [
+    { "label": "Non-spec business",      "val": -513011, "sub": "AY24-25: ₹1,41,206 · AY25-26: ₹3,71,805 · Sec 72 (8-yr)" },
+    { "label": "Speculative (intraday)", "val": -84307,  "sub": "AY24-25: ₹16,958 · AY25-26: ₹67,310 · AY26-27: ₹39 · Sec 73 (4-yr)" },
+    { "label": "STCG loss",              "val": 0,       "sub": "₹4,700 BF loss fully used vs FY25-26 STCG — nil carried", "consumed": true },
+    { "label": "CF entering FY26-27",    "val": -597318, "sub": "Non-spec + speculative; STCG consumed in FY25-26", "accent": true }
+  ],
+  "cf": {
+    "poolEnteringFY2627": 597318,
+    "nonSpec": 513011,
+    "speculative": 84307,
+    "stcgCarried": 0,
+    "fy2627Realised": 98012,
+    "fy2627Swing": 8364,
+    "stcgNote": "₹4,700 brought-forward STCG loss was fully consumed against FY25-26 short-term gains — nil carried into FY26-27.",
+    "equityBlock": "The ₹5.97L F&O + speculative loss pool can only offset future F&O / intraday profit — never capital gains. New gains here are taxed in full.",
+    "taxSavingRealised": 15290,
+    "cg2526": {
+      "indianStcg": 1476,
+      "indianStcgNote": "STT-paid delivery · Sec 111A @20% · fully absorbed in-year vs F&O loss (s71)",
+      "foreignStcg": 27694,
+      "foreignStcgNote": "Slab rate · US shares held <24m · Sch CG + Sch FSI",
+      "mfStcg": 0,
+      "mfStcgNote": "No MF redemptions in FY25-26"
+    }
+  },
+  "cfNote": "FY25-26 F&O resulted in a net loss (−₹12,619) — set off in-year vs STCG/OS (s71), so it was NOT added to the pool. The ₹5,97,318 pool (non-spec ₹5,13,011 + speculative ₹84,307) enters FY26-27 intact; the ₹4,700 STCG loss was consumed against FY25-26 short-term gains. FY26-27 YTD realised F&O (+₹98,012) is absorbing the non-spec CF first (oldest AY2024-25 tranche). Speculative CF absorbs only intraday profit — not credit spread or stock F&O income."
+}

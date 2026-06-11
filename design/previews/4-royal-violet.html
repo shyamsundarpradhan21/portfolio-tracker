@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Theme 4 — Royal Violet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --body:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace; --title:'Playfair Display',serif; --title-w:600;
+  /* Royal Violet — deep aubergine with gold + cyan accents. Luxe, distinctive. */
+  --bg:#120E1C; --sur:rgba(180,150,255,.045); --sur2:rgba(180,150,255,.08);
+  --brd:rgba(180,150,255,.12); --brd2:rgba(180,150,255,.07); --brd-w:.5px;
+  --txt:#EDE8F7; --txt2:#9D90B8; --txt3:#6B5E85;
+  --acc:#E0B44D; --grn:#3FE0A8; --red:#FF7593; --blu:#5BC8E8; --pur:#B79BFF;
+  --acc-bg:rgba(224,180,77,.13); --grn-bg:rgba(63,224,168,.12); --red-bg:rgba(255,117,147,.12);
+  --side-bg:rgba(180,150,255,.04); --hdr-bg:rgba(18,14,28,calc(var(--hdr-t)*.8)); --hdr-brd:rgba(180,150,255,calc(var(--hdr-t)*.15));
+}
+.hdr-val{background:linear-gradient(100deg,var(--grn),var(--blu),var(--grn));background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+</style>
+<link rel="stylesheet" href="_base.css">
+</head><body>
+<div id="app"></div>
+<div class="theme-tag">ROYAL VIOLET<a href="index.html">all ↗</a></div>
+<script src="_dashboard.js"></script>
+<script>
+const m=document.querySelector('.main');
+m.addEventListener('scroll',()=>{document.querySelector('.main-header').style.setProperty('--hdr-t',Math.min(1,m.scrollTop/120));},{passive:true});
+</script>
+</body></html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Font 5 — Nunito + Space Mono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Rounded, soft, friendly Nunito throughout; Space Mono adds a playful typewriter twist for figures. Approachable. */
+  --body:'Nunito',system-ui,sans-serif; --mono:'Space Mono',monospace; --title:'Nunito',sans-serif; --title-w:800;
+  --bg:#0C0C12; --sur:rgba(255,255,255,.025); --sur2:rgba(255,255,255,.045);
+  --brd:rgba(255,255,255,.07); --brd2:rgba(255,255,255,.045); --brd-w:.5px;
+  --txt:#E8E8EC; --txt2:#6B6B7A; --txt3:#4A4A57;
+  --acc:#34D399; --grn:#34D399; --red:#F87171; --blu:#5B9BE8; --pur:#9B8AFB;
+  --acc-bg:rgba(52,211,153,.12); --grn-bg:rgba(52,211,153,.1); --red-bg:rgba(248,113,113,.1);
+  --side-bg:rgba(255,255,255,.022); --hdr-bg:rgba(12,12,18,calc(var(--hdr-t)*.8)); --hdr-brd:rgba(255,255,255,calc(var(--hdr-t)*.07));
+}
+.hdr-val{background:none;-webkit-text-fill-color:initial;color:var(--grn);}
+.ctitle{letter-spacing:-.3px;text-transform:none;font-size:18px;}
+</style>
+<link rel="stylesheet" href="../_base.css">
+</head><body>
+<div id="app"></div>
+<div class="theme-tag">NUNITO + SPACE MONO<a href="index.html">all ↗</a></div>
+<script src="../_dashboard.js"></script>
+<script>const m=document.querySelector('.main');m.addEventListener('scroll',()=>{document.querySelector('.main-header').style.setProperty('--hdr-t',Math.min(1,m.scrollTop/120));},{passive:true});</script>
+</body></html>
