@@ -138,8 +138,11 @@ export default function Page() {
   const [mfNav, setMfNav]           = useState(null);
   const [hist, setHist]             = useState(null);
   const [flash, setFlash]           = useState({});
+  const [ath, setAth]               = useState(false); // all-time-high celebration
+  const [heroKey, setHeroKey]       = useState(0);     // bumped once when NW first loads
   const prevPrices                  = useRef({});
   const headerRef                   = useRef(null);
+  const prevNw                      = useRef(null);
 
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo'];
@@ -625,6 +628,25 @@ export default function Page() {
     }));
   }, [indian.valued, usdInr, ov.nw, ov.totalAssets, projInvested0]);
 
+  // NW hero: fire entrance animation once when live NW first becomes available,
+  // and detect all-time-high (NW > every prior snapshot) for the celebration.
+  useEffect(() => {
+    if (!indian.valued || !usdInr) return;
+    const nw = Math.round(ov.nw);
+    if (prevNw.current === null) {
+      setHeroKey((k) => k + 1); // trigger .hdr-val-enter once
+    }
+    if (prevNw.current !== null && chartSnapshots.length > 0) {
+      const allTimeHigh = chartSnapshots.every((s) => nw >= (s.nw ?? 0));
+      if (allTimeHigh && nw > (prevNw.current ?? 0)) {
+        setAth(true);
+        setTimeout(() => setAth(false), 3000);
+      }
+    }
+    prevNw.current = nw;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indian.valued, usdInr, ov.nw]);
+
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
     { label: 'Indian equity', tab: 1, live: markets.nse,
@@ -670,8 +692,15 @@ export default function Page() {
           <div className="hdr-grid">
             {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
             <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
-              <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
-              <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
+              <div className="page-header-lbl">
+                Net worth — live{' '}
+                <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span>
+                {ath && <span className="spark ath-spark" style={{ marginLeft: 3 }}>✦</span>}
+                {ath && <span className="spark ath-spark" style={{ marginLeft: 3 }}>✦</span>}
+              </div>
+              <div key={heroKey} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
+                {indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}
+              </div>
               <div className="page-header-sub">
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
                 {' · '}Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
@@ -694,8 +723,8 @@ export default function Page() {
           </div>
         </div>
 
-        {/* TAB CONTENT */}
-        <div className="tab-content">
+        {/* TAB CONTENT — key forces a remount on tab switch so tabEnter plays */}
+        <div className="tab-content" key={tab}>
           {tab === 0 && (
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}

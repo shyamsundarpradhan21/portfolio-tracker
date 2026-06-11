@@ -4,7 +4,6 @@ import { inrFull, inrC } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
-import HistoryCurve from '../shared/HistoryCurve';
 import SipCard from '../shared/SipCard';
 import { TRANSACTIONS, MF_CASHFLOWS, FDS, US_CASHFLOWS } from '../../portfolio';
 
@@ -51,11 +50,7 @@ export default function OverviewTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
 
-      {/* Trajectory: reconstructed + real history flowing into the live-anchored
-          projection fan (same model as the outlook card below) */}
-      <HistoryCurve snapshots={snapshots} nw={Math.round(ov.nw)} invested0={projInvested0} />
-
-      {/* Forward outlook: allocation share + scenario stack. Defaults to today. */}
+      {/* Growth tracker + projection scrubber: history + fan in one timeline */}
       <ProjectionTab
         nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
         baseYear={baseYear} invested0={projInvested0} snapshots={snapshots}

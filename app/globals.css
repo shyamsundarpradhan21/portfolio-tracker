@@ -317,12 +317,22 @@ body {
 .mut { color: var(--txt3) !important; }
 .mono { font-family: var(--mono); }
 
-/* Live LTP tick flash — the price cell briefly glows on a change. The span is
-   remounted via a price-keyed React key so the animation replays each tick. */
-@keyframes flashUp   { 0% { background: rgba(52,211,153,.35); } 100% { background: transparent; } }
-@keyframes flashDown { 0% { background: rgba(248,113,113,.35); } 100% { background: transparent; } }
-.flash-up   { animation: flashUp .9s ease-out; border-radius: 4px; padding: 1px 4px; }
-.flash-down { animation: flashDown .9s ease-out; border-radius: 4px; padding: 1px 4px; }
+/* Live LTP tick flash — clip-path stamp-in (180ms), then a 4s color decay trail
+   so "what just moved" is glanceable at a glance. Span remounted each tick. */
+@keyframes flashRevealUp   { from { clip-path: inset(0 100% 0 0); color: var(--grn); } to { clip-path: inset(0 0 0 0); } }
+@keyframes flashRevealDown { from { clip-path: inset(0 100% 0 0); color: var(--red); } to { clip-path: inset(0 0 0 0); } }
+@keyframes flashTrailUp    { 0% { color: var(--grn); } 100% { color: inherit; } }
+@keyframes flashTrailDown  { 0% { color: var(--red); } 100% { color: inherit; } }
+.flash-up {
+  animation: flashRevealUp .18s cubic-bezier(0.23,1,0.32,1),
+             flashTrailUp 4s ease-out .18s;
+  border-radius: 4px; padding: 1px 4px;
+}
+.flash-down {
+  animation: flashRevealDown .18s cubic-bezier(0.23,1,0.32,1),
+             flashTrailDown 4s ease-out .18s;
+  border-radius: 4px; padding: 1px 4px;
+}
 
 /* sector / cap concentration bars (Indian tab) */
 .seg-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
@@ -439,19 +449,33 @@ body {
   .hdr-val { font-size: 40px !important; letter-spacing: -2px !important; }
 }
 
-/* ─── sparkles ✨ — tasteful dark-theme polish ─── */
+/* ─── Motion system (Emil Kowalski school) ─────────────────────────────────── */
+/*
+  Frequency rule:  100+/day → no animation
+                   tens/day → ≤150ms, minimal
+                   occasional (modals, drawers) → standard treatment
+                   rare (first load, milestones) → can be theatrical
+  Every rule here respects prefers-reduced-motion via the block at the bottom.
+  All transforms use transform/opacity/clip-path only (GPU compositing).
+*/
 
-/* cards gently lift and glow on hover */
+/* --ease is the spring curve set in :root; all micro-interactions share it. */
+
+/* ── cards: GPU-only scale+shadow (not translateY — avoids layout reflow) */
 .csm, .card {
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease,
-              background 1.2s ease, color 1.2s ease;
+  transition: transform .18s var(--ease), border-color .18s var(--ease),
+              box-shadow .22s var(--ease), background 1.2s ease, color 1.2s ease;
 }
-.csm:hover, .card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--acc) 22%, var(--brd2));
-  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .6),
-              0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
+/* Guard hover effects behind pointer-fine so touch taps don't stick */
+@media (hover: hover) and (pointer: fine) {
+  .csm:hover, .card:hover {
+    transform: scale(1.005);
+    border-color: color-mix(in srgb, var(--acc) 22%, var(--brd2));
+    box-shadow: 0 8px 28px -10px rgba(0, 0, 0, .65),
+                0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
+  }
 }
+.csm:active, .card:active { transform: scale(0.99); }
 
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
@@ -513,26 +537,39 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hdr-val, .spark, .pulse, .insight-shimmer, .live-dot { animation: none !important; }
   .hdr-val { -webkit-text-fill-color: var(--acc); }
+  /* Blanket: kill all entrance/tab/stagger/ath/hero animations */
+  .tab-content, .stagger > *, .hdr-val-enter, .ath-moment, .ath-spark,
+  .flash-up, .flash-down { animation: none !important; }
+  /* Freeze all transitions at instant */
+  .csm, .card, .hdr-card, .pj-play, .pj-range,
+  html, body { transition: none !important; }
 }
 
 /* ── Projection tab (ECharts) — theme-scoped, Section P ───────────────────── */
 .pj-play {
   width: 42px; height: 42px; border-radius: 50%;
   border: .5px solid var(--brd2); background: var(--sur2);
-  color: var(--grn); font-size: var(--fs-sm); cursor: pointer; flex-shrink: 0;
-  transition: border-color .15s, box-shadow .15s;
+  color: var(--play-clr, var(--grn)); font-size: var(--fs-sm); cursor: pointer; flex-shrink: 0;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease), color .2s;
 }
-.pj-play:hover { border-color: var(--grn); box-shadow: 0 0 16px -6px var(--grn); }
+@media (hover: hover) and (pointer: fine) {
+  .pj-play:hover { border-color: var(--play-clr, var(--grn)); box-shadow: 0 0 16px -6px var(--play-clr, var(--grn)); }
+}
+.pj-play:active { transform: scale(0.93); }
 .pj-year { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); letter-spacing: -1px; min-width: 74px; }
 .pj-year small { display: block; font-size: var(--fs-2xs); color: var(--txt3); font-weight: 500; }
+/* Scrubber fill tracks --range-clr (set per-scenario by ProjectionTab) */
 .pj-range {
   -webkit-appearance: none; appearance: none; height: 5px; border-radius: 3px; outline: none;
   flex: 1; min-width: 150px;
-  background: linear-gradient(90deg, var(--grn) 0, var(--grn) var(--p, 33%), var(--brd) var(--p, 33%));
+  background: linear-gradient(90deg, var(--range-clr, var(--grn)) 0, var(--range-clr, var(--grn)) var(--p, 33%), var(--brd) var(--p, 33%));
+  transition: background .2s;
 }
 .pj-range::-webkit-slider-thumb {
   -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--txt); cursor: pointer; box-shadow: 0 0 0 4px rgba(52, 211, 153, .25);
+  background: var(--txt); cursor: pointer;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--range-clr, var(--grn)) 30%, transparent);
+  transition: box-shadow .2s;
 }
 .pj-range::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--txt); cursor: pointer; }
 .pj-seg {
@@ -745,9 +782,16 @@ body { padding: 0; }
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
   border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
   border-radius: 12px; padding: 10px 13px;
-  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease);
 }
-.hdr-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2)); }
+@media (hover: hover) and (pointer: fine) {
+  .hdr-card:hover {
+    transform: scale(1.008);
+    border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2));
+    box-shadow: 0 6px 20px -8px rgba(0,0,0,.5);
+  }
+}
+.hdr-card:active { transform: scale(0.97); }
 .hdr-card.active {
   border-color: color-mix(in srgb, var(--acc) 75%, var(--brd));
   background: color-mix(in srgb, var(--acc) 10%, var(--sur));
@@ -860,7 +904,72 @@ body { padding: 0; }
   letter-spacing: -.3px;
 }
 
-.tab-content { }
+/* ── Tab crossfade (tens/day) ≤150ms: fade + 4px translateY on incoming tab */
+@keyframes tabEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tab-content {
+  animation: tabEnter 140ms cubic-bezier(0.23,1,0.32,1);
+}
+
+/* ── Stagger entrance: sidebar items + main cards on first session load */
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger > * {
+  animation: staggerIn 270ms cubic-bezier(0.23,1,0.32,1) both;
+}
+.stagger > *:nth-child(1) { animation-delay:   0ms }
+.stagger > *:nth-child(2) { animation-delay:  40ms }
+.stagger > *:nth-child(3) { animation-delay:  80ms }
+.stagger > *:nth-child(4) { animation-delay: 120ms }
+.stagger > *:nth-child(5) { animation-delay: 160ms }
+.stagger > *:nth-child(6) { animation-delay: 200ms }
+.stagger > *:nth-child(n+7) { animation-delay: 240ms }
+
+/* ── Count-up: NW hero entrance (once per load) — fades in from slight blur */
+@keyframes heroReveal {
+  from { opacity: 0; filter: blur(3px); transform: translateY(6px); }
+  to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
+}
+.hdr-val-enter {
+  animation: heroReveal 600ms cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── All-time-high celebration moment (added by JS for 3s) */
+@keyframes athGlow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  30% { box-shadow: 0 0 40px 0 color-mix(in srgb, var(--grn) 35%, transparent),
+                    0 0 80px 0 color-mix(in srgb, var(--acc) 15%, transparent); }
+}
+@keyframes athSparkle {
+  0%   { opacity: 0; transform: scale(.8) rotate(0deg); }
+  30%  { opacity: 1; transform: scale(1.3) rotate(15deg); }
+  70%  { opacity: 1; transform: scale(1.1) rotate(-10deg); }
+  100% { opacity: 0; transform: scale(.7) rotate(5deg); }
+}
+.ath-moment { animation: athGlow 3s cubic-bezier(0.23,1,0.32,1) forwards; }
+.ath-spark  { animation: athSparkle 3s cubic-bezier(0.23,1,0.32,1) forwards; }
+
+/* ── Skeleton: scan-line shimmer (linear gives a faster-feeling load) */
+@keyframes scanLine {
+  0%   { background-position: 200% 0; opacity: .3; }
+  50%  { background-position: 0%    0; opacity: .7; }
+  100% { background-position: -200% 0; opacity: .3; }
+}
+.skel {
+  background: linear-gradient(90deg, var(--brd2) 25%, var(--sur2) 50%, var(--brd2) 75%);
+  background-size: 200% 100%;
+  animation: scanLine 1.4s linear infinite;
+  border-radius: 3px;
+}
+
+/* ── Day/night theme toggle: 400ms spring */
+html { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1); }
+body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
+                   color 400ms cubic-bezier(0.23,1,0.32,1); }
 
 /* Override old body padding that conflicts with sidebar layout */
 @media (max-width: 720px) {
