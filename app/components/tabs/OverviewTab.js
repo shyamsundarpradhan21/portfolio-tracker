@@ -58,7 +58,7 @@ export default function OverviewTab({
       {/* Forward outlook: allocation share + scenario stack. Defaults to today. */}
       <ProjectionTab
         nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
-        baseYear={baseYear} invested0={projInvested0}
+        baseYear={baseYear} invested0={projInvested0} snapshots={snapshots}
       />
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
