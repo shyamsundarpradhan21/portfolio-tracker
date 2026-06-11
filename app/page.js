@@ -33,6 +33,8 @@ import USTab        from './components/tabs/USTab';
 import AlgoTab      from './components/tabs/AlgoTab';
 import Skel         from './components/shared/Skel';
 import FreshnessTag from './components/shared/FreshnessTag';
+import Sidebar      from './components/ui/Sidebar';
+import { toast }    from 'sonner';
 
 // ─── cache keys ───────────────────────────────────────────────────────────────
 const FETCH_TS_KEY  = 'nwTracker.cache';
@@ -279,6 +281,7 @@ export default function Page() {
       if (fx) setUsdInr(fx);
       const t = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setStatus({ msg: 'Updated at ' + t, type: '' }); setLastUpdate('Last updated ' + t);
+      toast('Prices refreshed', { description: t, duration: 2500 });
       try { sessionStorage.setItem(FETCH_TS_KEY, JSON.stringify({ ts: Date.now(), prices: merged, usdInr: fx || usdInr })); } catch {}
       if (opts.insights && insightsOn) requestInsights();
     } catch (e) { setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' }); }
@@ -647,50 +650,29 @@ export default function Page() {
   // ─── render ─────────────────────────────────────────────────────────────────
   return (
     <div className="layout">
+      <Sidebar
+        tab={tab} selectTab={selectTab}
+        markets={markets} status={status} pulseCls={pulseCls} lastUpdate={lastUpdate}
+        insightsOn={insightsOn} toggleInsights={toggleInsights}
+        themeMode={themeMode} cycleTheme={cycleTheme}
+        loading={loading} onRefresh={() => doRefresh({ insights: true })}
+        ov={ov} fxRate={fxRate} indian={indian} usData={usData} mf={mf} fds={fds} pfValue={ov.pfValue}
+      />
+
       {/* MAIN CONTENT */}
       <main className="main">
-        {/* STICKY GLOBAL HEADER — utility bar + live NW + asset-card nav */}
-        <div className="main-header" ref={headerRef}>
-          <div className="topbar">
-            <div className="topbar-left">
-              <div className={pulseCls} />
-              <span className="status-txt">{status.msg}</span>
-            </div>
-            <div className="topbar-right">
-              <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
-              <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
-              <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
-              <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
-              <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
-              <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })} title="Refresh" aria-label="Refresh">↻</button>
-            </div>
+        {/* NW HERO */}
+        <div className="nw-hero" ref={headerRef}>
+          <div className="nw-hero-eyebrow">Net worth · live</div>
+          <div className="nw-hero-val">
+            {indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={180} h={48} />}
           </div>
-
-          <div className="hdr-grid">
-            {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
-            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
-              <div className="page-header-lbl">Net worth — live <span className="spark">✦</span></div>
-              <div className="hdr-val">{indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}</div>
-              <div className="page-header-sub">
-                Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
-                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
-                {indian.valued && usdInr ? (
-                  <span>{' · '}incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong></span>
-                ) : <>{' · '}excl. algo</>}
-              </div>
-            </button>
-
-            {/* Asset-class cards — primary navigation */}
-            <div className="hdr-cards">
-              {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
-                  <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
-                  <div className="vmd">{c.val}</div>
-                  <div className="sub">{c.sub}</div>
-                </button>
-              ))}
-            </div>
+          <div className="nw-hero-sub">
+            <span className="nw-hero-sub-item">Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong></span>
+            <span className="nw-hero-sub-item">Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
+            {indian.valued && usdInr && (
+              <span className="nw-hero-sub-item">incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong></span>
+            )}
           </div>
         </div>
 

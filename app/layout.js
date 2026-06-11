@@ -1,7 +1,8 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Source_Sans_3, Playfair_Display, JetBrains_Mono } from 'next/font/google';
+import { Source_Sans_3, Playfair_Display, JetBrains_Mono, Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 
 // latin-ext is required for the rupee sign — U+20B9 is not in Google's latin
 // subset, so without it every ₹ falls back to a system font with different
@@ -9,6 +10,7 @@ import { Source_Sans_3, Playfair_Display, JetBrains_Mono } from 'next/font/googl
 const body = Source_Sans_3({ subsets: ['latin', 'latin-ext'], variable: '--font-body', display: 'swap' });
 const serif = Playfair_Display({ subsets: ['latin', 'latin-ext'], weight: ['500','600','700','800'], variable: '--font-title', display: 'swap' });
 const mono = JetBrains_Mono({ subsets: ['latin', 'latin-ext'], weight: ['400','500','600','700'], variable: '--font-mono', display: 'swap' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata = {
   title: 'Net Worth — Live',
@@ -30,10 +32,24 @@ const THEME_BOOT =
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${body.variable} ${serif.variable} ${mono.variable}`}>
+    <html lang="en" className={`${body.variable} ${serif.variable} ${mono.variable} ${inter.variable}`}>
       <body>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
-        {children}<Analytics /><SpeedInsights />
+        {children}
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#EDEDEF',
+              fontFamily: 'var(--font-inter)',
+              fontSize: '13px',
+            },
+          }}
+        />
+        <Analytics /><SpeedInsights />
       </body>
     </html>
   );
