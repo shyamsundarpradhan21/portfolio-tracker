@@ -6,6 +6,7 @@ import {
   ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
+  PAYSLIPS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 
@@ -13,6 +14,7 @@ import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot } from './lib/snapshots';
 import { buildBackfill } from './lib/backfill';
+import { cmpfCorpus } from './lib/cmpf';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -476,9 +478,10 @@ export default function Page() {
     // get distributed to clients, or compound on no fixed schedule), so it
     // can't honestly sit next to the live-priced sleeves. It stays fully
     // tracked on the Algo tab and the header card.
-    const totalAssets = indian.val + usInr + fdValue + mf.totVal;
+    const pfValue = cmpfCorpus(new Date());
+    const totalAssets = indian.val + usInr + fdValue + mf.totVal + pfValue;
     const loan = loanOutstanding(new Date());
-    return { usInr, fdValue, totalAssets, loan, nw: totalAssets - loan };
+    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
@@ -576,12 +579,13 @@ export default function Page() {
     { key: 'us',     label: 'US Stocks',      value: ov.usInr   || 0, color: ALLOC_COLORS.us     },
     { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,    color: ALLOC_COLORS.mf     },
     { key: 'elss',   label: 'ELSS',           value: mf.elss.value,   color: ALLOC_COLORS.elss   },
+    { key: 'pf',     label: 'CMPF',           value: ov.pfValue || 0, color: ALLOC_COLORS.pf     },
   ];
 
   const projSleeves = useMemo(
     () => donutSegs.map((s) => ({ ...s, value: Math.round(s.value || 0) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0)],
+    [Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.pfValue || 0)],
   );
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
@@ -696,7 +700,8 @@ export default function Page() {
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={chartSnapshots}
-              projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()} />
+              projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()}
+              payslips={PAYSLIPS} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}

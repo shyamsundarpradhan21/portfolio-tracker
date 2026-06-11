@@ -458,10 +458,113 @@ export const SWING = [
   { sym: 'BANKBARODA', qty: 28, cost: 291.80 },
 ].map((s) => ({ ...s, ns: `${s.sym}.NS`, inv: +(s.qty * s.cost).toFixed(2) }));
 
+// ── CMPF (Coal Mines Provident Fund) ─────────────────────────────────────────
+// Employee side only — employer matches 50:50, so corpus = 2× these figures.
+// Arrear contributions are merged into the payslip month they were paid.
+// Source: Gross_Earnings_95001925_v2.xlsx (AD + AE columns), Jan 2023 start.
+export const CMPF_CONTRIBUTIONS = [
+  { month: '2023-02', emp: 8232  },
+  { month: '2023-03', emp: 9055  }, // 8232 + 823 arrears (Jan-23 stub)
+  { month: '2023-04', emp: 8262  },
+  { month: '2023-05', emp: 8262  },
+  { month: '2023-06', emp: 8262  },
+  { month: '2023-07', emp: 8352  },
+  { month: '2023-08', emp: 8352  },
+  { month: '2023-09', emp: 8352  },
+  { month: '2023-10', emp: 8628  },
+  { month: '2023-11', emp: 8628  },
+  { month: '2023-12', emp: 8628  },
+  { month: '2024-01', emp: 8622  },
+  { month: '2024-02', emp: 8622  },
+  { month: '2024-03', emp: 8622  },
+  { month: '2024-04', emp: 8881  },
+  { month: '2024-05', emp: 8881  },
+  { month: '2024-06', emp: 8992  }, // 8918 + 74 arrears
+  { month: '2024-07', emp: 8949  },
+  { month: '2024-08', emp: 8949  },
+  { month: '2024-09', emp: 8949  },
+  { month: '2024-10', emp: 9128  },
+  { month: '2024-11', emp: 9128  },
+  { month: '2024-12', emp: 9128  },
+  { month: '2025-01', emp: 30963 }, // 11094 + 19869 promotion arrears (Apr–Dec 24)
+  { month: '2025-02', emp: 11094 },
+  { month: '2025-03', emp: 10725 },
+  { month: '2025-04', emp: 11728 }, // 11359 + 369 arrears
+  { month: '2025-05', emp: 11359 },
+  { month: '2025-06', emp: 11359 },
+  { month: '2025-07', emp: 11382 },
+  { month: '2025-08', emp: 11382 },
+  { month: '2025-09', emp: 11382 },
+  { month: '2025-10', emp: 11596 },
+  { month: '2025-11', emp: 11596 },
+  { month: '2025-12', emp: 11596 },
+  { month: '2026-01', emp: 15462 },
+  { month: '2026-02', emp: 15462 },
+  { month: '2026-03', emp: 15951 }, // 15625 + 326 arrears
+  { month: '2026-04', emp: 16168 },
+  { month: '2026-05', emp: 16168 },
+];
+
+// Annual interest rates declared by CMPF commissioner (credited at FY-end).
+// Source: CMPFO board resolutions; 2025-26 assumed at prevailing rate.
+export const CMPF_RATES = {
+  '2022-23': 0.076,
+  '2023-24': 0.076,
+  '2024-25': 0.076,
+  '2025-26': 0.076, // provisional — update when CMPFO declares
+};
+
+// ── Payslip income register (for savings-rate chart) ─────────────────────────
+// Net pay = gross − all deductions, per month. Off-cycle rows (PRP, uniform
+// advance) are merged into their calendar month so the column totals are
+// the actual cash received that month.
+export const PAYSLIPS = [
+  { month: '2023-02', net: 67671  },
+  { month: '2023-03', net: 74841  },
+  { month: '2023-04', net: 66475  },
+  { month: '2023-05', net: 57166  },
+  { month: '2023-06', net: 80197  },
+  { month: '2023-07', net: 62257  },
+  { month: '2023-08', net: 62257  },
+  { month: '2023-09', net: 116796 },
+  { month: '2023-10', net: 62857  },
+  { month: '2023-11', net: 62407  },
+  { month: '2023-12', net: 68677  },
+  { month: '2024-01', net: 71860  },
+  { month: '2024-02', net: 62664  },
+  { month: '2024-03', net: 72216  },
+  { month: '2024-04', net: 64922  },
+  { month: '2024-05', net: 74612  },
+  { month: '2024-06', net: 99143  }, // 65113 regular + 34030 PRP (FY23-24)
+  { month: '2024-07', net: 66132  },
+  { month: '2024-08', net: 113096 }, // includes ₹9,552 guest-house refund
+  { month: '2024-09', net: 68165  },
+  { month: '2024-10', net: 68609  },
+  { month: '2024-11', net: 69143  },
+  { month: '2024-12', net: 67099  },
+  { month: '2025-01', net: 235563 }, // promotion arrears (₹1.57L extra)
+  { month: '2025-02', net: 78799  },
+  { month: '2025-03', net: 92109  },
+  { month: '2025-04', net: 88867  },
+  { month: '2025-05', net: 85400  },
+  { month: '2025-06', net: 299306 }, // 85434 + 201372 PRP (FY24-25) + 12500 uniform adv
+  { month: '2025-07', net: 98123  },
+  { month: '2025-08', net: 108836 },
+  { month: '2025-09', net: 107636 },
+  { month: '2025-10', net: 86695  },
+  { month: '2025-11', net: 86728  },
+  { month: '2025-12', net: 102720 },
+  { month: '2026-01', net: 110874 },
+  { month: '2026-02', net: 126892 },
+  { month: '2026-03', net: 129347 },
+  { month: '2026-04', net: 129982 },
+  { month: '2026-05', net: 117452 },
+];
+
 // Donut allocation colors (Overview) — aligned to the shared theme palette.
 export const ALLOC_COLORS = {
   algo: '#E8A857', fd: '#5B9BE8', indian: '#34D399',
-  us: '#F87171', mf: '#9B8AFB', elss: '#E85F8F',
+  us: '#F87171', mf: '#9B8AFB', elss: '#E85F8F', pf: '#22D3EE',
 };
 
 // Forward net-worth projection inputs (rolling horizons — no fixed target year).

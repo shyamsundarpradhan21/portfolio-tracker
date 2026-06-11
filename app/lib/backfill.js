@@ -25,6 +25,7 @@
 // dates BEFORE the first real snapshot; real dailies always win.
 
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, loanOutstanding } from '../portfolio';
+import { cmpfCorpus } from './cmpf';
 import US_TRADES from '../../data/us_trades.json';
 import INDIAN_EXITS from '../../data/indian_exits.json';
 
@@ -143,8 +144,9 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
       const yrs = Math.min((new Date(d) - new Date(f.open)) / YEAR, (new Date(f.matures) - new Date(f.open)) / YEAR);
       fd += f.rate != null ? compound(f.principal, f.rate, yrs) : f.principal;
     }
+    const pf = cmpfCorpus(d);
     const invested = flows.filter((f) => f.date <= d).reduce((s, f) => s + f.inr, 0);
-    const assets = Math.round(ind + us + mf + fd);
+    const assets = Math.round(ind + us + mf + fd + pf);
     return { d, nw: assets - loanOutstanding(d), assets, invested: Math.round(invested), synth: true };
   });
 }
