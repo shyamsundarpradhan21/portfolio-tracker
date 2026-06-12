@@ -450,7 +450,6 @@ body {
   .g2 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 0; }
-  .hdr-val { font-size: 40px !important; letter-spacing: -2px !important; }
 }
 
 /* ─── Motion system (Emil Kowalski school) ─────────────────────────────────── */
@@ -480,9 +479,12 @@ body {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  font-size: 64px !important;
+  /* Fluid: 20% of the hero column's width (cqw — .hdr-hero is the container),
+     capped at the 64px design size. A fixed px here clipped the figure when
+     the window was scaled and the grid column shrank under the text width. */
+  font-size: clamp(30px, 20cqw, 64px) !important;
   font-weight: 900 !important;
-  letter-spacing: -3px;
+  letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
   line-height: 1;
   background: linear-gradient(105deg,
     var(--acc) 0%,
@@ -767,6 +769,8 @@ body { padding: 0; }
   display: flex; flex-direction: column; justify-content: center;
   text-align: left; background: transparent; border: none; cursor: pointer;
   padding: 2px 6px; border-radius: 12px; transition: background .15s;
+  container-type: inline-size; /* sizing context for .hdr-val's cqw units */
+  min-width: 0;
 }
 .hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
 .hdr-hero.active .page-header-lbl { color: var(--acc); }
@@ -818,7 +822,6 @@ body { padding: 0; }
 
 @media (max-width: 1080px) {
   .hdr-grid { grid-template-columns: minmax(170px, 220px) 1fr; gap: 12px; }
-  .hdr-val { font-size: 32px; }
 }
 @media (max-width: 900px) {
   .pj-outlook { grid-template-columns: 1fr; }
