@@ -42,6 +42,30 @@ push/ship/merge, take it to main in the same step.
 
 ---
 
+## Tooling
+
+### Graphify — commit portable artifacts so every environment can use it
+The graphify CLI exists only in Claude Code cloud workspaces (the public npm
+`graphify` is an unrelated package — never `npm install` it). The user wants
+full use of the knowledge graph everywhere:
+
+- **In cloud sessions**: after code changes run `npx graphify hook-rebuild`;
+  before committing artifacts run `graphify portable-check .graphify`, then
+  commit the portable artifacts (`graph.json`, `GRAPH_REPORT.md`, `wiki/`)
+  to the repo. Never commit `branch.json`, `worktree.json`, `needs_update`,
+  or `cache/`.
+- **On local machines** (no CLI): read the committed `.graphify/graph.json`,
+  `GRAPH_REPORT.md` and `wiki/index.md` directly for architecture questions
+  instead of attempting CLI queries.
+
+### This machine (Windows laptop) quirks
+- Wi-Fi DNS is set to Google (8.8.8.8/8.8.4.4) because the ISP resolver
+  intermittently fails on github.com. If pushes fail with "could not resolve
+  host", check DNS first.
+- Repo-local git identity: shyamsundar.pradhan21@gmail.com.
+
+---
+
 ## Communication Style
 
 ### No narration, no preamble
