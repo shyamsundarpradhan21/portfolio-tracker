@@ -69,9 +69,10 @@ function SavingsSparkline({ months }) {
     const FLOOR = Math.max(0, Math.floor(Math.min(mu - 2 * sd, dataMin) / 10) * 10);
     const CEILV = Math.ceil(Math.max(mu + 2 * sd, Math.min(dataMax, mu + 3 * sd), FLOOR + 40) / 10) * 10;
     const toY = (r) => gH - ((Math.max(FLOOR, Math.min(r, CEILV)) - FLOOR) / (CEILV - FLOOR)) * gH + 4;
-    // toX spreads pts across the FULL width regardless of how many months
-    // have data — 3 months fills the card just like 12 months.
-    const toX = (ptIdx) => PAD + (ptIdx / (pts.length - 1)) * gW;
+    // toX maps a month's calendar index (0=APR … 11=MAR) to its x position
+    // so every month lands at the same horizontal slot regardless of whether
+    // it has data — temporal alignment is preserved across FYs.
+    const toX = (calIdx) => PAD + (calIdx / 11) * gW;
 
     // Band at ±1σ: with lumpy deployment data the 1σ envelope hugs routine
     // months and lets lump-sum months pop above it; ±2σ added no coverage,
@@ -98,11 +99,11 @@ function SavingsSparkline({ months }) {
     });
     const muLabelClear = labelOk(bMid);
 
-    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(j).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
+    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
     const areaPath =
-      `M ${toX(0).toFixed(1)},${R50.toFixed(1)} ` +
-      pts.map((p, j) => `L ${toX(j).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
-      ` L ${toX(pts.length - 1).toFixed(1)},${R50.toFixed(1)} Z`;
+      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
+      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
+      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
 
     const id = Math.random().toString(36).slice(2);
 
@@ -148,22 +149,22 @@ function SavingsSparkline({ months }) {
       <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
 
-      ${pts.map((p, j) => p.r > CEILV ? `
-        <circle cx="${toX(j).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+      ${pts.map((p) => p.r > CEILV ? `
+        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${gld}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
         </circle>
-        <text x="${toX(j).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" style="font-size:var(--fs-xs)"
+        <text x="${toX(p.i).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" style="font-size:var(--fs-xs)"
           fill="${gld}" fill-opacity=".85" text-anchor="middle" font-family="var(--mono)">↑${p.r}%</text>` : `
-        <circle cx="${toX(j).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
         </circle>`).join('')}
 
-      ${pts.map((p, j) => `
-        <text x="${toX(j).toFixed(1)}" y="${(H - 1).toFixed(1)}"
+      ${months.map((m, i) => `
+        <text x="${toX(i).toFixed(1)}" y="${(H - 1).toFixed(1)}"
           style="font-size:var(--fs-xs)" fill="var(--txt3)" text-anchor="middle"
-          font-family="var(--mono)">${months[p.i].mn}</text>`).join('')}
+          font-family="var(--mono)">${m.mn}</text>`).join('')}
     `;
     };
 
