@@ -52,15 +52,41 @@ function SavingsSparkline({ months }) {
 
     if (pts.length < 2) { el.innerHTML = ''; return; }
 
-    // Sqrt scale with a fixed ceiling of 130% — spikes clip at the top,
-    // reference lines at 30/50/100 stay well-spread regardless of spike size.
-    const maxR = 130;
-    const toY = (r) => gH - (Math.sqrt(Math.min(r, maxR)) / Math.sqrt(maxR)) * gH + 4;
+    // Robust centre/spread: median + MAD (×1.4826 ≈ σ under normality).
+    // A 300% bonus-month spike barely moves these, unlike mean/stdev —
+    // the band stays anchored to TYPICAL months and spikes read as outliers.
+    const rs = pts.map((p) => p.r);
+    const med = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+    const mu = med(rs);
+    const sd = 1.4826 * med(rs.map((r) => Math.abs(r - mu)));
+    const cv = Math.round((sd / mu) * 100);
+
+    // Dynamic window around the robust band, snapped to 10s. Spike months
+    // beyond the ceiling clip at the top edge and keep their true value in
+    // the dot label — the window stays zoomed to where typical months live.
+    const dataMin = Math.min(...rs), dataMax = Math.max(...rs);
+    const FLOOR = Math.max(0, Math.floor(Math.min(mu - 2 * sd, dataMin) / 10) * 10);
+    const CEILV = Math.ceil(Math.max(mu + 2 * sd, Math.min(dataMax, mu + 3 * sd), FLOOR + 40) / 10) * 10;
+    const toY = (r) => gH - ((Math.max(FLOOR, Math.min(r, CEILV)) - FLOOR) / (CEILV - FLOOR)) * gH + 4;
     const toX = (i) => PAD + (i / (months.length - 1)) * gW;
 
-    const R30  = toY(30);
-    const R50  = toY(50);
-    const R100 = toY(100);
+    // Band at ±1σ: with lumpy deployment data the 1σ envelope hugs routine
+    // months and lets lump-sum months pop above it; ±2σ added no coverage,
+    // only a fatter rectangle. The window keeps 2σ headroom regardless.
+    const R50 = toY(50);
+    const bTop = toY(Math.min(mu + sd, CEILV));
+    const bBot = toY(Math.max(mu - sd, FLOOR));
+    const bMid = toY(mu);
+
+    // Benchmarks render only when inside the window, so a lean year isn't
+    // squashed to keep an unreachable 100% line in frame.
+    const refs = [
+      [30, red, .3, .45, '3,5', '30%'],
+      [50, acc, .6, .8, '4,4', '50%'],
+      [100, gld, .55, .75, '4,4', '100%'],
+    ].filter(([v]) => v >= FLOOR && v <= CEILV);
+    // Hide the μ label when a benchmark label sits within 8px of it
+    const muLabelClear = refs.every(([v]) => Math.abs(toY(v) - bMid) > 8);
 
     const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
     const areaPath =
@@ -85,30 +111,38 @@ function SavingsSparkline({ months }) {
         </linearGradient>
       </defs>
 
+      <rect x="${PAD}" y="${bTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${(bBot - bTop).toFixed(1)}"
+        fill="${acc}" fill-opacity=".07" rx="2"/>
+
       <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
       <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
-      <line x1="${PAD}" y1="${R30.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R30.toFixed(1)}"
-        stroke="${red}" stroke-opacity=".3" stroke-width="1" stroke-dasharray="3,5"/>
-      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R30 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="${red}" fill-opacity=".45" font-family="monospace">30%</text>
+      ${refs.map(([v, col, lop, top, dash, lbl]) => `
+        <line x1="${PAD}" y1="${toY(v).toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${toY(v).toFixed(1)}"
+          stroke="${col}" stroke-opacity="${lop}" stroke-width="1" stroke-dasharray="${dash}"/>
+        <text x="${(W - RPAD + 5).toFixed(1)}" y="${(toY(v) + 3.5).toFixed(1)}"
+          font-size="8.5" fill="${col}" fill-opacity="${top}" font-family="monospace">${lbl}</text>`).join('')}
 
-      <line x1="${PAD}" y1="${R50.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R50.toFixed(1)}"
-        stroke="${acc}" stroke-opacity=".6" stroke-width="1" stroke-dasharray="4,4"/>
-      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R50 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="${acc}" fill-opacity=".8" font-family="monospace">50%</text>
-
-      <line x1="${PAD}" y1="${R100.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R100.toFixed(1)}"
-        stroke="${gld}" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4,4"/>
-      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R100 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="${gld}" fill-opacity=".75" font-family="monospace">100%</text>
+      <line x1="${PAD}" y1="${bMid.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${bMid.toFixed(1)}"
+        stroke="${acc}" stroke-opacity=".5" stroke-width="1.1"/>
+      ${muLabelClear ? `
+        <text x="${(W - RPAD + 5).toFixed(1)}" y="${(bMid + 3.5).toFixed(1)}"
+          font-size="8" fill="${acc}" fill-opacity=".7" font-family="monospace">μ ${Math.round(mu)}%</text>` : ''}
+      <text x="${(PAD + 2).toFixed(1)}" y="${(bTop - 4).toFixed(1)}"
+        font-size="7.5" fill="${acc}" fill-opacity=".5" font-family="monospace">±1σ · CV ${cv}%</text>
 
       <path d="${linePath}" fill="none" stroke="${acc}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#ab${id})"/>
       <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
 
-      ${pts.map((p) => `
+      ${pts.map((p) => p.r > CEILV ? `
+        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+          fill="${gld}" stroke="#050506" stroke-width="1.5">
+          <title>${months[p.i].mn}: ${p.r}%</title>
+        </circle>
+        <text x="${toX(p.i).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" font-size="7"
+          fill="${gld}" fill-opacity=".85" text-anchor="middle" font-family="monospace">↑${p.r}%</text>` : `
         <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
