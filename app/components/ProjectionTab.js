@@ -205,21 +205,24 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     return a[i] + (a[i + 1] - a[i]) * f;
   };
 
+  // Growth = MARKET move only: NW change minus the capital deployed in the
+  // window. Without the deduction a deposit day reads as a +10% "gain".
   const growth = useMemo(() => {
     if (hist.length < 2) return [];
     const last = hist[hist.length - 1];
     const liveNw = nw ?? last.nw;
+    const liveInv = invested0 ?? last.invested ?? 0;
     return RANGES.map((r) => {
       let ref = hist[0];
       if (r.days != null) {
         const cutoff = ms(last.d) - r.days * 864e5;
         for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff) { ref = hist[i]; break; }
       }
-      const chg = liveNw - (ref.nw ?? 0);
+      const chg = (liveNw - (ref.nw ?? 0)) - (liveInv - (ref.invested ?? 0));
       const pct = ref.nw > 0 ? (chg / ref.nw) * 100 : 0;
       return { key: r.key, chg, pct };
     });
-  }, [hist, nw]);
+  }, [hist, nw, invested0]);
 
   const pts = useMemo(() => {
     if (!hist.length) return [];
@@ -362,11 +365,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           methodology lives in the small footnote below the card */}
       {!scrubbing && maxRow && dataReady && (
         <div className="pjx-explain">
-          You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}><Crs n={maxRow.chg} /></b> since {monYr(hist[0].d)}
-          {' — '}
-          {histGains >= 0
-            ? <><b className="up"><Crs n={histGains} /></b> market gains on <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>
-            : <><b className="dn"><Crs n={histGains} /></b> below the <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>}
+          {/* honest decomposition: ΔNW = deposits + market gains */}
+          Net worth <b><Crs n={liveNw} /></b> since {monYr(hist[0].d)} ={' '}
+          <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed {histGains >= 0 ? '+' : '−'}{' '}
+          <b className={histGains >= 0 ? 'up' : 'dn'}><Crs n={histGains} /></b> market {histGains >= 0 ? 'gains' : 'loss'}
           {xirrPct != null && <> · <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}
         </div>
       )}
