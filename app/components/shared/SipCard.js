@@ -93,12 +93,13 @@ function SavingsSparkline({ months }) {
     ].filter(([v]) => v >= FLOOR && v <= CEILV);
 
     const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
-    const areaPath =
-      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
-      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
-      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
 
     const id = Math.random().toString(36).slice(2);
+
+    // Flat zone shading relative to the 50% reference line only — accent
+    // above (deploying more than half of take-home), red below. No
+    // curve-anchored area fill: the zones carry the meaning, not the line.
+    const gTop = toY(CEILV), gBot = toY(FLOOR);
 
     // No viewBox — draw in real pixels so text renders at its set size on
     // any card width (a stale viewBox shrinks-and-centers the whole chart).
@@ -107,21 +108,15 @@ function SavingsSparkline({ months }) {
       <defs>
         <clipPath id="ab${id}"><rect x="0" y="0" width="${W}" height="${R50.toFixed(1)}"/></clipPath>
         <clipPath id="be${id}"><rect x="0" y="${R50.toFixed(1)}" width="${W}" height="${H}"/></clipPath>
-        <linearGradient id="gG${id}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${acc}" stop-opacity=".25"/>
-          <stop offset="100%" stop-color="${acc}" stop-opacity=".02"/>
-        </linearGradient>
-        <linearGradient id="gR${id}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${red}" stop-opacity=".02"/>
-          <stop offset="100%" stop-color="${red}" stop-opacity=".22"/>
-        </linearGradient>
       </defs>
+
+      <rect x="${PAD}" y="${gTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${Math.max(0, R50 - gTop).toFixed(1)}"
+        fill="${acc}" fill-opacity=".05"/>
+      <rect x="${PAD}" y="${R50.toFixed(1)}" width="${gW.toFixed(1)}" height="${Math.max(0, gBot - R50).toFixed(1)}"
+        fill="${red}" fill-opacity=".05"/>
 
       <rect x="${PAD}" y="${bTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${(bBot - bTop).toFixed(1)}"
         fill="${acc}" fill-opacity=".07" rx="2"/>
-
-      <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
-      <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
       ${refs.map(([v, col, lop, , dash]) => `
         <line x1="${PAD}" y1="${toY(v).toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${toY(v).toFixed(1)}"
@@ -134,15 +129,19 @@ function SavingsSparkline({ months }) {
       <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
 
-      ${pts.map((p) => p.r > CEILV ? `
-        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
-          fill="${gld}" stroke="#050506" stroke-width="1.5">
+      ${pts.map((p) => {
+        const clipped = p.r > CEILV;
+        const x = toX(p.i).toFixed(1), y = toY(p.r);
+        // Label sits above the dot; if the dot hugs the top edge, drop below.
+        const ly = (y < 14 ? y + 13 : y - 7).toFixed(1);
+        return `
+        <circle cx="${x}" cy="${y.toFixed(1)}" r="2.8"
+          fill="${clipped ? gld : acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
-        </circle>` : `
-        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
-          fill="${acc}" stroke="#050506" stroke-width="1.5">
-          <title>${months[p.i].mn}: ${p.r}%</title>
-        </circle>`).join('')}
+        </circle>
+        <text x="${x}" y="${ly}" text-anchor="middle" font-family="var(--mono)"
+          style="font-size:9px" fill="${clipped ? gld : 'var(--txt2)'}">${p.r}</text>`;
+      }).join('')}
 
       ${months.map((m, i) => `
         <text x="${toX(i).toFixed(1)}" y="${(H - 1).toFixed(1)}"
@@ -251,7 +250,8 @@ export default function SipCard({ fx }) {
     const months = first
       ? (now.getFullYear() - +first.slice(0, 4)) * 12 + (now.getMonth() + 1 - +first.slice(5, 7)) + 1
       : 0;
-    const gross = streams.reduce((s, x) => s + x.amount, 0);
+    // Same take-home-only rule as MONTHS: CMPF stays in the bar, not the sums.
+    const gross = streams.filter((s) => s.label !== 'CMPF').reduce((s, x) => s + x.amount, 0);
     return { streams, gross, out, total: gross - out, months };
   }, [fx, fxHist]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -275,7 +275,9 @@ export default function SipCard({ fx }) {
       { label: 'FD',   amount: Math.round(fd) },
       { label: 'CMPF', amount: Math.round(cmpf) },
     ].filter((s) => s.amount > 0);
-    const gross = streams.reduce((s, x) => s + x.amount, 0);
+    // Aggregates count take-home money only — CMPF is pre-tax payroll (half
+    // employer's), so it stays in the composition bar but out of the sums.
+    const gross = streams.filter((s) => s.label !== 'CMPF').reduce((s, x) => s + x.amount, 0);
     const out = Math.round(withdrawalsIn((dt) => monthKey(dt) === key));
     return {
       key,
@@ -320,7 +322,10 @@ export default function SipCard({ fx }) {
   const planned = mo && mo.state === 'planned';
   // Composition stays gross — it shows where money went IN; withdrawals get
   // their own legend line rather than distorting the split.
-  const segs = viewGross ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGross * 100) })) : [];
+  // Bar percentages are based on total capital formed (incl. CMPF) so the
+  // segments still sum to 100% — viewGross itself is take-home only.
+  const viewGrossAll = viewStreams.reduce((s, x) => s + x.amount, 0);
+  const segs = viewGrossAll ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGrossAll * 100) })) : [];
 
   // Minis follow the view: all-time when "overall", else the selected FY
   const statTot    = allFys ? allTime.total : fyTot; // net
@@ -399,7 +404,7 @@ export default function SipCard({ fx }) {
         {segs.map((s, i) => {
           const left = segs.slice(0, i).reduce((a, x) => a + x.pct, 0);
           const bg = s.label === 'CMPF'
-            ? 'repeating-linear-gradient(45deg, rgba(160,160,160,0.55) 0, rgba(160,160,160,0.55) 2px, rgba(90,90,90,0.25) 2px, rgba(90,90,90,0.25) 7px)'
+            ? 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)'
             : s.color;
           return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: bg, opacity: s.label === 'CMPF' ? 1 : .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
         })}
@@ -411,7 +416,7 @@ export default function SipCard({ fx }) {
           <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
               background: s.label === 'CMPF'
-                ? 'repeating-linear-gradient(45deg, rgba(160,160,160,0.55) 0, rgba(160,160,160,0.55) 2px, rgba(90,90,90,0.25) 2px, rgba(90,90,90,0.25) 7px)'
+                ? 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)'
                 : s.color }} />
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
@@ -512,6 +517,7 @@ export default function SipCard({ fx }) {
           {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside} of {srRates.length}</span> months on track</>}
           {srCV != null && <> · <span style={{ color: 'var(--txt2)' }}>{srCV}% swing</span> month-to-month</>}
           {srDesc && <> — {srDesc}</>}
+          {(() => { const c = viewStreams.find((s) => s.label === 'CMPF'); return c ? <> · <RsText>{`${inrFull(c.amount)} CMPF alongside`}</RsText> (pre-tax, incl. employer match)</> : null; })()}
         </div>
       )}
     </div>
