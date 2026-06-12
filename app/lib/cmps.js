@@ -19,12 +19,12 @@ import { CMPS_CONTRIBUTIONS } from '../portfolio';
 
 const DOJ = new Date('2023-01-28'); // date of joining MCL
 const SUPERANNUATION_AGE = 60;
-const DOB = new Date('1997-09-21'); // date of birth — drives retirement date
+const DOB = new Date('1995-03-02'); // date of birth — drives retirement date
 
-// Superannuation date = DOB + 60 years (last day of birth-month in 60th year per CIL rules)
+// Superannuation date = last day of the birth month in the 60th year (CIL rules)
 export const CMPS_RETIREMENT_DATE = new Date(
   DOB.getFullYear() + SUPERANNUATION_AGE,
-  DOB.getMonth() + 1, // last day of birth month → first day of next month, minus 1
+  DOB.getMonth() + 1, // first day of next month minus 1 = last day of birth month
   0
 );
 
