@@ -354,8 +354,9 @@ export default function SipCard({ fx }) {
     US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0).reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0) +
     TRANSACTIONS.filter((t) => monthKey(t.date) === key && t.invested > 0).reduce((s, t) => s + t.invested, 0) +
     exitBuysIn((dt) => monthKey(dt) === key) +
-    fdFlows().filter((f) => monthKey(f.date) === key).reduce((s, f) => s + f.amount, 0) +
-    (CMPF_MAP[key] || 0);
+    fdFlows().filter((f) => monthKey(f.date) === key).reduce((s, f) => s + f.amount, 0);
+  // CMPF is not included: it is deployed from gross pay before take-home, so
+  // counting it in both numerator and denominator would inflate the savings rate.
   const srRates = allFys
     ? PAYSLIPS.map((p) => { const g = grossForMonthKey(p.month); return g > 0 ? Math.round(g / p.net * 100) : null; }).filter(Boolean)
     : elapsed.map((m) => { const net = PAYSLIP_MAP[m.key]; return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null; }).filter(Boolean);
@@ -397,7 +398,10 @@ export default function SipCard({ fx }) {
       <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
         {segs.map((s, i) => {
           const left = segs.slice(0, i).reduce((a, x) => a + x.pct, 0);
-          return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: s.color, opacity: .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
+          const bg = s.label === 'CMPF'
+            ? 'repeating-linear-gradient(45deg, rgba(160,160,160,0.55) 0, rgba(160,160,160,0.55) 2px, rgba(90,90,90,0.25) 2px, rgba(90,90,90,0.25) 7px)'
+            : s.color;
+          return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: bg, opacity: s.label === 'CMPF' ? 1 : .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
         })}
       </div>
       <div className="alloc-leg" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
@@ -405,7 +409,10 @@ export default function SipCard({ fx }) {
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.map((s) => (
           <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
+              background: s.label === 'CMPF'
+                ? 'repeating-linear-gradient(45deg, rgba(160,160,160,0.55) 0, rgba(160,160,160,0.55) 2px, rgba(90,90,90,0.25) 2px, rgba(90,90,90,0.25) 7px)'
+                : s.color }} />
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
         ))}

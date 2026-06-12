@@ -470,15 +470,7 @@ body {
   transition: transform .18s var(--ease), border-color .18s var(--ease),
               box-shadow .22s var(--ease), background 1.2s ease, color 1.2s ease;
 }
-/* Guard hover effects behind pointer-fine so touch taps don't stick */
-@media (hover: hover) and (pointer: fine) {
-  .csm:hover {
-    transform: scale(1.005);
-    border-color: color-mix(in srgb, var(--acc) 22%, var(--brd2));
-    box-shadow: 0 8px 28px -10px rgba(0, 0, 0, .65),
-                0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
-  }
-}
+/* .csm cards are stat displays — none are clickable, so no hover lift. */
 /* Press feedback only on HTML elements that explicitly declare cursor:pointer.
    Excludes SVG paths/circles (SunburstMix segments) which transform from
    top-left origin and would look broken. Cards/containers have no inline cursor. */
@@ -767,7 +759,7 @@ body { padding: 0; }
 /* Live NW hero (left) + 5 asset cards (right). The hero is the Overview link. */
 .hdr-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 280px) 1fr;
+  grid-template-columns: minmax(210px, 315px) 1fr;
   gap: 16px; align-items: stretch;
   margin: 8px 0 14px;
 }
