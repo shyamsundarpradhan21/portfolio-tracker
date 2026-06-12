@@ -32,6 +32,7 @@ function SavingsSparkline({ months }) {
     const el = svgRef.current;
     if (!el) return;
 
+    const render = () => {
     // Read tab accent from CSS — resolves to whatever the current tab sets
     const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
     const red = getComputedStyle(document.documentElement).getPropertyValue('--red').trim();
@@ -68,7 +69,9 @@ function SavingsSparkline({ months }) {
     const FLOOR = Math.max(0, Math.floor(Math.min(mu - 2 * sd, dataMin) / 10) * 10);
     const CEILV = Math.ceil(Math.max(mu + 2 * sd, Math.min(dataMax, mu + 3 * sd), FLOOR + 40) / 10) * 10;
     const toY = (r) => gH - ((Math.max(FLOOR, Math.min(r, CEILV)) - FLOOR) / (CEILV - FLOOR)) * gH + 4;
-    const toX = (i) => PAD + (i / (months.length - 1)) * gW;
+    // toX spreads pts across the FULL width regardless of how many months
+    // have data — 3 months fills the card just like 12 months.
+    const toX = (ptIdx) => PAD + (ptIdx / (pts.length - 1)) * gW;
 
     // Band at ±1σ: with lumpy deployment data the 1σ envelope hugs routine
     // months and lets lump-sum months pop above it; ±2σ added no coverage,
@@ -85,18 +88,27 @@ function SavingsSparkline({ months }) {
       [50, acc, .6, .8, '4,4', '50%'],
       [100, gld, .55, .75, '4,4', '100%'],
     ].filter(([v]) => v >= FLOOR && v <= CEILV);
-    // Hide the μ label when a benchmark label sits within 8px of it
-    const muLabelClear = refs.every(([v]) => Math.abs(toY(v) - bMid) > 8);
+    // Labels drop out (lines stay) when they'd overlap a neighbour —
+    // priority order 50 > 100 > 30, μ last in the queue.
+    const keptYs = [];
+    const labelOk = (y) => keptYs.every((k) => Math.abs(k - y) > 9) && (keptYs.push(y), true);
+    const showLbl = {};
+    [50, 100, 30].forEach((v) => {
+      if (refs.some(([rv]) => rv === v) && labelOk(toY(v))) showLbl[v] = true;
+    });
+    const muLabelClear = labelOk(bMid);
 
-    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
+    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(j).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
     const areaPath =
-      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
-      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
-      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
+      `M ${toX(0).toFixed(1)},${R50.toFixed(1)} ` +
+      pts.map((p, j) => `L ${toX(j).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
+      ` L ${toX(pts.length - 1).toFixed(1)},${R50.toFixed(1)} Z`;
 
     const id = Math.random().toString(36).slice(2);
 
-    el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    // No viewBox — draw in real pixels so text renders at its set size on
+    // any card width (a stale viewBox shrinks-and-centers the whole chart).
+    el.removeAttribute('viewBox');
     el.innerHTML = `
       <defs>
         <clipPath id="ab${id}"><rect x="0" y="0" width="${W}" height="${R50.toFixed(1)}"/></clipPath>
@@ -120,39 +132,47 @@ function SavingsSparkline({ months }) {
       ${refs.map(([v, col, lop, top, dash, lbl]) => `
         <line x1="${PAD}" y1="${toY(v).toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${toY(v).toFixed(1)}"
           stroke="${col}" stroke-opacity="${lop}" stroke-width="1" stroke-dasharray="${dash}"/>
-        <text x="${(W - RPAD + 5).toFixed(1)}" y="${(toY(v) + 3.5).toFixed(1)}"
-          font-size="8.5" fill="${col}" fill-opacity="${top}" font-family="monospace">${lbl}</text>`).join('')}
+        ${showLbl[v] ? `<text x="${(W - RPAD + 5).toFixed(1)}" y="${(toY(v) + 3.5).toFixed(1)}"
+          style="font-size:var(--fs-xs)" fill="${col}" fill-opacity="${top}" font-family="var(--mono)">${lbl}</text>` : ''}`).join('')}
 
       <line x1="${PAD}" y1="${bMid.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${bMid.toFixed(1)}"
         stroke="${acc}" stroke-opacity=".5" stroke-width="1.1"/>
       ${muLabelClear ? `
         <text x="${(W - RPAD + 5).toFixed(1)}" y="${(bMid + 3.5).toFixed(1)}"
-          font-size="8" fill="${acc}" fill-opacity=".7" font-family="monospace">μ ${Math.round(mu)}%</text>` : ''}
+          style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".7" font-family="var(--mono)">μ ${Math.round(mu)}%</text>` : ''}
       <text x="${(PAD + 2).toFixed(1)}" y="${(bTop - 4).toFixed(1)}"
-        font-size="7.5" fill="${acc}" fill-opacity=".5" font-family="monospace">±1σ · CV ${cv}%</text>
+        style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".5" font-family="var(--mono)">±1σ · CV ${cv}%</text>
 
       <path d="${linePath}" fill="none" stroke="${acc}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#ab${id})"/>
       <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
 
-      ${pts.map((p) => p.r > CEILV ? `
-        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+      ${pts.map((p, j) => p.r > CEILV ? `
+        <circle cx="${toX(j).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${gld}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
         </circle>
-        <text x="${toX(p.i).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" font-size="7"
-          fill="${gld}" fill-opacity=".85" text-anchor="middle" font-family="monospace">↑${p.r}%</text>` : `
-        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+        <text x="${toX(j).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" style="font-size:var(--fs-xs)"
+          fill="${gld}" fill-opacity=".85" text-anchor="middle" font-family="var(--mono)">↑${p.r}%</text>` : `
+        <circle cx="${toX(j).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
         </circle>`).join('')}
 
-      ${months.map((m, i) => `
-        <text x="${toX(i).toFixed(1)}" y="${(H - 1).toFixed(1)}"
-          font-size="7" fill="rgba(255,255,255,.18)" text-anchor="middle"
-          font-family="monospace">${m.mn}</text>`).join('')}
+      ${pts.map((p, j) => `
+        <text x="${toX(j).toFixed(1)}" y="${(H - 1).toFixed(1)}"
+          style="font-size:var(--fs-xs)" fill="var(--txt3)" text-anchor="middle"
+          font-family="var(--mono)">${months[p.i].mn}</text>`).join('')}
     `;
+    };
+
+    render();
+    // Re-render at the new width when the card resizes — the chart is
+    // drawn in absolute pixels, so it must be rebuilt, not stretched.
+    const ro = new ResizeObserver(render);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [months]);
 
   return (
