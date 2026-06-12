@@ -12,8 +12,8 @@
 // ∓SPREAD. Native SVG, no libraries.
 
 import { useMemo, useRef, useState, useEffect, memo } from 'react';
-import { PROJECTION, FDS } from '../portfolio';
-import { simMonthly } from '../lib/projection';
+import { PROJECTION } from '../portfolio';
+import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
@@ -23,13 +23,33 @@ const SPREAD = 0.03;
 const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?? 0.12;
 
 // Raw hex values — needed for SVG linearGradient stopColor (CSS vars don't
-// work inside SVG stop elements in all browsers).
-const SC_HEX = { cons: '#5B9BE8', base: '#34D399', opt: '#E8A857' };
+// work inside SVG stop elements in all browsers). These are FALLBACKS only:
+// useScHex resolves the live --sc-* tokens at runtime so the chart follows
+// the day/night theme instead of being stuck on the night palette.
+const SC_FALLBACK = { cons: '#5B9BE8', base: '#34D399', opt: '#E8A857' };
 const SC_META = {
-  cons: { tone: 'var(--sc-cons)', hex: SC_HEX.cons, name: 'Conservative' },
-  base: { tone: 'var(--sc-base)', hex: SC_HEX.base, name: 'Base · XIRR' },
-  opt:  { tone: 'var(--sc-opt)',  hex: SC_HEX.opt,  name: 'Optimistic' },
+  cons: { tone: 'var(--sc-cons)', name: 'Conservative' },
+  base: { tone: 'var(--sc-base)', name: 'Base · XIRR' },
+  opt:  { tone: 'var(--sc-opt)',  name: 'Optimistic' },
 };
+function useScHex() {
+  const [hex, setHex] = useState(SC_FALLBACK);
+  useEffect(() => {
+    const read = () => {
+      const cs = getComputedStyle(document.documentElement);
+      setHex({
+        cons: cs.getPropertyValue('--sc-cons').trim() || SC_FALLBACK.cons,
+        base: cs.getPropertyValue('--sc-base').trim() || SC_FALLBACK.base,
+        opt:  cs.getPropertyValue('--sc-opt').trim()  || SC_FALLBACK.opt,
+      });
+    };
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-time', 'data-tab'] });
+    return () => mo.disconnect();
+  }, []);
+  return hex;
+}
 const RANGES = [
   { key: 'D', days: 1 }, { key: 'W', days: 7 }, { key: 'M', days: 30 },
   { key: 'Y', days: 365 }, { key: 'Max', days: null },
@@ -63,6 +83,14 @@ const cr = (n) => {
   if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + ' L';
   return '₹' + Math.round(a).toLocaleString('en-IN');
 };
+// ₹ in HTML text: the mono face has no ₹ glyph, so the body-font fallback
+// renders oversized next to mono digits. Routing every cr() value through
+// this gives the symbol the global .rs treatment (sized/weighted to match).
+const Crs = ({ n, of }) => {
+  const s = of != null ? of : cr(n);
+  const i = s.indexOf('₹');
+  return i === -1 ? s : <>{s.slice(0, i)}<span className="rs">₹</span>{s.slice(i + 1)}</>;
+};
 const crShort = (n) => {
   const a = Math.abs(n);
   if (a >= 1e7) return '₹' + (a / 1e7).toFixed(a >= 1e8 ? 0 : 1) + 'Cr';
@@ -73,18 +101,17 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
+function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
   const [playing, setPlaying] = useState(false);
   const raf = useRef(null);
   const MAXY = PROJECTION.horizonYears;
+  const SC_HEX = useScHex();
 
-  const fdCeiling = useMemo(
-    () => FDS.filter((f) => f.status !== 'closed').reduce((a, f) => a + f.principal, 0),
-    [],
-  );
+  // Contribution + step-up derived from the ledgers/payslips — never typed in.
+  const projIn = useMemo(() => deriveProjInputs(fx), [fx]);
 
   const hist = useMemo(
     () => (snapshots || []).filter((s) => s && s.d && Number.isFinite(s.nw)),
@@ -114,14 +141,12 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
     return { cons: Math.max(0.02, base - SPREAD), base, opt: base + SPREAD };
   }, [liveXirr]);
 
-  // allocAt takes an explicit scenario key so it doesn't close over `sc` and
-  // break when sc changes while the model memo hasn't re-run yet.
   const model = useMemo(() => {
     const base = nw || 0;
     const inv0 = invested0 != null ? invested0 : base;
     const months = MAXY * 12;
     const arr = {};
-    for (const k of ['cons', 'base', 'opt']) arr[k] = simMonthly(rates[k], base, inv0, months);
+    for (const k of ['cons', 'base', 'opt']) arr[k] = simMonthly(rates[k], base, inv0, months, projIn);
 
     const crossings = [];
     for (const target of MILESTONES) {
@@ -130,34 +155,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
       if (i > 0) crossings.push({ value: target, year: i / 12 });
     }
 
-    const assetTotal0 = sleeves.reduce((a, s) => a + (s.value || 0), 0) || (base + loan);
-    const byKey = {}; sleeves.forEach((s) => { byKey[s.key] = s; });
-    const startShare = {}; sleeves.forEach((s) => { startShare[s.key] = (s.value || 0) / assetTotal0; });
-    const scaleKeys = sleeves.filter((s) => (PROJECTION.allocRules[s.key]?.rule || 'scale') === 'scale').map((s) => s.key);
-    const scaleSum = scaleKeys.reduce((a, k) => a + (byKey[k].value || 0), 0) || 1;
-
-    const allocAt = (scKey, y) => {
-      const corpus = arr[scKey].corpus[Math.min(arr[scKey].corpus.length - 1, Math.round(y * 12))];
-      const assets = corpus + loan;
-      const out = {}; let fixed = 0;
-      sleeves.forEach((s) => {
-        const r = PROJECTION.allocRules[s.key] || { rule: 'scale' };
-        if (r.rule === 'capped') {
-          const ceil = r.ceiling != null ? r.ceiling : fdCeiling;
-          out[s.key] = Math.min(ceil, (s.value || 0) + (ceil - (s.value || 0)) * Math.min(1, y / (r.rampYears || 2.5)));
-          fixed += out[s.key];
-        } else if (r.rule === 'target') {
-          const share = startShare[s.key] + (r.target - startShare[s.key]) * Math.min(1, y / (r.rampYears || 4));
-          out[s.key] = Math.max(0, share) * assets; fixed += out[s.key];
-        }
-      });
-      const residual = Math.max(0, assets - fixed);
-      scaleKeys.forEach((k) => { out[k] = residual * ((byKey[k].value || 0) / scaleSum); });
-      return { assets, out };
-    };
-
-    return { base, inv0, arr, crossings, allocAt };
-  }, [nw, loan, sleeves, MAXY, fdCeiling, invested0, rates]);
+    return { base, inv0, arr, crossings };
+  }, [nw, MAXY, invested0, rates, projIn]);
 
   const sampleAt = (a, yr) => {
     const m = yr * 12, i = Math.floor(m), f = m - i;
@@ -272,9 +271,6 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
   const investedNow = sampleAt(model.arr.base.invested, t);
   const growthNow   = corpusNow - investedNow;
 
-  // allocation uses the explicit-key form so tabs always reflect the active scenario
-  const alloc = model.allocAt(sc, scrubbing ? t : 0);
-  const allocTotal = sleeves.reduce((a, s) => a + (alloc.out[s.key] || 0), 0) || 1;
 
   const retireIso  = cmpsRetirement ? cmpsRetirement.toISOString().slice(0, 10) : RETIRE_ISO;
   const retireYr   = (ms(retireIso) - ms(lastH.d)) / YEAR_MS;
@@ -465,7 +461,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
                 {dataReady ? (
                   <>
                     <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                      {g.chg >= 0 ? '+' : '−'}{cr(g.chg)}
+                      {g.chg >= 0 ? '+' : '−'}<Crs n={g.chg} />
                     </span>
                     <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
                       {g.key === 'Max' && xirrPct != null
@@ -485,10 +481,10 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
 
           {maxRow && dataReady && (
             <div className="pjx-sentence">
-              You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}>{maxRow.chg >= 0 ? '+' : '−'}{cr(maxRow.chg)}</b> since {monYr(hist[0].d)} —{' '}
+              You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}>{maxRow.chg >= 0 ? '+' : '−'}<Crs n={maxRow.chg} /></b> since {monYr(hist[0].d)} —{' '}
               {histGains >= 0
-                ? <><b className="up">+{cr(histGains)}</b> of today&rsquo;s book is market gains on <b>{cr(lastH.invested ?? model.inv0)}</b> deployed</>
-                : <>today&rsquo;s book sits <b className="dn">−{cr(histGains)}</b> below the <b>{cr(lastH.invested ?? model.inv0)}</b> deployed</>}
+                ? <><b className="up">+<Crs n={histGains} /></b> of today&rsquo;s book is all-time market gains on <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>
+                : <>today&rsquo;s book sits <b className="dn">−<Crs n={histGains} /></b> below the <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>}
               {xirrPct != null && <>, compounding at <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}.
             </div>
           )}
@@ -511,8 +507,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
                   <span className="pjx-screte mono">
                     {(rates[k] * 100).toFixed(1)}% p.a.{k === 'base' && liveXirr != null ? ' · live' : ''}
                   </span>
-                  <span className="pjx-scval mono">{cr(c)}</span>
-                  <span className="pjx-scsub mono">×{mult.toFixed(1)} · {cr(c / deflate)} real</span>
+                  <span className="pjx-scval mono"><Crs n={c} /></span>
+                  <span className="pjx-scsub mono">×{mult.toFixed(1)} · <Crs n={c / deflate} /> real</span>
                 </button>
               );
             })}
@@ -520,14 +516,14 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
 
           <div className="pjx-sentence" style={{ '--sentence-clr': scTone }}>
             At <b>{ratePct}%</b>{sc === 'base' && liveXirr != null && <> — your live XIRR —</>} by {baseYear + yr} the book reaches{' '}
-            <b style={{ color: scTone }}>{cr(corpusNow)}</b>, of which <b className="up">{cr(growthNow)}</b> is compounding growth on{' '}
-            <b>{cr(investedNow)}</b> put in. In today&rsquo;s purchasing power that&rsquo;s <b>{cr(corpusNow / deflate)}</b>.
+            <b style={{ color: scTone }}><Crs n={corpusNow} /></b>, of which <b className="up"><Crs n={growthNow} /></b> is compounding growth on{' '}
+            <b><Crs n={investedNow} /></b> put in. In today&rsquo;s purchasing power that&rsquo;s <b><Crs n={corpusNow / deflate} /></b>.
           </div>
 
           {nearRetire && cmpsPension > 0 && (
             <div className="pjx-cmps-banner">
               <span className="pjx-cmps-label">⚑ CMPS pension at superannuation</span>
-              <span className="pjx-cmps-val">₹{cmpsPension.toLocaleString('en-IN')}<small>/mo</small></span>
+              <span className="pjx-cmps-val"><span className="rs">₹</span>{cmpsPension.toLocaleString('en-IN')}<small>/mo</small></span>
               <span className="pjx-cmps-sub">
                 {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit · for life
               </span>
@@ -536,35 +532,10 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
         </>
       )}
 
-      {/* allocation strip — colors always from sleeve.color (ALLOC_COLORS) */}
-      <div className="pjx-alloc" style={{ '--alloc-tone': scTone }}>
-        <div className="pjx-alloc-title">
-          {scrubbing ? `Allocation drift → ${baseYear + yr}` : 'Allocation today'}
-        </div>
-        <div className="pjx-abar">
-          {sleeves.map((s) => {
-            const share = (alloc.out[s.key] || 0) / allocTotal;
-            if (share < 0.002) return null;
-            return <span key={s.key} style={{ flexGrow: share * 1000, background: s.color }}
-              title={`${s.label} ${(share * 100).toFixed(0)}%`} />;
-          })}
-        </div>
-        <div className="pjx-aleg">
-          {sleeves.map((s) => {
-            const share = (alloc.out[s.key] || 0) / allocTotal;
-            if (share < 0.002) return null;
-            return (
-              <span key={s.key}>
-                <i style={{ background: s.color }} />{s.label} {(share * 100).toFixed(0)}%
-              </span>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
-        Rolling {MAXY}-year window from today&rsquo;s live net worth + ₹{PROJECTION.monthly.toLocaleString('en-IN')}/mo stepping
-        up {(PROJECTION.stepUp * 100).toFixed(0)}%/yr. Base compounds at your live asset-book XIRR
+        Rolling {MAXY}-year window from today&rsquo;s live net worth + <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (your
+        trailing-12-month average net deployment) stepping up {(projIn.stepUp * 100).toFixed(1)}%/yr (your
+        payslip take-home growth). Base compounds at your live asset-book XIRR
         ({xirrPct != null ? `${xirrPct}%` : `building — using ${(FALLBACK_RATE * 100).toFixed(0)}% until ~${Math.round(MIN_HISTORY_DAYS / 30)} months of history`}); Conservative/Optimistic bracket it
         at ∓{(SPREAD * 100).toFixed(0)} pts. Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
       </div>

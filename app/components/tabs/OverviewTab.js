@@ -3,11 +3,12 @@ import { inrFull, inrC } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
+import AllocCard from '../shared/AllocCard';
 import SipCard from '../shared/SipCard';
 
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
-  projSleeves, projInvested0, loan, baseYear, payslips, dataReady,
+  projSleeves, projInvested0, baseYear, payslips, dataReady, mfAlloc,
   cmpsPension, cmpsService, cmpsRetirement,
 }) {
   const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -16,12 +17,15 @@ export default function OverviewTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
 
-      {/* Growth tracker + projection scrubber: history + fan in one timeline */}
-      <ProjectionTab
-        nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
-        baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
-        cmpsPension={cmpsPension} cmpsService={cmpsService} cmpsRetirement={cmpsRetirement}
-      />
+      {/* Live allocation sunburst + growth tracker/projection scrubber */}
+      <div className="ov-top">
+        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} />
+        <ProjectionTab
+          nw={Math.round(ov.nw)} fx={fx}
+          baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
+          cmpsPension={cmpsPension} cmpsService={cmpsService} cmpsRetirement={cmpsRetirement}
+        />
+      </div>
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />

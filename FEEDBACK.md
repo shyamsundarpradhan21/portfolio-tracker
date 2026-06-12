@@ -27,6 +27,19 @@ value** — never a string literal.
 not just the ones flagged. When one instance of a hardcoded string is found,
 grep the codebase before reporting done.
 
+### Council/review checklist additions (user-flagged misses)
+Any UI review (/council or otherwise) must also check:
+- **₹ glyph scaling** — mono faces lack ₹; the body-font fallback renders
+  oversized. Every ₹ next to mono digits goes through the `.rs` treatment.
+- **Font tokens** — no raw px font sizes in CSS/JSX; use the global `--fs-*`
+  scale.
+- **Summaries/footers dynamic** — card prose must derive from live values
+  (same rule as subtexts).
+- **Theme-following colors** — no hex constants that ignore the day/night
+  `--sc-*` / `--acc` tokens; resolve CSS vars at runtime for SVG.
+- **Model assumptions derived** — projection contribution + step-up come from
+  `deriveProjInputs` (ledger deployment + payslip growth), never typed in.
+
 ---
 
 ## Git Workflow

@@ -620,12 +620,11 @@ export const ALLOC_COLORS = {
 
 // Forward net-worth projection inputs (rolling horizons — no fixed target year).
 // Compounds the live net worth + monthly contribution at each scenario rate.
-// EVERYTHING here is a tunable assumption — nothing in the chart is hardcoded:
-// the starting net worth, sleeve values and FD ceiling are read live; only the
-// forward assumptions below need a periodic (annual) revisit. See MONTHLY_UPDATE.md.
+// The monthly contribution and its annual step-up are NOT typed in here —
+// they are derived live from the ledgers (trailing-12-month net deployment)
+// and the payslip history (take-home growth). See deriveProjInputs in
+// app/lib/projection.js.
 export const PROJECTION = {
-  monthly: 39000,        // year-1 monthly contribution (SIP + recurring) — revisit yearly
-  stepUp: 0.10,          // annual step-up applied to the monthly contribution
   inflation: 0.06,       // for the "today's money" real-value deflator
   horizonYears: 30,      // max rolling horizon; the tab offers 1/5/10/30Y within it
   scenarios: [
@@ -633,20 +632,6 @@ export const PROJECTION = {
     { key: 'base', label: 'Base case',    rate: 0.12 },
     { key: 'opt',  label: 'Optimistic',   rate: 0.15 },
   ],
-  // Allocation-drift rules, keyed by sleeve key (see the Overview donut keys).
-  // FUTURE-PROOF: add a sleeve here and the projection just absorbs it.
-  //   scale  — grows with the residual (absorbs the SIP), share rises
-  //   capped — nominal ceiling (e.g. the FD ladder), share falls over time
-  //   target — held at a % of total assets
-  // The FD ceiling itself is derived live from FDS + FD_PIPELINE (not typed in).
-  // Note: algo capital is excluded from net worth, so it has no sleeve here.
-  allocRules: {
-    indian: { rule: 'scale' },
-    us:     { rule: 'scale' },
-    mf:     { rule: 'scale' },
-    elss:   { rule: 'scale' },
-    fd:     { rule: 'capped', rampYears: 2.5 },
-  },
 };
 
 export const CAT_COLORS = {

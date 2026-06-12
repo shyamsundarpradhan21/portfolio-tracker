@@ -753,8 +753,8 @@ export default function Page() {
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={chartSnapshots}
-              projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()}
-              payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)}
+              projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
+              payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
               cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE} />
           )}
           {tab === 1 && (

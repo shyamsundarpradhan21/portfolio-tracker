@@ -36,7 +36,7 @@ function ring(items, total, pad) {
   });
 }
 
-export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap' }) {
+export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap', centerLabel = 'Deployed' }) {
   const [hov, setHov] = useState(null);
   const W = 260, cx = 130, cy = 130;
   const fmtAmt = fmtFor(currency);
@@ -118,7 +118,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         ) : (
           <text x={cx} y={cy + 14} textAnchor="middle"
             style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
-            Deployed
+            {centerLabel}
           </text>
         )}
       </svg>
