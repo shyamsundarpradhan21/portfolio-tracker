@@ -715,10 +715,13 @@ export default function Page() {
                 {indian.valued && usdInr ? (
                   // Atomic chunk: wraps to the next line whole, never splitting
                   // the figure from its label (frees width for the hero value).
-                  <span style={{ whiteSpace: 'nowrap' }}
-                    title={`Net worth ${inrFull(Math.round(ov.nw))} + algo capital ${inrFull(STATIC.algo)} + algo FY P&L ${inrFull(Math.round(ytdTotal || 0))} (realised + swing MTM)`}>
-                    {' · '}incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
-                  </span>
+                  <>
+                    {' · '}
+                    <span style={{ whiteSpace: 'nowrap' }}
+                      title={`Net worth ${inrFull(Math.round(ov.nw))} + algo capital ${inrFull(STATIC.algo)} + algo FY P&L ${inrFull(Math.round(ytdTotal || 0))} (realised + swing MTM)`}>
+                      incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
+                    </span>
+                  </>
                 ) : <>{' · '}excl. algo</>}
               </div>
             </button>
