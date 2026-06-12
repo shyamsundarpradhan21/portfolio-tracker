@@ -25,7 +25,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
   const fy = data.fy || [];
   const vals = fy.map((b) => b.amt);
   const maxAbs = Math.max(1, ...vals.map((v) => Math.abs(v)));
-  const winYears = vals.filter((v) => v >= 0).length;
+  const winYears = vals.filter((v) => v > 0).length;
   const bestIdx = vals.length ? vals.reduce((bi, v, i, a) => (v > a[bi] ? i : bi), 0) : -1;
   const worstIdx = vals.length ? vals.reduce((wi, v, i, a) => (v < a[wi] ? i : wi), 0) : -1;
   const ytd = currency === 'usd' ? data.ytdUsd : data.ytd;

@@ -83,6 +83,9 @@ export default function USTab({
             CAGR {pct1(usStats.cagr)}
             {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
           </div>
+          <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
+            Counterfactual: your exact deposit dates replayed into each index — same rupees, same timing; indicative, not proven edge.
+          </div>
           <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
           <div className="g3">
             {[
@@ -198,8 +201,8 @@ export default function USTab({
               <div className="vmd grn"><UsdF n={US_DIVIDENDS.last12Gross} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div className="lbl">this FY (26-27)</div>
-              <div className="vmd"><UsdF n={US_DIVIDENDS.fy.find((f) => f.label === 'FY26-27')?.amt || 0} /></div>
+              <div className="lbl">this FY ({US_DIVIDENDS.fy[US_DIVIDENDS.fy.length - 1]?.label.replace('FY', '') || '—'})</div>
+              <div className="vmd"><UsdF n={US_DIVIDENDS.fy[US_DIVIDENDS.fy.length - 1]?.amt || 0} /></div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignContent: 'flex-start', flex: 1 }}>
@@ -217,6 +220,7 @@ export default function USTab({
           { label: 'FY25-26 foreign STCG', val: '+₹27,694', color: 'var(--grn)', sub: FY.cf.cg2526.foreignStcgNote },
           { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
+        foot="Foreign equity gains are taxed at slab (STCG <24m) or 12.5% (LTCG ≥24m) — no Sec 112A exemption; US withholding on dividends is creditable via DTAA."
       />
     </div>
   );

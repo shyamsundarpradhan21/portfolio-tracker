@@ -239,6 +239,9 @@ export default function HistoryCurve({ snapshots, nw, invested0 }) {
           </span>
         )}
       </div>
+      <div className="sub" style={{ marginTop: 10, color: 'var(--txt3)', lineHeight: 1.6 }}>
+        A snapshot is saved each day you open the dashboard; earlier points are reconstructed from the ledgers. The gap between total assets and net worth is the loan — watch it close as liabilities amortise.
+      </div>
     </div>
   );
 }

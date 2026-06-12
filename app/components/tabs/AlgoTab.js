@@ -164,7 +164,7 @@ export default function AlgoTab({
       </div>
 
       <div className="card">
-        <div className="lbl" style={{ marginBottom: 10, display: 'flex', gap: 6 }}>
+        <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
           F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified · entering FY26-27</span>
         </div>
         <div className="g4">

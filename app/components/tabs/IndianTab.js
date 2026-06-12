@@ -66,7 +66,7 @@ export default function IndianTab({
           <div className={'vmd ' + (inStats.cagr != null ? cl(inStats.cagr) : '')}>
             {inStats.cagr != null ? pct1(inStats.cagr) : <Skel w={70} h={20} />}
           </div>
-          <div className="sub">money-weighted · ~5-month history</div>
+          <div className="sub">money-weighted · {inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month history` : 'building history'}</div>
         </div>
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
@@ -103,7 +103,7 @@ export default function IndianTab({
             {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
           </div>
           <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
-            Annualised over a ~5-month average holding — a short window; indicative, not proven edge.
+            Annualised over a {inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} average holding — a short window; indicative, not proven edge.
           </div>
           <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
           <div className="g3">
@@ -205,6 +205,7 @@ export default function IndianTab({
           { label: 'FY24-25 LTCG (Sec 112A)', val: '₹2,789', color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
           { label: 'FY24-25 STCG (equity MF)', val: '₹1,083', color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
         ]}
+        foot="Equity LTCG up to ₹1.25L/yr is exempt (Sec 112A) — booking gains within the limit each FY resets cost basis tax-free."
       />
     </div>
   );

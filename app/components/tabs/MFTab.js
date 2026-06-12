@@ -80,6 +80,9 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
           </div>
         </>
       )}
+      <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
+        Counterfactual: every SIP/lump-sum replayed into each index at the same dates — XIRR weights early money more. A young SIP book swings hard on recent months; the gap narrows as history builds.
+      </div>
     </div>
   );
 }
@@ -226,6 +229,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
           { label: 'FY25-26 MF redemptions', val: 'Nil', color: 'var(--txt2)', sub: FY.cf.cg2526.mfStcgNote },
           { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
+        foot="No redemptions this FY — no MF capital-gains event. ELSS units stay locked 3 years from each SIP date; gains crystallise only on redemption."
       />
     </div>
   );

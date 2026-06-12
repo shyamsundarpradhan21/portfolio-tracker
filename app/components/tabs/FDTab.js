@@ -36,7 +36,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
       </div>
 
       <div className="card sec">
-        <div className="lbl" style={{ marginBottom: 10 }}>active FDs</div>
+        <div className="ctitle" style={{ marginBottom: 10 }}>Active FDs</div>
         <div className="ovx">
           <table className="tbl" style={{ minWidth: 760 }}>
             <thead>
@@ -84,7 +84,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
 
       <div className="card">
         <div className="fxc" style={{ marginBottom: 10 }}>
-          <div className="lbl" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
+          <div className="ctitle" style={{ margin: 0 }}>Pipeline — Not Yet Deployed</div>
           <div className="sub" style={{ margin: 0 }}>Pipeline <InrC n={fds.pipelineTotal} /> · Grand total <InrC n={fds.principal + fds.pipelineTotal} /></div>
         </div>
         <div className="ovx">
@@ -124,7 +124,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
       {fds.matured.length > 0 && (
         <div className="card sec" style={{ borderLeft: '2px solid var(--gld)' }}>
           <div className="fxc" style={{ marginBottom: 10 }}>
-            <div className="lbl" style={{ margin: 0 }}>Matured — Cash In</div>
+            <div className="ctitle" style={{ margin: 0 }}>Matured — Cash In</div>
             <div className="sub" style={{ margin: 0 }}>awaiting redeployment · <InrC n={fds.maturedCash} /> idle</div>
           </div>
           <div className="ovx">
@@ -157,7 +157,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
 
       {fds.closed.length > 0 && (
         <div className="card sec">
-          <div className="lbl" style={{ marginBottom: 10 }}>Matured &amp; Redeemed</div>
+          <div className="ctitle" style={{ marginBottom: 10 }}>Matured &amp; Redeemed</div>
           <div className="ovx">
             <table className="tbl" style={{ minWidth: 600 }}>
               <thead>
@@ -179,6 +179,9 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
+            Closed history — principal returned and interest booked. Interest here was already taxed on accrual in the years it was earned, so redemption itself triggers no fresh tax.
           </div>
         </div>
       )}

@@ -62,7 +62,6 @@ function SavingsSparkline({ months }) {
     const med = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
     const mu = med(rs);
     const sd = 1.4826 * med(rs.map((r) => Math.abs(r - mu)));
-    const cv = Math.round((sd / mu) * 100);
 
     // Dynamic window around the robust band, snapped to 10s. Spike months
     // beyond the ceiling clip at the top edge and keep their true value in
