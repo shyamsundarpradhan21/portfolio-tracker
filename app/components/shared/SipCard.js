@@ -31,6 +31,12 @@ function SavingsSparkline({ months }) {
   useEffect(() => {
     const el = svgRef.current;
     if (!el) return;
+
+    // Read tab accent from CSS — resolves to whatever the current tab sets
+    const acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--red').trim();
+    const gld = getComputedStyle(document.documentElement).getPropertyValue('--gld').trim();
+
     const W = el.clientWidth || 600;
     const H = 88, PAD = 14, RPAD = 42;
     const gW = W - PAD - RPAD;
@@ -68,12 +74,12 @@ function SavingsSparkline({ months }) {
         <clipPath id="ab${id}"><rect x="0" y="0" width="${W}" height="${R50.toFixed(1)}"/></clipPath>
         <clipPath id="be${id}"><rect x="0" y="${R50.toFixed(1)}" width="${W}" height="${H}"/></clipPath>
         <linearGradient id="gG${id}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#34D399" stop-opacity=".22"/>
-          <stop offset="100%" stop-color="#34D399" stop-opacity=".02"/>
+          <stop offset="0%" stop-color="${acc}" stop-opacity=".25"/>
+          <stop offset="100%" stop-color="${acc}" stop-opacity=".02"/>
         </linearGradient>
         <linearGradient id="gR${id}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#F87171" stop-opacity=".02"/>
-          <stop offset="100%" stop-color="#F87171" stop-opacity=".22"/>
+          <stop offset="0%" stop-color="${red}" stop-opacity=".02"/>
+          <stop offset="100%" stop-color="${red}" stop-opacity=".22"/>
         </linearGradient>
       </defs>
 
@@ -81,28 +87,28 @@ function SavingsSparkline({ months }) {
       <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
       <line x1="${PAD}" y1="${R30.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R30.toFixed(1)}"
-        stroke="rgba(52,211,153,.28)" stroke-width="1" stroke-dasharray="3,5"/>
+        stroke="${red}" stroke-opacity=".3" stroke-width="1" stroke-dasharray="3,5"/>
       <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R30 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="rgba(52,211,153,.45)" font-family="monospace">30%</text>
+        font-size="8.5" fill="${red}" fill-opacity=".45" font-family="monospace">30%</text>
 
       <line x1="${PAD}" y1="${R50.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R50.toFixed(1)}"
-        stroke="rgba(52,211,153,.6)" stroke-width="1" stroke-dasharray="4,4"/>
+        stroke="${acc}" stroke-opacity=".6" stroke-width="1" stroke-dasharray="4,4"/>
       <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R50 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="rgba(52,211,153,.8)" font-family="monospace">50%</text>
+        font-size="8.5" fill="${acc}" fill-opacity=".8" font-family="monospace">50%</text>
 
       <line x1="${PAD}" y1="${R100.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R100.toFixed(1)}"
-        stroke="rgba(232,168,87,.55)" stroke-width="1" stroke-dasharray="4,4"/>
+        stroke="${gld}" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4,4"/>
       <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R100 + 3.5).toFixed(1)}"
-        font-size="8.5" fill="rgba(232,168,87,.75)" font-family="monospace">100%</text>
+        font-size="8.5" fill="${gld}" fill-opacity=".75" font-family="monospace">100%</text>
 
-      <path d="${linePath}" fill="none" stroke="#34D399" stroke-width="2"
+      <path d="${linePath}" fill="none" stroke="${acc}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#ab${id})"/>
-      <path d="${linePath}" fill="none" stroke="#F87171" stroke-width="2"
+      <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
 
       ${pts.map((p) => `
         <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
-          fill="#34D399" stroke="#050506" stroke-width="1.5">
+          fill="${acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
         </circle>`).join('')}
 
