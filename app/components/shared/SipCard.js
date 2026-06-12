@@ -89,15 +89,6 @@ function SavingsSparkline({ months }) {
       [50, acc, .6, .8, '4,4', '50%'],
       [100, gld, .55, .75, '4,4', '100%'],
     ].filter(([v]) => v >= FLOOR && v <= CEILV);
-    // Labels drop out (lines stay) when they'd overlap a neighbour —
-    // priority order 50 > 100 > 30, μ last in the queue.
-    const keptYs = [];
-    const labelOk = (y) => keptYs.every((k) => Math.abs(k - y) > 9) && (keptYs.push(y), true);
-    const showLbl = {};
-    [50, 100, 30].forEach((v) => {
-      if (refs.some(([rv]) => rv === v) && labelOk(toY(v))) showLbl[v] = true;
-    });
-    const muLabelClear = labelOk(bMid);
 
     const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
     const areaPath =
@@ -130,17 +121,14 @@ function SavingsSparkline({ months }) {
       <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
       <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
-      ${refs.map(([v, col, lop, top, dash, lbl]) => `
+      ${refs.map(([v, col, lop, , dash]) => `
         <line x1="${PAD}" y1="${toY(v).toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${toY(v).toFixed(1)}"
-          stroke="${col}" stroke-opacity="${lop}" stroke-width="1" stroke-dasharray="${dash}"/>
-        ${showLbl[v] ? `<text x="${(W - RPAD + 5).toFixed(1)}" y="${(toY(v) + 3.5).toFixed(1)}"
-          style="font-size:var(--fs-xs)" fill="${col}" fill-opacity="${top}" font-family="var(--mono)">${lbl}</text>` : ''}`).join('')}
+          stroke="${col}" stroke-opacity="${lop}" stroke-width="1" stroke-dasharray="${dash}"/>`).join('')}
 
       <line x1="${PAD}" y1="${bMid.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${bMid.toFixed(1)}"
         stroke="${acc}" stroke-opacity=".5" stroke-width="1.1"/>
-      ${muLabelClear ? `
-        <text x="${(W - RPAD + 5).toFixed(1)}" y="${(bMid + 3.5).toFixed(1)}"
-          style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".7" font-family="var(--mono)">μ ${Math.round(mu)}%</text>` : ''}
+      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(bMid + 3.5).toFixed(1)}"
+        style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".7" font-family="var(--mono)">μ ${Math.round(mu)}%</text>
       <text x="${(PAD + 2).toFixed(1)}" y="${(bTop - 4).toFixed(1)}"
         style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".5" font-family="var(--mono)">±1σ · CV ${cv}%</text>
 
@@ -153,9 +141,7 @@ function SavingsSparkline({ months }) {
         <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${gld}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
-        </circle>
-        <text x="${toX(p.i).toFixed(1)}" y="${(toY(p.r) - 5).toFixed(1)}" style="font-size:var(--fs-xs)"
-          fill="${gld}" fill-opacity=".85" text-anchor="middle" font-family="var(--mono)">↑${p.r}%</text>` : `
+        </circle>` : `
         <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
           fill="${acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
