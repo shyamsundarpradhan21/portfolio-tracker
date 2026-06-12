@@ -8,6 +8,12 @@
 # production
 /build
 
+# local agent tooling (graphify / claude)
+/CLAUDE.md
+/.claude/
+/.graphify/
+/graphify-out/
+
 # misc
 .DS_Store
 *.pem
