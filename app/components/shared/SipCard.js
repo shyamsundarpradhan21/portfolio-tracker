@@ -320,7 +320,13 @@ export default function SipCard({ fx }) {
   // Bar percentages are based on total capital formed (incl. CMPF) so the
   // segments still sum to 100% — viewGross itself is take-home only.
   const viewGrossAll = viewStreams.reduce((s, x) => s + x.amount, 0);
-  const segs = viewGrossAll ? viewStreams.map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGrossAll * 100) })) : [];
+  // CMPF always renders last so its hatched segment sits at the right edge
+  // of the bar, mirroring its right-aligned legend entry.
+  const segs = viewGrossAll
+    ? viewStreams
+        .map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGrossAll * 100) }))
+        .sort((a, b) => (a.label === 'CMPF') - (b.label === 'CMPF'))
+    : [];
 
   // Minis follow the view: all-time when "overall", else the selected FY
   const statTot    = allFys ? allTime.total : fyTot; // net
@@ -516,7 +522,7 @@ export default function SipCard({ fx }) {
           {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside} of {srRates.length}</span> months on track</>}
           {srCV != null && <> · <span style={{ color: 'var(--txt2)' }}>{srCV}% swing</span> month-to-month</>}
           {srDesc && <> — {srDesc}</>}
-          {(() => { const c = viewStreams.find((s) => s.label === 'CMPF'); return c ? <> · <span style={{ color: STREAM_COLORS.CMPF }}><RsText>{`${inrFull(c.amount)} CMPF alongside`}</RsText></span> (pre-tax, incl. employer match)</> : null; })()}
+          {(() => { const c = viewStreams.find((s) => s.label === 'CMPF'); return c ? <> · <span style={{ color: 'var(--acc)' }}><RsText>{inrFull(c.amount)}</RsText></span> CMPF alongside (pre-tax, incl. employer match)</> : null; })()}
         </div>
       )}
     </div>
