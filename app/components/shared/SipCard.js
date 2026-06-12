@@ -38,7 +38,7 @@ function SavingsSparkline({ months }) {
     const gld = getComputedStyle(document.documentElement).getPropertyValue('--gld').trim();
 
     const W = el.clientWidth || 600;
-    const H = 88, PAD = 14, RPAD = 42;
+    const H = 110, PAD = 14, RPAD = 42;
     const gW = W - PAD - RPAD;
     const gH = H - 18;
 
@@ -52,9 +52,10 @@ function SavingsSparkline({ months }) {
 
     if (pts.length < 2) { el.innerHTML = ''; return; }
 
-    const maxR = Math.max(130, ...pts.map((p) => p.r + 10));
-    // Log scale — compresses spikes, gives resolution to the 0-100% range
-    const toY = (r) => gH - (Math.log(Math.min(r, maxR) + 1) / Math.log(maxR + 1)) * gH + 4;
+    // Sqrt scale with a fixed ceiling of 130% — spikes clip at the top,
+    // reference lines at 30/50/100 stay well-spread regardless of spike size.
+    const maxR = 130;
+    const toY = (r) => gH - (Math.sqrt(Math.min(r, maxR)) / Math.sqrt(maxR)) * gH + 4;
     const toX = (i) => PAD + (i / (months.length - 1)) * gW;
 
     const R30  = toY(30);
@@ -121,7 +122,7 @@ function SavingsSparkline({ months }) {
   }, [months]);
 
   return (
-    <svg ref={svgRef} style={{ width: '100%', display: 'block', overflow: 'visible', marginBottom: 14 }} height={88} />
+    <svg ref={svgRef} style={{ width: '100%', display: 'block', overflow: 'visible', marginBottom: 14 }} height={110} />
   );
 }
 const monthKey = (d) => d.slice(0, 7);
