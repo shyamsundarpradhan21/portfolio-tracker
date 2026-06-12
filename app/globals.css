@@ -479,7 +479,10 @@ body {
                 0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
   }
 }
-.csm:active { transform: scale(0.99); }
+/* Press feedback only on elements that explicitly declare cursor:pointer —
+   cards and containers are excluded since they set no cursor. */
+[style*="cursor: pointer"]:active:not(.card):not(.csm) { transform: scale(0.95); transition: transform 0.08s ease; }
+.csm:active { transform: scale(0.98); transition: transform 0.08s ease; }
 
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
