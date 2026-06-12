@@ -505,6 +505,53 @@ export const CMPF_CONTRIBUTIONS = [
   { month: '2026-05', emp: 16168 },
 ];
 
+// ── CMPS (Coal Mines Pension Scheme) employee contributions ──────────────────
+// Monthly deduction as it appears on payslips. Jan-25 includes 9-month promotion
+// arrears; May-26 has 61,760 negative adjustment netting to ~9,427 real contribution.
+// Employer contributes an equal matching amount to the pension trust.
+export const CMPS_CONTRIBUTIONS = [
+  { month: '2023-02', emp: 4802  },
+  { month: '2023-03', emp: 5282  }, // includes Jan-23 stub arrears
+  { month: '2023-04', emp: 4820  },
+  { month: '2023-05', emp: 4820  },
+  { month: '2023-06', emp: 4820  },
+  { month: '2023-07', emp: 4872  },
+  { month: '2023-08', emp: 4872  },
+  { month: '2023-09', emp: 4872  },
+  { month: '2023-10', emp: 5033  },
+  { month: '2023-11', emp: 5033  },
+  { month: '2023-12', emp: 5033  },
+  { month: '2024-01', emp: 5030  },
+  { month: '2024-02', emp: 5030  },
+  { month: '2024-03', emp: 5030  },
+  { month: '2024-04', emp: 5180  },
+  { month: '2024-05', emp: 5180  },
+  { month: '2024-06', emp: 5246  },
+  { month: '2024-07', emp: 5220  },
+  { month: '2024-08', emp: 5220  },
+  { month: '2024-09', emp: 5220  },
+  { month: '2024-10', emp: 5325  },
+  { month: '2024-11', emp: 5325  },
+  { month: '2024-12', emp: 5325  },
+  { month: '2025-01', emp: 18063 }, // 6472 regular + 11591 promotion arrears (Apr–Dec 24)
+  { month: '2025-02', emp: 6472  },
+  { month: '2025-03', emp: 6472  },
+  { month: '2025-04', emp: 6433  },
+  { month: '2025-05', emp: 6433  },
+  { month: '2025-06', emp: 6433  },
+  { month: '2025-07', emp: 6446  },
+  { month: '2025-08', emp: 6446  },
+  { month: '2025-09', emp: 6446  },
+  { month: '2025-10', emp: 6567  },
+  { month: '2025-11', emp: 6567  },
+  { month: '2025-12', emp: 6567  },
+  { month: '2026-01', emp: 9019  },
+  { month: '2026-02', emp: 9019  },
+  { month: '2026-03', emp: 9304  },
+  { month: '2026-04', emp: 9431  },
+  { month: '2026-05', emp: 9427  }, // 71187 − 61760 adjustment = net 9427
+];
+
 // Annual interest rates declared by CMPF commissioner (credited at FY-end).
 // Source: CMPFO board resolutions; 2025-26 assumed at prevailing rate.
 export const CMPF_RATES = {

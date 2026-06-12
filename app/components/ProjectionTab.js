@@ -66,7 +66,7 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots }) {
+function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -268,8 +268,10 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots }) {
   const alloc = model.allocAt(sc, scrubbing ? t : 0);
   const allocTotal = sleeves.reduce((a, s) => a + (alloc.out[s.key] || 0), 0) || 1;
 
-  const retireYr  = (ms(RETIRE_ISO) - ms(lastH.d)) / YEAR_MS;
+  const retireIso  = cmpsRetirement ? cmpsRetirement.toISOString().slice(0, 10) : RETIRE_ISO;
+  const retireYr   = (ms(retireIso) - ms(lastH.d)) / YEAR_MS;
   const showRetire = scrubbing && t >= retireYr - 0.01 && retireYr > 0;
+  const nearRetire = scrubbing && Math.abs(t - retireYr) < 2;
 
   const maxRow   = growth.find((g) => g.key === 'Max');
   const histGains = liveNw - (lastH.invested ?? model.inv0);
@@ -386,7 +388,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots }) {
                 <line x1={xFut(retireYr)} y1={PADT - 6} x2={xFut(retireYr)} y2={H - PADB}
                   stroke="var(--acc)" strokeOpacity=".35" strokeWidth="1" />
                 <text x={xFut(retireYr)} y={PADT - 10} fontSize="10" fill="var(--acc)"
-                  textAnchor="middle" fontWeight="700">⚑ Mar 2055</text>
+                  textAnchor="middle" fontWeight="700">⚑ {retireIso.slice(0, 7).replace('-', ' · ')}</text>
               </g>
             )}
 
@@ -496,6 +498,16 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots }) {
             <b style={{ color: scTone }}>{cr(corpusNow)}</b>, of which <b className="up">{cr(growthNow)}</b> is compounding growth on{' '}
             <b>{cr(investedNow)}</b> put in. In today&rsquo;s purchasing power that&rsquo;s <b>{cr(corpusNow / deflate)}</b>.
           </div>
+
+          {nearRetire && cmpsPension > 0 && (
+            <div className="pjx-cmps-banner">
+              <span className="pjx-cmps-label">⚑ CMPS pension at superannuation</span>
+              <span className="pjx-cmps-val">₹{cmpsPension.toLocaleString('en-IN')}<small>/mo</small></span>
+              <span className="pjx-cmps-sub">
+                {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit · for life
+              </span>
+            </div>
+          )}
         </>
       )}
 

@@ -15,6 +15,7 @@ import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot } from './lib/snapshots';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus } from './lib/cmpf';
+import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -484,7 +485,10 @@ export default function Page() {
     const pfValue = cmpfCorpus(new Date());
     const totalAssets = indian.val + usInr + fdValue + mf.totVal + pfValue;
     const loan = loanOutstanding(new Date());
-    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan };
+    const cmpsPaid = cmpsTotalPaid(new Date());
+    const cmpsPension = cmpsMonthlyPension(new Date());
+    const cmpsService = cmpsServiceYears(new Date());
+    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
@@ -730,7 +734,8 @@ export default function Page() {
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={chartSnapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()}
-              payslips={PAYSLIPS} />
+              payslips={PAYSLIPS}
+              cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}

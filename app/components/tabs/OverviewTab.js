@@ -10,6 +10,7 @@ import { TRANSACTIONS, MF_CASHFLOWS, FDS, US_CASHFLOWS } from '../../portfolio';
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, loan, baseYear, payslips,
+  cmpsPension, cmpsService, cmpsRetirement,
 }) {
   const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 
@@ -54,6 +55,7 @@ export default function OverviewTab({
       <ProjectionTab
         nw={Math.round(ov.nw)} loan={loan} sleeves={projSleeves}
         baseYear={baseYear} invested0={projInvested0} snapshots={snapshots}
+        cmpsPension={cmpsPension} cmpsService={cmpsService} cmpsRetirement={cmpsRetirement}
       />
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
