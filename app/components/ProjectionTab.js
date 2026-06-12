@@ -399,6 +399,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <stop offset="28%" stopColor={scHex} />
             <stop offset="100%" stopColor={scHex} />
           </linearGradient>
+          {/* fill handoff — same idea for the AREA under the curve: an
+             accent-tinted wedge that fades out just after TODAY, overlaid on
+             the scenario fill so the tint blends instead of switching */}
+          <linearGradient id="pjx-fillblend" gradientUnits="userSpaceOnUse"
+            x1={xToday} y1="0" x2={W - PADR} y2="0">
+            <stop offset="0%" stopColor={SC_HEX.acc} stopOpacity=".16" />
+            <stop offset="28%" stopColor={SC_HEX.acc} stopOpacity="0" />
+          </linearGradient>
         </defs>
 
         {/* grid + y labels — use RsSvg so ₹ renders in body font */}
@@ -439,8 +447,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <path d={futPaths.fan} fill={scHex} opacity=".07" />
             {/* invested projection fill */}
             <path d={futPaths.invFill} fill="url(#pjx-invfill)" />
-            {/* active scenario fill — tinted with that scenario's color */}
+            {/* active scenario fill — tinted with that scenario's color,
+                with the accent wedge blending the seam (see pjx-fillblend) */}
             <path d={futPaths.activeFill} fill="url(#pjx-scfill)" />
+            <path d={futPaths.activeFill} fill="url(#pjx-fillblend)" />
             <path d={futPaths.inv} fill="none" stroke="var(--txt3)" strokeWidth="1.3" strokeDasharray="3 4" />
             {['cons', 'base', 'opt'].map((k) => (
               <path key={k} d={futPaths[k]} fill="none"
