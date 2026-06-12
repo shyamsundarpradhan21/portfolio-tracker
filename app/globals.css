@@ -613,20 +613,27 @@ body {
 .pjx-reset:hover { color: var(--txt); border-color: var(--brd); }
 
 /* rail with milestone notches under the range input */
-.pjx-rail { flex: 1; position: relative; min-width: 200px; padding-bottom: 16px; }
-.pjx-notches { position: absolute; left: 0; right: 0; top: 18px; height: 16px; pointer-events: none; }
+.pjx-rail { flex: 1; position: relative; min-width: 200px; padding-bottom: 30px; }
+.pjx-notches { position: absolute; left: 0; right: 0; top: 18px; height: 30px; pointer-events: none; }
 .pjx-notch { position: absolute; transform: translateX(-50%); }
 .pjx-notch i { display: block; width: 2px; height: 7px; margin: 0 auto; border-radius: 1px; background: var(--txt3); opacity: .7; }
 .pjx-notch em { display: block; margin-top: 1px; font-style: normal; font-family: var(--mono); font-size: var(--fs-2xs); color: var(--txt3); white-space: nowrap; }
+/* alternate row — close milestone crossings can't overlap horizontally */
+.pjx-notch.alt i { height: 20px; }
+.pjx-notch.alt em { margin-top: 1px; }
 .pjx-notch.ret i { background: var(--acc); opacity: 1; }
 .pjx-notch.ret em { color: var(--acc); font-weight: 700; }
 
-/* methodology explainer — rides INSIDE the chart's empty upper-left */
+/* growth story — rides INSIDE the chart's empty upper-left */
 .pjx-explain {
-  position: absolute; left: 5.5%; top: 9%; max-width: 46%; z-index: 1;
-  font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.55;
+  position: absolute; left: 5.5%; top: 10%; max-width: 48%; z-index: 1;
+  font-size: var(--fs-xs); color: var(--txt2); line-height: 1.7;
   pointer-events: none;
 }
+.pjx-explain b { font-family: var(--mono); font-weight: 600; font-size: .95em; }
+
+/* methodology footnote — single compact line under the card */
+.pjx-foot { margin-top: 10px; font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.6; }
 
 /* at rest: D/W/M/Y/Max growth cards (click = history window) */
 .pjx-gcards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
@@ -636,9 +643,9 @@ body {
   transition: border-color .15s, background .15s;
 }
 .pjx-gcell:hover { border-color: var(--brd); }
-.pjx-gcell.on { border-color: color-mix(in srgb, var(--grn) 45%, var(--brd)); background: color-mix(in srgb, var(--grn) 6%, transparent); }
+.pjx-gcell.on { border-color: color-mix(in srgb, var(--acc) 45%, var(--brd)); background: color-mix(in srgb, var(--acc) 6%, transparent); }
 .pjx-gk { font-family: var(--mono); font-size: var(--fs-2xs); letter-spacing: .07em; color: var(--txt3); }
-.pjx-gcell.on .pjx-gk { color: var(--grn); }
+.pjx-gcell.on .pjx-gk { color: var(--acc); }
 .pjx-gv { font-size: var(--fs-md); font-weight: 700; letter-spacing: -.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pjx-gp { font-size: var(--fs-2xs); }
 
