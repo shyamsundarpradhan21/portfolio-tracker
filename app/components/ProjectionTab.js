@@ -73,7 +73,7 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement }) {
+function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -102,7 +102,9 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
       if (Math.abs(dep) > 1) cfs.push({ date: new Date(hist[i].d), amount: -dep });
       prev = hist[i].invested || 0;
     }
-    cfs.push({ date: new Date(last.d), amount: last.assets ?? last.nw ?? 0 });
+    // Terminal value MUST be nw — the invested legs are net-worth basis, so
+    // using gross assets (loan-funded) here inflates XIRR to absurd figures.
+    cfs.push({ date: new Date(last.d), amount: last.nw ?? 0 });
     const r = xirr(cfs);
     return r != null && isFinite(r) && r > -0.5 && r < 2 ? r : null;
   }, [hist]);
@@ -294,8 +296,13 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
   return (
     <div className="card sec pjx">
       <div className="fxc" style={{ alignItems: 'baseline' }}>
-        <div className="lbl" style={{ margin: 0 }}>
+        <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
           {scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
+          {!dataReady && (
+            <span style={{ fontSize: 'var(--fs-2xs)', fontFamily: 'var(--mono)', color: 'var(--gld)', textTransform: 'none', letterSpacing: 0 }}>
+              ⚠ live pricing incomplete — figures provisional
+            </span>
+          )}
         </div>
         <div className="sub" style={{ margin: 0, fontFamily: 'var(--mono)' }}>
           {monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
@@ -454,23 +461,35 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
               <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')}
                 onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
                 <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
-                <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                  {g.chg >= 0 ? '+' : '−'}{cr(g.chg)}
-                </span>
-                <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                  {g.key === 'Max' && xirrPct != null
-                    ? `XIRR ${xirrPct}%`
-                    : `${g.pct >= 0 ? '+' : '−'}${Math.abs(g.pct).toFixed(2)}%`}
-                </span>
+                {/* deltas against live NW are meaningless while a sleeve is unpriced */}
+                {dataReady ? (
+                  <>
+                    <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
+                      {g.chg >= 0 ? '+' : '−'}{cr(g.chg)}
+                    </span>
+                    <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
+                      {g.key === 'Max' && xirrPct != null
+                        ? `XIRR ${xirrPct}%`
+                        : `${g.pct >= 0 ? '+' : '−'}${Math.abs(g.pct).toFixed(2)}%`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="pjx-gv mono">—</span>
+                    <span className="pjx-gp mono">loading</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
 
-          {maxRow && (
+          {maxRow && dataReady && (
             <div className="pjx-sentence">
               You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}>{maxRow.chg >= 0 ? '+' : '−'}{cr(maxRow.chg)}</b> since {monYr(hist[0].d)} —{' '}
-              <b>{cr(Math.max(0, histGains))}</b> of today&rsquo;s book is market gains on <b>{cr(lastH.invested ?? model.inv0)}</b> deployed
-              {xirrPct != null && <>, compounding at <b className="up">{xirrPct}% XIRR</b></>}.
+              {histGains >= 0
+                ? <><b className="up">+{cr(histGains)}</b> of today&rsquo;s book is market gains on <b>{cr(lastH.invested ?? model.inv0)}</b> deployed</>
+                : <>today&rsquo;s book sits <b className="dn">−{cr(histGains)}</b> below the <b>{cr(lastH.invested ?? model.inv0)}</b> deployed</>}
+              {xirrPct != null && <>, compounding at <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}.
             </div>
           )}
         </>

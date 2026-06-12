@@ -624,14 +624,17 @@ export default function Page() {
     return [...synth.filter((s) => !firstReal || s.d < firstReal), ...snapshots];
   }, [hist, fxHist, usdInr, snapshots, mfNav]);
   useEffect(() => {
-    if (!(indian.valued && usdInr)) return;
+    // US readiness checked explicitly: usdInr arrives with the INDIAN quote
+    // batch, so without usData.val the guard would pass on a US-only outage
+    // and persist a net worth missing the whole US sleeve.
+    if (!(indian.valued && usData.val > 0 && usdInr)) return;
     setSnapshots(recordSnapshot({
       d: isoOf(new Date()),
       nw: Math.round(ov.nw),
       assets: Math.round(ov.totalAssets),
       invested: Math.round(projInvested0),
     }));
-  }, [indian.valued, usdInr, ov.nw, ov.totalAssets, projInvested0]);
+  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0]);
 
   // NW hero: fire entrance animation once when live NW first becomes available,
   // and detect all-time-high (NW > every prior snapshot) for the celebration.
@@ -735,7 +738,7 @@ export default function Page() {
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               FY={FY} snapshots={chartSnapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} loan={ov.loan} baseYear={now.getFullYear()}
-              payslips={PAYSLIPS}
+              payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)}
               cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE} />
           )}
           {tab === 1 && (

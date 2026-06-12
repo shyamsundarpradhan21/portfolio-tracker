@@ -11,10 +11,32 @@
 const KEY = 'nwTracker.snapshots';
 const CAP = 800; // ~2+ years of daily points
 
+// Largest deposit-adjusted day-over-day NW move accepted as real. A diversified
+// book doesn't move 30% in a day — but it does exactly that when a quote batch
+// fails and a whole sleeve reads ₹0, which is the artifact this filters.
+const MAX_DAY_MOVE = 0.3;
+
+// A spike entry deviates >30% from BOTH neighbours while the neighbours agree
+// with each other — the crash+recovery signature of a partial-quote snapshot,
+// never of a real market move that persists across days.
+const dropSpikes = (arr) => arr.filter((s, i) => {
+  if (i === 0 || i === arr.length - 1) return true;
+  const a = arr[i - 1].nw, b = arr[i + 1].nw;
+  if (!(a > 0 && b > 0)) return true;
+  return !(Math.abs(s.nw - a) / a > MAX_DAY_MOVE &&
+           Math.abs(s.nw - b) / b > MAX_DAY_MOVE &&
+           Math.abs(b - a) / a <= MAX_DAY_MOVE);
+});
+
 export function getSnapshots() {
   try {
     const a = JSON.parse(localStorage.getItem(KEY) || '[]');
-    return Array.isArray(a) ? a : [];
+    if (!Array.isArray(a)) return [];
+    // Self-heal: purge spike entries already persisted by older builds so the
+    // chart cliff disappears without the user clearing localStorage by hand.
+    const healed = dropSpikes(a);
+    if (healed.length !== a.length) localStorage.setItem(KEY, JSON.stringify(healed));
+    return healed;
   } catch { return []; }
 }
 
@@ -23,6 +45,17 @@ export function recordSnapshot(snap) {
   if (!snap || !snap.d || !Number.isFinite(snap.nw)) return getSnapshots();
   try {
     const arr = getSnapshots();
+    // Plausibility vs the most recent PRIOR day, net of fresh deposits, so a
+    // big genuine contribution doesn't trip the filter. Same-day overwrites
+    // are exempt — they're how an early bad write heals once quotes land.
+    const prior = arr.filter((s) => s.d < snap.d).pop();
+    if (prior && prior.nw > 0) {
+      const dep = (snap.invested || 0) - (prior.invested || 0);
+      if (Math.abs(snap.nw - prior.nw - dep) / prior.nw > MAX_DAY_MOVE) {
+        console.warn(`snapshot rejected: NW ${snap.nw} vs ${prior.nw} on ${prior.d} — partial quotes?`);
+        return arr;
+      }
+    }
     const i = arr.findIndex((s) => s.d === snap.d);
     if (i >= 0) arr[i] = snap; else arr.push(snap);
     arr.sort((a, b) => (a.d < b.d ? -1 : 1));
