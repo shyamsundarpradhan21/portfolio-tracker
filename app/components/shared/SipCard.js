@@ -407,14 +407,9 @@ export default function SipCard({ fx }) {
       <div className="alloc-leg" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
         {!segs.length ? (
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
-        ) : segs.map((s) => (
-          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)',
-            color: s.label === 'CMPF' ? 'var(--acc)' : 'var(--txt2)',
-            marginLeft: s.label === 'CMPF' ? 'auto' : undefined }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
-              background: s.label === 'CMPF'
-                ? 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)'
-                : s.color }} />
+        ) : segs.filter((s) => s.label !== 'CMPF').map((s) => (
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: s.color }} />
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
         ))}
@@ -424,6 +419,13 @@ export default function SipCard({ fx }) {
             <RsText>{`withdrawn ${inrFull(viewOut)}`}</RsText>
           </span>
         )}
+        {segs.find((s) => s.label === 'CMPF') && (() => { const c = segs.find((s) => s.label === 'CMPF'); return (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', marginLeft: 'auto' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
+              background: 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)' }} />
+            <RsText>{`${c.label} ${inrFull(c.amount)} · ${c.pct}%`}</RsText>
+          </span>
+        ); })()}
       </div>
 
       {/* FY-scoped zone: sparkline + FY chips + month grid.
