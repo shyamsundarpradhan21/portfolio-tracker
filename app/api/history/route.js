@@ -81,8 +81,8 @@ export async function GET(request) {
   if (symbols.length === 0) {
     return Response.json({ error: 'pass ?symbols=^NSEI,GOLDBEES.NS' }, { status: 400 });
   }
-  if (symbols.length > 70) {
-    return Response.json({ error: 'too many symbols (max 70)' }, { status: 400 });
+  if (symbols.length > 120) {
+    return Response.json({ error: 'too many symbols (max 120)' }, { status: 400 });
   }
 
   const results = await Promise.all(symbols.map((s) => fetchSeries(s, range)));

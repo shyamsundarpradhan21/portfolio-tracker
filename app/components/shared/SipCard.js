@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS } from '../../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS, CMPF_CONTRIBUTIONS } from '../../portfolio';
 import INDIAN_EXITS from '../../../data/indian_exits.json';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
@@ -20,10 +20,12 @@ import INDIAN_EXITS from '../../../data/indian_exits.json';
 // (changes per tab) and NOT --grn (means profit everywhere else).
 // Each stream wears its own tab's accent: MF violet, IND sapphire, US cyan,
 // FD gold — uniform with the rest of the dashboard.
-const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)' };
+const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)', CMPF: 'var(--grn)' };
 
 // Build a lookup from PAYSLIPS: { 'YYYY-MM': netPay }
 const PAYSLIP_MAP = Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net]));
+// Total CMPF deployment = employee + employer match (corpus = 2× emp side)
+const CMPF_MAP = Object.fromEntries(CMPF_CONTRIBUTIONS.map((c) => [c.month, c.emp * 2]));
 
 function SavingsSparkline({ months }) {
   const svgRef = useRef(null);
@@ -228,11 +230,13 @@ export default function SipCard({ fx }) {
     const ind = TRANSACTIONS.filter((t) => t.invested > 0).reduce((s, t) => s + t.invested, 0)
       + exitBuysIn(() => true);
     const fd = fdFlows().reduce((s, f) => s + f.amount, 0);
+    const cmpf = CMPF_CONTRIBUTIONS.reduce((s, c) => s + c.emp * 2, 0);
     const streams = [
-      { label: 'MF', amount: Math.round(mf) },
-      { label: 'US', amount: Math.round(us) },
-      { label: 'IND', amount: Math.round(ind) },
-      { label: 'FD', amount: Math.round(fd) },
+      { label: 'MF',   amount: Math.round(mf) },
+      { label: 'US',   amount: Math.round(us) },
+      { label: 'IND',  amount: Math.round(ind) },
+      { label: 'FD',   amount: Math.round(fd) },
+      { label: 'CMPF', amount: Math.round(cmpf) },
     ].filter((s) => s.amount > 0);
     const out = Math.round(withdrawalsIn(() => true));
     const dates = [
@@ -263,11 +267,13 @@ export default function SipCard({ fx }) {
       + exitBuysIn((dt) => monthKey(dt) === key);
     const fd = fdFlows().filter((f) => monthKey(f.date) === key)
       .reduce((s, f) => s + f.amount, 0);
+    const cmpf = CMPF_MAP[key] || 0;
     const streams = [
-      { label: 'MF', amount: Math.round(mf) },
-      { label: 'US', amount: Math.round(us) },
-      { label: 'IND', amount: Math.round(ind) },
-      { label: 'FD', amount: Math.round(fd) },
+      { label: 'MF',   amount: Math.round(mf) },
+      { label: 'US',   amount: Math.round(us) },
+      { label: 'IND',  amount: Math.round(ind) },
+      { label: 'FD',   amount: Math.round(fd) },
+      { label: 'CMPF', amount: Math.round(cmpf) },
     ].filter((s) => s.amount > 0);
     const gross = streams.reduce((s, x) => s + x.amount, 0);
     const out = Math.round(withdrawalsIn((dt) => monthKey(dt) === key));
@@ -348,7 +354,8 @@ export default function SipCard({ fx }) {
     US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0).reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0) +
     TRANSACTIONS.filter((t) => monthKey(t.date) === key && t.invested > 0).reduce((s, t) => s + t.invested, 0) +
     exitBuysIn((dt) => monthKey(dt) === key) +
-    fdFlows().filter((f) => monthKey(f.date) === key).reduce((s, f) => s + f.amount, 0);
+    fdFlows().filter((f) => monthKey(f.date) === key).reduce((s, f) => s + f.amount, 0) +
+    (CMPF_MAP[key] || 0);
   const srRates = allFys
     ? PAYSLIPS.map((p) => { const g = grossForMonthKey(p.month); return g > 0 ? Math.round(g / p.net * 100) : null; }).filter(Boolean)
     : elapsed.map((m) => { const net = PAYSLIP_MAP[m.key]; return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null; }).filter(Boolean);
