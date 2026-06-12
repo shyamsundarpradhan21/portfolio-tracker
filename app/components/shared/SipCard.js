@@ -386,7 +386,7 @@ export default function SipCard({ fx }) {
           return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: s.color, opacity: .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
         })}
       </div>
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
+      <div className="alloc-leg" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
         {!segs.length ? (
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.map((s) => (
