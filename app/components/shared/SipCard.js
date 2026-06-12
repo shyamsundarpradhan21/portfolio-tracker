@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS, CMPF_CONTRIBUTIONS } from '../../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS, CMPF_CONTRIBUTIONS, CMPF_HATCH } from '../../portfolio';
 import INDIAN_EXITS from '../../../data/indian_exits.json';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
@@ -404,9 +404,7 @@ export default function SipCard({ fx }) {
       <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
         {segs.map((s, i) => {
           const left = segs.slice(0, i).reduce((a, x) => a + x.pct, 0);
-          const bg = s.label === 'CMPF'
-            ? 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)'
-            : s.color;
+          const bg = s.label === 'CMPF' ? CMPF_HATCH : s.color;
           return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: bg, opacity: s.label === 'CMPF' ? 1 : .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
         })}
       </div>
@@ -427,8 +425,7 @@ export default function SipCard({ fx }) {
         )}
         {segs.find((s) => s.label === 'CMPF') && (() => { const c = segs.find((s) => s.label === 'CMPF'); return (
           <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', marginLeft: 'auto' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
-              background: 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)' }} />
+            <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: CMPF_HATCH }} />
             <RsText>{`${c.label} ${inrFull(c.amount)} · ${c.pct}%`}</RsText>
           </span>
         ); })()}

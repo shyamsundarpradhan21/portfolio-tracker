@@ -627,9 +627,12 @@ export const PAYSLIPS = [
 // Same convention as SipCard's STREAM_COLORS. Green is reserved for P&L
 // everywhere else; CMPF (--grn) is the one sanctioned exception, matching
 // its stream colour in the deployment card.
+// CMPF's signature fill: grey/black diagonal hatch (see the deployment card).
+// HTML backgrounds use it directly; SunburstMix maps it to an SVG pattern.
+export const CMPF_HATCH = 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)';
 export const ALLOC_COLORS = {
   indian: 'var(--blu)', us: 'var(--cyn)', fd: 'var(--gld)',
-  mf: 'var(--pur)', elss: 'var(--pnk)', pf: 'var(--grn)',
+  mf: 'var(--pur)', elss: 'var(--pnk)', pf: CMPF_HATCH,
   algo: 'var(--pnk)', // no NW sleeve — kept for completeness
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 // Dual-ring sunburst for the Sector & Cap Mix card. Outer ring = sectors,
 // inner ring = cap mix, both proportional by live value. The centre shows total
@@ -41,6 +41,14 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   const W = 260, cx = 130, cy = 130;
   const fmtAmt = fmtFor(currency);
 
+  // CSS repeating-gradient fills (the CMPF hatch) can't paint SVG paths —
+  // map them to the diagonal-stripe <pattern> below. Legend swatches are
+  // HTML and take the gradient string directly.
+  const pid = useId().replace(/:/g, '');
+  const isHatch = (c) => typeof c === 'string' && c.startsWith('repeating-linear-gradient');
+  const fillOf = (c) => (isHatch(c) ? `url(#sbh${pid})` : c);
+  const inkOf = (c) => (isHatch(c) ? 'var(--txt2)' : c); // text fill fallback
+
   const secVal = sectors.reduce((s, x) => s + (x.val || 0), 0);
   const T = total || secVal;
   const secArcs = ring(sectors.map((s, i) => ({ ...s, color: s.other ? othersColor : secColors[i % secColors.length] })), T, 0.02);
@@ -75,13 +83,20 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto', overflow: 'visible' }}>
+        <defs>
+          {/* CMPF hatch — SVG twin of the CSS repeating-gradient token */}
+          <pattern id={`sbh${pid}`} patternUnits="userSpaceOnUse" width="6.5" height="6.5" patternTransform="rotate(45)">
+            <rect width="6.5" height="6.5" fill="#161616" />
+            <rect width="2.5" height="6.5" fill="#9e9e9e" />
+          </pattern>
+        </defs>
         {/* outer ring — sectors */}
         {secArcs.map((s) => {
           const key = 's:' + s.label;
           return (
-            <path key={key} d={arc(cx, cy, 86, 120, s.a0, s.a1)} fill={s.color} fillOpacity={op(key, 0.92)}
+            <path key={key} d={arc(cx, cy, 86, 120, s.a0, s.a1)} fill={fillOf(s.color)} fillOpacity={op(key, 0.92)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
-              onMouseEnter={() => setHov({ key, label: s.label, val: s.val, pct: s.pct, color: s.color })}
+              onMouseEnter={() => setHov({ key, label: s.label, val: s.val, pct: s.pct, color: inkOf(s.color) })}
               onMouseLeave={() => setHov(null)} />
           );
         })}
@@ -89,9 +104,9 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
         {capArcs.map((c) => {
           const key = 'c:' + c.label;
           return (
-            <path key={key} d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={c.color} fillOpacity={op(key, 0.7)}
+            <path key={key} d={arc(cx, cy, 50, 78, c.a0, c.a1)} fill={fillOf(c.color)} fillOpacity={op(key, 0.7)}
               style={{ transition: 'fill-opacity .15s', cursor: 'pointer' }}
-              onMouseEnter={() => setHov({ key, label: c.label + innerSuffix, val: c.val, pct: c.pct, color: c.color })}
+              onMouseEnter={() => setHov({ key, label: c.label + innerSuffix, val: c.val, pct: c.pct, color: inkOf(c.color) })}
               onMouseLeave={() => setHov(null)} />
           );
         })}
