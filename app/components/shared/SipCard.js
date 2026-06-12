@@ -473,7 +473,7 @@ export default function SipCard({ fx }) {
         )}
         {viewSavingsRate != null && (
           <div className="mini">
-            <div className="lbl">savings rate</div>
+            <div className="lbl">{allFys ? 'savings rate · all-time' : yearView ? 'savings rate · FY avg' : 'savings rate · this month'}</div>
             <div className="vsm acc">{viewSavingsRate}%</div>
           </div>
         )}
@@ -482,10 +482,9 @@ export default function SipCard({ fx }) {
       {/* prose summary */}
       {srMu != null && (
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', lineHeight: 1.6, fontFamily: 'var(--mono)', borderTop: '.5px solid var(--brd2)', paddingTop: 10 }}>
-          Median savings rate <span style={{ color: 'var(--acc)' }}>{srMu}%</span> of take-home
-          {srSd != null && <> · σ <span style={{ color: 'var(--txt2)' }}>{srSd}%</span></>}
-          {srCV != null && <> · CV <span style={{ color: 'var(--txt2)' }}>{srCV}%</span></>}
-          {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside}/{srRates.length}</span> months in band</>}
+          In a typical month <span style={{ color: 'var(--acc)' }}>{srMu}%</span> of take-home is deployed
+          {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside} of {srRates.length}</span> months on track</>}
+          {srCV != null && <> · <span style={{ color: 'var(--txt2)' }}>{srCV}% swing</span> month-to-month</>}
           {srDesc && <> — {srDesc}</>}
         </div>
       )}
