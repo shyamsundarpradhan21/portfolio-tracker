@@ -444,7 +444,7 @@ export default function SipCard({ fx }) {
               <span key={y} onClick={() => pickFY(y)}
                 style={{
                   fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
-                  color: active ? 'var(--acc)' : 'var(--txt3)',
+                  color: active ? 'var(--acc)' : 'var(--txt2)',
                   borderBottom: active ? '1px solid var(--acc)' : '1px solid transparent',
                 }}>
                 {fyLabel(y)}
