@@ -479,7 +479,7 @@ body {
                 0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
   }
 }
-.csm:active, .card:active { transform: scale(0.99); }
+.csm:active { transform: scale(0.99); }
 
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
