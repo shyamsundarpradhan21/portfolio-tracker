@@ -93,27 +93,30 @@ function SavingsSparkline({ months }) {
     ].filter(([v]) => v >= FLOOR && v <= CEILV);
 
     const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
+    const areaPath =
+      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
+      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
+      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
 
     const id = Math.random().toString(36).slice(2);
 
-    // Flat zone shading relative to the 50% reference line only — accent
-    // above (deploying more than half of take-home), red below. No
-    // curve-anchored area fill: the zones carry the meaning, not the line.
-    const gTop = toY(CEILV), gBot = toY(FLOOR);
-
-    // No viewBox — draw in real pixels so text renders at its set size on
-    // any card width (a stale viewBox shrinks-and-centers the whole chart).
     el.removeAttribute('viewBox');
     el.innerHTML = `
       <defs>
         <clipPath id="ab${id}"><rect x="0" y="0" width="${W}" height="${R50.toFixed(1)}"/></clipPath>
         <clipPath id="be${id}"><rect x="0" y="${R50.toFixed(1)}" width="${W}" height="${H}"/></clipPath>
+        <linearGradient id="gG${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${acc}" stop-opacity=".28"/>
+          <stop offset="100%" stop-color="${acc}" stop-opacity=".03"/>
+        </linearGradient>
+        <linearGradient id="gR${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${red}" stop-opacity=".03"/>
+          <stop offset="100%" stop-color="${red}" stop-opacity=".24"/>
+        </linearGradient>
       </defs>
 
-      <rect x="${PAD}" y="${gTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${Math.max(0, R50 - gTop).toFixed(1)}"
-        fill="${acc}" fill-opacity=".05"/>
-      <rect x="${PAD}" y="${R50.toFixed(1)}" width="${gW.toFixed(1)}" height="${Math.max(0, gBot - R50).toFixed(1)}"
-        fill="${red}" fill-opacity=".05"/>
+      <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
+      <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
       <rect x="${PAD}" y="${bTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${(bBot - bTop).toFixed(1)}"
         fill="${acc}" fill-opacity=".07" rx="2"/>
@@ -131,16 +134,12 @@ function SavingsSparkline({ months }) {
 
       ${pts.map((p) => {
         const clipped = p.r > CEILV;
-        const x = toX(p.i).toFixed(1), y = toY(p.r);
-        // Label sits above the dot; if the dot hugs the top edge, drop below.
-        const ly = (y < 14 ? y + 13 : y - 7).toFixed(1);
+        const x = toX(p.i).toFixed(1), y = toY(p.r).toFixed(1);
         return `
-        <circle cx="${x}" cy="${y.toFixed(1)}" r="2.8"
+        <circle cx="${x}" cy="${y}" r="2.8"
           fill="${clipped ? gld : acc}" stroke="#050506" stroke-width="1.5">
           <title>${months[p.i].mn}: ${p.r}%</title>
-        </circle>
-        <text x="${x}" y="${ly}" text-anchor="middle" font-family="var(--mono)"
-          style="font-size:9px" fill="${clipped ? gld : 'var(--txt2)'}">${p.r}</text>`;
+        </circle>`;
       }).join('')}
 
       ${months.map((m, i) => `
@@ -413,7 +412,9 @@ export default function SipCard({ fx }) {
         {!segs.length ? (
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.map((s) => (
-          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
+          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)',
+            color: s.label === 'CMPF' ? 'var(--acc)' : 'var(--txt2)',
+            marginLeft: s.label === 'CMPF' ? 'auto' : undefined }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0,
               background: s.label === 'CMPF'
                 ? 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)'

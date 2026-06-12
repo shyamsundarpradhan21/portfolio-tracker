@@ -77,6 +77,9 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
             </tbody>
           </table>
         </div>
+        <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
+          All FDs are cumulative — interest compounds quarterly and reinvests into principal. Accrued interest is included in your net worth daily. Tax on interest is due on accrual under your slab regardless of when you receive it.
+        </div>
       </div>
 
       <div className="card">

@@ -78,6 +78,9 @@ export default function AlgoTab({
               </div>
             </div>
           </div>
+          <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
+            Day-trading F&amp;O profits are non-speculative business income (Sec 44AB). The loss carryforward pool below absorbs future profits — tracked live as you trade.
+          </div>
         </div>
 
         <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)', display: 'flex', flexDirection: 'column' }}>
@@ -145,6 +148,9 @@ export default function AlgoTab({
               </div>
             </div>
           </div>
+          <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
+            Swing positions held overnight in the delivery book — P&amp;L is STCG (&lt;12m) or LTCG (&gt;12m), not business income. MTM is live from the last NSE tick; gains crystallise only on exit.
+          </div>
         </div>
       </div>
 
@@ -171,6 +177,9 @@ export default function AlgoTab({
               <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
             </div>
           ))}
+        </div>
+        <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
+          Non-speculative losses (Sec 72) carry 8 years and offset only non-speculative business income. Speculative / intraday losses (Sec 73) carry 4 years and offset only speculative income. Both reduce tax payable in the year they are absorbed — they are a real tax asset.
         </div>
       </div>
     </div>

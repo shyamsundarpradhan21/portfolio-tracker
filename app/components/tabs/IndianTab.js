@@ -127,6 +127,9 @@ export default function IndianTab({
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <SunburstMix sectors={inStats.sectors} caps={inStats.caps} total={inStats.value} secColors={SECTOR_PALETTE} capColor={capColor} />
           </div>
+          <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
+            Equal-weight construction — sector tilt follows stock count, not deliberate sizing. Inner ring is NSE-classified market cap. Hover a wedge for weight and live value.
+          </div>
         </div>
       </div>
 
