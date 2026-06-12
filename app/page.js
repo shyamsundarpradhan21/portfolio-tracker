@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
-  ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
+  ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS,
@@ -441,8 +441,17 @@ export default function Page() {
   }, [swing, swSort]);
   const sortSw = (key) => setSwSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'sym' ? 1 : -1 }));
 
+  // Two views of trading P&L:
+  //   ytdRealised — FULL account P&L (tax/CF view: the whole pooled account
+  //                 is taxed in the user's hands, so CF absorption uses it)
+  //   ytdOwn      — the USER'S share only (S01 is pooled with client capital;
+  //                 algoOwnFactor strips the client's profit share). This is
+  //                 the only figure allowed near net worth.
   const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
-  const ytdTotal    = swing.valued ? ytdRealised + swing.pl : null;
+  const ytdOwn      = Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01)) + FY.s02.fy2627.net;
+  const ytdTotal    = swing.valued ? ytdOwn + swing.pl : null;
+  // Account-level total for the Trading tab (its S01/S02 subs are account figures)
+  const ytdAccountTotal = swing.valued ? ytdRealised + swing.pl : null;
   const cfEntering  = Math.abs(FY.carryforward.find((c) => c.accent).val);
   const cfAfterRealised = cfEntering - ytdRealised;
 
@@ -540,7 +549,7 @@ export default function Page() {
         `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
-        `own capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.fy2627.net} S02 +₹${FY.s02.fy2627.net}` +
+        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.fy2627.net} (own share ₹${Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01))}; S01 pools client capital) S02 +₹${FY.s02.fy2627.net}` +
         `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEnteringFY2627 / 1e5).toFixed(2)}L (tax asset)`,
     };
 
@@ -669,7 +678,7 @@ export default function Page() {
     { label: 'US equity', tab: 4, live: markets.nyse,
       val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
-    { label: 'Algo capital', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
+    { label: 'Trading', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,
       sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
   ];
@@ -726,11 +735,11 @@ export default function Page() {
                   <>
                     {' · '}
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + algo capital ${inrFull(STATIC.algo)} + algo FY P&L ${inrFull(Math.round(ytdTotal || 0))} (realised + swing MTM)`}>
-                      incl. algo <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
+                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
+                      incl. trading <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
                     </span>
                   </>
-                ) : <>{' · '}excl. algo</>}
+                ) : <>{' · '}excl. trading</>}
               </div>
             </button>
 
@@ -779,7 +788,7 @@ export default function Page() {
           )}
           {tab === 5 && (
             <AlgoTab swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw}
-              markets={markets} ytdTotal={ytdTotal} ytdRealised={ytdRealised}
+              markets={markets} ytdTotal={ytdAccountTotal} ytdRealised={ytdRealised}
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               ALGO={ALGO} FY={FY} />

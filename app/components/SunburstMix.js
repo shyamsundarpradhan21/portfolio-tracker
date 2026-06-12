@@ -36,7 +36,7 @@ function ring(items, total, pad) {
   });
 }
 
-export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap', centerLabel = 'Deployed' }) {
+export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap' }) {
   const [hov, setHov] = useState(null);
   const W = 260, cx = 130, cy = 130;
   const fmtAmt = fmtFor(currency);
@@ -62,7 +62,9 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
   // Separate currency symbol: it renders in the body font (the mono face has
   // no ₹ glyph) scaled 1.1× to match the mono digits' cap height — same
   // treatment as the global .rs class.
-  const amtStr = fmtAmt(hov ? hov.val : T);
+  // Centre is EMPTY at rest — a resting total would read as "deployed" when
+  // the ring values are live present values; it only speaks on hover.
+  const amtStr = hov ? fmtAmt(hov.val) : '';
   const cm = /^([₹$])(.*)$/.exec(amtStr);
   const symC = cm ? cm[1] : '';
   const numC = cm ? cm[2] : amtStr;
@@ -93,13 +95,13 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
               onMouseLeave={() => setHov(null)} />
           );
         })}
-        {/* centre readout */}
-        <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
-          {symC ? <tspan fontFamily="var(--body)" fontSize="25">{symC}</tspan> : null}
-          <tspan fontFamily="var(--mono)" fontSize="23">{numC}</tspan>
-        </text>
-        {hov ? (
+        {/* centre readout — hover only */}
+        {hov && (
           <>
+            <text x={cx} y={twoLine ? cy - 14 : cy - 3} textAnchor="middle" style={{ fill: 'var(--txt)' }}>
+              {symC ? <tspan fontFamily="var(--body)" fontSize="25">{symC}</tspan> : null}
+              <tspan fontFamily="var(--mono)" fontSize="23">{numC}</tspan>
+            </text>
             <text x={cx} y={twoLine ? cy + 4 : cy + 14} textAnchor="middle"
               style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: hov.color, fontWeight: 700 }}>
               {lines[0]}
@@ -115,11 +117,6 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
               {hov.pct.toFixed(0)}%
             </text>
           </>
-        ) : (
-          <text x={cx} y={cy + 14} textAnchor="middle"
-            style={{ fontSize: 9, letterSpacing: '0.8px', textTransform: 'uppercase', fill: 'var(--txt3)', fontWeight: 700 }}>
-            {centerLabel}
-          </text>
         )}
       </svg>
 

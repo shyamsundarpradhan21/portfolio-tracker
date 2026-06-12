@@ -6,6 +6,9 @@ import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
 import Skel from '../shared/Skel';
 
+// Compact ₹ for capital figures: ₹3.9L / ₹40K — derived from ALGO splits.
+const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
+
 export default function AlgoTab({
   swing, swingSorted, swSort, sortSw, markets,
   ytdTotal, ytdRealised, cfEntering, cfAfterRealised,
@@ -22,8 +25,8 @@ export default function AlgoTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">own capital</div>
-          <div className="vmd"><RsText>{ALGO.summary.deployed}</RsText></div>
-          <div className="sub"><RsText>{ALGO.summary.deployedNote}</RsText></div>
+          <div className="vmd"><RsText>{cap(ALGO.s01.split.own + ALGO.s02.split.own)}</RsText></div>
+          <div className="sub"><RsText>{`S01 ${cap(ALGO.s01.split.own)} + S02 ${cap(ALGO.s02.split.own)} · own capital · excluded from net worth`}</RsText></div>
         </div>
         <div className="csm">
           <div className="lbl">{FY.labels.verifiedLong}</div>
@@ -55,9 +58,9 @@ export default function AlgoTab({
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
-                  <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s01.pool}</RsText></div>
+                  <div className="sub" style={{ margin: 0 }}><RsText>{`Total ${cap(ALGO.s01.split.own + ALGO.s01.split.client)} · Own ${cap(ALGO.s01.split.own)} · Client ${cap(ALGO.s01.split.client)} · 100% own + ${Math.round(ALGO.s01.split.clientProfitShare * 100)}% client profit`}</RsText></div>
                 </div>
-                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s01.deployed}</RsText></div>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{cap(ALGO.s01.split.own)}</RsText></div>
               </div>
             </div>
             <div className="mini">
@@ -96,9 +99,9 @@ export default function AlgoTab({
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
-                  <div className="sub" style={{ margin: 0 }}><RsText>{ALGO.s02.capital}</RsText></div>
+                  <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s02.split.own)} · F&O ${cap(ALGO.s02.book.fno)} + Swing ${cap(ALGO.s02.book.swing)} · user keeps ${Math.round(ALGO.s02.userKeep * 100)}%`}</RsText></div>
                 </div>
-                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{ALGO.s02.deployed}</RsText></div>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--txt)', fontFamily: 'var(--mono)', flexShrink: 0, letterSpacing: '-.5px' }}><RsText>{cap(ALGO.s02.split.own)}</RsText></div>
               </div>
             </div>
             <div className="mini">

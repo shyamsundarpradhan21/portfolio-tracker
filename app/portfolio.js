@@ -313,7 +313,7 @@ export const fdRedemptions = (now = new Date()) => [
 
 // Other static assets and liabilities (INR).
 export const STATIC = {
-  algo: 730000,        // own algo capital = S01 ₹3.9L + S02 ₹3.4L — EXCLUDED from net worth (no daily mark-to-market); tracked on the Algo tab + header card only
+  algo: 0,             // own trading capital — assigned from ALGO.s01/s02 splits below (single source); EXCLUDED from net worth (no daily mark-to-market)
   loan: 750000,        // DEPRECATED — superseded by LOAN below (kept as last-resort fallback)
   // Mutual-fund value is now computed live from MF_FUNDS × NAV (see /api/mf-nav).
   // FD value (principal + accrued interest) is now computed live — see deriveFds.
@@ -430,27 +430,36 @@ export const MF_BENCHMARK = {
 
 // Algo trading strategies. FY financials live in data/fy2526_verified.json
 // (static, ITR-verified). Swing positions below carry live NSE prices.
+// Capital structure is DATA here — every pool/deployed string in the UI and
+// every own-vs-client profit split derives from these numbers.
+// S01 is a POOLED account: the broker P&L includes profit earned on client
+// capital. The user keeps 100% of own-capital profit + clientProfitShare of
+// the client-capital portion (attributed pro-rata by capital). Only that own
+// share may ever touch net-worth-adjacent figures.
 export const ALGO = {
-  summary: {
-    deployed: '₹7.30L',
-    deployedNote: 'S01 ₹3.9L + S02 ₹3.4L · own capital · excluded from net worth',
-  },
   s01: {
     title: 'S01 — Credit Spreads',
     broker: 'Dhan · Zerodha',
     badge: 'Steady income',
-    deployed: '₹3.9L',
-    pool: 'Total ₹6.4L · Own ₹3.9L · Client ₹2.5L · 100% own + 50% client profit',
+    split: { own: 390000, client: 250000, clientProfitShare: 0.5 },
   },
   s02: {
     title: 'S02 — Active F&O + Swing',
     broker: 'Upstox · Fyers',
     badge: 'Profitable',
-    deployed: '₹3.4L',
-    capital: 'Own ₹3.4L · F&O ₹3L + Swing ₹40K · user keeps 70%',
+    split: { own: 340000, client: 0, clientProfitShare: 0 },
+    book: { fno: 300000, swing: 40000 },
+    userKeep: 0.7,
   },
-  poolNote: 'Own capital ₹7.30L (S01 ₹3.9L · S02 ₹3.4L)',
 };
+// User's share of a pooled strategy's P&L (pro-rata by capital, then the
+// profit-share cut on the client slice).
+export const algoOwnFactor = (s) => {
+  const total = s.split.own + s.split.client;
+  return total ? (s.split.own + s.split.client * s.split.clientProfitShare) / total : 1;
+};
+// Own algo capital — the single source the header card / STATIC.algo use.
+STATIC.algo = ALGO.s01.split.own + ALGO.s02.split.own;
 
 // S02 swing book — live NSE prices via /api/quotes (.NS suffix), refreshed on
 // the same 15-min cycle. `cost` = average buy price.
@@ -627,11 +636,25 @@ export const ALLOC_COLORS = {
 export const PROJECTION = {
   inflation: 0.06,       // for the "today's money" real-value deflator
   horizonYears: 30,      // max rolling horizon; the tab offers 1/5/10/30Y within it
+  // Long-run rate anchors each scenario glides to (the live XIRR is only the
+  // starting point — see simMonthly's glide schedule in app/lib/projection.js).
   scenarios: [
     { key: 'cons', label: 'Conservative', rate: 0.09 },
     { key: 'base', label: 'Base case',    rate: 0.12 },
     { key: 'opt',  label: 'Optimistic',   rate: 0.15 },
   ],
+  // Allocation-drift rules, keyed by sleeve key (see the Overview donut keys).
+  //   scale  — grows with the residual (absorbs contributions), share rises
+  //   capped — nominal ceiling (the FD ladder, derived live), share falls
+  //   target — held at a % of total assets
+  // Note: algo capital is excluded from net worth, so it has no sleeve here.
+  allocRules: {
+    indian: { rule: 'scale' },
+    us:     { rule: 'scale' },
+    mf:     { rule: 'scale' },
+    elss:   { rule: 'scale' },
+    fd:     { rule: 'capped', rampYears: 2.5 },
+  },
 };
 
 export const CAT_COLORS = {

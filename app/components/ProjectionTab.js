@@ -12,7 +12,7 @@
 // ∓SPREAD. Native SVG, no libraries.
 
 import { useMemo, useRef, useState, useEffect, memo } from 'react';
-import { PROJECTION } from '../portfolio';
+import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
 
@@ -79,8 +79,8 @@ function RsSvg({ x, y, children, ...rest }) {
 
 const cr = (n) => {
   const a = Math.abs(n);
-  if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + ' Cr';
-  if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + ' L';
+  if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + 'L';
   return '₹' + Math.round(a).toLocaleString('en-IN');
 };
 // ₹ in HTML text: the mono face has no ₹ glyph, so the body-font fallback
@@ -101,7 +101,7 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -136,11 +136,25 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
     return r != null && isFinite(r) && r > -0.5 && r < 2 ? r : null;
   }, [hist]);
 
+  // Each scenario: live starting rate (XIRR ∓ spread) gliding to the
+  // scenario's long-run anchor — see simMonthly for the glide schedule.
   const rates = useMemo(() => {
-    const base = liveXirr ?? FALLBACK_RATE;
-    return { cons: Math.max(0.02, base - SPREAD), base, opt: base + SPREAD };
+    const start = liveXirr ?? FALLBACK_RATE;
+    const longOf = (k) => PROJECTION.scenarios.find((s) => s.key === k)?.rate ?? FALLBACK_RATE;
+    return {
+      cons: { start: Math.max(0.02, start - SPREAD), longRun: longOf('cons') },
+      base: { start, longRun: longOf('base') },
+      opt:  { start: start + SPREAD, longRun: longOf('opt') },
+    };
   }, [liveXirr]);
 
+  const fdCeiling = useMemo(
+    () => FDS.filter((f) => f.status !== 'closed').reduce((a, f) => a + f.principal, 0),
+    [],
+  );
+
+  // allocAt takes an explicit scenario key so it doesn't close over `sc` and
+  // break when sc changes while the model memo hasn't re-run yet.
   const model = useMemo(() => {
     const base = nw || 0;
     const inv0 = invested0 != null ? invested0 : base;
@@ -155,8 +169,34 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
       if (i > 0) crossings.push({ value: target, year: i / 12 });
     }
 
-    return { base, inv0, arr, crossings };
-  }, [nw, MAXY, invested0, rates, projIn]);
+    const assetTotal0 = sleeves.reduce((a, s) => a + (s.value || 0), 0) || (base + loan);
+    const byKey = {}; sleeves.forEach((s) => { byKey[s.key] = s; });
+    const startShare = {}; sleeves.forEach((s) => { startShare[s.key] = (s.value || 0) / assetTotal0; });
+    const scaleKeys = sleeves.filter((s) => (PROJECTION.allocRules[s.key]?.rule || 'scale') === 'scale').map((s) => s.key);
+    const scaleSum = scaleKeys.reduce((a, k) => a + (byKey[k].value || 0), 0) || 1;
+
+    const allocAt = (scKey, y) => {
+      const corpus = arr[scKey].corpus[Math.min(arr[scKey].corpus.length - 1, Math.round(y * 12))];
+      const assets = corpus + loan;
+      const out = {}; let fixed = 0;
+      sleeves.forEach((s) => {
+        const r = PROJECTION.allocRules[s.key] || { rule: 'scale' };
+        if (r.rule === 'capped') {
+          const ceil = r.ceiling != null ? r.ceiling : fdCeiling;
+          out[s.key] = Math.min(ceil, (s.value || 0) + (ceil - (s.value || 0)) * Math.min(1, y / (r.rampYears || 2.5)));
+          fixed += out[s.key];
+        } else if (r.rule === 'target') {
+          const share = startShare[s.key] + (r.target - startShare[s.key]) * Math.min(1, y / (r.rampYears || 4));
+          out[s.key] = Math.max(0, share) * assets; fixed += out[s.key];
+        }
+      });
+      const residual = Math.max(0, assets - fixed);
+      scaleKeys.forEach((k) => { out[k] = residual * ((byKey[k].value || 0) / scaleSum); });
+      return { assets, out };
+    };
+
+    return { base, inv0, arr, crossings, allocAt };
+  }, [nw, loan, sleeves, MAXY, fdCeiling, invested0, rates, projIn]);
 
   const sampleAt = (a, yr) => {
     const m = yr * 12, i = Math.floor(m), f = m - i;
@@ -280,7 +320,15 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
   const maxRow   = growth.find((g) => g.key === 'Max');
   const histGains = liveNw - (lastH.invested ?? model.inv0);
   const xirrPct   = liveXirr != null ? (liveXirr * 100).toFixed(1) : null;
-  const ratePct   = (rates[sc] * 100).toFixed(1);
+  const ratePct   = (rates[sc].start * 100).toFixed(1);
+  const longPct   = (rates[sc].longRun * 100).toFixed(0);
+
+  // Report the drifted allocation upward so the Allocation sunburst card
+  // moves with the scrubbed projection (null = back to live values).
+  useEffect(() => {
+    if (!onDrift) return;
+    onDrift(scrubbing ? { year: baseYear + yr, out: model.allocAt(sc, t).out } : null);
+  }, [onDrift, scrubbing, t, sc, model, baseYear, yr]);
 
   const scHex  = SC_HEX[sc];
   const scTone = SC_META[sc].tone;
@@ -505,7 +553,7 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
                     {SC_META[k].name}
                   </span>
                   <span className="pjx-screte mono">
-                    {(rates[k] * 100).toFixed(1)}% p.a.{k === 'base' && liveXirr != null ? ' · live' : ''}
+                    {(rates[k].start * 100).toFixed(1)}%{k === 'base' && liveXirr != null ? ' live' : ''} → {(rates[k].longRun * 100).toFixed(0)}% long-run
                   </span>
                   <span className="pjx-scval mono"><Crs n={c} /></span>
                   <span className="pjx-scsub mono">×{mult.toFixed(1)} · <Crs n={c / deflate} /> real</span>
@@ -515,7 +563,7 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
           </div>
 
           <div className="pjx-sentence" style={{ '--sentence-clr': scTone }}>
-            At <b>{ratePct}%</b>{sc === 'base' && liveXirr != null && <> — your live XIRR —</>} by {baseYear + yr} the book reaches{' '}
+            Starting at <b>{ratePct}%</b>{sc === 'base' && liveXirr != null && <> — your live XIRR —</>} and easing to <b>{longPct}%</b> long-run, by {baseYear + yr} the book reaches{' '}
             <b style={{ color: scTone }}><Crs n={corpusNow} /></b>, of which <b className="up"><Crs n={growthNow} /></b> is compounding growth on{' '}
             <b><Crs n={investedNow} /></b> put in. In today&rsquo;s purchasing power that&rsquo;s <b><Crs n={corpusNow / deflate} /></b>.
           </div>
@@ -532,11 +580,12 @@ function ProjectionTab({ nw, fx, baseYear, invested0, snapshots, cmpsPension, cm
         </>
       )}
 
-      <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
+      <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6, fontSize: 'var(--fs-sm)' }}>
         Rolling {MAXY}-year window from today&rsquo;s live net worth + <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (your
         trailing-12-month average net deployment) stepping up {(projIn.stepUp * 100).toFixed(1)}%/yr (your
-        payslip take-home growth). Base compounds at your live asset-book XIRR
-        ({xirrPct != null ? `${xirrPct}%` : `building — using ${(FALLBACK_RATE * 100).toFixed(0)}% until ~${Math.round(MIN_HISTORY_DAYS / 30)} months of history`}); Conservative/Optimistic bracket it
+        payslip take-home growth, fading to inflation by year 10). Base starts at your live asset-book XIRR
+        ({xirrPct != null ? `${xirrPct}%` : `building — using ${(FALLBACK_RATE * 100).toFixed(0)}% until ~${Math.round(MIN_HISTORY_DAYS / 30)} months of history`}) and
+        eases to {(rates.base.longRun * 100).toFixed(0)}% long-run by year 15; Conservative/Optimistic bracket it
         at ∓{(SPREAD * 100).toFixed(0)} pts. Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
       </div>
     </div>

@@ -5,7 +5,7 @@
 // live base; the contribution and its annual step-up are DERIVED from the
 // ledgers (below) — never typed in.
 
-import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, fdFlows, fdRedemptions, PAYSLIPS } from '../portfolio';
+import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, fdFlows, fdRedemptions, PAYSLIPS, PROJECTION } from '../portfolio';
 import INDIAN_EXITS from '../../data/indian_exits.json';
 
 // Projection inputs derived from real money movement:
@@ -40,18 +40,32 @@ export function deriveProjInputs(fx) {
   }
   stepUp = Math.min(0.25, Math.max(0, stepUp));
 
-  return { monthly, stepUp };
+  return { monthly, stepUp, inflation: PROJECTION.inflation };
 }
 
-// Monthly series for one rate: corpus[m] / invested[m], m = 0 … months.
-// inp = { monthly, stepUp } from deriveProjInputs.
-export function simMonthly(rate, base, inv0, months, inp) {
-  const mr = rate / 12;
-  let c = base, inv = inv0;
+// Monthly series for one scenario: corpus[m] / invested[m], m = 0 … months.
+// rates = { start, longRun }; inp = deriveProjInputs output.
+//
+// Long-horizon realism — neither today's XIRR nor today's wage growth
+// survives 30 years, so both mean-revert instead of compounding flat:
+//   return  — holds the live starting rate for 5 years, then glides
+//             linearly to the scenario's long-run anchor by year 15
+//   step-up — fades from the derived payslip growth to inflation by year 10
+export function simMonthly(rates, base, inv0, months, inp) {
+  const mr = (m) => {
+    const y = m / 12;
+    const w = y <= 5 ? 0 : y >= 15 ? 1 : (y - 5) / 10;
+    return (rates.start + (rates.longRun - rates.start) * w) / 12;
+  };
+  let c = base, inv = inv0, monthly = inp.monthly;
   const corpus = [c], invested = [inv];
   for (let m = 1; m <= months; m++) {
-    const x = inp.monthly * Math.pow(1 + inp.stepUp, Math.floor((m - 1) / 12));
-    c = c * (1 + mr) + x; inv += x;
+    if (m > 1 && (m - 1) % 12 === 0) {
+      const yIdx = (m - 1) / 12; // completed years
+      const su = inp.stepUp + (inp.inflation - inp.stepUp) * Math.min(1, yIdx / 10);
+      monthly *= 1 + Math.max(0, su);
+    }
+    c = c * (1 + mr(m)) + monthly; inv += monthly;
     corpus.push(c); invested.push(inv);
   }
   return { corpus, invested };

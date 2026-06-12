@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { inrFull, inrC } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import CFMemo from '../shared/CFMemo';
@@ -12,6 +13,9 @@ export default function OverviewTab({
   cmpsPension, cmpsService, cmpsRetirement,
 }) {
   const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+  // Scrubbing the projection reports the drifted allocation here so the
+  // sunburst follows the timeline; null = back to live values.
+  const [drift, setDrift] = useState(null);
 
   return (
     <div>
@@ -19,9 +23,9 @@ export default function OverviewTab({
 
       {/* Live allocation sunburst + growth tracker/projection scrubber */}
       <div className="ov-top">
-        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} />
+        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift} />
         <ProjectionTab
-          nw={Math.round(ov.nw)} fx={fx}
+          nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
           baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
           cmpsPension={cmpsPension} cmpsService={cmpsService} cmpsRetirement={cmpsRetirement}
         />
