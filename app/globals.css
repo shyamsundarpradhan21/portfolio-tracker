@@ -237,7 +237,8 @@ body {
 .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; }
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
 .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: stretch; }
-.g2 > *, .g3 > *, .g4 > *, .mf-g3 > * { min-width: 0; }
+.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: stretch; }
+.g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */

@@ -127,11 +127,6 @@ function SavingsSparkline({ months }) {
 
       <line x1="${PAD}" y1="${bMid.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${bMid.toFixed(1)}"
         stroke="${acc}" stroke-opacity=".5" stroke-width="1.1"/>
-      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(bMid + 3.5).toFixed(1)}"
-        style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".7" font-family="var(--mono)">μ ${Math.round(mu)}%</text>
-      <text x="${(PAD + 2).toFixed(1)}" y="${(bTop - 4).toFixed(1)}"
-        style="font-size:var(--fs-xs)" fill="${acc}" fill-opacity=".5" font-family="var(--mono)">±1σ · CV ${cv}%</text>
-
       <path d="${linePath}" fill="none" stroke="${acc}" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#ab${id})"/>
       <path d="${linePath}" fill="none" stroke="${red}" stroke-width="2"
@@ -329,6 +324,33 @@ export default function SipCard({ fx }) {
   const runRate = avgMo != null ? avgMo * 12 : null;
   const maxMonth = Math.max(...MONTHS.map((m) => Math.abs(m.total)), 1);
 
+  // Savings rate = gross deployed ÷ net take-home, for the selected view
+  const srFor = (ms) => {
+    const net = ms.reduce((s, m) => s + (PAYSLIP_MAP[m.key] || 0), 0);
+    const gross = ms.reduce((s, m) => s + m.gross, 0);
+    return net > 0 ? Math.round(gross / net * 100) : null;
+  };
+  const viewSavingsRate = allFys
+    ? (() => {
+        const net = PAYSLIPS.reduce((s, p) => s + p.net, 0);
+        return net > 0 ? Math.round(allTime.gross / net * 100) : null;
+      })()
+    : yearView
+    ? srFor(elapsed)
+    : mo ? srFor([mo]) : null;
+
+  // FY-level mu/CV for the summary sentence (robust: median + MAD)
+  const srRates = elapsed.map((m) => {
+    const net = PAYSLIP_MAP[m.key];
+    return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null;
+  }).filter(Boolean);
+  const _med = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const srMu = srRates.length ? Math.round(_med(srRates)) : null;
+  const srSd = srRates.length ? Math.round(1.4826 * _med(srRates.map((r) => Math.abs(r - srMu)))) : null;
+  const srCV = srMu ? Math.round(srSd / srMu * 100) : null;
+  const srInside = srRates.filter((r) => r >= srMu - srSd && r <= srMu + srSd).length;
+  const srDesc = srCV == null ? '' : srCV < 30 ? 'steady discipline' : srCV < 60 ? 'moderate variance' : 'lump-sum driven';
+
   const headSub = allFys
     ? `net deployed all-time · ${allTime.months} months`
     : yearView
@@ -430,7 +452,7 @@ export default function SipCard({ fx }) {
       </div>
 
       {/* summary stats — all derived from ledger flows */}
-      <div className={statOut > 0 ? 'g4' : 'g3'}>
+      <div className={viewSavingsRate != null ? (statOut > 0 ? 'g5' : 'g4') : (statOut > 0 ? 'g4' : 'g3')} style={{ marginBottom: 12 }}>
         <div className="mini">
           <div className="lbl">{allFys ? 'net deployed all-time' : 'net deployed'}</div>
           <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{statMonths ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
@@ -449,7 +471,24 @@ export default function SipCard({ fx }) {
             <div className="vsm red"><RsText>{inrFull(statOut)}</RsText></div>
           </div>
         )}
+        {viewSavingsRate != null && (
+          <div className="mini">
+            <div className="lbl">savings rate</div>
+            <div className="vsm acc">{viewSavingsRate}%</div>
+          </div>
+        )}
       </div>
+
+      {/* prose summary */}
+      {srMu != null && (
+        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', lineHeight: 1.6, fontFamily: 'var(--mono)', borderTop: '.5px solid var(--brd2)', paddingTop: 10 }}>
+          Median savings rate <span style={{ color: 'var(--acc)' }}>{srMu}%</span> of take-home
+          {srSd != null && <> · σ <span style={{ color: 'var(--txt2)' }}>{srSd}%</span></>}
+          {srCV != null && <> · CV <span style={{ color: 'var(--txt2)' }}>{srCV}%</span></>}
+          {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside}/{srRates.length}</span> months in band</>}
+          {srDesc && <> — {srDesc}</>}
+        </div>
+      )}
     </div>
   );
 }
