@@ -1,5 +1,12 @@
 {
-  "_note": "Static, ITR-verified F&O figures. INR. Net = Gross - Charges. Update manually from broker statements / ITR. CF figures reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model).",
+  "_note": "Static, ITR-verified F&O figures. INR. Net = Gross - Charges. Update manually from broker statements / ITR. CF figures reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model). labels: every FY name rendered in the UI comes from here — when this file rolls to a new FY, update labels and the whole UI follows.",
+  "labels": {
+    "verified": "FY25-26",
+    "verifiedLong": "FY2025-26",
+    "current": "FY26-27",
+    "currentLong": "FY2026-27",
+    "currentShort": "FY27"
+  },
   "s01": {
     "fy2526": {
       "rows": [
@@ -30,7 +37,9 @@
   "cf": {
     "poolEnteringFY2627": 597318,
     "nonSpec": 513011,
+    "nonSpecSub": "Sec 72 · 8-yr · offsets future F&O profit only",
     "speculative": 84307,
+    "speculativeSub": "Sec 73 · 4-yr · ₹16,958 expires AY28-29 first",
     "stcgCarried": 0,
     "fy2627Realised": 98012,
     "fy2627Swing": 8364,

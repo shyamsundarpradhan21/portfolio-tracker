@@ -414,6 +414,10 @@ export const MF_CASHFLOWS = [
   { date: '2026-03-20', amount: -30000 },
 ];
 
+// Active SIP mandate — a standing instruction, not derivable from the executed
+// cashflows above. All UI/insights prose mentioning the SIP reads from here.
+export const MF_SIP = { platform: 'JioBlackRock', platformShort: 'JioBLK', monthly: 20000, elssLockYears: 3 };
+
 // Long-history Nifty 50 index fund used as the XIRR benchmark counterfactual.
 export const MF_BENCHMARK = {
   name: 'Nifty 50 Index',

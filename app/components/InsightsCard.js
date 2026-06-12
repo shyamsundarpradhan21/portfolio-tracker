@@ -89,7 +89,7 @@ export default function InsightsCard({ stats, swot, loading }) {
       )}
 
       <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
-        From {s.weeks ? s.weeks + '-week' : '~2-year weekly'} returns regressed on Nifty 50: beta is the slope (1.00 = moves with the
+        From {s.weeks ? s.weeks + '-week' : 'recent weekly'} returns regressed on Nifty 50: beta is the slope (1.00 = moves with the
         index), alpha the annualised intercept (0.00 = return fully explained by the market), volatility the annualised σ. SWOT is
         AI-generated each refresh — directional, not advice.
       </div>

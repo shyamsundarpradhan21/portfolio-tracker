@@ -1,9 +1,17 @@
 'use client';
 import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
+import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import SunburstMix from '../SunburstMix';
+
+// '2026-01-13' → '13-Jan-26' (footer prose); pass fullYear for '26-Feb-2027'.
+const dmy = (iso, fullYear = false) => {
+  const d = new Date(iso + 'T00:00:00Z');
+  const y = fullYear ? d.getUTCFullYear() : String(d.getUTCFullYear()).slice(2);
+  return `${d.getUTCDate()}-${d.toLocaleString('en', { month: 'short', timeZone: 'UTC' })}-${y}`;
+};
 
 const platStyle = (p) => p === 'JioBLK'
   ? { background: 'color-mix(in srgb, var(--pur) 14%, transparent)', color: 'var(--pur)' }
@@ -219,17 +227,31 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
           </table>
         </div>
         <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
-          JioBlackRock: <Rs />20K/mo SIP active — seeded <Rs />20K (13-Jan-26) + <Rs />30K (20-Mar-26). Zerodha ELSS: 3-yr lock-in, unlocks 26-Feb-2027.
+          {(() => {
+            const jioDates = new Set(MF_FUNDS.filter((f) => f.platform === MF_SIP.platformShort).map((f) => f.bought));
+            const seeds = MF_CASHFLOWS.filter((c) => jioDates.has(c.date));
+            const elss = MF_FUNDS.find((f) => f.id === 'elss');
+            const unlock = elss ? dmy(`${+elss.bought.slice(0, 4) + MF_SIP.elssLockYears}${elss.bought.slice(4)}`, true) : null;
+            return (
+              <>
+                {MF_SIP.platform}: <Rs />{Math.round(MF_SIP.monthly / 1000)}K/mo SIP active
+                {seeds.length > 0 && <> — seeded {seeds.map((c, i) => (
+                  <span key={c.date}>{i > 0 && ' + '}<Rs />{Math.round(-c.amount / 1000)}K ({dmy(c.date)})</span>
+                ))}</>}.
+                {elss && <> Zerodha ELSS: {MF_SIP.elssLockYears}-yr lock-in, unlocks {unlock}.</>}
+              </>
+            );
+          })()}
         </div>
       </div>
 
       <CFMemo
-        title="MF Redemption Tax — FY25-26 Capital Gains"
+        title={`MF Redemption Tax — ${FY.labels.verified} Capital Gains`}
         rows={[
-          { label: 'FY25-26 MF redemptions', val: 'Nil', color: 'var(--txt2)', sub: FY.cf.cg2526.mfStcgNote },
-          { label: 'STCG loss carried into FY26-27', val: '₹0', color: 'var(--grn)', sub: FY.cf.stcgNote },
+          { label: `${FY.labels.verified} MF redemptions`, val: FY.cf.cg2526.mfStcg === 0 ? 'Nil' : '+₹' + FY.cf.cg2526.mfStcg.toLocaleString('en-IN'), color: 'var(--txt2)', sub: FY.cf.cg2526.mfStcgNote },
+          { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
-        foot="No redemptions this FY — no MF capital-gains event. ELSS units stay locked 3 years from each SIP date; gains crystallise only on redemption."
+        foot={`${FY.cf.cg2526.mfStcg === 0 ? `No redemptions in ${FY.labels.verified} — no MF capital-gains event.` : `${FY.labels.verified} redemptions taxed as capital gains.`} ELSS units stay locked ${MF_SIP.elssLockYears} years from each SIP date; gains crystallise only on redemption.`}
       />
     </div>
   );

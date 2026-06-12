@@ -16,7 +16,7 @@ export default function AlgoTab({
     <div>
       <InsightBanner text={insightsOn ? insights?.algo : null} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <FreshnessTag mode="manual" date="FY25-26 ITR-verified · swing live" />
+        <FreshnessTag mode="manual" date={`${FY.labels.verified} ITR-verified · swing live`} />
       </div>
 
       <div className="g3 sec">
@@ -26,12 +26,12 @@ export default function AlgoTab({
           <div className="sub"><RsText>{ALGO.summary.deployedNote}</RsText></div>
         </div>
         <div className="csm">
-          <div className="lbl">FY 2025-26</div>
+          <div className="lbl">{FY.labels.verifiedLong}</div>
           <div className={'vmd ' + cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></div>
           <div className="sub">net realised · ITR-verified</div>
         </div>
         <div className="csm">
-          <div className="lbl">FY26-27 YTD</div>
+          <div className="lbl">{FY.labels.current} YTD</div>
           <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <SInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
           <div className="sub">
             S01 <span className={cl(FY.s01.fy2627.net)}><SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
@@ -62,16 +62,16 @@ export default function AlgoTab({
             </div>
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                FY2025-26 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
+                {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
               </div>
               <BrokerTable data={FY.s01.fy2526} />
             </div>
-            <YtdFno label={`FY2026-27 YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
+            <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
             <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                CF absorption — FY26-27 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
+                CF absorption — {FY.labels.current} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
               </div>
-              <div className="fxc"><span style={{ color: 'var(--txt2)' }}>CF entering FY26-27</span><span className="red mono"><SInrF n={-cfEntering} /></span></div>
+              <div className="fxc"><span style={{ color: 'var(--txt2)' }}>CF entering {FY.labels.current}</span><span className="red mono"><SInrF n={-cfEntering} /></span></div>
               <div className="fxc" style={{ marginTop: 8 }}><span style={{ color: 'var(--txt2)' }}>Realised F&amp;O YTD (S01 + S02)</span><span className="grn mono"><SInrF n={ytdRealised} /></span></div>
               <div className="fxc" style={{ marginTop: 10, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
                 <span style={{ color: 'var(--txt2)' }}>CF remaining</span><span className="red mono"><SInrF n={-cfAfterRealised} /></span>
@@ -103,11 +103,11 @@ export default function AlgoTab({
             </div>
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                FY2025-26 <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
+                {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
               </div>
               <BrokerTable data={FY.s02.fy2526} />
             </div>
-            <YtdFno label={`FY2026-27 YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
+            <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                 Swing positions{' '}
@@ -156,7 +156,7 @@ export default function AlgoTab({
 
       <div className="csm sec">
         <span style={{ color: 'var(--txt2)' }}>
-          FY25-26 combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
+          {FY.labels.verified} combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
           Charges: <span className="red"><RsText>{inrFull(FY.combined2526.charges)}</RsText></span> ·
           Net F&amp;O (Sch BP): <span className={cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></span>
           {'  '}<span className="mut">(S01 <SInrF n={FY.s01.fy2526.total.net} /> · S02 <SInrF n={FY.s02.fy2526.total.net} />)</span>
@@ -165,7 +165,7 @@ export default function AlgoTab({
 
       <div className="card">
         <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-          F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified · entering FY26-27</span>
+          F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>{`ITR-verified · entering ${FY.labels.current}`}</span>
         </div>
         <div className="g4">
           {FY.carryforward.map((c) => (

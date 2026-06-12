@@ -7,13 +7,20 @@
 // Scrubbing: today seam slides left, projection fan unfolds right; C/B/O
 // are tabs — active = bold solid line + scenario-tinted fill, inactive = dotted.
 //
-// Base rate = live money-weighted XIRR from snapshots (fallback: 12% until
-// ~3 months of history). Cons/Opt bracket at ∓3 pts. Native SVG, no libraries.
+// Base rate = live money-weighted XIRR from snapshots (fallback: the base
+// scenario rate until MIN_HISTORY_DAYS of history). Cons/Opt bracket at
+// ∓SPREAD. Native SVG, no libraries.
 
 import { useMemo, useRef, useState, useEffect, memo } from 'react';
 import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly } from '../lib/projection';
 import { xirr } from '../lib/calc';
+
+// Single source for the numbers quoted in the footer caveat — the XIRR gate,
+// the pre-history fallback rate and the Cons/Opt bracket all read from here.
+const MIN_HISTORY_DAYS = 90;
+const SPREAD = 0.03;
+const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?? 0.12;
 
 // Raw hex values — needed for SVG linearGradient stopColor (CSS vars don't
 // work inside SVG stop elements in all browsers).
@@ -87,7 +94,7 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
   const liveXirr = useMemo(() => {
     if (hist.length < 2) return null;
     const first = hist[0], last = hist[hist.length - 1];
-    if (ms(last.d) - ms(first.d) < 90 * 864e5) return null;
+    if (ms(last.d) - ms(first.d) < MIN_HISTORY_DAYS * 864e5) return null;
     const cfs = [{ date: new Date(first.d), amount: -(first.invested || 0) }];
     let prev = first.invested || 0;
     for (let i = 1; i < hist.length; i++) {
@@ -101,9 +108,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
   }, [hist]);
 
   const rates = useMemo(() => {
-    const fallback = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?? 0.12;
-    const base = liveXirr ?? fallback;
-    return { cons: Math.max(0.02, base - 0.03), base, opt: base + 0.03 };
+    const base = liveXirr ?? FALLBACK_RATE;
+    return { cons: Math.max(0.02, base - SPREAD), base, opt: base + SPREAD };
   }, [liveXirr]);
 
   // allocAt takes an explicit scenario key so it doesn't close over `sc` and
@@ -540,8 +546,8 @@ function ProjectionTab({ nw, loan, sleeves, baseYear, invested0, snapshots, cmps
       <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
         Rolling {MAXY}-year window from today&rsquo;s live net worth + ₹{PROJECTION.monthly.toLocaleString('en-IN')}/mo stepping
         up {(PROJECTION.stepUp * 100).toFixed(0)}%/yr. Base compounds at your live asset-book XIRR
-        ({xirrPct != null ? `${xirrPct}%` : 'building — using 12% until ~3 months of history'}); Conservative/Optimistic bracket it
-        at ∓3 pts. Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
+        ({xirrPct != null ? `${xirrPct}%` : `building — using ${(FALLBACK_RATE * 100).toFixed(0)}% until ~${Math.round(MIN_HISTORY_DAYS / 30)} months of history`}); Conservative/Optimistic bracket it
+        at ∓{(SPREAD * 100).toFixed(0)} pts. Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
       </div>
     </div>
   );

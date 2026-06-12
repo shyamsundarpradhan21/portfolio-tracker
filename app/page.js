@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, UNITS_AS_OF,
+  INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
   ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
@@ -523,7 +523,7 @@ export default function Page() {
         `${INDIAN.length} stocks ₹${L(indian.inv)}→₹${L(indian.val)} · XIRR ${r1(inStats.portXirr)}% vs ${inStats.benchmarks[0]?.label || 'benchmark'} ${r1(inStats.benchmarks[0]?.xirr)}% · ` +
         `top sector ${inStats.topSector ? `${inStats.topSector.label} ${r1(inStats.topSector.pct)}%` : 'n/a'} · ` +
         `largest ${inStats.topPos ? `${inStats.topPos.sym} ${r1((inStats.topPos.val / (indian.val || 1)) * 100)}% of book` : 'n/a'} · ` +
-        `movers: ${movers(indian.rows, 'pct')} · CAVEAT ~5-month window, indicative`,
+        `movers: ${movers(indian.rows, 'pct')} · CAVEAT ${inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} window, indicative`,
       indianRisk: indianRisk.hasReg
         ? `beta ${indianRisk.beta?.toFixed(2)} · alpha ${indianRisk.alpha?.toFixed(2)} · vol ${r1(indianRisk.vol)}% vs Nifty ${r1(indianRisk.mktVol)}% (weekly regression)`
         : 'n/a',
@@ -534,13 +534,14 @@ export default function Page() {
       mutualFunds:
         `invested ₹${Math.round(mf.totCost)} value ₹${Math.round(mf.totVal)} (${r1(mf.totRet)}%) · XIRR ${r1(mfx.port)}% vs Nifty ${r1(mfx.bench)}% · ` +
         `mix equity ${r1((mf.alloc.equity / (mf.totVal || 1)) * 100)}% arbitrage ${r1((mf.alloc.arbitrage / (mf.totVal || 1)) * 100)}% · ` +
-        `SIP ₹20K/mo JioBLK, ELSS locked to Feb-27 · CAVEAT very small base + short window`,
+        `SIP ₹${Math.round(MF_SIP.monthly / 1000)}K/mo ${MF_SIP.platformShort}` +
+        `${(() => { const e = MF_FUNDS.find((f) => f.id === 'elss'); if (!e) return ''; const d = new Date(e.bought + 'T00:00:00Z'); return `, ELSS locked to ${d.toLocaleString('en', { month: 'short', timeZone: 'UTC' })}-${String(d.getUTCFullYear() + MF_SIP.elssLockYears).slice(2)}`; })()} · CAVEAT very small base + short window`,
       fixedDeposits:
         `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
-        `own capital ₹7.3L (off-NW) · FY27 realised S01 +₹${FY.s01.fy2627.net} S02 +₹${FY.s02.fy2627.net}` +
-        `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹5.97L (tax asset)`,
+        `own capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.fy2627.net} S02 +₹${FY.s02.fy2627.net}` +
+        `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEnteringFY2627 / 1e5).toFixed(2)}L (tax asset)`,
     };
 
     // Coarse hash — regenerate only on a material move or a new calendar day.
@@ -667,7 +668,7 @@ export default function Page() {
       sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
     { label: 'Algo capital', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily)',
       val: <InrC n={STATIC.algo} />,
-      sub: ytdTotal != null ? <>FY27 <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
+      sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
