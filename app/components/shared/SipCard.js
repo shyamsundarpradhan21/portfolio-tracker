@@ -418,8 +418,8 @@ export default function SipCard({ fx }) {
       </div>
 
       <div className="fxc" style={{ marginBottom: 8, gap: 14 }}>
-        {/* FY year chips — dim with the zone */}
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0, opacity: allFys ? 0.22 : 1, transition: 'opacity .3s ease', pointerEvents: allFys ? 'none' : 'auto' }}>
+        {/* FY year chips — dim when overall active but stay clickable so user can exit */}
+        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0, opacity: allFys ? 0.35 : 1, transition: 'opacity .3s ease' }}>
           {FYS.map((y) => {
             const active = y === fySel && !allFys;
             return (
@@ -445,7 +445,7 @@ export default function SipCard({ fx }) {
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16, opacity: allFys ? 0.22 : 1, filter: allFys ? 'blur(0.3px)' : 'none', transition: 'opacity .3s ease, filter .3s ease', pointerEvents: allFys ? 'none' : 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16, opacity: allFys ? 0.22 : 1, filter: allFys ? 'blur(0.3px)' : 'none', transition: 'opacity .3s ease, filter .3s ease' }}>
         {MONTHS.map((m, i) => {
           const bg = m.state === 'planned' ? 'var(--brd2)' : m.total < 0 ? 'var(--red)' : m.total ? 'var(--acc)' : 'var(--sur2)';
           const op = m.state === 'planned' ? 1 : m.total ? Math.max(.4, Math.abs(m.total) / maxMonth) : .35;

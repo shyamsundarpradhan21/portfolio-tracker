@@ -472,16 +472,17 @@ body {
 }
 /* Guard hover effects behind pointer-fine so touch taps don't stick */
 @media (hover: hover) and (pointer: fine) {
-  .csm:hover, .card:hover {
+  .csm:hover {
     transform: scale(1.005);
     border-color: color-mix(in srgb, var(--acc) 22%, var(--brd2));
     box-shadow: 0 8px 28px -10px rgba(0, 0, 0, .65),
                 0 0 0 .5px color-mix(in srgb, var(--acc) 14%, transparent);
   }
 }
-/* Press feedback only on elements that explicitly declare cursor:pointer —
-   cards and containers are excluded since they set no cursor. */
-[style*="cursor: pointer"]:active:not(.card):not(.csm) { transform: scale(0.95); transition: transform 0.08s ease; }
+/* Press feedback only on HTML elements that explicitly declare cursor:pointer.
+   Excludes SVG paths/circles (SunburstMix segments) which transform from
+   top-left origin and would look broken. Cards/containers have no inline cursor. */
+:is(div, span, a, button, li)[style*="cursor: pointer"]:active:not(.card):not(.csm) { transform: scale(0.95); transition: transform 0.08s ease; }
 .csm:active { transform: scale(0.98); transition: transform 0.08s ease; }
 
 /* the headline net-worth value shimmers using the current tab's accent color */
@@ -525,7 +526,7 @@ body {
 
 /* twinkling sparkle next to the live label */
 .spark {
-  display: inline-block; margin-left: 6px;
+  display: inline-block; margin-left: 2px;
   animation: twinkle 2.4s ease-in-out infinite;
 }
 @keyframes twinkle {
@@ -792,7 +793,7 @@ body { padding: 0; }
 /* Always one row of 5 — on narrow screens the row scrolls sideways rather
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
-  display: grid; grid-template-columns: repeat(5, minmax(148px, 1fr)); gap: 10px;
+  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 10px;
   overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
 }
 .hdr-cards::-webkit-scrollbar { display: none; }
@@ -800,7 +801,7 @@ body { padding: 0; }
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
   border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
-  border-radius: 12px; padding: 10px 13px;
+  border-radius: 12px; padding: 8px 11px;
   transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -950,8 +951,8 @@ body { padding: 0; }
 
 /* ── Count-up: NW hero entrance (once per load) — fades in from slight blur */
 @keyframes heroReveal {
-  from { opacity: 0; filter: blur(3px); transform: translateY(6px); }
-  to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .hdr-val-enter {
   animation: heroReveal 600ms cubic-bezier(0.16,1,0.3,1) both;
