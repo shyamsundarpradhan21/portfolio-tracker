@@ -24,7 +24,7 @@
 // Output: [{ d, nw, assets, invested, synth: true }] — callers must only use
 // dates BEFORE the first real snapshot; real dailies always win.
 
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, loanOutstanding } from '../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, LOAN, loanOutstanding } from '../portfolio';
 import { cmpfCorpus } from './cmpf';
 import US_TRADES from '../../data/us_trades.json';
 import INDIAN_EXITS from '../../data/indian_exits.json';
@@ -146,7 +146,17 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
     }
     const pf = cmpfCorpus(d);
     const invested = flows.filter((f) => f.date <= d).reduce((s, f) => s + f.inr, 0);
-    const assets = Math.round(ind + us + mf + fd + pf);
+    // Undeployed loan cash: borrowing is NW-neutral (cash asset = liability),
+    // but the ledgers only see the liability until the cash is deployed —
+    // without this the curve craters by the principal on disbursement day.
+    // Post-disbursement deployments are assumed to consume loan cash first.
+    let loanCash = 0;
+    if (d >= LOAN.open && loanOutstanding(d) > 0) {
+      const deployedSince = flows.filter((f) => f.date > LOAN.open && f.date <= d && f.inr > 0)
+        .reduce((s, f) => s + f.inr, 0);
+      loanCash = Math.max(0, LOAN.sanctioned - deployedSince);
+    }
+    const assets = Math.round(ind + us + mf + fd + pf + loanCash);
     return { d, nw: assets - loanOutstanding(d), assets, invested: Math.round(invested), synth: true };
   });
 }
