@@ -711,6 +711,14 @@ export default function Page() {
               </div>
               <div className="page-header-sub">
                 Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
+                {indian.valued && usdInr && (
+                  // CMPF is the largest sleeve yet has no header card — flag it
+                  // inline so the Assets figure is self-explanatory.
+                  <span style={{ whiteSpace: 'nowrap' }}
+                    title={`Indian ${inrFull(Math.round(indian.val))} + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
+                    {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
+                  </span>
+                )}
                 {' · '}Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
                 {indian.valued && usdInr ? (
                   // Atomic chunk: wraps to the next line whole, never splitting
