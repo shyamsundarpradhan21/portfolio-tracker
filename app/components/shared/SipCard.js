@@ -117,9 +117,6 @@ function SavingsSparkline({ months }) {
       <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
       <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
 
-      <rect x="${PAD}" y="${bTop.toFixed(1)}" width="${gW.toFixed(1)}" height="${(bBot - bTop).toFixed(1)}"
-        fill="${acc}" fill-opacity=".07" rx="2"/>
-
       ${refs.map(([v, col, lop, , dash]) => `
         <line x1="${PAD}" y1="${toY(v).toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${toY(v).toFixed(1)}"
           stroke="${col}" stroke-opacity="${lop}" stroke-width="1" stroke-dasharray="${dash}"/>`).join('')}
@@ -438,7 +435,7 @@ export default function SipCard({ fx }) {
 
       <div className="fxc" style={{ marginBottom: 8, gap: 14 }}>
         {/* FY year chips — dim when overall active but stay clickable so user can exit */}
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0, opacity: allFys ? 0.35 : 1, transition: 'opacity .3s ease' }}>
+        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0 }}>
           {FYS.map((y) => {
             const active = y === fySel && !allFys;
             return (
@@ -517,7 +514,7 @@ export default function SipCard({ fx }) {
           {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside} of {srRates.length}</span> months on track</>}
           {srCV != null && <> · <span style={{ color: 'var(--txt2)' }}>{srCV}% swing</span> month-to-month</>}
           {srDesc && <> — {srDesc}</>}
-          {(() => { const c = viewStreams.find((s) => s.label === 'CMPF'); return c ? <> · <RsText>{`${inrFull(c.amount)} CMPF alongside`}</RsText> (pre-tax, incl. employer match)</> : null; })()}
+          {(() => { const c = viewStreams.find((s) => s.label === 'CMPF'); return c ? <> · <span style={{ color: STREAM_COLORS.CMPF }}><RsText>{`${inrFull(c.amount)} CMPF alongside`}</RsText></span> (pre-tax, incl. employer match)</> : null; })()}
         </div>
       )}
     </div>
