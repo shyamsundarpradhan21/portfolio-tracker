@@ -56,7 +56,7 @@ const RANGES = [
 ];
 const MILESTONES = [1e7, 2e7, 5e7, 1e8];
 const RETIRE_ISO = '2055-03-31';
-const W = 1100, H = 300, PADL = 46, PADR = 14, PADT = 26, PADB = 22;
+const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 26, PADB = 22;
 
 // ₹ label for SVG <text>: the rupee glyph lives in Source Sans (body font),
 // not in JetBrains Mono. We render it as a <tspan> with the body font so the
@@ -356,7 +356,19 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', marginTop: 10, display: 'block' }}>
+      <div style={{ position: 'relative', marginTop: 10 }}>
+      {/* methodology explainer lives INSIDE the chart's empty upper-left;
+          hidden while scrubbing (the fan + legend need the space) */}
+      {!scrubbing && (
+        <div className="pjx-explain">
+          Rolling {MAXY}-year window from today&rsquo;s live net worth + <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo
+          (trailing-12-month avg net deployment) stepping up {(projIn.stepUp * 100).toFixed(1)}%/yr (payslip growth, fading to
+          inflation by yr 10). Base starts at live XIRR{xirrPct != null ? ` (${xirrPct}%)` : ''}, easing
+          to {(rates.base.longRun * 100).toFixed(0)}% long-run; Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts.
+          Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
+        </div>
+      )}
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         <defs>
           {/* history NW fill — always green (real growth) */}
           <linearGradient id="pjx-nwfill" x1="0" y1="0" x2="0" y2="1">
@@ -471,6 +483,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             fontWeight="700" textAnchor="end" fontFamily="var(--mono)">{baseYear + yr}</text>
         )}
       </svg>
+      </div>
 
       {/* scrub rail — fill color tracks the active scenario */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
@@ -508,13 +521,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                 {/* deltas against live NW are meaningless while a sleeve is unpriced */}
                 {dataReady ? (
                   <>
+                    {/* no +/− prefixes — direction is colour-coded (up/dn) */}
                     <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                      {g.chg >= 0 ? '+' : '−'}<Crs n={g.chg} />
+                      <Crs n={g.chg} />
                     </span>
                     <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
                       {g.key === 'Max' && xirrPct != null
                         ? `XIRR ${xirrPct}%`
-                        : `${g.pct >= 0 ? '+' : '−'}${Math.abs(g.pct).toFixed(2)}%`}
+                        : `${Math.abs(g.pct).toFixed(2)}%`}
                     </span>
                   </>
                 ) : (
@@ -529,10 +543,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
 
           {maxRow && dataReady && (
             <div className="pjx-sentence">
-              You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}>{maxRow.chg >= 0 ? '+' : '−'}<Crs n={maxRow.chg} /></b> since {monYr(hist[0].d)} —{' '}
+              You&rsquo;ve grown <b className={maxRow.chg >= 0 ? 'up' : 'dn'}><Crs n={maxRow.chg} /></b> since {monYr(hist[0].d)} —{' '}
               {histGains >= 0
-                ? <><b className="up">+<Crs n={histGains} /></b> of today&rsquo;s book is all-time market gains on <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>
-                : <>today&rsquo;s book sits <b className="dn">−<Crs n={histGains} /></b> below the <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>}
+                ? <><b className="up"><Crs n={histGains} /></b> of today&rsquo;s book is all-time market gains on <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>
+                : <>today&rsquo;s book sits <b className="dn"><Crs n={histGains} /></b> below the <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed</>}
               {xirrPct != null && <>, compounding at <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}.
             </div>
           )}
@@ -580,14 +594,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </>
       )}
 
-      <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6, fontSize: 'var(--fs-sm)' }}>
-        Rolling {MAXY}-year window from today&rsquo;s live net worth + <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (your
-        trailing-12-month average net deployment) stepping up {(projIn.stepUp * 100).toFixed(1)}%/yr (your
-        payslip take-home growth, fading to inflation by year 10). Base starts at your live asset-book XIRR
-        ({xirrPct != null ? `${xirrPct}%` : `building — using ${(FALLBACK_RATE * 100).toFixed(0)}% until ~${Math.round(MIN_HISTORY_DAYS / 30)} months of history`}) and
-        eases to {(rates.base.longRun * 100).toFixed(0)}% long-run by year 15; Conservative/Optimistic bracket it
-        at ∓{(SPREAD * 100).toFixed(0)} pts. Inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values. Indicative, not advice.
-      </div>
     </div>
   );
 }

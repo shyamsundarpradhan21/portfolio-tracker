@@ -8,8 +8,23 @@
 // it cross-device we'd persist to a backend (e.g. Vercel KV/Blob) instead — the
 // read/write surface here (getSnapshots / recordSnapshot) is the seam for that.
 
+import SNAP_MD from '../../data/SNAPSHOT.md';
+
 const KEY = 'nwTracker.snapshots';
 const CAP = 800; // ~2+ years of daily points
+
+// data/SNAPSHOT.md — committed, human-edited historical figures. Rows are
+// authoritative for their dates: they override the synthetic backfill and
+// feed the live XIRR. Parsed from the markdown table: | date | nw | assets | invested |
+const num = (s) => { const n = +String(s || '').replace(/[,₹\s]/g, ''); return Number.isFinite(n) && n > 0 ? n : null; };
+export function historicalSnapshots() {
+  return SNAP_MD.split('\n')
+    .map((l) => l.match(/^\|\s*(\d{4}-\d{2}-\d{2})\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/))
+    .filter(Boolean)
+    .map((m) => ({ d: m[1], nw: num(m[2]), assets: num(m[3]) ?? undefined, invested: num(m[4]) ?? undefined }))
+    .filter((s) => s.nw != null)
+    .sort((a, b) => (a.d < b.d ? -1 : 1));
+}
 
 // Largest deposit-adjusted day-over-day NW move accepted as real. A diversified
 // book doesn't move 30% in a day — but it does exactly that when a quote batch

@@ -12,7 +12,7 @@ import FY from '../data/fy2526_verified.json';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
-import { getSnapshots, recordSnapshot } from './lib/snapshots';
+import { getSnapshots, recordSnapshot, historicalSnapshots } from './lib/snapshots';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE } from './lib/cmps';
@@ -627,10 +627,23 @@ export default function Page() {
     return () => { dead = true; };
   }, []);
   const chartSnapshots = useMemo(() => {
+    // Past precedence: SNAPSHOT.md (committed, human-verified) overrides the
+    // synthetic backfill near its dates; the browser's daily snapshots win
+    // from their first recorded day. Missing invested fills forward so the
+    // XIRR never sees a phantom withdrawal.
+    const md = historicalSnapshots();
     const synth = buildBackfill(hist?.series, fxHist, usdInr, mfNav);
-    if (!synth.length) return snapshots;
     const firstReal = snapshots[0]?.d;
-    return [...synth.filter((s) => !firstReal || s.d < firstReal), ...snapshots];
+    const mdDates = new Set(md.map((s) => s.d));
+    const near = (d) => { const t = new Date(d + 'T00:00:00Z').getTime(); return md.some((h) => Math.abs(new Date(h.d + 'T00:00:00Z').getTime() - t) < 4 * 864e5); };
+    const past = [...synth.filter((s) => !mdDates.has(s.d) && !near(s.d)), ...md]
+      .filter((s) => !firstReal || s.d < firstReal)
+      .sort((a, b) => (a.d < b.d ? -1 : 1));
+    let lastInv = 0;
+    return [...past, ...snapshots].map((s) => {
+      if (s.invested == null) return { ...s, invested: lastInv };
+      lastInv = s.invested; return s;
+    });
   }, [hist, fxHist, usdInr, snapshots, mfNav]);
   useEffect(() => {
     // US readiness checked explicitly: usdInr arrives with the INDIAN quote
