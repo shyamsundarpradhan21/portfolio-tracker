@@ -53,7 +53,8 @@ function SavingsSparkline({ months }) {
     if (pts.length < 2) { el.innerHTML = ''; return; }
 
     const maxR = Math.max(130, ...pts.map((p) => p.r + 10));
-    const toY = (r) => gH - (Math.min(r, maxR) / maxR) * gH + 4;
+    // Log scale — compresses spikes, gives resolution to the 0-100% range
+    const toY = (r) => gH - (Math.log(Math.min(r, maxR) + 1) / Math.log(maxR + 1)) * gH + 4;
     const toX = (i) => PAD + (i / (months.length - 1)) * gW;
 
     const R30  = toY(30);
