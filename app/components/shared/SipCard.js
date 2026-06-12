@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions } from '../../portfolio';
+import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS } from '../../portfolio';
 import INDIAN_EXITS from '../../../data/indian_exits.json';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
@@ -21,6 +21,102 @@ import INDIAN_EXITS from '../../../data/indian_exits.json';
 // Each stream wears its own tab's accent: MF violet, IND sapphire, US cyan,
 // FD gold — uniform with the rest of the dashboard.
 const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)' };
+
+// Build a lookup from PAYSLIPS: { 'YYYY-MM': netPay }
+const PAYSLIP_MAP = Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net]));
+
+function SavingsSparkline({ months }) {
+  const svgRef = useRef(null);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const W = el.clientWidth || 600;
+    const H = 88, PAD = 14, RPAD = 42;
+    const gW = W - PAD - RPAD;
+    const gH = H - 18;
+
+    // Compute rates: deployed gross ÷ net pay, uncapped
+    const pts = months.map((m, i) => {
+      const netPay = PAYSLIP_MAP[m.key];
+      if (!netPay || m.gross === 0) return null;
+      const r = Math.round((m.gross / netPay) * 100);
+      return { i, r };
+    }).filter(Boolean);
+
+    if (pts.length < 2) { el.innerHTML = ''; return; }
+
+    const maxR = Math.max(130, ...pts.map((p) => p.r + 10));
+    const toY = (r) => gH - (Math.min(r, maxR) / maxR) * gH + 4;
+    const toX = (i) => PAD + (i / (months.length - 1)) * gW;
+
+    const R30  = toY(30);
+    const R50  = toY(50);
+    const R100 = toY(100);
+
+    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
+    const areaPath =
+      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
+      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
+      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
+
+    const id = Math.random().toString(36).slice(2);
+
+    el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    el.innerHTML = `
+      <defs>
+        <clipPath id="ab${id}"><rect x="0" y="0" width="${W}" height="${R50.toFixed(1)}"/></clipPath>
+        <clipPath id="be${id}"><rect x="0" y="${R50.toFixed(1)}" width="${W}" height="${H}"/></clipPath>
+        <linearGradient id="gG${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#34D399" stop-opacity=".22"/>
+          <stop offset="100%" stop-color="#34D399" stop-opacity=".02"/>
+        </linearGradient>
+        <linearGradient id="gR${id}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#F87171" stop-opacity=".02"/>
+          <stop offset="100%" stop-color="#F87171" stop-opacity=".22"/>
+        </linearGradient>
+      </defs>
+
+      <path d="${areaPath}" fill="url(#gG${id})" clip-path="url(#ab${id})"/>
+      <path d="${areaPath}" fill="url(#gR${id})" clip-path="url(#be${id})"/>
+
+      <line x1="${PAD}" y1="${R30.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R30.toFixed(1)}"
+        stroke="rgba(52,211,153,.28)" stroke-width="1" stroke-dasharray="3,5"/>
+      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R30 + 3.5).toFixed(1)}"
+        font-size="8.5" fill="rgba(52,211,153,.45)" font-family="monospace">30%</text>
+
+      <line x1="${PAD}" y1="${R50.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R50.toFixed(1)}"
+        stroke="rgba(52,211,153,.6)" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R50 + 3.5).toFixed(1)}"
+        font-size="8.5" fill="rgba(52,211,153,.8)" font-family="monospace">50%</text>
+
+      <line x1="${PAD}" y1="${R100.toFixed(1)}" x2="${(W - RPAD).toFixed(1)}" y2="${R100.toFixed(1)}"
+        stroke="rgba(232,168,87,.55)" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="${(W - RPAD + 5).toFixed(1)}" y="${(R100 + 3.5).toFixed(1)}"
+        font-size="8.5" fill="rgba(232,168,87,.75)" font-family="monospace">100%</text>
+
+      <path d="${linePath}" fill="none" stroke="#34D399" stroke-width="2"
+        stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#ab${id})"/>
+      <path d="${linePath}" fill="none" stroke="#F87171" stroke-width="2"
+        stroke-linejoin="round" stroke-linecap="round" opacity=".85" clip-path="url(#be${id})"/>
+
+      ${pts.map((p) => `
+        <circle cx="${toX(p.i).toFixed(1)}" cy="${toY(p.r).toFixed(1)}" r="2.8"
+          fill="#34D399" stroke="#050506" stroke-width="1.5">
+          <title>${months[p.i].mn}: ${p.r}%</title>
+        </circle>`).join('')}
+
+      ${months.map((m, i) => `
+        <text x="${toX(i).toFixed(1)}" y="${(H - 1).toFixed(1)}"
+          font-size="7" fill="rgba(255,255,255,.18)" text-anchor="middle"
+          font-family="monospace">${m.mn}</text>`).join('')}
+    `;
+  }, [months]);
+
+  return (
+    <svg ref={svgRef} style={{ width: '100%', display: 'block', overflow: 'visible', marginBottom: 14 }} height={88} />
+  );
+}
 const monthKey = (d) => d.slice(0, 7);
 const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
 // Indian FY: Apr–Mar. fyOf('2026-02-…') → 2025 (i.e. FY 25-26).
@@ -235,6 +331,9 @@ export default function SipCard({ fx }) {
           </span>
         )}
       </div>
+
+      {/* Savings-rate sparkline — sits between allocation and deployment */}
+      <SavingsSparkline months={MONTHS} />
 
       {/* FY chips — every year the ledgers touch; the active one drives the
           grid. No-wrap + scroll so the row stays one line however many years
