@@ -251,9 +251,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     raf.current = requestAnimationFrame(tick);
   };
 
-  if (hist.length < 2) return null;
-
+  // Report the drifted allocation upward so the Allocation sunburst card
+  // moves with the scrubbed projection (null = back to live values).
+  // MUST sit above the early return below — hooks can't be conditional.
   const scrubbing = t > 0.001;
+  useEffect(() => {
+    if (!onDrift) return;
+    onDrift(scrubbing ? { year: baseYear + Math.round(t), out: model.allocAt(sc, t).out } : null);
+  }, [onDrift, scrubbing, t, sc, model, baseYear]);
+
+  if (hist.length < 2) return null;
   const first = pts[0], lastH = pts[pts.length - 1];
   const histMs = Math.max(864e5, ms(lastH.d) - ms(first.d));
   const futMs = t * YEAR_MS;
@@ -322,13 +329,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const xirrPct   = liveXirr != null ? (liveXirr * 100).toFixed(1) : null;
   const ratePct   = (rates[sc].start * 100).toFixed(1);
   const longPct   = (rates[sc].longRun * 100).toFixed(0);
-
-  // Report the drifted allocation upward so the Allocation sunburst card
-  // moves with the scrubbed projection (null = back to live values).
-  useEffect(() => {
-    if (!onDrift) return;
-    onDrift(scrubbing ? { year: baseYear + yr, out: model.allocAt(sc, t).out } : null);
-  }, [onDrift, scrubbing, t, sc, model, baseYear, yr]);
 
   const scHex  = SC_HEX[sc];
   const scTone = SC_META[sc].tone;
