@@ -388,6 +388,15 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <stop offset="0%" stopColor={scHex} stopOpacity=".18" />
             <stop offset="100%" stopColor={scHex} stopOpacity="0" />
           </linearGradient>
+          {/* seam handoff — the active projected line leaves TODAY in the tab
+             accent (the history line's colour) and eases into its scenario
+             colour, so history and projection read as ONE continuous curve */}
+          <linearGradient id="pjx-handoff" gradientUnits="userSpaceOnUse"
+            x1={xToday} y1="0" x2={W - PADR} y2="0">
+            <stop offset="0%" stopColor={SC_HEX.acc} />
+            <stop offset="28%" stopColor={scHex} />
+            <stop offset="100%" stopColor={scHex} />
+          </linearGradient>
         </defs>
 
         {/* grid + y labels — use RsSvg so ₹ renders in body font */}
@@ -433,8 +442,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <path d={futPaths.inv} fill="none" stroke="var(--txt3)" strokeWidth="1.3" strokeDasharray="3 4" />
             {['cons', 'base', 'opt'].map((k) => (
               <path key={k} d={futPaths[k]} fill="none"
-                stroke={SC_META[k].tone}
-                strokeWidth={sc === k ? 2.8 : 1.6}
+                stroke={sc === k ? 'url(#pjx-handoff)' : SC_META[k].tone}
+                strokeWidth={sc === k ? 2.2 : 1.6}
                 strokeDasharray={sc === k ? 'none' : '5 4'}
                 opacity={sc === k ? 1 : 0.5}
                 strokeLinejoin="round" />
