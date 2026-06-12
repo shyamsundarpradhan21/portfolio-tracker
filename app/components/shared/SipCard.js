@@ -324,7 +324,9 @@ export default function SipCard({ fx }) {
   const runRate = avgMo != null ? avgMo * 12 : null;
   const maxMonth = Math.max(...MONTHS.map((m) => Math.abs(m.total)), 1);
 
-  // Savings rate = gross deployed ÷ net take-home, for the selected view
+  // Savings rate = gross deployed ÷ net take-home.
+  // Always FY-level (or all-time) — never scoped to a single month so it
+  // stays consistent with the other four minis which also show FY context.
   const srFor = (ms) => {
     const net = ms.reduce((s, m) => s + (PAYSLIP_MAP[m.key] || 0), 0);
     const gross = ms.reduce((s, m) => s + m.gross, 0);
@@ -335,16 +337,21 @@ export default function SipCard({ fx }) {
         const net = PAYSLIPS.reduce((s, p) => s + p.net, 0);
         return net > 0 ? Math.round(allTime.gross / net * 100) : null;
       })()
-    : yearView
-    ? srFor(elapsed)
-    : mo ? srFor([mo]) : null;
+    : srFor(elapsed); // same for both month-drill and FY view
 
-  // FY-level mu/CV for the summary sentence (robust: median + MAD)
-  const srRates = elapsed.map((m) => {
-    const net = PAYSLIP_MAP[m.key];
-    return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null;
-  }).filter(Boolean);
+  // Summary sentence stats (robust: median + MAD).
+  // When "overall" is active, compute across every payslip month in the ledger.
+  // Otherwise use the selected FY's elapsed months only.
   const _med = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const grossForMonthKey = (key) =>
+    MF_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.amount < 0).reduce((s, c) => s - c.amount, 0) +
+    US_CASHFLOWS.filter((c) => monthKey(c.date) === key && c.invested > 0).reduce((s, c) => s + c.invested * (rateFor(fxHist, c.date) ?? fx), 0) +
+    TRANSACTIONS.filter((t) => monthKey(t.date) === key && t.invested > 0).reduce((s, t) => s + t.invested, 0) +
+    exitBuysIn((dt) => monthKey(dt) === key) +
+    fdFlows().filter((f) => monthKey(f.date) === key).reduce((s, f) => s + f.amount, 0);
+  const srRates = allFys
+    ? PAYSLIPS.map((p) => { const g = grossForMonthKey(p.month); return g > 0 ? Math.round(g / p.net * 100) : null; }).filter(Boolean)
+    : elapsed.map((m) => { const net = PAYSLIP_MAP[m.key]; return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null; }).filter(Boolean);
   const srMu = srRates.length ? Math.round(_med(srRates)) : null;
   const srSd = srRates.length ? Math.round(1.4826 * _med(srRates.map((r) => Math.abs(r - srMu)))) : null;
   const srCV = srMu ? Math.round(srSd / srMu * 100) : null;
@@ -403,14 +410,16 @@ export default function SipCard({ fx }) {
         )}
       </div>
 
-      {/* Savings-rate sparkline — sits between allocation and deployment */}
-      <SavingsSparkline months={MONTHS} />
+      {/* FY-scoped zone: sparkline + FY chips + month grid.
+          Dims when "overall" is active — this data is per-FY only.
+          "overall" chip stays outside so it's always tappable. */}
+      <div style={{ opacity: allFys ? 0.22 : 1, filter: allFys ? 'blur(0.3px)' : 'none', transition: 'opacity .3s ease, filter .3s ease', pointerEvents: allFys ? 'none' : 'auto' }}>
+        <SavingsSparkline months={MONTHS} />
+      </div>
 
-      {/* FY chips — every year the ledgers touch; the active one drives the
-          grid. No-wrap + scroll so the row stays one line however many years
-          accumulate. Clicking a chip (or "overall") shows the year aggregate. */}
       <div className="fxc" style={{ marginBottom: 8, gap: 14 }}>
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0 }}>
+        {/* FY year chips — dim with the zone */}
+        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none', minWidth: 0, opacity: allFys ? 0.22 : 1, transition: 'opacity .3s ease', pointerEvents: allFys ? 'none' : 'auto' }}>
           {FYS.map((y) => {
             const active = y === fySel && !allFys;
             return (
@@ -425,6 +434,7 @@ export default function SipCard({ fx }) {
             );
           })}
         </div>
+        {/* overall chip — always live, never dimmed */}
         <span onClick={() => setSel('all')}
           style={{
             fontSize: 'var(--fs-xs)', textTransform: 'uppercase', letterSpacing: '.08em', cursor: 'pointer', flex: '0 0 auto',
@@ -434,7 +444,8 @@ export default function SipCard({ fx }) {
           overall
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16 }}>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginBottom: 16, opacity: allFys ? 0.22 : 1, filter: allFys ? 'blur(0.3px)' : 'none', transition: 'opacity .3s ease, filter .3s ease', pointerEvents: allFys ? 'none' : 'auto' }}>
         {MONTHS.map((m, i) => {
           const bg = m.state === 'planned' ? 'var(--brd2)' : m.total < 0 ? 'var(--red)' : m.total ? 'var(--acc)' : 'var(--sur2)';
           const op = m.state === 'planned' ? 1 : m.total ? Math.max(.4, Math.abs(m.total) / maxMonth) : .35;
@@ -451,29 +462,29 @@ export default function SipCard({ fx }) {
         })}
       </div>
 
-      {/* summary stats — all derived from ledger flows */}
+      {/* summary stats — minis always show FY or all-time context, never single-month */}
       <div className={viewSavingsRate != null ? (statOut > 0 ? 'g5' : 'g4') : (statOut > 0 ? 'g4' : 'g3')} style={{ marginBottom: 12 }}>
         <div className="mini">
-          <div className="lbl">{allFys ? 'net deployed all-time' : 'net deployed'}</div>
+          <div className="lbl">{allFys ? 'net deployed all-time' : mo ? 'net deployed · this FY' : 'net deployed'}</div>
           <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{statMonths ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">avg / mo</div>
+          <div className="lbl">{mo ? 'avg / mo · this FY' : 'avg / mo'}</div>
           <div className="vsm">{avgMo != null ? <RsText>{inrFull(avgMo)}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">run-rate (annualised)</div>
+          <div className="lbl">{mo ? 'run-rate · this FY' : 'run-rate (annualised)'}</div>
           <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
         </div>
         {statOut > 0 && (
           <div className="mini">
-            <div className="lbl">withdrawn</div>
+            <div className="lbl">{mo ? 'withdrawn · this FY' : 'withdrawn'}</div>
             <div className="vsm red"><RsText>{inrFull(statOut)}</RsText></div>
           </div>
         )}
         {viewSavingsRate != null && (
           <div className="mini">
-            <div className="lbl">{allFys ? 'savings rate · all-time' : yearView ? 'savings rate · FY avg' : 'savings rate · this month'}</div>
+            <div className="lbl">{allFys ? 'savings rate · all-time' : 'savings rate · FY avg'}</div>
             <div className="vsm acc">{viewSavingsRate}%</div>
           </div>
         )}
@@ -482,7 +493,8 @@ export default function SipCard({ fx }) {
       {/* prose summary */}
       {srMu != null && (
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)', lineHeight: 1.6, fontFamily: 'var(--mono)', borderTop: '.5px solid var(--brd2)', paddingTop: 10 }}>
-          In a typical month <span style={{ color: 'var(--acc)' }}>{srMu}%</span> of take-home is deployed
+          {allFys ? <>Across all FYs </> : <>In a typical month </>}
+          <span style={{ color: 'var(--acc)' }}>{srMu}%</span> of take-home is deployed
           {srRates.length > 1 && <> · <span style={{ color: 'var(--txt2)' }}>{srInside} of {srRates.length}</span> months on track</>}
           {srCV != null && <> · <span style={{ color: 'var(--txt2)' }}>{srCV}% swing</span> month-to-month</>}
           {srDesc && <> — {srDesc}</>}
