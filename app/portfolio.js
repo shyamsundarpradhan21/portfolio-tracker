@@ -621,10 +621,16 @@ export const PAYSLIPS = [
   { month: '2026-05', net: 117452 },
 ];
 
-// Donut allocation colors (Overview) — aligned to the shared theme palette.
+// Allocation colors — each sleeve wears its own TAB's accent family via the
+// theme tokens (Indian sapphire --blu, US cyan --cyn, FD gold --gld, MF
+// violet --pur), so the charts follow the day/night palette automatically.
+// Same convention as SipCard's STREAM_COLORS. Green is reserved for P&L
+// everywhere else; CMPF (--grn) is the one sanctioned exception, matching
+// its stream colour in the deployment card.
 export const ALLOC_COLORS = {
-  algo: '#E8A857', fd: '#5B9BE8', indian: '#34D399',
-  us: '#F87171', mf: '#9B8AFB', elss: '#E85F8F', pf: '#22D3EE',
+  indian: 'var(--blu)', us: 'var(--cyn)', fd: 'var(--gld)',
+  mf: 'var(--pur)', elss: 'var(--pnk)', pf: 'var(--grn)',
+  algo: 'var(--pnk)', // no NW sleeve — kept for completeness
 };
 
 // Forward net-worth projection inputs (rolling horizons — no fixed target year).
