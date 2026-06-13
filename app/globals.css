@@ -679,15 +679,18 @@ body {
 
 /* CMPS pension banner — shows near retirement flag */
 .pjx-cmps-banner {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  /* label flexes (wraps within its own column when the card is narrow), value
+     stays pinned right + baseline-aligned — never orphaned on its own line */
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+  column-gap: 10px; row-gap: 4px;
   margin-top: 10px; padding: 10px 14px; border-radius: 10px;
   background: color-mix(in srgb, var(--acc) 8%, var(--sur2));
   border: .5px solid color-mix(in srgb, var(--acc) 30%, transparent);
 }
 .pjx-cmps-label { font-size: var(--fs-2xs); font-family: var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--acc); font-weight: 700; }
-.pjx-cmps-val { font-family: var(--mono); font-size: var(--fs-lg); font-weight: 700; color: var(--txt); margin-left: auto; }
+.pjx-cmps-val { font-family: var(--mono); font-size: var(--fs-lg); font-weight: 700; color: var(--txt); justify-self: end; white-space: nowrap; }
 .pjx-cmps-val small { font-size: var(--fs-2xs); color: var(--txt2); margin-left: 2px; }
-.pjx-cmps-sub { font-size: var(--fs-2xs); color: var(--txt3); width: 100%; }
+.pjx-cmps-sub { font-size: var(--fs-2xs); color: var(--txt3); grid-column: 1 / -1; }
 
 /* ₹ inside the pjx card: keep the global 1.1em cap-height match (1em made it
    read SMALLER than the mono digits) — just calm the weight next to bold. */
