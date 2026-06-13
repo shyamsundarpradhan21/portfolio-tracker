@@ -56,10 +56,10 @@ const RANGES = [
   { key: 'D', days: 1 }, { key: 'W', days: 7 }, { key: 'M', days: 30 },
   { key: 'Y', days: 365 }, { key: 'Max', days: null },
 ];
-// Celebratory net-worth ladder — each round number the journey crosses earns
-// a flag on the curve (1L, 10L, 1Cr, 10Cr, 50Cr). Levels already behind us, or
-// beyond the horizon, simply don't get planted.
-const MILESTONES = [1e5, 1e6, 1e7, 1e8, 5e8];
+// Celebratory net-worth ladder — each round number the journey crosses earns a
+// star on the curve (1L, 10L, 50L, 1Cr, 5Cr, 10Cr, 50Cr, 100Cr). Levels behind
+// us become history stars; those ahead unfurl as the projection is scrubbed.
+const MILESTONES = [1e5, 1e6, 5e6, 1e7, 5e7, 1e8, 5e8, 1e9];
 const RETIRE_ISO = '2055-03-31';
 const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 40, PADB = 22;
 
@@ -75,7 +75,7 @@ const niceMax = (v) => {
 // SVG <text> sizes are viewBox user-space (W=1100) and scale with the rendered
 // width, so they can't be the rem --fs-* tokens directly. Centralised here
 // (≈ the --fs scale at a typical render) instead of inline literals.
-const SVG_FS = { grid: 13.5, label: 13, caption: 12, value: 20, flag: 13 };
+const SVG_FS = { grid: 15, label: 14.5, caption: 13, value: 21, flag: 14.5 };
 
 // ₹ label for SVG <text>: the rupee glyph lives in Source Sans (body font),
 // not in JetBrains Mono. We render it as a <tspan> with the body font so the
@@ -119,6 +119,42 @@ const crShort = (n) => {
 const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
+
+// One milestone flag: a twinkling ★ planted ON the curve where a net-worth
+// level is reached (the star IS the marker — no separate dot), with a value·date
+// chip and a faint rule back to the axis so low crossings don't read as zero.
+// Shared by the achieved-history stars and the future projection ladder.
+function MilestoneFlag({ cx, cy, label, tone, idx, blink = true }) {
+  const lw = label.length * 7.5 + 16;
+  // keep the chip clear of the top edge and the top-right scrub tooltip (which
+  // occupies y ≈ PADT+6 … PADT+76 — high crossings near it drop below instead)
+  const nearTip = cx > W - PADR - 250 && cy < PADT + 112;
+  const below = cy < PADT + 40 || nearTip;
+  const lx = Math.max(PADL, Math.min(W - PADR - lw, cx - lw / 2));
+  const ly = below ? cy + 14 : cy - 31;
+  const ty = ly + 12.8;
+  return (
+    <g>
+      <line x1={PADL} y1={cy} x2={cx} y2={cy} stroke={tone}
+        strokeOpacity=".15" strokeDasharray="2 4" strokeWidth="1" />
+      <rect x={lx} y={ly} width={lw} height="18" rx="5" fill="var(--bg)"
+        stroke={tone} strokeOpacity=".55" strokeWidth=".75" />
+      <RsSvg x={lx + lw / 2} y={ty} fontSize={SVG_FS.flag} fill={tone}
+        fontWeight="700" textAnchor="middle" fontFamily="var(--mono)">{label}</RsSvg>
+      {/* the ★ sits on the curve itself — the celebratory event marker. It only
+          twinkles for not-yet-reached (projected) levels; an achieved milestone
+          settles to a solid star (staggered begin so a cluster doesn't pulse in unison) */}
+      <text x={cx} y={cy} fontSize="17" fill={tone} fontWeight="700"
+        textAnchor="middle" dominantBaseline="central">
+        ★
+        {blink && (
+          <animate attributeName="opacity" values="1;.3;1" dur="1.9s"
+            begin={`${idx * 0.5}s`} repeatCount="indefinite" />
+        )}
+      </text>
+    </g>
+  );
+}
 
 function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsRetirement, dataReady = true }) {
   const [t, setT] = useState(0);
@@ -246,6 +282,19 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       return { key: r.key, chg, pct };
     });
   }, [hist, nw, invested0]);
+
+  // Net-worth levels already crossed in the recorded history — planted as stars
+  // on the growth curve so the past wins are celebrated too (the future ladder
+  // lives on the projection). Only levels we've actually reached qualify.
+  const histCrossings = useMemo(() => {
+    if (!hist.length) return [];
+    const out = [];
+    for (const target of MILESTONES) {
+      const i = hist.findIndex((s) => (s.nw ?? 0) >= target);
+      if (i >= 0) out.push({ value: target, d: hist[i].d });
+    }
+    return out;
+  }, [hist]);
 
   const pts = useMemo(() => {
     if (!hist.length) return [];
@@ -401,7 +450,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           the transition. Rate model lives in the footnote, not here. */}
       {scrubbing && (
         <div className="pjx-explain">
-          By {baseYear + yr} <b><Crs n={corpusNow} /></b> = <b><Crs n={investedNow} /></b> deployed + <b className="up"><Crs n={growthNow} /></b> growth · <b><Crs n={corpusNow / deflate} /></b> in today&rsquo;s money
+          By {baseYear + yr} <b><Crs n={corpusNow} /></b> = <b><Crs n={investedNow} /></b> deployed + <b className="up"><Crs n={growthNow} /></b> market growth
         </div>
       )}
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
@@ -465,6 +514,15 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           {cr(first.nw ?? 0)}
         </RsSvg>
 
+        {/* achieved milestones — stars on the history curve (at rest), the past
+            wins; they fill the sparse upper-left and set up the future ladder */}
+        {!scrubbing && histCrossings
+          .filter((c) => ms(c.d) >= ms(first.d))
+          .map((c, i) => (
+            <MilestoneFlag key={'h' + c.value} cx={xHist(c.d)} cy={Y(c.value)}
+              label={`${crShort(c.value)}·${c.d.slice(0, 4)}`} tone="var(--acc)" idx={i} blink={false} />
+          ))}
+
         {/* TODAY seam */}
         <line x1={xToday} y1={PADT - 12} x2={xToday} y2={H - PADB + 6}
           stroke="var(--acc)" strokeOpacity=".45" strokeWidth="1"
@@ -503,43 +561,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                 strokeLinejoin="round" />
             ))}
 
-            {/* milestone flags — celebrate each round number the journey reaches:
-                a chip planted where the active curve crosses that net-worth level,
-                with a faint threshold rule back to the axis so low crossings don't
-                read as "zero". The ★ twinkles. Revealed as you scrub past each. */}
-            {model.crossings[sc].filter((c) => c.year <= t).map((c, i) => {
-              const cx = xFut(c.year), cy = Y(c.value);
-              const label = `${crShort(c.value)} · ${baseYear + Math.round(c.year)}`;
-              const lw = (label.length + 2.5) * 6.8 + 12;   // room for the leading ★
-              // keep the chip clear of the top edge and the top-right tooltip
-              const nearTip = cx > W - PADR - 250 && cy < PADT + 92;
-              const below = cy < PADT + 34 || nearTip;
-              const lx = Math.max(PADL, Math.min(W - PADR - lw, cx - lw / 2));
-              const ly = below ? cy + 10 : cy - 26;
-              const ty = ly + 12.6;
-              return (
-                <g key={c.value}>
-                  <line x1={PADL} y1={cy} x2={cx} y2={cy} stroke={scTone}
-                    strokeOpacity=".16" strokeDasharray="2 4" strokeWidth="1" />
-                  <line x1={cx} y1={cy} x2={cx} y2={below ? cy + 9 : cy - 9}
-                    stroke={scTone} strokeOpacity=".5" strokeWidth="1" />
-                  <circle cx={cx} cy={cy} r="3.4" fill={scTone} stroke="var(--bg)" strokeWidth="1.6" />
-                  <rect x={lx} y={ly} width={lw} height="18" rx="5" fill="var(--bg)"
-                    stroke={scTone} strokeOpacity=".55" strokeWidth=".75" />
-                  {/* the star twinkles — staggered so the flags don't blink in unison */}
-                  <text x={lx + 9} y={ty} fontSize={SVG_FS.flag} fill={scTone}
-                    fontWeight="700" textAnchor="middle">
-                    ★
-                    <animate attributeName="opacity" values="1;.25;1" dur="1.9s"
-                      begin={`${i * 0.5}s`} repeatCount="indefinite" />
-                  </text>
-                  <RsSvg x={lx + 17} y={ty} fontSize={SVG_FS.flag} fill={scTone}
-                    fontWeight="700" textAnchor="start" fontFamily="var(--mono)">
-                    {label}
-                  </RsSvg>
-                </g>
-              );
-            })}
+            {/* milestone ladder — each round number the active curve reaches gets
+                a twinkling ★ on the line plus a value·year chip; revealed one by
+                one as you scrub past each crossing */}
+            {model.crossings[sc].filter((c) => c.year <= t).map((c, i) => (
+              <MilestoneFlag key={c.value} cx={xFut(c.year)} cy={Y(c.value)}
+                label={`${crShort(c.value)}·${baseYear + Math.round(c.year)}`}
+                tone={scTone} idx={i} />
+            ))}
 
             {/* retirement flag */}
             {showRetire && (
@@ -577,14 +606,17 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
 
       {/* scrub rail — fill color tracks the active scenario */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
-        <button onClick={onPlay} className="pj-play" style={{ '--play-clr': scTone }}
+        {/* at rest the button wears the tab accent (the growth view's colour);
+            once scrubbing it adopts the scrubber/scenario tone to match the rail */}
+        <button onClick={onPlay} className="pj-play"
+          style={{ '--play-clr': scrubbing ? scTone : 'var(--acc)' }}
           aria-label={playing ? 'Pause' : 'Play projection'}>
           {playing ? '❚❚' : t >= MAXY ? '↻' : '▶'}
         </button>
         <div className="pj-year">{baseYear + yr}<small>{yr === 0 ? 'today' : `year ${yr}`}</small></div>
         <div className="pjx-rail">
           <input type="range" min="0" max={MAXY} step="0.1" value={t} onInput={onScrub}
-            className="pj-range" style={{ width: '100%', '--p': `${(t / MAXY) * 100}%`, '--range-clr': scTone }}
+            className="pj-range" style={{ width: '100%', '--p': `${(t / MAXY) * 100}%`, '--range-clr': scrubbing ? scTone : 'var(--acc)' }}
             aria-label="Projection year" />
           <div className="pjx-notches">
             {/* milestones now ride the chart as flags; the rail keeps only the
@@ -644,8 +676,12 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                     <i className={sc === k ? 'pjx-solid' : 'pjx-dotted'} />
                     {SC_META[k].name}
                   </span>
-                  <span className="pjx-scval mono"><Crs n={c} /></span>
-                  <span className="pjx-scsub mono">≈ <Crs n={c / deflate} /> real</span>
+                  {/* nominal + inflation-adjusted on one line: real value sits
+                      in () at a smaller size so it fills the row instead of a
+                      second line */}
+                  <span className="pjx-scval mono">
+                    <Crs n={c} /> <span className="pjx-screal"><Crs of={`(${cr(c / deflate)})`} /></span>
+                  </span>
                 </button>
               );
             })}

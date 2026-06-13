@@ -22,6 +22,15 @@ value** — never a string literal.
   `"~3 months"`, `"~2-year"`, `"~5-month"`) must reference the constant
   the simulation actually uses, or the live computed stat.
 
+### Sign via colour, not +/- glyphs
+Direction (gain/loss, deploy/withdraw, above/below) is conveyed by **colour** —
+`var(--grn)` / `var(--red)` (the `.up`/`.dn`, `.grn`/`.red` classes) — **never**
+a leading `+` or `−` glyph on the figure. A value like `₹74,128` renders green
+for a deposit, red for a withdrawal; no `+₹74,128`. If a metric only makes sense
+as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
+instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
++ Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
+
 ### Deep cleanse = exhaustive sweep
 "Fix all" means scan every file in `app/` for every variant of the pattern,
 not just the ones flagged. When one instance of a hardcoded string is found,

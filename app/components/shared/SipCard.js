@@ -328,12 +328,20 @@ export default function SipCard({ fx }) {
         .sort((a, b) => (a.label === 'CMPF') - (b.label === 'CMPF'))
     : [];
 
-  // Minis follow the view: all-time when "overall", else the selected FY
-  const statTot    = allFys ? allTime.total : fyTot; // net
-  const statOut    = allFys ? allTime.out   : fyOut;
+  // Minis follow the view: all-time when "overall", a single month when one is
+  // picked, else the selected FY — mirroring how the header + composition bar
+  // already re-scope on click. avg/run-rate have no single-month meaning, so a
+  // month view drops them for "share of FY" (an absolute, unsigned figure) —
+  // direction is always carried by colour (grn/red), never a +/- glyph.
+  const monthView  = !!mo;
+  const statTot    = allFys ? allTime.total : monthView ? mo.total : fyTot; // net
+  const statOut    = allFys ? allTime.out   : monthView ? mo.out   : fyOut;
   const statMonths = allFys ? allTime.months : elapsed.length;
-  const avgMo = statMonths ? Math.round(statTot / statMonths) : null;
+  // avg/run-rate stay FY (or all-time) scoped — never divided by a single month
+  const avgMo   = statMonths ? Math.round((allFys ? allTime.total : fyTot) / statMonths) : null;
   const runRate = avgMo != null ? avgMo * 12 : null;
+  // month-view context: this month's share of the FY's gross deployment
+  const shareFy = monthView && !planned && fyGross ? Math.round(mo.gross / fyGross * 100) : null;
   const maxMonth = Math.max(...MONTHS.map((m) => Math.abs(m.total)), 1);
 
   // Savings rate = gross deployed ÷ net take-home.
@@ -349,7 +357,9 @@ export default function SipCard({ fx }) {
         const net = PAYSLIPS.reduce((s, p) => s + p.net, 0);
         return net > 0 ? Math.round(allTime.gross / net * 100) : null;
       })()
-    : srFor(elapsed); // same for both month-drill and FY view
+    : monthView
+    ? (PAYSLIP_MAP[mo.key] > 0 && mo.gross > 0 ? Math.round(mo.gross / PAYSLIP_MAP[mo.key] * 100) : null)
+    : srFor(elapsed); // FY view
 
   // Summary sentence stats (robust: median + MAD).
   // When "overall" is active, compute across every payslip month in the ledger.
@@ -483,29 +493,37 @@ export default function SipCard({ fx }) {
         })}
       </div>
 
-      {/* summary stats — minis always show FY or all-time context, never single-month */}
-      <div className={viewSavingsRate != null ? (statOut > 0 ? 'g5' : 'g4') : (statOut > 0 ? 'g4' : 'g3')} style={{ marginBottom: 12 }}>
+      {/* summary stats — re-scope to the selected view (all-time / month / FY).
+          A month drops the multi-month avg + run-rate for "share of FY"; every
+          figure carries its sign through colour (grn/red), never a +/- glyph. */}
+      <div className={'g' + ((monthView ? 2 : 3) + (statOut > 0 ? 1 : 0) + (viewSavingsRate != null ? 1 : 0))} style={{ marginBottom: 12 }}>
         <div className="mini">
-          <div className="lbl">{allFys ? 'net deployed all-time' : mo ? 'net deployed · this FY' : 'net deployed'}</div>
-          <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{statMonths ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
+          <div className="lbl">{allFys ? 'net deployed all-time' : monthView ? `net · ${mo.mn} ’${mo.yy}` : 'net deployed · this FY'}</div>
+          <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{(monthView ? !planned : statMonths) ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">{mo ? 'avg / mo · this FY' : 'avg / mo'}</div>
-          <div className="vsm">{avgMo != null ? <RsText>{inrFull(avgMo)}</RsText> : '—'}</div>
+          <div className="lbl">{monthView ? 'share of FY' : allFys ? 'avg / mo' : 'avg / mo · this FY'}</div>
+          {monthView ? (
+            <div className="vsm acc">{shareFy == null ? '—' : shareFy + '%'}</div>
+          ) : (
+            <div className="vsm">{avgMo != null ? <RsText>{inrFull(avgMo)}</RsText> : '—'}</div>
+          )}
         </div>
-        <div className="mini">
-          <div className="lbl">{mo ? 'run-rate · this FY' : 'run-rate (annualised)'}</div>
-          <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
-        </div>
+        {!monthView && (
+          <div className="mini">
+            <div className="lbl">{allFys ? 'run-rate (annualised)' : 'run-rate · this FY'}</div>
+            <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
+          </div>
+        )}
         {statOut > 0 && (
           <div className="mini">
-            <div className="lbl">{mo ? 'withdrawn · this FY' : 'withdrawn'}</div>
+            <div className="lbl">{allFys ? 'withdrawn' : monthView ? `withdrawn · ${mo.mn}` : 'withdrawn · this FY'}</div>
             <div className="vsm red"><RsText>{inrFull(statOut)}</RsText></div>
           </div>
         )}
         {viewSavingsRate != null && (
           <div className="mini">
-            <div className="lbl">{allFys ? 'savings rate · all-time' : 'savings rate · FY avg'}</div>
+            <div className="lbl">{allFys ? 'savings rate · all-time' : monthView ? `savings rate · ${mo.mn}` : 'savings rate · FY avg'}</div>
             <div className="vsm acc">{viewSavingsRate}%</div>
           </div>
         )}
