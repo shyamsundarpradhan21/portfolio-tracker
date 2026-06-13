@@ -26,7 +26,7 @@ const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?
 // work inside SVG stop elements in all browsers). These are FALLBACKS only:
 // useScHex resolves the live --sc-* tokens at runtime so the chart follows
 // the day/night theme instead of being stuck on the night palette.
-const SC_FALLBACK = { cons: '#5B9BE8', base: '#34D399', opt: '#E8A857', acc: '#F0A6C0' };
+const SC_FALLBACK = { cons: '#5B9BE8', base: '#A78BFA', opt: '#E8A857', acc: '#F0A6C0', txt3: '#8A8F98' };
 const SC_META = {
   cons: { tone: 'var(--sc-cons)', name: 'Conservative' },
   base: { tone: 'var(--sc-base)', name: 'Base · XIRR' },
@@ -42,6 +42,7 @@ function useScHex() {
         base: cs.getPropertyValue('--sc-base').trim() || SC_FALLBACK.base,
         opt:  cs.getPropertyValue('--sc-opt').trim()  || SC_FALLBACK.opt,
         acc:  cs.getPropertyValue('--acc').trim()     || SC_FALLBACK.acc,
+        txt3: cs.getPropertyValue('--txt3').trim()    || SC_FALLBACK.txt3,
       });
     };
     read();
@@ -55,9 +56,26 @@ const RANGES = [
   { key: 'D', days: 1 }, { key: 'W', days: 7 }, { key: 'M', days: 30 },
   { key: 'Y', days: 365 }, { key: 'Max', days: null },
 ];
-const MILESTONES = [1e7, 2e7, 5e7, 1e8];
+// Celebratory net-worth ladder — each round number the journey crosses earns
+// a flag on the curve (1L, 10L, 1Cr, 10Cr, 50Cr). Levels already behind us, or
+// beyond the horizon, simply don't get planted.
+const MILESTONES = [1e5, 1e6, 1e7, 1e8, 5e8];
 const RETIRE_ISO = '2055-03-31';
-const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 26, PADB = 22;
+const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 40, PADB = 22;
+
+// Round the axis ceiling up to a clean 1/2/2.5/5 × 10^n so gridlines land on
+// human numbers (₹5L, ₹10L … ₹50Cr) that line up with the milestone ladder.
+const niceMax = (v) => {
+  if (!(v > 0)) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / mag;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+  return step * mag;
+};
+// SVG <text> sizes are viewBox user-space (W=1100) and scale with the rendered
+// width, so they can't be the rem --fs-* tokens directly. Centralised here
+// (≈ the --fs scale at a typical render) instead of inline literals.
+const SVG_FS = { grid: 13.5, label: 13, caption: 12, value: 20, flag: 13 };
 
 // ₹ label for SVG <text>: the rupee glyph lives in Source Sans (body font),
 // not in JetBrains Mono. We render it as a <tspan> with the body font so the
@@ -163,11 +181,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     const arr = {};
     for (const k of ['cons', 'base', 'opt']) arr[k] = simMonthly(rates[k], base, inv0, months, projIn);
 
-    const crossings = [];
-    for (const target of MILESTONES) {
-      if (base >= target) continue;
-      const i = arr.base.corpus.findIndex((c) => c >= target);
-      if (i > 0) crossings.push({ value: target, year: i / 12 });
+    // Crossing year per scenario — where each curve first reaches a milestone.
+    // Per-scenario (not just base) so a flag sits exactly on the active curve.
+    const crossings = {};
+    for (const k of ['cons', 'base', 'opt']) {
+      crossings[k] = [];
+      for (const target of MILESTONES) {
+        if (base >= target) continue;          // already behind us
+        const i = arr[k].corpus.findIndex((c) => c >= target);
+        if (i > 0) crossings[k].push({ value: target, year: i / 12 });
+      }
     }
 
     const assetTotal0 = sleeves.reduce((a, s) => a + (s.value || 0), 0) || (base + loan);
@@ -274,12 +297,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const xFut = (yr) => xToday + (t > 0 ? (yr / t) * (W - PADR - xToday) : 0);
 
   const liveNw = nw ?? lastH.nw;
-  const yMax = Math.max(
+  // Frame the ACTIVE scenario's head (not the optimistic terminal) so history
+  // and early milestones aren't crushed when scrubbed far; round up for grids.
+  const yMax = niceMax(Math.max(
     1,
     ...pts.map((s) => Math.max(s.nw ?? 0, s.invested ?? 0)),
     liveNw,
-    scrubbing ? sampleAt(model.arr.opt.corpus, t) : 0,
-  ) * 1.06;
+    scrubbing ? sampleAt(model.arr[sc].corpus, t) : 0,
+  ));
   const Y = (v) => PADT + (1 - Math.max(0, v) / yMax) * (H - PADT - PADB);
 
   const histNwPts  = pts.map((s) => `${xHist(s.d).toFixed(1)},${Y(s.nw ?? 0).toFixed(1)}`);
@@ -315,7 +340,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     };
   }
 
-  const gridVals = [0.25, 0.5, 0.75, 1].map((f) => yMax * f / 1.06);
+  const gridVals = [0.25, 0.5, 0.75, 1].map((f) => yMax * f);
   const yr = Math.round(t);
   const deflate = Math.pow(1 + PROJECTION.inflation, t);
   const corpusNow   = sampleAt(model.arr[sc].corpus, t);
@@ -371,6 +396,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           {xirrPct != null && <> · <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}
         </div>
       )}
+      {/* projection sentence rides in-graph too (same frosted card), kept as
+          terse as the growth card's decomposition so the two read alike across
+          the transition. Rate model lives in the footnote, not here. */}
+      {scrubbing && (
+        <div className="pjx-explain">
+          By {baseYear + yr} <b><Crs n={corpusNow} /></b> = <b><Crs n={investedNow} /></b> deployed + <b className="up"><Crs n={growthNow} /></b> growth · <b><Crs n={corpusNow / deflate} /></b> in today&rsquo;s money
+        </div>
+      )}
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         <defs>
           {/* history NW fill — wears the TAB accent (identity colour); the
@@ -381,8 +414,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           </linearGradient>
           {/* invested fill — neutral */}
           <linearGradient id="pjx-invfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8A8F98" stopOpacity=".16" />
-            <stop offset="100%" stopColor="#8A8F98" stopOpacity="0" />
+            <stop offset="0%" stopColor={SC_HEX.txt3} stopOpacity=".16" />
+            <stop offset="100%" stopColor={SC_HEX.txt3} stopOpacity="0" />
           </linearGradient>
           {/* active-scenario fill — uses the selected scenario's color */}
           <linearGradient id="pjx-scfill" x1="0" y1="0" x2="0" y2="1">
@@ -412,7 +445,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         {gridVals.map((v) => (
           <g key={v}>
             <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke="var(--brd2)" strokeWidth=".5" />
-            <RsSvg x={4} y={Y(v) + 3} fontSize="13.5" fill="var(--txt3)" fontFamily="var(--mono)">{crShort(v)}</RsSvg>
+            <RsSvg x={4} y={Y(v) + 3} fontSize={SVG_FS.grid} fill="var(--txt3)" fontFamily="var(--mono)">{crShort(v)}</RsSvg>
           </g>
         ))}
 
@@ -421,6 +454,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         <path d={histNwFill}  fill="url(#pjx-nwfill)" />
         <path d={histInvPath} fill="none" stroke="var(--txt3)" strokeWidth="1.3" strokeDasharray="3 4" />
         <path d={histNwPath}  fill="none" stroke="var(--acc)" strokeWidth="2.2" strokeLinejoin="round" />
+
+        {/* initial point — the first sample sits hard on the Y-axis, so ring it
+            and label its starting value; otherwise you can't see where the
+            history begins (the TODAY end is marked, this end wasn't) */}
+        <circle cx={xHist(first.d)} cy={Y(first.nw ?? 0)} r="3.2" fill="var(--bg)"
+          stroke="var(--acc)" strokeWidth="1.8" />
+        <RsSvg x={xHist(first.d) + 7} y={Y(first.nw ?? 0) - 7} fontSize={SVG_FS.label}
+          fill="var(--acc)" fontWeight="700" textAnchor="start" fontFamily="var(--mono)">
+          {cr(first.nw ?? 0)}
+        </RsSvg>
 
         {/* TODAY seam */}
         <line x1={xToday} y1={PADT - 12} x2={xToday} y2={H - PADB + 6}
@@ -434,7 +477,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             stroke="var(--acc)" strokeOpacity=".35" strokeWidth="2" />
         )}
         <RsSvg x={scrubbing ? xToday : xToday - 8} y={PADT - 16}
-          fontSize="13" fill="var(--acc)" fontWeight="700" fontFamily="var(--mono)"
+          fontSize={SVG_FS.label} fill="var(--acc)" fontWeight="700" fontFamily="var(--mono)"
           textAnchor={scrubbing ? 'middle' : 'end'}>
           {`TODAY${!scrubbing ? ` · ${cr(liveNw)}` : ''}`}
         </RsSvg>
@@ -460,15 +503,39 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                 strokeLinejoin="round" />
             ))}
 
-            {/* milestone markers visible on the active curve */}
-            {model.crossings.filter((c) => c.year <= t).map((c) => {
-              const cx = xFut(c.year), cy = Y(sampleAt(model.arr[sc].corpus, c.year));
+            {/* milestone flags — celebrate each round number the journey reaches:
+                a chip planted where the active curve crosses that net-worth level,
+                with a faint threshold rule back to the axis so low crossings don't
+                read as "zero". The ★ twinkles. Revealed as you scrub past each. */}
+            {model.crossings[sc].filter((c) => c.year <= t).map((c, i) => {
+              const cx = xFut(c.year), cy = Y(c.value);
+              const label = `${crShort(c.value)} · ${baseYear + Math.round(c.year)}`;
+              const lw = (label.length + 2.5) * 6.8 + 12;   // room for the leading ★
+              // keep the chip clear of the top edge and the top-right tooltip
+              const nearTip = cx > W - PADR - 250 && cy < PADT + 92;
+              const below = cy < PADT + 34 || nearTip;
+              const lx = Math.max(PADL, Math.min(W - PADR - lw, cx - lw / 2));
+              const ly = below ? cy + 10 : cy - 26;
+              const ty = ly + 12.6;
               return (
                 <g key={c.value}>
-                  <circle cx={cx} cy={cy} r="3.5" fill="none" stroke={scTone} strokeWidth="1.5" />
-                  <RsSvg x={cx} y={cy + 19} fontSize="12.5" fill="var(--txt2)"
-                    textAnchor="middle" fontFamily="var(--mono)">
-                    {`${crShort(c.value)} · ${baseYear + Math.round(c.year)}`}
+                  <line x1={PADL} y1={cy} x2={cx} y2={cy} stroke={scTone}
+                    strokeOpacity=".16" strokeDasharray="2 4" strokeWidth="1" />
+                  <line x1={cx} y1={cy} x2={cx} y2={below ? cy + 9 : cy - 9}
+                    stroke={scTone} strokeOpacity=".5" strokeWidth="1" />
+                  <circle cx={cx} cy={cy} r="3.4" fill={scTone} stroke="var(--bg)" strokeWidth="1.6" />
+                  <rect x={lx} y={ly} width={lw} height="18" rx="5" fill="var(--bg)"
+                    stroke={scTone} strokeOpacity=".55" strokeWidth=".75" />
+                  {/* the star twinkles — staggered so the flags don't blink in unison */}
+                  <text x={lx + 9} y={ty} fontSize={SVG_FS.flag} fill={scTone}
+                    fontWeight="700" textAnchor="middle">
+                    ★
+                    <animate attributeName="opacity" values="1;.25;1" dur="1.9s"
+                      begin={`${i * 0.5}s`} repeatCount="indefinite" />
+                  </text>
+                  <RsSvg x={lx + 17} y={ty} fontSize={SVG_FS.flag} fill={scTone}
+                    fontWeight="700" textAnchor="start" fontFamily="var(--mono)">
+                    {label}
                   </RsSvg>
                 </g>
               );
@@ -479,7 +546,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
               <g>
                 <line x1={xFut(retireYr)} y1={PADT - 6} x2={xFut(retireYr)} y2={H - PADB}
                   stroke="var(--acc)" strokeOpacity=".35" strokeWidth="1" />
-                <text x={xFut(retireYr)} y={PADT - 10} fontSize="13" fill="var(--acc)"
+                <text x={xFut(retireYr)} y={PADT - 10} fontSize={SVG_FS.label} fill="var(--acc)"
                   textAnchor="middle" fontWeight="700">⚑ {retireIso.slice(0, 7).replace('-', ' · ')}</text>
               </g>
             )}
@@ -488,21 +555,21 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <circle cx={W - PADR} cy={Y(corpusNow)} r="5" fill={scTone} stroke="var(--bg)" strokeWidth="2" />
             <g transform={`translate(${W - PADR - 235},${PADT + 6})`}>
               <rect width="223" height="70" rx="10" fill="var(--bg)" stroke="var(--brd)" strokeWidth=".5" />
-              <text x="14" y="20" fontSize="12" fill={scTone} fontWeight="700" fontFamily="var(--mono)">
+              <text x="14" y="20" fontSize={SVG_FS.caption} fill={scTone} fontWeight="700" fontFamily="var(--mono)">
                 PROJECTED · {SC_META[sc].name.toUpperCase().split(' ')[0]}
               </text>
-              <RsSvg x="14" y="44" fontSize="20" fill="var(--txt)" fontWeight="700" fontFamily="var(--mono)">{cr(corpusNow)}</RsSvg>
-              <RsSvg x="14" y="61" fontSize="12" fill="var(--txt2)" fontFamily="var(--mono)">{`${cr(corpusNow / deflate)} in today's money`}</RsSvg>
+              <RsSvg x="14" y="44" fontSize={SVG_FS.value} fill="var(--txt)" fontWeight="700" fontFamily="var(--mono)">{cr(corpusNow)}</RsSvg>
+              <RsSvg x="14" y="61" fontSize={SVG_FS.caption} fill="var(--txt2)" fontFamily="var(--mono)">{`${cr(corpusNow / deflate)} in today's money`}</RsSvg>
             </g>
           </>
         )}
 
         {/* x-axis labels */}
-        <text x={PADL} y={H - 5} fontSize="13.5" fill="var(--txt3)" fontFamily="var(--mono)">{monYr(first.d)}</text>
-        <text x={scrubbing ? xToday : W - PADR} y={H - 5} fontSize="13.5" fill="var(--acc)"
+        <text x={PADL} y={H - 5} fontSize={SVG_FS.grid} fill="var(--txt3)" fontFamily="var(--mono)">{monYr(first.d)}</text>
+        <text x={scrubbing ? xToday : W - PADR} y={H - 5} fontSize={SVG_FS.grid} fill="var(--acc)"
           fontWeight="700" textAnchor={scrubbing ? 'middle' : 'end'} fontFamily="var(--mono)">now</text>
         {scrubbing && (
-          <text x={W - PADR} y={H - 5} fontSize="13.5" fill="var(--txt)"
+          <text x={W - PADR} y={H - 5} fontSize={SVG_FS.grid} fill="var(--txt)"
             fontWeight="700" textAnchor="end" fontFamily="var(--mono)">{baseYear + yr}</text>
         )}
       </svg>
@@ -520,12 +587,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             className="pj-range" style={{ width: '100%', '--p': `${(t / MAXY) * 100}%`, '--range-clr': scTone }}
             aria-label="Projection year" />
           <div className="pjx-notches">
-            {/* alternate label rows so close crossings can't overlap */}
-            {model.crossings.map((c, i) => (
-              <span key={c.value} className={'pjx-notch' + (i % 2 ? ' alt' : '')} style={{ left: `${(c.year / MAXY) * 100}%` }}>
-                <i /><em>{crShort(c.value)}</em>
-              </span>
-            ))}
+            {/* milestones now ride the chart as flags; the rail keeps only the
+                retirement marker */}
             {retireYr > 0 && retireYr <= MAXY && (
               <span className="pjx-notch ret" style={{ left: `${(retireYr / MAXY) * 100}%` }}>
                 <i /><em>⚑ Retire</em>
@@ -545,7 +608,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                 {/* deltas against live NW are meaningless while a sleeve is unpriced */}
                 {dataReady ? (
                   <>
-                    {/* no +/− prefixes — direction is colour-coded (up/dn) */}
+                    {/* +/- figures keep their semantic green/red P&L coding;
+                        the tab accent lives in the selection chrome only */}
                     <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
                       <Crs n={g.chg} />
                     </span>
@@ -586,13 +650,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
               );
             })}
           </div>
-
-          <div className="pjx-sentence" style={{ '--sentence-clr': scTone }}>
-            Starting at <b>{ratePct}%</b>{sc === 'base' && liveXirr != null && <> — your live XIRR —</>} and easing to <b>{longPct}%</b> long-run, by {baseYear + yr} the book reaches{' '}
-            <b style={{ color: scTone }}><Crs n={corpusNow} /></b>, of which <b className="up"><Crs n={growthNow} /></b> is compounding growth on{' '}
-            <b><Crs n={investedNow} /></b> put in. In today&rsquo;s purchasing power that&rsquo;s <b><Crs n={corpusNow / deflate} /></b>.
-          </div>
-
         </>
       )}
 

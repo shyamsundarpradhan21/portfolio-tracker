@@ -34,7 +34,7 @@
   --thead-bg: #15151d;
   /* Scenario accents (projection outlook); the day layer deepens them */
   --sc-cons: #5B9BE8;
-  --sc-base: #34D399;
+  --sc-base: #A78BFA;  /* violet — was #34D399, identical to the gain-green --grn */
   --sc-opt:  #E8A857;
   /* Amber "attention" border for accented tax/carryforward cards */
   --warn-brd: rgba(232,160,48,.35);
@@ -76,7 +76,7 @@
   --hdr-bg-base: 244,246,250;
   --thead-bg: #EDF1F7;
   --sc-cons: #2563EB;
-  --sc-base: #059669;
+  --sc-base: #7C3AED;  /* violet — was #059669, too close to the gain-green --grn */
   --sc-opt:  #B45309;
 }
 
@@ -550,6 +550,7 @@ body {
 /* ── Projection tab (ECharts) — theme-scoped, Section P ───────────────────── */
 .pj-play {
   width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
   border: .5px solid var(--brd2); background: var(--sur2);
   color: var(--play-clr, var(--grn)); font-size: var(--fs-sm); cursor: pointer; flex-shrink: 0;
   transition: border-color .15s var(--ease), box-shadow .15s var(--ease), color .2s;
@@ -612,25 +613,29 @@ body {
 }
 .pjx-reset:hover { color: var(--txt); border-color: var(--brd); }
 
-/* rail with milestone notches under the range input */
+/* rail with the retirement notch under the range input */
 .pjx-rail { flex: 1; position: relative; min-width: 200px; padding-bottom: 30px; }
 .pjx-notches { position: absolute; left: 0; right: 0; top: 18px; height: 30px; pointer-events: none; }
 .pjx-notch { position: absolute; transform: translateX(-50%); }
 .pjx-notch i { display: block; width: 2px; height: 7px; margin: 0 auto; border-radius: 1px; background: var(--txt3); opacity: .7; }
 .pjx-notch em { display: block; margin-top: 1px; font-style: normal; font-family: var(--mono); font-size: var(--fs-2xs); color: var(--txt3); white-space: nowrap; }
-/* alternate row — close milestone crossings can't overlap horizontally */
-.pjx-notch.alt i { height: 20px; }
-.pjx-notch.alt em { margin-top: 1px; }
 .pjx-notch.ret i { background: var(--acc); opacity: 1; }
 .pjx-notch.ret em { color: var(--acc); font-weight: 700; }
 
 /* growth story — rides INSIDE the chart's empty upper-left */
+/* the growth story (at rest) and the projection sentence (scrubbing) both ride
+   inside the chart on a frosted-glass card — identical treatment so the two
+   renders read as one continuous surface as you scrub between them */
 .pjx-explain {
-  position: absolute; left: 5.5%; top: 10%; max-width: 48%; z-index: 1;
-  font-size: var(--fs-xs); color: var(--txt2); line-height: 1.7;
+  position: absolute; left: 8%; top: 11%; max-width: 48%; z-index: 1;
+  font-size: var(--fs-2xs); color: var(--txt2); line-height: 1.55;
   pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 58%, transparent);
+  backdrop-filter: blur(10px) saturate(1.3); -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  border: .5px solid color-mix(in srgb, var(--txt) 14%, transparent);
+  padding: 12px 15px; border-radius: 12px;
 }
-.pjx-explain b { font-family: var(--mono); font-weight: 600; font-size: .95em; }
+.pjx-explain b { font-family: var(--mono); font-weight: 600; font-size: .95em; color: var(--txt); }
 
 /* methodology footnote — single compact line under the card */
 .pjx-foot { margin-top: 10px; font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.6; }
@@ -639,14 +644,19 @@ body {
 .pjx-gcards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
 .pjx-gcell {
   display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; cursor: pointer;
-  background: var(--sur2); border: .5px solid var(--brd2); border-radius: 12px; padding: 8px 12px;
+  background: var(--sur2); border: .5px solid var(--brd2); border-radius: 12px; padding: 10px 14px;
   transition: border-color .15s, background .15s;
 }
 .pjx-gcell:hover { border-color: var(--brd); }
 .pjx-gcell.on { border-color: color-mix(in srgb, var(--acc) 45%, var(--brd)); background: color-mix(in srgb, var(--acc) 6%, transparent); }
 .pjx-gk { font-family: var(--mono); font-size: var(--fs-2xs); letter-spacing: .07em; color: var(--txt3); }
 .pjx-gcell.on .pjx-gk { color: var(--acc); }
-.pjx-gv { font-size: var(--fs-md); font-weight: 700; letter-spacing: -.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pjx-gv {
+  font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* +/- figures keep their semantic green/red P&L coding (.up/.dn); the tab accent
+   stays in the selection chrome (cell border + eyebrow), never on the value */
 .pjx-gp { font-size: var(--fs-2xs); }
 
 /* humanized summary sentence — body text rides at md so it doesn't read
@@ -662,7 +672,7 @@ body {
    bold line on the chart, inactive = dotted; the badge mirrors that. */
 .pjx-sctabs { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 10px; border: .5px solid var(--brd2); border-radius: 12px; overflow: hidden; }
 .pjx-sctab {
-  display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; cursor: pointer;
   background: transparent; border: 0; border-right: .5px solid var(--brd2); padding: 10px 14px;
   opacity: .65; transition: background .15s, opacity .15s;
 }
@@ -673,24 +683,23 @@ body {
 .pjx-solid { width: 20px; height: 3px; border-radius: 2px; background: var(--tone); }
 .pjx-dotted { width: 20px; border-top: 2px dashed var(--tone); opacity: .55; }
 .pjx-screte { font-size: var(--fs-2xs); color: var(--txt3); }
-.pjx-scval { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.4px; color: var(--tone); margin-top: 5px; white-space: nowrap; }
+.pjx-scval { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.4px; color: var(--tone); white-space: nowrap; }
 .pjx-sctab:not(.on) .pjx-scval { color: var(--txt); opacity: .6; }
 .pjx-scsub { font-size: var(--fs-2xs); color: var(--txt2); }
 
 /* CMPS pension banner — shows near retirement flag */
 .pjx-cmps-banner {
-  /* label flexes (wraps within its own column when the card is narrow), value
-     stays pinned right + baseline-aligned — never orphaned on its own line */
-  display: grid; grid-template-columns: 1fr auto; align-items: baseline;
-  column-gap: 10px; row-gap: 4px;
+  /* stacked + left-aligned: eyebrow, value and caption share one left edge, so
+     the value never floats out of line when the label wraps in a narrow card */
+  display: flex; flex-direction: column; gap: 3px;
   margin-top: 10px; padding: 10px 14px; border-radius: 10px;
   background: color-mix(in srgb, var(--acc) 8%, var(--sur2));
   border: .5px solid color-mix(in srgb, var(--acc) 30%, transparent);
 }
 .pjx-cmps-label { font-size: var(--fs-2xs); font-family: var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--acc); font-weight: 700; }
-.pjx-cmps-val { font-family: var(--mono); font-size: var(--fs-lg); font-weight: 700; color: var(--txt); justify-self: end; white-space: nowrap; }
+.pjx-cmps-val { font-family: var(--mono); font-size: var(--fs-lg); font-weight: 700; color: var(--txt); white-space: nowrap; }
 .pjx-cmps-val small { font-size: var(--fs-2xs); color: var(--txt2); margin-left: 2px; }
-.pjx-cmps-sub { font-size: var(--fs-2xs); color: var(--txt3); grid-column: 1 / -1; }
+.pjx-cmps-sub { font-size: var(--fs-2xs); color: var(--txt3); }
 
 /* ₹ inside the pjx card: keep the global 1.1em cap-height match (1em made it
    read SMALLER than the mono digits) — just calm the weight next to bold. */
@@ -784,9 +793,9 @@ body { padding: 0; }
   margin: 12px 0 14px;
 }
 .hdr-hero {
-  display: flex; flex-direction: column; justify-content: center;
+  display: flex; flex-direction: column; justify-content: space-between;
   text-align: left; background: transparent; border: none; cursor: pointer;
-  padding: 2px 6px; border-radius: 12px; transition: background .15s;
+  padding: 7px 6px; border-radius: 12px; transition: background .15s;
   container-type: inline-size; /* sizing context for .hdr-val's cqw units */
   min-width: 0;
 }
