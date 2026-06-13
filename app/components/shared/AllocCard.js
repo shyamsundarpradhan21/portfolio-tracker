@@ -8,7 +8,7 @@ import SunburstMix from '../SunburstMix';
 // When the projection is being scrubbed, `drift` carries the drifted sleeve
 // values for that year and the card follows the timeline.
 // Everything arrives computed from page.js; nothing here is typed in.
-export default function AllocCard({ sleeves, mfAlloc, dataReady = true, drift = null }) {
+export default function AllocCard({ sleeves, mfAlloc, dataReady = true, drift = null, cmpsPension, cmpsService }) {
   const live = sleeves;
   const view = drift
     ? sleeves.map((s) => ({ ...s, value: drift.out[s.key] || 0 }))
@@ -53,6 +53,17 @@ export default function AllocCard({ sleeves, mfAlloc, dataReady = true, drift = 
           innerTitle="Class" innerSuffix=""
         />
       </div>
+      {/* CMPS pension — anchored here so it doesn't pop up mid-scrub on the
+          projection card; the defined benefit exists regardless of the year */}
+      {cmpsPension > 0 && (
+        <div className="pjx-cmps-banner" style={{ marginTop: 14 }}>
+          <span className="pjx-cmps-label">⚑ CMPS pension at superannuation</span>
+          <span className="pjx-cmps-val"><span className="rs">₹</span>{cmpsPension.toLocaleString('en-IN')}<small>/mo</small></span>
+          <span className="pjx-cmps-sub">
+            {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit · for life
+          </span>
+        </div>
+      )}
     </div>
   );
 }

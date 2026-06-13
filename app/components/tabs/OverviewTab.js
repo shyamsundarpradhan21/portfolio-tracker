@@ -23,11 +23,12 @@ export default function OverviewTab({
 
       {/* Live allocation sunburst + growth tracker/projection scrubber */}
       <div className="ov-top">
-        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift} />
+        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift}
+          cmpsPension={cmpsPension} cmpsService={cmpsService} />
         <ProjectionTab
           nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
           baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
-          cmpsPension={cmpsPension} cmpsService={cmpsService} cmpsRetirement={cmpsRetirement}
+          cmpsRetirement={cmpsRetirement}
         />
       </div>
 

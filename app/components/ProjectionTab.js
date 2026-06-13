@@ -102,7 +102,7 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsPension, cmpsService, cmpsRetirement, dataReady = true }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsRetirement, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -326,7 +326,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const retireIso  = cmpsRetirement ? cmpsRetirement.toISOString().slice(0, 10) : RETIRE_ISO;
   const retireYr   = (ms(retireIso) - ms(lastH.d)) / YEAR_MS;
   const showRetire = scrubbing && t >= retireYr - 0.01 && retireYr > 0;
-  const nearRetire = scrubbing && Math.abs(t - retireYr) < 2;
 
   const maxRow   = growth.find((g) => g.key === 'Max');
   const histGains = liveNw - (lastH.invested ?? model.inv0);
@@ -594,15 +593,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             <b><Crs n={investedNow} /></b> put in. In today&rsquo;s purchasing power that&rsquo;s <b><Crs n={corpusNow / deflate} /></b>.
           </div>
 
-          {nearRetire && cmpsPension > 0 && (
-            <div className="pjx-cmps-banner">
-              <span className="pjx-cmps-label">⚑ CMPS pension at superannuation</span>
-              <span className="pjx-cmps-val"><span className="rs">₹</span>{cmpsPension.toLocaleString('en-IN')}<small>/mo</small></span>
-              <span className="pjx-cmps-sub">
-                {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit · for life
-              </span>
-            </div>
-          )}
         </>
       )}
 
