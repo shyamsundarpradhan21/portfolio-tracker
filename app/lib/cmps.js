@@ -21,6 +21,15 @@ const DOJ = new Date('2023-01-28'); // date of joining MCL
 const SUPERANNUATION_AGE = 60;
 const DOB = new Date('1995-03-02'); // date of birth — drives retirement date
 
+// CMPS-1998 vests only after a minimum qualifying service: a monthly pension
+// is payable only with ≥10 years of pensionable service. Leave before that and
+// the benefit is a contribution refund (withdrawal benefit), NOT a pension.
+// So the projected superannuation pension below is contingent on serving to 60.
+export const CMPS_MIN_QUALIFYING_YEARS = 10;
+export const CMPS_VEST_DATE = new Date(
+  DOJ.getFullYear() + CMPS_MIN_QUALIFYING_YEARS, DOJ.getMonth(), DOJ.getDate()
+);
+
 // Superannuation date = last day of the birth month in the 60th year (CIL rules)
 export const CMPS_RETIREMENT_DATE = new Date(
   DOB.getFullYear() + SUPERANNUATION_AGE,

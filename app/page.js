@@ -15,7 +15,7 @@ import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot, historicalSnapshots } from './lib/snapshots';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus } from './lib/cmpf';
-import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE } from './lib/cmps';
+import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
@@ -497,7 +497,10 @@ export default function Page() {
     const cmpsPaid = cmpsTotalPaid(new Date());
     const cmpsPension = cmpsMonthlyPension(new Date());
     const cmpsService = cmpsServiceYears(new Date());
-    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService };
+    // pension only vests at the minimum qualifying service; before that, leaving = refund
+    const cmpsVested = cmpsService >= CMPS_MIN_QUALIFYING_YEARS;
+    const cmpsVestYear = CMPS_VEST_DATE.getFullYear();
+    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService, cmpsVested, cmpsVestYear };
   }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
@@ -732,27 +735,29 @@ export default function Page() {
                 {indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}
               </div>
               <div className="page-header-sub">
-                Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
-                {indian.valued && usdInr && (
-                  // CMPF is the largest sleeve yet has no header card — flag it
-                  // inline so the Assets figure is self-explanatory.
-                  <span style={{ whiteSpace: 'nowrap' }}
-                    title={`Indian ${inrFull(Math.round(indian.val))} + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
-                    {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
-                  </span>
-                )}
-                {' · '}Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
-                {indian.valued && usdInr ? (
-                  // Atomic chunk: wraps to the next line whole, never splitting
-                  // the figure from its label (frees width for the hero value).
-                  <>
-                    {' · '}
+                {/* line 1 — assets (with the CMPF flag, since it has no own card) */}
+                <div>
+                  Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
+                  {indian.valued && usdInr && (
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
-                      incl. trading <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
+                      title={`Indian ${inrFull(Math.round(indian.val))} + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
+                      {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
                     </span>
-                  </>
-                ) : <>{' · '}excl. trading</>}
+                  )}
+                </div>
+                {/* line 2 — liabilities + trading; each figure stays atomic */}
+                <div>
+                  <span style={{ whiteSpace: 'nowrap' }}>Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
+                  {indian.valued && usdInr ? (
+                    <>
+                      {' · '}
+                      <span style={{ whiteSpace: 'nowrap' }}
+                        title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
+                        incl. trading <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
+                      </span>
+                    </>
+                  ) : <>{' · '}excl. trading</>}
+                </div>
               </div>
             </button>
 
@@ -777,7 +782,8 @@ export default function Page() {
               FY={FY} snapshots={chartSnapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
               payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
-              cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE} />
+              cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE}
+              cmpsVested={ov.cmpsVested} cmpsVestYear={ov.cmpsVestYear} />
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}

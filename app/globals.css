@@ -639,6 +639,11 @@ body {
 }
 .pjx-explain b { font-family: var(--mono); font-weight: 600; font-size: .95em; color: var(--txt); }
 
+/* CMPS pension one-liner — sits just above the methodology footnote */
+.pjx-cmps-line { margin-top: 12px; font-size: var(--fs-2xs); color: var(--txt2); line-height: 1.5; }
+.pjx-cmps-line b { font-family: var(--mono); font-weight: 700; color: var(--txt); }
+.pjx-cmps-flag { color: var(--acc); font-weight: 700; }
+
 /* methodology footnote — single compact line under the card */
 .pjx-foot { margin-top: 10px; font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.6; }
 
@@ -689,20 +694,6 @@ body {
 .pjx-sctab:not(.on) .pjx-scval { color: var(--txt); opacity: .6; }
 /* inflation-adjusted value rides inline in () at a smaller, dimmer size */
 .pjx-screal { font-size: var(--fs-2xs); font-weight: 600; opacity: .6; }
-
-/* CMPS pension banner — shows near retirement flag */
-.pjx-cmps-banner {
-  /* stacked + left-aligned: eyebrow, value and caption share one left edge, so
-     the value never floats out of line when the label wraps in a narrow card */
-  display: flex; flex-direction: column; gap: 3px;
-  margin-top: 10px; padding: 10px 14px; border-radius: 10px;
-  background: color-mix(in srgb, var(--acc) 8%, var(--sur2));
-  border: .5px solid color-mix(in srgb, var(--acc) 30%, transparent);
-}
-.pjx-cmps-label { font-size: var(--fs-2xs); font-family: var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--acc); font-weight: 700; }
-.pjx-cmps-val { font-family: var(--mono); font-size: var(--fs-lg); font-weight: 700; color: var(--txt); white-space: nowrap; }
-.pjx-cmps-val small { font-size: var(--fs-2xs); color: var(--txt2); margin-left: 2px; }
-.pjx-cmps-sub { font-size: var(--fs-2xs); color: var(--txt3); }
 
 /* ₹ inside the pjx card: keep the global 1.1em cap-height match (1em made it
    read SMALLER than the mono digits) — just calm the weight next to bold. */
@@ -792,7 +783,7 @@ body { padding: 0; }
 .hdr-grid {
   display: grid;
   grid-template-columns: minmax(210px, 315px) 1fr;
-  gap: 16px; align-items: stretch;
+  gap: 16px; align-items: center; /* cards size to content + centre, not stretch to the hero */
   margin: 12px 0 14px;
 }
 .hdr-hero {
@@ -827,7 +818,7 @@ body { padding: 0; }
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
   border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
-  border-radius: 12px; padding: 6px 11px;
+  border-radius: 12px; padding: 10px 11px 8px;
   transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -906,16 +897,18 @@ body { padding: 0; }
 .page-header {
   margin-bottom: 20px;
 }
+/* label + sub scale with the hero column width (cqw, container = .hdr-hero),
+   matching .hdr-val so the whole card grows/shrinks together with the window */
 .page-header-lbl {
-  font-size: var(--fs-xs);
-  letter-spacing: 2px;
+  font-size: clamp(10px, 3.6cqw, 13px);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--acc);
   margin-bottom: 4px;
   font-weight: 500;
 }
 .page-header-sub {
-  font-size: var(--fs-xs);
+  font-size: clamp(11px, 4.2cqw, 15px);
   color: var(--txt2);
   margin-top: 4px;
 }

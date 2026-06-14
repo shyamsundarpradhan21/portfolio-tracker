@@ -10,7 +10,7 @@ import SipCard from '../shared/SipCard';
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, baseYear, payslips, dataReady, mfAlloc,
-  cmpsPension, cmpsService, cmpsRetirement,
+  cmpsPension, cmpsService, cmpsRetirement, cmpsVested, cmpsVestYear,
 }) {
   const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
   // Scrubbing the projection reports the drifted allocation here so the
@@ -23,12 +23,12 @@ export default function OverviewTab({
 
       {/* Live allocation sunburst + growth tracker/projection scrubber */}
       <div className="ov-top">
-        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift}
-          cmpsPension={cmpsPension} cmpsService={cmpsService} />
+        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift} />
         <ProjectionTab
           nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
           baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
-          cmpsRetirement={cmpsRetirement}
+          cmpsRetirement={cmpsRetirement} cmpsPension={cmpsPension} cmpsService={cmpsService}
+          cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}
         />
       </div>
 

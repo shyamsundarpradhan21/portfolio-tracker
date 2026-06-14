@@ -330,17 +330,24 @@ export default function SipCard({ fx }) {
 
   // Minis follow the view: all-time when "overall", a single month when one is
   // picked, else the selected FY — mirroring how the header + composition bar
-  // already re-scope on click. avg/run-rate have no single-month meaning, so a
-  // month view drops them for "share of FY" (an absolute, unsigned figure) —
-  // direction is always carried by colour (grn/red), never a +/- glyph.
+  // already re-scope on click. For a month the two multi-month metrics become
+  // "vs FY avg" and "share of FY". Direction is carried by colour (grn/red),
+  // never a +/- glyph (signs are colour-coded globally).
   const monthView  = !!mo;
+  const fyAvgMo    = elapsed.length ? Math.round(fyTot / elapsed.length) : null;
   const statTot    = allFys ? allTime.total : monthView ? mo.total : fyTot; // net
   const statOut    = allFys ? allTime.out   : monthView ? mo.out   : fyOut;
   const statMonths = allFys ? allTime.months : elapsed.length;
   // avg/run-rate stay FY (or all-time) scoped — never divided by a single month
   const avgMo   = statMonths ? Math.round((allFys ? allTime.total : fyTot) / statMonths) : null;
   const runRate = avgMo != null ? avgMo * 12 : null;
-  // month-view context: this month's share of the FY's gross deployment
+  // run-rate only means something while the period is open: a closed 12-month
+  // FY's annualised pace just equals its net deployed (redundant), so the slot
+  // shows for the current (partial) FY and all-time only.
+  const showRunRate = !monthView && (allFys || elapsed.length < 12);
+  const showThird   = monthView || showRunRate; // the 3rd base mini slot
+  // month-view comparisons (skipped for a not-yet-deployed planned month)
+  const vsAvg   = monthView && !planned && fyAvgMo ? Math.round((mo.total - fyAvgMo) / Math.abs(fyAvgMo) * 100) : null;
   const shareFy = monthView && !planned && fyGross ? Math.round(mo.gross / fyGross * 100) : null;
   const maxMonth = Math.max(...MONTHS.map((m) => Math.abs(m.total)), 1);
 
@@ -494,25 +501,29 @@ export default function SipCard({ fx }) {
       </div>
 
       {/* summary stats — re-scope to the selected view (all-time / month / FY).
-          A month drops the multi-month avg + run-rate for "share of FY"; every
+          For a month, avg + run-rate become "vs FY avg" + "share of FY"; every
           figure carries its sign through colour (grn/red), never a +/- glyph. */}
-      <div className={'g' + ((monthView ? 2 : 3) + (statOut > 0 ? 1 : 0) + (viewSavingsRate != null ? 1 : 0))} style={{ marginBottom: 12 }}>
+      <div className={'g' + (2 + (showThird ? 1 : 0) + (statOut > 0 ? 1 : 0) + (viewSavingsRate != null ? 1 : 0))} style={{ marginBottom: 12 }}>
         <div className="mini">
           <div className="lbl">{allFys ? 'net deployed all-time' : monthView ? `net · ${mo.mn} ’${mo.yy}` : 'net deployed · this FY'}</div>
           <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{(monthView ? !planned : statMonths) ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
         </div>
         <div className="mini">
-          <div className="lbl">{monthView ? 'share of FY' : allFys ? 'avg / mo' : 'avg / mo · this FY'}</div>
+          <div className="lbl">{monthView ? 'vs FY avg' : allFys ? 'avg / mo' : 'avg / mo · this FY'}</div>
           {monthView ? (
-            <div className="vsm acc">{shareFy == null ? '—' : shareFy + '%'}</div>
+            <div className={'vsm ' + (vsAvg == null ? '' : vsAvg >= 0 ? 'grn' : 'red')}>{vsAvg == null ? '—' : Math.abs(vsAvg) + '%'}</div>
           ) : (
             <div className="vsm">{avgMo != null ? <RsText>{inrFull(avgMo)}</RsText> : '—'}</div>
           )}
         </div>
-        {!monthView && (
+        {showThird && (
           <div className="mini">
-            <div className="lbl">{allFys ? 'run-rate (annualised)' : 'run-rate · this FY'}</div>
-            <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
+            <div className="lbl">{monthView ? 'share of FY' : allFys ? 'run-rate (annualised)' : 'run-rate · this FY'}</div>
+            {monthView ? (
+              <div className="vsm acc">{shareFy == null ? '—' : shareFy + '%'}</div>
+            ) : (
+              <div className="vsm">{runRate != null ? <RsText>{inrFull(runRate)}</RsText> : '—'}</div>
+            )}
           </div>
         )}
         {statOut > 0 && (

@@ -112,7 +112,7 @@ const Crs = ({ n, of }) => {
 };
 const crShort = (n) => {
   const a = Math.abs(n);
-  if (a >= 1e7) return '₹' + (a / 1e7).toFixed(a >= 1e8 ? 0 : 1) + 'Cr';
+  if (a >= 1e7) return '₹' + (a / 1e7).toFixed(a >= 1e8 ? 0 : 1).replace(/\.0$/, '') + 'Cr';
   if (a >= 1e5) return '₹' + Math.round(a / 1e5) + 'L';
   return '₹' + Math.round(a / 1e3) + 'k';
 };
@@ -156,7 +156,7 @@ function MilestoneFlag({ cx, cy, label, tone, idx, blink = true }) {
   );
 }
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsRetirement, dataReady = true }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -674,7 +674,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                   style={{ '--tone': SC_META[k].tone }} onClick={() => setSc(k)}>
                   <span className="pjx-scname">
                     <i className={sc === k ? 'pjx-solid' : 'pjx-dotted'} />
-                    {SC_META[k].name}
+                    {SC_META[k].name} <span className="pjx-screte">({(rates[k].start * 100).toFixed(1)}%)</span>
                   </span>
                   {/* nominal + inflation-adjusted on one line: real value sits
                       in () at a smaller size so it fills the row instead of a
@@ -687,6 +687,22 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             })}
           </div>
         </>
+      )}
+
+      {/* CMPS defined-benefit pension — a one-line note just above the footnote.
+          The figure is the FULL-CAREER projection (pension = salary × service ÷ 70
+          with service run to superannuation), so it's contingent on serving to 60;
+          and it only vests at the 10-yr qualifying mark — before that, leaving
+          yields a contribution refund, not a pension. Framed honestly so the
+          number doesn't read as a current entitlement. */}
+      {cmpsPension > 0 && (
+        <div className="pjx-cmps-line">
+          <span className="pjx-cmps-flag">⚑ CMPS pension</span>{' '}
+          projected <b><Crs of={`₹${cmpsPension.toLocaleString('en-IN')}/mo`} /></b> at superannuation ({retireIso.slice(0, 4)}) if served to 60
+          {!cmpsVested && cmpsVestYear
+            ? <> · not yet vested — needs 10 yrs ({cmpsService != null ? `${cmpsService.toFixed(1)} now, ` : ''}vests {cmpsVestYear}); leave before and it&rsquo;s a contribution refund, not a pension</>
+            : <> · {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit, for life</>}
+        </div>
       )}
 
       {/* methodology footnote — one compact line; every number is derived */}
