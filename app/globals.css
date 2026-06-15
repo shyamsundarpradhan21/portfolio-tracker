@@ -629,7 +629,7 @@ body {
    inside the chart on a frosted-glass card — identical treatment so the two
    renders read as one continuous surface as you scrub between them */
 .pjx-explain {
-  position: absolute; left: 8%; top: 11%; max-width: 52%; z-index: 1;
+  position: absolute; left: 14%; top: 11%; max-width: 52%; z-index: 1;
   font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55;
   pointer-events: none;
   background: color-mix(in srgb, var(--bg) 58%, transparent);
@@ -643,6 +643,32 @@ body {
 .pjx-cmps-line { margin-top: 12px; font-size: var(--fs-2xs); color: var(--txt2); line-height: 1.5; }
 .pjx-cmps-line b { font-family: var(--mono); font-weight: 700; color: var(--txt); }
 .pjx-cmps-flag { color: var(--acc); font-weight: 700; }
+
+/* milestone celebration — fires once when the scrub crosses a projected level
+   (the SVG element mounts → CSS animation plays). All elements ride a
+   translate() group, so they scale/fade around their own centre. */
+.pjx-burst {
+  transform-box: fill-box; transform-origin: center;
+  animation: pjx-burst 1s ease-out forwards; pointer-events: none;
+}
+.pjx-burst-2 { animation-duration: .7s; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+@keyframes pjx-burst {
+  0%   { transform: scale(.4); opacity: .9; }
+  100% { transform: scale(5);  opacity: 0;  }
+}
+.pjx-star-pop {
+  transform-box: fill-box; transform-origin: center;
+  animation: pjx-star-pop .65s cubic-bezier(.2,1.6,.35,1) both;
+}
+@keyframes pjx-star-pop {
+  0%   { transform: scale(0); }
+  55%  { transform: scale(1.55); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pjx-burst, .pjx-star-pop { animation: none; }
+  .pjx-burst { opacity: 0; }
+}
 
 /* methodology footnote — single compact line under the card */
 .pjx-foot { margin-top: 10px; font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.6; }

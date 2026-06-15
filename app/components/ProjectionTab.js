@@ -72,6 +72,33 @@ const niceMax = (v) => {
   const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
   return step * mag;
 };
+// Classic "nice numbers" (Heckbert) — used for the ZOOMED ranges (D/W/M/Y),
+// where the axis is framed to the visible window instead of zero so day/week
+// movement is legible. Returns a floor, a ceiling and a step that all land on
+// human values so gridlines read cleanly.
+const niceNum = (x, round) => {
+  if (!(x > 0)) return 1;
+  const exp = Math.floor(Math.log10(x));
+  const f = x / Math.pow(10, exp);
+  const nf = round
+    ? (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10)
+    : (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10);
+  return nf * Math.pow(10, exp);
+};
+const niceScale = (lo, hi, ticks = 4) => {
+  if (!(hi > lo)) hi = lo + Math.max(1, Math.abs(lo) * 0.02);
+  const step = niceNum((hi - lo) / Math.max(1, ticks - 1), true);
+  return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step };
+};
+// Axis tick label — like crShort but keeps one decimal for a partial lakh so
+// zoomed gridlines (₹17.5L) don't round onto each other.
+const axLabel = (n) => {
+  const a = Math.abs(n);
+  if (a >= 1e7) return '₹' + +(a / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) { const l = a / 1e5; return '₹' + (Number.isInteger(l) ? l : +l.toFixed(1)) + 'L'; }
+  if (a >= 1e3) return '₹' + Math.round(a / 1e3) + 'k';
+  return '₹' + Math.round(a);
+};
 // SVG <text> sizes are viewBox user-space (W=1100) and scale with the rendered
 // width, so they can't be the rem --fs-* tokens directly. Centralised here
 // (≈ the --fs scale at a typical render) instead of inline literals.
@@ -141,17 +168,29 @@ function MilestoneFlag({ cx, cy, label, tone, idx, blink = true }) {
         stroke={tone} strokeOpacity=".55" strokeWidth=".75" />
       <RsSvg x={lx + lw / 2} y={ty} fontSize={SVG_FS.flag} fill={tone}
         fontWeight="700" textAnchor="middle" fontFamily="var(--mono)">{label}</RsSvg>
-      {/* the ★ sits on the curve itself — the celebratory event marker. It only
-          twinkles for not-yet-reached (projected) levels; an achieved milestone
-          settles to a solid star (staggered begin so a cluster doesn't pulse in unison) */}
-      <text x={cx} y={cy} fontSize="17" fill={tone} fontWeight="700"
-        textAnchor="middle" dominantBaseline="central">
-        ★
+      {/* the ★ sits on the curve itself — the celebratory event marker. A
+          projected level (blink) gets a one-shot "achievement" burst the moment
+          the scrub crosses it (the CSS animation fires on mount), then the star
+          pops in and settles into a gentle twinkle. Achieved-history stars are
+          calm and solid. Star + burst ride a translate() group so they animate
+          around their own centre while the flag glides with the scrub. */}
+      <g transform={`translate(${cx},${cy})`}>
         {blink && (
-          <animate attributeName="opacity" values="1;.3;1" dur="1.9s"
-            begin={`${idx * 0.5}s`} repeatCount="indefinite" />
+          <>
+            <circle className="pjx-burst" r="5" fill="none" stroke={tone} strokeWidth="2.5" />
+            <circle className="pjx-burst pjx-burst-2" r="3" fill={tone} />
+          </>
         )}
-      </text>
+        <text className={blink ? 'pjx-star-pop' : undefined} x={0} y={0}
+          fontSize="17" fill={tone} fontWeight="700"
+          textAnchor="middle" dominantBaseline="central">
+          ★
+          {blink && (
+            <animate attributeName="opacity" values="1;.3;1" dur="1.9s"
+              begin={`${idx * 0.5}s`} repeatCount="indefinite" />
+          )}
+        </text>
+      </g>
     </g>
   );
 }
@@ -312,7 +351,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   };
   const startPlay = () => {
     setPlaying(true);
-    const SPEED = MAXY / 9000;
+    // years-per-ms so the full horizon plays over ~19s — slow enough to read
+    // each milestone celebration as the curve crosses it (was ~9s, too fast).
+    const SPEED = MAXY / 19000;
     let last = performance.now();
     const tick = (now) => {
       const dt = now - last; last = now;
@@ -346,15 +387,34 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const xFut = (yr) => xToday + (t > 0 ? (yr / t) * (W - PADR - xToday) : 0);
 
   const liveNw = nw ?? lastH.nw;
-  // Frame the ACTIVE scenario's head (not the optimistic terminal) so history
-  // and early milestones aren't crushed when scrubbed far; round up for grids.
-  const yMax = niceMax(Math.max(
-    1,
+  // Axis framing. MAX (and any scrubbed projection) keeps the zero-baseline
+  // "journey from nothing" identity — the area fills mean accumulated wealth.
+  // The shorter ranges (D/W/M/Y) instead frame the VISIBLE window so the
+  // day/week/month move actually has vertical room and isn't a flat sliver
+  // pinned to the top of a 0→₹20L scale.
+  const zeroBase = scrubbing || range === 'Max';
+  const seriesHi = Math.max(
+    1, liveNw,
     ...pts.map((s) => Math.max(s.nw ?? 0, s.invested ?? 0)),
-    liveNw,
     scrubbing ? sampleAt(model.arr[sc].corpus, t) : 0,
-  ));
-  const Y = (v) => PADT + (1 - Math.max(0, v) / yMax) * (H - PADT - PADB);
+  );
+  let yMin, yMax, gridVals;
+  if (zeroBase) {
+    yMin = 0;
+    yMax = niceMax(seriesHi);
+    gridVals = [0.25, 0.5, 0.75, 1].map((f) => yMax * f);
+  } else {
+    const seriesLo = Math.min(liveNw, ...pts.map((s) => {
+      const v = [s.nw, s.invested].filter((x) => Number.isFinite(x) && x > 0);
+      return v.length ? Math.min(...v) : Infinity;
+    }));
+    const ns = niceScale(seriesLo, seriesHi, 4);
+    yMin = ns.lo; yMax = ns.hi;
+    gridVals = [];
+    for (let v = yMin; v <= yMax + ns.step * 0.5; v += ns.step) gridVals.push(v);
+  }
+  const ySpan = yMax - yMin || 1;
+  const Y = (v) => PADT + (1 - (Math.max(yMin, Math.min(yMax, v)) - yMin) / ySpan) * (H - PADT - PADB);
 
   const histNwPts  = pts.map((s) => `${xHist(s.d).toFixed(1)},${Y(s.nw ?? 0).toFixed(1)}`);
   const histInvPts = pts.map((s) => `${xHist(s.d).toFixed(1)},${Y(s.invested ?? 0).toFixed(1)}`);
@@ -389,7 +449,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     };
   }
 
-  const gridVals = [0.25, 0.5, 0.75, 1].map((f) => yMax * f);
   const yr = Math.round(t);
   const deflate = Math.pow(1 + PROJECTION.inflation, t);
   const corpusNow   = sampleAt(model.arr[sc].corpus, t);
@@ -494,7 +553,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         {gridVals.map((v) => (
           <g key={v}>
             <line x1={PADL} y1={Y(v)} x2={W - PADR} y2={Y(v)} stroke="var(--brd2)" strokeWidth=".5" />
-            <RsSvg x={4} y={Y(v) + 3} fontSize={SVG_FS.grid} fill="var(--txt3)" fontFamily="var(--mono)">{crShort(v)}</RsSvg>
+            <RsSvg x={4} y={Y(v) + 3} fontSize={SVG_FS.grid} fill="var(--txt3)" fontFamily="var(--mono)">{axLabel(v)}</RsSvg>
           </g>
         ))}
 
