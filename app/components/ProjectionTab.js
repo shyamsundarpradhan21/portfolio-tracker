@@ -263,8 +263,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       crossings[k] = [];
       for (const target of MILESTONES) {
         if (base >= target) continue;          // already behind us
-        const i = arr[k].corpus.findIndex((c) => c >= target);
-        if (i > 0) crossings[k].push({ value: target, year: i / 12 });
+        const corpus = arr[k].corpus;
+        const i = corpus.findIndex((c) => c >= target);
+        // interpolate the exact (fractional) month the curve reaches the
+        // milestone value so the ★ lands ON the line at value=target, not at
+        // the next monthly sample that already overshot it
+        if (i > 0) {
+          const a = corpus[i - 1], b = corpus[i];
+          const f = b > a ? Math.max(0, Math.min(1, (target - a) / (b - a))) : 0;
+          crossings[k].push({ value: target, year: (i - 1 + f) / 12 });
+        }
       }
     }
 
@@ -330,7 +338,20 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     const out = [];
     for (const target of MILESTONES) {
       const i = hist.findIndex((s) => (s.nw ?? 0) >= target);
-      if (i >= 0) out.push({ value: target, d: hist[i].d });
+      if (i < 0) continue;
+      // interpolate the moment the line crosses the milestone value (between the
+      // last snapshot below it and the first at/above) so the ★ sits ON the
+      // curve at value=target, not at the next vertex that already overshot
+      let atMs = ms(hist[i].d);
+      if (i > 0) {
+        const a = hist[i - 1], b = hist[i];
+        const an = a.nw ?? 0, bn = b.nw ?? 0;
+        if (bn > an) {
+          const f = Math.max(0, Math.min(1, (target - an) / (bn - an)));
+          atMs = ms(a.d) + (ms(b.d) - ms(a.d)) * f;
+        }
+      }
+      out.push({ value: target, atMs });
     }
     return out;
   }, [hist]);
@@ -383,7 +404,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const futMs = t * YEAR_MS;
   const histFrac = scrubbing ? Math.max(0.15, histMs / (histMs + futMs)) : 1;
   const xToday = PADL + (W - PADL - PADR) * histFrac;
-  const xHist = (iso) => PADL + ((ms(iso) - ms(first.d)) / histMs) * (xToday - PADL);
+  const xHistMs = (m) => PADL + ((m - ms(first.d)) / histMs) * (xToday - PADL);
+  const xHist = (iso) => xHistMs(ms(iso));
   const xFut = (yr) => xToday + (t > 0 ? (yr / t) * (W - PADR - xToday) : 0);
 
   const liveNw = nw ?? lastH.nw;
@@ -576,10 +598,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         {/* achieved milestones — stars on the history curve (at rest), the past
             wins; they fill the sparse upper-left and set up the future ladder */}
         {!scrubbing && histCrossings
-          .filter((c) => ms(c.d) >= ms(first.d))
+          .filter((c) => c.atMs >= ms(first.d))
           .map((c, i) => (
-            <MilestoneFlag key={'h' + c.value} cx={xHist(c.d)} cy={Y(c.value)}
-              label={`${crShort(c.value)}·${c.d.slice(0, 4)}`} tone="var(--acc)" idx={i} blink={false} />
+            <MilestoneFlag key={'h' + c.value} cx={xHistMs(c.atMs)} cy={Y(c.value)}
+              label={`${crShort(c.value)}·${new Date(c.atMs).getUTCFullYear()}`} tone="var(--acc)" idx={i} blink={false} />
           ))}
 
         {/* TODAY seam */}
