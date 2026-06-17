@@ -51,6 +51,7 @@ const aiAgo = (ts) => {
   if (s < 90) return 'just now';
   const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`;
   const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`;
+  const d = h / 24; if (d < 7) return `${Math.round(d)}d ago`;
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 };
 
@@ -241,13 +242,20 @@ export default function Page() {
   const [insights, setInsights]               = useState(null);
   const [insightsTs, setInsightsTs]           = useState(null); // when the shown analysis was generated (cache ts), drives the fresh/cached label
   const [insightsLoading, setInsightsLoading] = useState(false);
-  const [insightsOn, setInsightsOn]           = useState(() => { try { return localStorage.getItem('nwTracker.insightsOn') === 'true'; } catch { return false; } });
+  // Insights persist once generated (cards show whenever cached analysis exists);
+  // the ✨ button is a manual REFRESH, never an off switch. Seed "on" from a
+  // valid cache so last-known cards render immediately on load.
+  const [insightsOn, setInsightsOn] = useState(() => {
+    try { return hasInsight(JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null')?.insights); } catch { return false; }
+  });
   // Regeneration "ticket" — bumped when fresh insights are wanted. The payload
   // effect below runs after render, so it reads fully-recomputed derived state
   // (no need to thread prices/fx/nav through as arguments).
   const [insightsReq, setInsightsReq] = useState(0);
   const requestInsights = useCallback(() => setInsightsReq((n) => n + 1), []);
-  const toggleInsights = () => setInsightsOn((prev) => { const next = !prev; try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {} if (next) requestInsights(); return next; });
+  // Manual refresh: reveal the cards (if first time) and fire a fresh whole-app
+  // analysis. No off path — the cards stay with their last-analysed date.
+  const refreshInsights = () => { setInsightsOn(true); requestInsights(); };
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
@@ -533,11 +541,12 @@ export default function Page() {
     return Math.round((ov.nw || 0) - gains);
   }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
 
-  // ── AI insights — compact aggregates payload, hash-gated ─────────────────────
+  // ── AI insights — compact aggregates payload, manual refresh ────────────────
   // Builds one summary string per sleeve (~500 input tokens — never the full
-  // holdings books) and POSTs to /api/insights. A coarse data hash (NW to 0.1L,
-  // returns to 0.5pt, plus the calendar date) skips the API call entirely when
-  // nothing material changed; results persist in localStorage across sessions.
+  // holdings books) and POSTs to /api/insights. Fires ONLY on an explicit ✨
+  // click (insightsReq bump), so each refresh is one deliberate, user-paced call
+  // — refresh weekly/monthly as needed. Results persist in localStorage and show
+  // with their last-analysed date until the next refresh.
   useEffect(() => {
     if (!insightsReq || !insightsOn) return;
     if (!(indian.valued && usData.val && usdInr)) return; // wait for live data
@@ -581,20 +590,6 @@ export default function Page() {
         `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEnteringFY2627 / 1e5).toFixed(2)}L (tax asset)`,
     };
 
-    // Coarse hash — regenerate only on a material move or a new calendar day.
-    const hash = JSON.stringify([
-      Math.round(ov.nw / 1e4),
-      Math.round(indian.pct * 2) / 2,
-      Math.round(usData.pct * 2) / 2,
-      Math.round((indianDay.dayPct || 0) * 2) / 2,
-      Math.round(mf.totRet * 2) / 2,
-      new Date().toISOString().slice(0, 10),
-    ]);
-    try {
-      const c = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null');
-      if (hasInsight(c?.insights) && c.hash === hash) { setInsights(c.insights); setInsightsTs(c.ts || null); return; } // unchanged — no API spend
-    } catch {}
-
     let stale = false;
     (async () => {
       setInsightsLoading(true);
@@ -605,7 +600,7 @@ export default function Page() {
           if (hasInsight(d.insights)) {
             const ts = Date.now();
             setInsights(d.insights); setInsightsTs(ts);
-            try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts, hash, insights: d.insights })); } catch {}
+            try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts, insights: d.insights })); } catch {}
           }
         }
       } catch {} finally { if (!stale) setInsightsLoading(false); }
@@ -764,12 +759,12 @@ export default function Page() {
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
-              {insightsOn && (insightsLoading
+              {insightsLoading
                 ? <span className="ai-status">✦ analysing…</span>
                 : insights && insightsTs
-                  ? <span className="ai-status ai-fresh" title="When this analysis was generated — click ✨ off/on to force a refresh">✦ analysed {aiAgo(insightsTs)}</span>
-                  : null)}
-              <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
+                  ? <span className="ai-status ai-fresh" title="When this analysis was last refreshed — click ✨ to regenerate">✦ analysed {aiAgo(insightsTs)}</span>
+                  : null}
+              <button className="hdr-toggle" onClick={refreshInsights} disabled={insightsLoading || !(indian.valued && usData.val && usdInr)} style={{ opacity: insightsLoading ? 0.5 : 1 }} title={insightsLoading ? 'Analysing…' : insights ? 'Refresh AI insights' : 'Generate AI insights'} aria-label="Refresh AI insights">✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
               <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
             </div>
