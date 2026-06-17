@@ -894,6 +894,8 @@ body { padding: 0; }
 /* AI "analysing…" ticker — shown in the header only while a real insights call
    is in flight (cache hits are instant, so it never flashes for those) */
 .ai-status { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em; color: var(--acc); white-space: nowrap; animation: aiPulse 1.1s ease-in-out infinite; }
+/* settled freshness label (not loading) — muted, static, no pulse */
+.ai-status.ai-fresh { color: var(--txt3); font-weight: 600; animation: none; cursor: help; }
 @keyframes aiPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .ai-status { animation: none; } }
 

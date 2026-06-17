@@ -42,6 +42,18 @@ const MFNAV_KEY     = 'nwTracker.mfnav';
 const HIST_KEY      = 'nwTracker.hist';
 const REFRESH_MS    = 15 * 60 * 1000;
 
+// Relative age of the shown AI analysis → tells fresh ("just now") from cached
+// ("5h ago" / a date). Recomputed each render; the price interval re-renders
+// keep it roughly current.
+const aiAgo = (ts) => {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 90) return 'just now';
+  const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`;
+  const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`;
+  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
 // ─── pure derivations ─────────────────────────────────────────────────────────
 function deriveMf(mfNav) {
   const fundsNav = (mfNav && mfNav.funds) || {};
@@ -217,6 +229,7 @@ export default function Page() {
 
   // insights
   const [insights, setInsights]               = useState(null);
+  const [insightsTs, setInsightsTs]           = useState(null); // when the shown analysis was generated (cache ts), drives the fresh/cached label
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsOn, setInsightsOn]           = useState(() => { try { return localStorage.getItem('nwTracker.insightsOn') === 'true'; } catch { return false; } });
   // Regeneration "ticket" — bumped when fresh insights are wanted. The payload
@@ -292,7 +305,7 @@ export default function Page() {
   useEffect(() => {
     // Show last-known insights immediately (localStorage — survives sessions);
     // the hash-gated effect below decides whether a fresh API call is needed.
-    try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (ic?.insights) setInsights(ic.insights); } catch {}
+    try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (ic?.insights) { setInsights(ic.insights); setInsightsTs(ic.ts || null); } } catch {}
     try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) setMfNav(mc.mfNav); } catch {}
     try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
     let hydrated = false;
@@ -569,7 +582,7 @@ export default function Page() {
     ]);
     try {
       const c = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null');
-      if (c?.insights && c.hash === hash) { setInsights(c.insights); return; } // unchanged — no API spend
+      if (c?.insights && c.hash === hash) { setInsights(c.insights); setInsightsTs(c.ts || null); return; } // unchanged — no API spend
     } catch {}
 
     let stale = false;
@@ -580,8 +593,9 @@ export default function Page() {
         if (res.ok && !stale) {
           const d = await res.json();
           if (d.insights) {
-            setInsights(d.insights);
-            try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts: Date.now(), hash, insights: d.insights })); } catch {}
+            const ts = Date.now();
+            setInsights(d.insights); setInsightsTs(ts);
+            try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts, hash, insights: d.insights })); } catch {}
           }
         }
       } catch {} finally { if (!stale) setInsightsLoading(false); }
@@ -740,7 +754,11 @@ export default function Page() {
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
-              {insightsOn && insightsLoading && <span className="ai-status">✦ analysing…</span>}
+              {insightsOn && (insightsLoading
+                ? <span className="ai-status">✦ analysing…</span>
+                : insights && insightsTs
+                  ? <span className="ai-status ai-fresh" title="When this analysis was generated — click ✨ off/on to force a refresh">✦ analysed {aiAgo(insightsTs)}</span>
+                  : null)}
               <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
               <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
