@@ -740,6 +740,7 @@ export default function Page() {
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
+              {insightsOn && insightsLoading && <span className="ai-status">✦ analysing…</span>}
               <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
               <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
