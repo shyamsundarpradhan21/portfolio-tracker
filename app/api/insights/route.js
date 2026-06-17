@@ -1,17 +1,17 @@
 // Server-side AI insight generator. Accepts a COMPACT aggregates snapshot
 // (one summary string per sleeve, built client-side — never full holdings
-// books) and asks Claude for short, tab-specific insights.
+// books) and asks Claude for one analysis card per tab.
 //
 //   POST /api/insights   body: { asOf, usdInr, overview, indian, indianRisk,
 //                                us, mutualFunds, fixedDeposits, algo }
-//   → { insights: { overview, indian_swot, indian_stocks, us_stocks,
-//                   mutual_funds, fixed_deposits, algo } }
+//   → { insights: { overview, indian, us, mf, fd, trading,   // each {performance, outlook}
+//                   indian_swot: {macro, s, w, o, t} } }
 //
-// Each field is a 1–2 sentence string, or null when nothing is worth flagging.
-// Token economics: Haiku-tier model, ~500-token input, structured outputs
-// (no JSON scaffold in the prompt), max_tokens 700. The client additionally
-// hash-gates calls so unchanged data never re-bills.
-// Requires the ANTHROPIC_API_KEY environment variable (set it in Vercel).
+// Each tab card is performance (honest read) + outlook (forward view), 1–2
+// sentences each, or null when its data is missing. Token economics: Haiku-tier
+// model, ~500-token input, structured outputs, max_tokens 1200. AI fires only
+// on the header toggle (one whole-app call) and the client hash-gates so
+// unchanged data never re-bills. Requires the ANTHROPIC_API_KEY env var.
 
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -28,22 +28,42 @@ const SYSTEM_PROMPT =
   'You receive a compact aggregates snapshot of a live portfolio; reason over it against ' +
   'the broader market backdrop you know — global and Indian macro (rates, inflation, ' +
   'INR/USD, crude, gold), sector and factor rotation, large-cap vs mid/small-cap regimes, ' +
-  'index concentration, US mega-cap tech dynamics — and how these forces bear on the ' +
-  'positions shown. Surface non-obvious risks (concentration, correlation, currency, ' +
-  'duration, reinvestment, tax) and genuine opportunities. ' +
-  'Each value is 1-2 tight, high-signal sentences — specific and actionable, never ' +
-  'generic filler. Flag only what genuinely matters; null any tab that looks fine. ' +
-  'Respect the provided caveats — never overstate short-window or benchmark-flattered ' +
-  'results, and do not invent prices or figures not given. Your knowledge has a training ' +
-  'cutoff, so frame macro views as analytical context, not real-time certainty.';
+  'index concentration, US mega-cap tech dynamics. ' +
+  'For each sleeve return TWO fields. "performance": an HONEST assessment of how it is ' +
+  'actually doing — returns vs benchmark, risk taken, what is working and what is dragging — ' +
+  'not a cheerleader summary; name the weak spots plainly. "outlook": a forward view given ' +
+  'the macro backdrop and the positions shown — risks to watch (concentration, correlation, ' +
+  'currency, duration, reinvestment, tax) and genuine opportunities. ' +
+  'Each field is 1-2 tight, high-signal sentences — specific and actionable, never generic ' +
+  'filler. Respect the provided caveats — never overstate short-window or benchmark-flattered ' +
+  'results, and do not invent prices or figures not given. Null a sleeve only if its data is ' +
+  'missing. Your knowledge has a training cutoff, so frame macro views as analytical context, ' +
+  'not real-time certainty.';
 
 // Structured-outputs schema — guarantees parseable JSON and replaces the old
 // "Return JSON: {...}" prompt scaffold.
 const nullable = (t) => ({ anyOf: [{ type: t }, { type: 'null' }] });
+// One analysis card per tab: performance + outlook (each nullable), or null.
+const analysis = () => ({
+  anyOf: [
+    {
+      type: 'object',
+      properties: { performance: nullable('string'), outlook: nullable('string') },
+      required: ['performance', 'outlook'],
+      additionalProperties: false,
+    },
+    { type: 'null' },
+  ],
+});
 const INSIGHTS_SCHEMA = {
   type: 'object',
   properties: {
-    overview: nullable('string'),
+    overview: analysis(),
+    indian: analysis(),
+    us: analysis(),
+    mf: analysis(),
+    fd: analysis(),
+    trading: analysis(),
     indian_swot: {
       anyOf: [
         {
@@ -61,24 +81,14 @@ const INSIGHTS_SCHEMA = {
         { type: 'null' },
       ],
     },
-    indian_stocks: nullable('string'),
-    us_stocks: nullable('string'),
-    mutual_funds: nullable('string'),
-    fixed_deposits: nullable('string'),
-    algo: nullable('string'),
   },
-  required: ['overview', 'indian_swot', 'indian_stocks', 'us_stocks', 'mutual_funds', 'fixed_deposits', 'algo'],
+  required: ['overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot'],
   additionalProperties: false,
 };
 
 const EMPTY = {
-  overview: null,
+  overview: null, indian: null, us: null, mf: null, fd: null, trading: null,
   indian_swot: null,
-  indian_stocks: null,
-  us_stocks: null,
-  mutual_funds: null,
-  fixed_deposits: null,
-  algo: null,
 };
 
 function buildUserMessage(d) {
@@ -93,9 +103,12 @@ function buildUserMessage(d) {
     `MUTUAL FUNDS: ${s(d.mutualFunds)}\n` +
     `FIXED DEPOSITS: ${s(d.fixedDeposits)}\n` +
     `ALGO (tracked separately, excluded from net worth): ${s(d.algo)}\n\n` +
-    `indian_swot: macro = one-line read of the backdrop (rates, INR, crude, FII flows, ` +
-    `large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each, grounded ` +
-    `in the risk stats and aggregates above. Always populate indian_swot.`
+    `For each sleeve return {performance, outlook} (1-2 sentences each), keyed: ` +
+    `overview (the whole book), indian (Indian equity — use the risk stats too), us, ` +
+    `mf (mutual funds), fd (fixed deposits), trading (the algo line above). ` +
+    `Also return indian_swot: macro = one-line read of the backdrop (rates, INR, crude, ` +
+    `FII flows, large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each, ` +
+    `grounded in the risk stats and aggregates above. Always populate indian_swot.`
   );
 }
 
@@ -111,18 +124,21 @@ function parseInsights(text) {
   if (start === -1 || end === -1) return null;
   try {
     const obj = JSON.parse(t.slice(start, end + 1));
+    const an = (x) => (x && typeof x === 'object')
+      ? { performance: x.performance ?? null, outlook: x.outlook ?? null }
+      : null;
     const sw = obj.indian_swot;
     const swot = (sw && typeof sw === 'object')
       ? { macro: sw.macro ?? null, s: sw.s ?? null, w: sw.w ?? null, o: sw.o ?? null, t: sw.t ?? null }
       : null;
     return {
-      overview: obj.overview ?? null,
+      overview: an(obj.overview),
+      indian: an(obj.indian),
+      us: an(obj.us),
+      mf: an(obj.mf),
+      fd: an(obj.fd),
+      trading: an(obj.trading),
       indian_swot: swot,
-      indian_stocks: obj.indian_stocks ?? null,
-      us_stocks: obj.us_stocks ?? null,
-      mutual_funds: obj.mutual_funds ?? null,
-      fixed_deposits: obj.fixed_deposits ?? null,
-      algo: obj.algo ?? null,
     };
   } catch {
     return null;
@@ -146,7 +162,7 @@ export async function POST(request) {
     const client = new Anthropic();
     const message = await client.messages.create({
       model: MODEL,
-      max_tokens: 700,
+      max_tokens: 1200,
       system: SYSTEM_PROMPT,
       output_config: { format: { type: 'json_schema', schema: INSIGHTS_SCHEMA } },
       messages: [{ role: 'user', content: buildUserMessage(data) }],

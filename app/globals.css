@@ -831,6 +831,17 @@ body {
 @keyframes insshimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .ins-skel { animation: none; } }
 
+/* per-tab AI analysis card — honest Performance read + forward Outlook, fired by
+   the header ✨ toggle (one whole-app call). Replaces the old per-tab banners. */
+.ai-card { border-left: 2px solid color-mix(in srgb, var(--acc) 55%, transparent); }
+.ai-head { display: flex; align-items: center; gap: 8px; font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--txt3); margin-bottom: 12px; }
+.ai-spark { color: var(--acc); font-size: 1.1em; }
+.ai-head .ins-ai { margin-left: auto; }
+.ai-body { display: flex; flex-direction: column; gap: 13px; }
+.ai-body .ins-skel { height: 34px; }
+.ai-lbl { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--acc); margin-bottom: 4px; }
+.ai-txt { font-size: var(--fs-sm); line-height: 1.6; color: var(--txt2); }
+
 /* ── Sidebar layout ──────────────────────────────────────────────────────────── */
 body { padding: 0; }
 

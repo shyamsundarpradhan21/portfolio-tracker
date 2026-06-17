@@ -1,7 +1,7 @@
 'use client';
 import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
 import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import SunburstMix from '../SunburstMix';
@@ -136,7 +136,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
 
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.mutual_funds : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.mf} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
 
       <div className="g3 sec">
         <div className="csm">

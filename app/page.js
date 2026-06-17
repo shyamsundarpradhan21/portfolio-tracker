@@ -218,7 +218,7 @@ export default function Page() {
   // insights
   const [insights, setInsights]               = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
-  const [insightsOn, setInsightsOn]           = useState(() => { try { return localStorage.getItem('nwTracker.insightsOn') !== 'false'; } catch { return true; } });
+  const [insightsOn, setInsightsOn]           = useState(() => { try { return localStorage.getItem('nwTracker.insightsOn') === 'true'; } catch { return false; } });
   // Regeneration "ticket" — bumped when fresh insights are wanted. The payload
   // effect below runs after render, so it reads fully-recomputed derived state
   // (no need to thread prices/fx/nav through as arguments).
@@ -284,10 +284,10 @@ export default function Page() {
       const t = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setStatus({ msg: 'Updated at ' + t, type: '' }); setLastUpdate('Last updated ' + t);
       try { sessionStorage.setItem(FETCH_TS_KEY, JSON.stringify({ ts: Date.now(), prices: merged, usdInr: fx || usdInr })); } catch {}
-      if (opts.insights && insightsOn) requestInsights();
     } catch (e) { setStatus({ msg: 'Error: ' + (e.message || 'fetch failed'), type: 'err' }); }
     finally { setLoading(false); }
-  }, [usdInr, requestInsights, insightsOn]);
+    // Prices only — AI insights are fired exclusively by the ✨ toggle, never by a price refresh.
+  }, [usdInr]);
 
   useEffect(() => {
     // Show last-known insights immediately (localStorage — survives sessions);
@@ -303,10 +303,12 @@ export default function Page() {
         const age = Math.round((Date.now() - c.ts) / 60000);
         setStatus({ msg: `Cached prices (${age}m ago)`, type: 'stale' }); setLastUpdate(`Cached ${age}min ago`);
         hydrated = true;
-        if (insightsOn) requestInsights();
       }
     } catch {}
-    if (!hydrated) doRefresh({ insights: insightsOn });
+    if (!hydrated) doRefresh();
+    // AI is NOT auto-fired on load — cached insights (loaded above) display as-is,
+    // and a fresh whole-app call happens only when the user clicks the ✨ toggle
+    // (by which point live data is ready). Keeps reloads at zero AI cost.
     timer.current = setInterval(doRefresh, REFRESH_MS);
     return () => clearInterval(timer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -740,7 +742,7 @@ export default function Page() {
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
               <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={`AI insights ${insightsOn ? 'on' : 'off'}`}>✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
-              <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh({ insights: true })} title="Refresh" aria-label="Refresh">↻</button>
+              <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
             </div>
           </div>
 

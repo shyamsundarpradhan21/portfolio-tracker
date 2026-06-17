@@ -1,7 +1,7 @@
 'use client';
 import { cl, pctS, pct1, InrC, SInrF, Rs, UsdF } from '../../lib/fmt';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import SunburstMix from '../SunburstMix';
@@ -16,7 +16,7 @@ export default function USTab({
 }) {
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.us_stocks : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.us} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>

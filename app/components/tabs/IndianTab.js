@@ -1,7 +1,7 @@
 'use client';
 import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, inrCd, sFull, fmtNavDate } from '../../lib/fmt';
 import { SECTOR_PALETTE } from '../../lib/constants';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import Skel from '../shared/Skel';
@@ -29,7 +29,7 @@ export default function IndianTab({
 }) {
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.indian_stocks : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>

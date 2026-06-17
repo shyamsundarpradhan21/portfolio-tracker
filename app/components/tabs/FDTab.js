@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { InrC, InrF, Pct, fmtNavDate, fmtDateObj } from '../../lib/fmt';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 
 // Active-FDs table columns — drives both the sortable header and the sort.
@@ -28,7 +28,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
   });
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.fd} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <FreshnessTag mode="manual" date={`${fmtDateObj(now)} · accrued recalculated daily`} />
       </div>

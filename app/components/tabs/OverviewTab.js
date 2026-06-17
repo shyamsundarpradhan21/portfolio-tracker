@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { inrFull, inrC } from '../../lib/fmt';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
 import AllocCard from '../shared/AllocCard';
@@ -20,7 +20,7 @@ export default function OverviewTab({
 
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.overview : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.overview} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
 
       {/* Live allocation sunburst + growth tracker/projection scrubber */}
       <div className="ov-top">

@@ -1,6 +1,6 @@
 'use client';
 import { cl, pctS, InrF, SInrF, SInrC, RsText, inrFull } from '../../lib/fmt';
-import InsightBanner from '../shared/InsightBanner';
+import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
@@ -17,7 +17,7 @@ export default function AlgoTab({
 }) {
   return (
     <div>
-      <InsightBanner text={insightsOn ? insights?.algo : null} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <FreshnessTag mode="manual" date={`${FY.labels.verified} ITR-verified · swing live`} />
       </div>
