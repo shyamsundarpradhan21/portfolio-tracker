@@ -126,8 +126,14 @@ export function computeBetaVol(hist, held, _now) {
   const n = rp.length; cov /= n; vm /= n; vp /= n;
   const beta  = vm > 0 ? cov / vm : null;
   const alpha = beta != null ? (mp - beta * mkm) * 52 : null;
+  // Annualised Sharpe from the weekly series: mean weekly return in excess of
+  // the risk-free rate, per unit of weekly σ, scaled by √52. RF ≈ India 1-yr
+  // T-bill (~6.5%). A risk-adjusted return that can't be read off the benchmark
+  // table — pairs with the volatility stat ("is the bumpiness worth it?").
+  const RF_ANNUAL = 0.065;
+  const sharpe = vp > 0 ? ((mp - RF_ANNUAL / 52) / Math.sqrt(vp)) * Math.sqrt(52) : null;
   return {
-    beta, alpha,
+    beta, alpha, sharpe,
     vol:    Math.sqrt(vp * 52) * 100,
     mktVol: Math.sqrt(vm * 52) * 100,
     rsq:    (vp > 0 && vm > 0) ? (cov * cov) / (vp * vm) : null,

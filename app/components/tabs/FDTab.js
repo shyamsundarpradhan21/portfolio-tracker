@@ -1,10 +1,31 @@
 'use client';
+import { useState } from 'react';
 import { InrC, InrF, Pct, fmtNavDate, fmtDateObj } from '../../lib/fmt';
 import InsightBanner from '../shared/InsightBanner';
 import FreshnessTag from '../shared/FreshnessTag';
 
+// Active-FDs table columns — drives both the sortable header and the sort.
+const FD_COLS = [
+  { key: 'bank',         label: 'Bank',        num: false },
+  { key: 'label',        label: 'FD',          num: false },
+  { key: 'matures',      label: 'Matures',     num: false },
+  { key: 'principal',    label: 'Principal',   num: true },
+  { key: 'rate',         label: 'Rate',        num: true },
+  { key: 'accruedSoFar', label: 'Accrued',     num: true },
+  { key: 'maturityValue',label: 'At maturity', num: true },
+];
+
 export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoad }) {
   const banks = [...new Set(fds.rows.map((f) => f.bank))].join(', ');
+  // sort the Active FDs table — default: soonest maturity first
+  const [sort, setSort] = useState({ key: 'matures', dir: 1 });
+  const sortBy = (key) => setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'bank' || key === 'label' ? 1 : -1 }));
+  const activeRows = [...fds.rows].sort((a, b) => {
+    const av = a[sort.key], bv = b[sort.key];
+    if (av instanceof Date || bv instanceof Date) return sort.dir * (((av && av.getTime()) || 0) - ((bv && bv.getTime()) || 0));
+    if (typeof av === 'string') return sort.dir * String(av).localeCompare(String(bv));
+    return sort.dir * ((av ?? -Infinity) - (bv ?? -Infinity));
+  });
   return (
     <div>
       <InsightBanner text={insightsOn ? insights?.fixed_deposits : null} loading={insightsOn && insightsFirstLoad} />
@@ -41,13 +62,15 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
           <table className="tbl" style={{ minWidth: 760 }}>
             <thead>
               <tr>
-                <th>Bank</th><th>FD</th><th>Matures</th>
-                <th className="ra">Principal</th><th className="ra">Rate</th>
-                <th className="ra">Accrued</th><th className="ra">At maturity</th>
+                {FD_COLS.map((c) => (
+                  <th key={c.key} className={c.num ? 'ra' : ''} onClick={() => sortBy(c.key)} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    {c.label} {sort.key === c.key ? (sort.dir < 0 ? '↓' : '↑') : '↕'}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {fds.rows.map((f) => (
+              {activeRows.map((f) => (
                 <tr key={f.bank + f.label}>
                   <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{f.bank}</td>
                   <td className="mut">{f.label}</td>
