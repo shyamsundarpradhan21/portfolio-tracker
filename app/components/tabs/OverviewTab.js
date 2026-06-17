@@ -10,6 +10,7 @@ import SipCard from '../shared/SipCard';
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
   projSleeves, projInvested0, baseYear, payslips, dataReady, mfAlloc,
+  dayGain, sleeveBasis,
   cmpsPension, cmpsService, cmpsRetirement, cmpsVested, cmpsVestYear,
 }) {
   const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
@@ -27,6 +28,7 @@ export default function OverviewTab({
         <ProjectionTab
           nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
           baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
+          dayGain={dayGain} sleeveBasis={sleeveBasis}
           cmpsRetirement={cmpsRetirement} cmpsPension={cmpsPension} cmpsService={cmpsService}
           cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}
         />

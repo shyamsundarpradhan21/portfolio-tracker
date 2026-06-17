@@ -112,11 +112,9 @@ export default function AlgoTab({
             </div>
             <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
             <div className="mini">
-              <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
+              <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 8, alignItems: 'center' }}>
                 Swing positions{' '}
-                <span className={'badge ' + (markets.nse ? 'bg' : '')} style={{ fontSize: 'var(--fs-2xs)', ...(markets.nse ? {} : { background: 'rgba(90,90,114,.2)', color: 'var(--txt3)' }) }}>
-                  {markets.nse ? 'LIVE' : 'NSE CLOSED'}
-                </span>
+                <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'}` }} />
               </div>
               <div className="ovx">
                 <table className="tbl" style={{ minWidth: 360 }}>

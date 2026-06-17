@@ -17,7 +17,7 @@ const compactInr = (n) => {
   return Math.round(a).toLocaleString('en-IN');
 };
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
-const PALETTE = ['var(--blu)', 'var(--pur)', '#06B6D4', 'var(--grn)', '#E85F8F', 'var(--acc)'];
+const PALETTE = ['var(--blu)', 'var(--pur)', 'var(--cyn)', 'var(--grn)', 'var(--pnk)', 'var(--acc)'];
 
 export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, className = '', note }) {
   const [sel, setSel] = useState(null); // null = overall, else FY index

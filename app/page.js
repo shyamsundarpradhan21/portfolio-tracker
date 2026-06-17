@@ -14,7 +14,7 @@ import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot, historicalSnapshots } from './lib/snapshots';
 import { buildBackfill } from './lib/backfill';
-import { cmpfCorpus } from './lib/cmpf';
+import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
@@ -537,7 +537,7 @@ export default function Page() {
         `largest ${inStats.topPos ? `${inStats.topPos.sym} ${r1((inStats.topPos.val / (indian.val || 1)) * 100)}% of book` : 'n/a'} · ` +
         `movers: ${movers(indian.rows, 'pct')} · CAVEAT ${inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} window, indicative`,
       indianRisk: indianRisk.hasReg
-        ? `beta ${indianRisk.beta?.toFixed(2)} · alpha ${indianRisk.alpha?.toFixed(2)} · vol ${r1(indianRisk.vol)}% vs Nifty ${r1(indianRisk.mktVol)}% (weekly regression)`
+        ? `beta ${indianRisk.beta?.toFixed(2)} · Sharpe ${indianRisk.sharpe?.toFixed(2)} · vol ${r1(indianRisk.vol)}% vs Nifty ${r1(indianRisk.mktVol)}% (weekly regression)`
         : 'n/a',
       us:
         `${US.length} holdings $${usData.inv.toFixed(0)}→$${usData.val.toFixed(0)} · XIRR ${r1(usStats.xirr)}% · ` +
@@ -608,6 +608,27 @@ export default function Page() {
     [Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.pfValue || 0)],
   );
 
+  // Per-sleeve value + invested basis (keys match projSleeves) — feeds the daily
+  // snapshot's per-sleeve breakdown and the growth pills' gain-attribution
+  // waffles. invested = cost basis, so value − invested = that sleeve's gain.
+  const sleeveBasis = useMemo(() => ({
+    fd:     { v: Math.round(ov.fdValue || 0),    i: Math.round((fds.principal || 0) + (fds.maturedCash || 0)) },
+    indian: { v: Math.round(indian.val || 0),    i: Math.round(indian.inv || 0) },
+    us:     { v: Math.round(ov.usInr || 0),      i: Math.round((usData.inv || 0) * fxRate) },
+    mf:     { v: Math.round(mf.jio.value || 0),  i: Math.round(mf.jio.cost || 0) },
+    elss:   { v: Math.round(mf.elss.value || 0), i: Math.round(mf.elss.cost || 0) },
+    pf:     { v: Math.round(ov.pfValue || 0),    i: cmpfPaid(new Date()) },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [ov.fdValue, ov.usInr, ov.pfValue, indian.val, indian.inv, usData.inv, fxRate, mf.jio.value, mf.jio.cost, mf.elss.value, mf.elss.cost, fds.principal, fds.maturedCash]);
+
+  // Live single-day P&L per sleeve (INR). Only the equity sleeves move intraday
+  // (live quotes carry day-change); FD/MF/CMPF accrue smoothly, so ~0 for today.
+  const daySleeveGain = useMemo(() => ({
+    indian: Math.round(indianDay.dayPl || 0),
+    us:     Math.round((usStats.dayPl || 0) * fxRate),
+    fd: 0, mf: 0, elss: 0, pf: 0,
+  }), [indianDay.dayPl, usStats.dayPl, fxRate]);
+
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
   const mktPill = (open, st) => (st === 'PRE' || st === 'POST') ? 'mkt-pre' : open ? 'mkt-open' : 'mkt-closed';
   const mktTxt  = (open, st) => st === 'PRE' ? 'PRE' : st === 'POST' ? 'POST' : open == null ? '—' : open ? 'OPEN' : 'CLOSED';
@@ -658,8 +679,9 @@ export default function Page() {
       nw: Math.round(ov.nw),
       assets: Math.round(ov.totalAssets),
       invested: Math.round(projInvested0),
+      sl: sleeveBasis, // per-sleeve {v,i} so past windows can attribute gains by class
     }));
-  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0]);
+  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis]);
 
   // NW hero: fire entrance animation once when live NW first becomes available,
   // and detect all-time-high (NW > every prior snapshot) for the celebration.
@@ -782,6 +804,7 @@ export default function Page() {
               FY={FY} snapshots={chartSnapshots}
               projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
               payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
+              dayGain={daySleeveGain} sleeveBasis={sleeveBasis}
               cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE}
               cmpsVested={ov.cmpsVested} cmpsVestYear={ov.cmpsVestYear} />
           )}

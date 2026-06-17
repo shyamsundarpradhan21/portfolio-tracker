@@ -47,3 +47,13 @@ export function cmpfCorpus(atDate) {
 
   return Math.round(corpus);
 }
+
+// Total contributions paid in (employee + employer match) up to atDate — the
+// CMPF "invested" basis, so corpus − paid = accrued interest. Used to attribute
+// the sleeve's market gain (interest) separately from fresh contributions.
+export function cmpfPaid(atDate) {
+  const limit = typeof atDate === 'string' ? atDate.slice(0, 7) : atDate.toISOString().slice(0, 7);
+  let paid = 0;
+  for (const c of CMPF_CONTRIBUTIONS) if (c.month <= limit) paid += c.emp * 2;
+  return Math.round(paid);
+}

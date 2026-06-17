@@ -26,7 +26,7 @@ const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?
 // work inside SVG stop elements in all browsers). These are FALLBACKS only:
 // useScHex resolves the live --sc-* tokens at runtime so the chart follows
 // the day/night theme instead of being stuck on the night palette.
-const SC_FALLBACK = { cons: '#5B9BE8', base: '#A78BFA', opt: '#E8A857', acc: '#F0A6C0', txt3: '#8A8F98' };
+const SC_FALLBACK = { cons: '#3B82F6', base: '#A78BFA', opt: '#E8A857', acc: '#C2A9A0', txt3: '#8A8F98' };
 const SC_META = {
   cons: { tone: 'var(--sc-cons)', name: 'Conservative' },
   base: { tone: 'var(--sc-base)', name: 'Base · XIRR' },
@@ -195,11 +195,43 @@ function MilestoneFlag({ cx, cy, label, tone, idx, blink = true }) {
   );
 }
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
+// A tiny allocation waffle: n cells split by each sleeve's share of the
+// window's GROSS market move (|gain|), coloured by the sleeve. A sleeve that
+// dragged the window (negative) renders hollow, so a glance reads which classes
+// drove the move and which fought it. The signed breakdown rides the title.
+const INR0 = (v) => (v >= 0 ? '+' : '−') + '₹' + Math.abs(Math.round(v)).toLocaleString('en-IN');
+function Waffle({ parts, n = 10 }) {
+  const tot = parts.reduce((s, p) => s + Math.abs(p.gain), 0);
+  if (!(tot > 0)) return null;
+  // largest-remainder so the cells total exactly n
+  const rows = parts.map((p) => ({ ...p, exact: (Math.abs(p.gain) / tot) * n }));
+  rows.forEach((r) => { r.c = Math.floor(r.exact); });
+  let used = rows.reduce((s, r) => s + r.c, 0);
+  rows.map((r, i) => ({ i, frac: r.exact - Math.floor(r.exact) }))
+    .sort((a, b) => b.frac - a.frac)
+    .forEach((x) => { if (used < n) { rows[x.i].c++; used++; } });
+  const cells = [];
+  rows.forEach((r) => { for (let k = 0; k < r.c; k++) cells.push({ color: r.color, neg: r.gain < 0 }); });
+  const title = parts
+    .slice().sort((a, b) => Math.abs(b.gain) - Math.abs(a.gain))
+    .map((p) => `${p.label} ${INR0(p.gain)}`).join('  ·  ');
+  return (
+    <span className="pjx-waffle" title={title}>
+      {cells.map((c, i) => (
+        <i key={i} className={'pjx-wf' + (c.neg ? ' neg' : '')} style={{ '--wc': c.color }} />
+      ))}
+    </span>
+  );
+}
+
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
   const [playing, setPlaying] = useState(false);
+  // bumped each time live NW first crosses a not-yet-celebrated milestone; the
+  // bump remounts the TODAY-dot celebration so its CSS animation re-fires.
+  const [celebrateKey, setCelebrateKey] = useState(0);
   const raf = useRef(null);
   const MAXY = PROJECTION.horizonYears;
   const SC_HEX = useScHex();
@@ -356,6 +388,43 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     return out;
   }, [hist]);
 
+  // Per-window market-gain attribution by asset class, for the growth pills'
+  // waffles. DAY uses live per-sleeve day P&L (accurate today). The longer
+  // windows need a per-sleeve snapshot at the window start — recording of that
+  // began recently, so they light up on their own as history accrues (a window
+  // with no per-sleeve ref simply gets no waffle). Per-sleeve gain over a window
+  // = value change minus capital deployed into that sleeve.
+  const attribution = useMemo(() => {
+    const byKey = {}; sleeves.forEach((s) => { byKey[s.key] = s; });
+    const order = sleeves.map((s) => s.key);
+    const mk = (gains) => order
+      .map((k) => ({ key: k, label: byKey[k]?.label || k, color: byKey[k]?.color || 'var(--txt3)', gain: gains[k] || 0 }))
+      .filter((x) => Math.abs(x.gain) >= 1);
+    const out = {};
+    if (dayGain && order.some((k) => Math.abs(dayGain[k] || 0) >= 1)) out.D = mk(dayGain);
+    if (hist.length && sleeveBasis) {
+      const last = hist[hist.length - 1];
+      for (const r of RANGES) {
+        if (r.key === 'D') continue;
+        let ref;
+        if (r.key === 'Max') ref = hist.find((s) => s.sl);      // since per-sleeve tracking began
+        else {
+          const cutoff = ms(last.d) - r.days * 864e5;
+          for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff && hist[i].sl) { ref = hist[i]; break; }
+        }
+        if (!ref || !ref.sl) continue;
+        const gains = {};
+        for (const k of order) {
+          const cur = sleeveBasis[k], st = ref.sl[k];
+          if (cur && st) gains[k] = (cur.v - st.v) - (cur.i - st.i);
+        }
+        const arr = mk(gains);
+        if (arr.length) out[r.key] = arr;
+      }
+    }
+    return out;
+  }, [dayGain, hist, sleeveBasis, sleeves]);
+
   const pts = useMemo(() => {
     if (!hist.length) return [];
     const r = RANGES.find((x) => x.key === range);
@@ -397,6 +466,27 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     if (!onDrift) return;
     onDrift(scrubbing ? { year: baseYear + Math.round(t), out: model.allocAt(sc, t).out } : null);
   }, [onDrift, scrubbing, t, sc, model, baseYear]);
+
+  // Live milestone celebration: when net worth first crosses a higher round
+  // number than we've celebrated before, fire the burst+pop on the TODAY dot.
+  // The highest reached level is persisted in localStorage so it celebrates the
+  // *moment* of crossing, not on every reload. First run just records the
+  // current level silently (no retroactive party). MUST sit above the early
+  // return — hooks can't be conditional.
+  useEffect(() => {
+    if (!dataReady || !(nw > 0) || typeof window === 'undefined') return;
+    const reached = MILESTONES.filter((m) => nw >= m).pop() || 0;
+    let stored;
+    try { stored = localStorage.getItem('pjx-ms-celebrated'); } catch { return; }
+    if (stored === null) {                         // first run → set baseline, no party
+      try { localStorage.setItem('pjx-ms-celebrated', String(reached)); } catch {}
+      return;
+    }
+    if (reached > (+stored || 0)) {
+      try { localStorage.setItem('pjx-ms-celebrated', String(reached)); } catch {}
+      setCelebrateKey((k) => k + 1);
+    }
+  }, [nw, dataReady]);
 
   if (hist.length < 2) return null;
   const first = pts[0], lastH = pts[pts.length - 1];
@@ -615,6 +705,17 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           <circle cx={xToday} cy={Y(liveNw)} r="10" fill="none"
             stroke="var(--acc)" strokeOpacity=".35" strokeWidth="2" />
         )}
+        {/* live milestone party — mounts (and animates) only when celebrateKey
+            bumps, i.e. NW just crossed a fresh round number. Reuses the same
+            burst as the projected ladder; a ★ pops on the TODAY dot and fades. */}
+        {!scrubbing && celebrateKey > 0 && (
+          <g key={celebrateKey} transform={`translate(${xToday},${Y(liveNw)})`} style={{ pointerEvents: 'none' }}>
+            <circle className="pjx-burst" r="6" fill="none" stroke="var(--acc)" strokeWidth="2.5" />
+            <circle className="pjx-burst pjx-burst-2" r="3.5" fill="var(--acc)" />
+            <text className="pjx-live-star" x={0} y={0} fontSize="18" fill="var(--acc)"
+              fontWeight="700" textAnchor="middle" dominantBaseline="central">★</text>
+          </g>
+        )}
         <RsSvg x={scrubbing ? xToday : xToday - 8} y={PADT - 16}
           fontSize={SVG_FS.label} fill="var(--acc)" fontWeight="700" fontFamily="var(--mono)"
           textAnchor={scrubbing ? 'middle' : 'end'}>
@@ -717,27 +818,32 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             {growth.map((g) => (
               <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')}
                 onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
-                <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
-                {/* deltas against live NW are meaningless while a sleeve is unpriced */}
-                {dataReady ? (
-                  <>
-                    {/* +/- figures keep their semantic green/red P&L coding;
-                        the tab accent lives in the selection chrome only */}
-                    <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                      <Crs n={g.chg} />
-                    </span>
-                    <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                      {g.key === 'Max' && xirrPct != null
-                        ? `XIRR ${xirrPct}%`
-                        : `${Math.abs(g.pct).toFixed(2)}%`}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="pjx-gv mono">—</span>
-                    <span className="pjx-gp mono">loading</span>
-                  </>
-                )}
+                <span className="pjx-gmeta">
+                  <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
+                  {/* deltas against live NW are meaningless while a sleeve is unpriced */}
+                  {dataReady ? (
+                    <>
+                      {/* +/- figures keep their semantic green/red P&L coding;
+                          the tab accent lives in the selection chrome only */}
+                      <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
+                        <Crs n={g.chg} />
+                      </span>
+                      <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
+                        {g.key === 'Max' && xirrPct != null
+                          ? `XIRR ${xirrPct}%`
+                          : `${Math.abs(g.pct).toFixed(2)}%`}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="pjx-gv mono">—</span>
+                      <span className="pjx-gp mono">loading</span>
+                    </>
+                  )}
+                </span>
+                {/* gain attribution by asset class, vertical on the right — DAY is
+                    live; longer windows appear as per-sleeve snapshot history accrues */}
+                {dataReady && attribution[g.key] && <Waffle parts={attribution[g.key]} />}
               </button>
             ))}
           </div>
