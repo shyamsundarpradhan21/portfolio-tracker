@@ -7,11 +7,13 @@
 //   → { insights: { overview, indian, us, mf, fd, trading,   // each {performance, outlook}
 //                   indian_swot: {macro, s, w, o, t} } }
 //
-// Each tab card is performance (honest read) + outlook (forward view), 1–2
-// sentences each, or null when its data is missing. Token economics: Haiku-tier
-// model, ~500-token input, structured outputs, max_tokens 2048. AI fires only
-// on the header toggle (one whole-app call) and the client hash-gates so
-// unchanged data never re-bills. Requires the ANTHROPIC_API_KEY env var.
+// Each tab card is a CRISP performance read + forward outlook (ONE sentence
+// each), or empty when its data is missing. Flow: fetch a live macro snapshot
+// from Perplexity (Sonar, web-grounded) → feed it plus the aggregates to Claude
+// (Haiku) with a structured-output schema, so the macro views cite today's
+// numbers instead of training memory. Fires only on the header ✨ refresh (one
+// whole-app, user-paced call). Requires ANTHROPIC_API_KEY; PERPLEXITY_API_KEY
+// is optional — without it the live-macro block is simply omitted.
 
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -19,27 +21,62 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// Claude Haiku 4.5 — cheapest tier; right-sized for 1-2 sentence insights.
+// Claude Haiku 4.5 — cheapest tier; right-sized for one-sentence insights.
 // Isolated here so the model is a one-line change (Sonnet 4.6 if quality lags).
 const MODEL = 'claude-haiku-4-5';
 
+// Live macro is fetched from Perplexity Sonar (OpenAI-compatible endpoint,
+// web-grounded). 'sonar' is the cheapest web-search tier — right for a terse
+// numbers-only snapshot. Optional: no PERPLEXITY_API_KEY → macro block omitted.
+const PPLX_URL = 'https://api.perplexity.ai/chat/completions';
+const PPLX_MODEL = 'sonar';
+
+async function fetchLiveMacro() {
+  const key = process.env.PERPLEXITY_API_KEY;
+  if (!key) return '';
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000); // never let search stall the whole call
+  try {
+    const res = await fetch(PPLX_URL, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: PPLX_MODEL,
+        temperature: 0.1,
+        max_tokens: 450,
+        messages: [
+          { role: 'system', content: 'You are a markets data terminal. Reply with ONLY current numbers, one terse line per item, no prose, no commentary.' },
+          { role: 'user', content:
+            'Latest India + global macro, one line each with the value and as-of date: ' +
+            'Nifty 50 level & 1-day %; Sensex level & 1-day %; India 10Y G-sec yield; RBI repo rate; ' +
+            'USD/INR; Brent crude $/bbl; gold $/oz; S&P 500 & Nasdaq levels & 1-day %; US fed funds target; ' +
+            'FII/DII net equity flow (India, latest session); large-cap vs mid/small-cap tone.' },
+        ],
+      }),
+    });
+    if (!res.ok) return '';
+    const j = await res.json();
+    return (j?.choices?.[0]?.message?.content || '').trim();
+  } catch {
+    return ''; // timeout / network / bad key — degrade to no live macro
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const SYSTEM_PROMPT =
-  'You are a sharp, macro-aware portfolio analyst reading the markets like a hawk. ' +
-  'You receive a compact aggregates snapshot of a live portfolio; reason over it against ' +
-  'the broader market backdrop you know — global and Indian macro (rates, inflation, ' +
-  'INR/USD, crude, gold), sector and factor rotation, large-cap vs mid/small-cap regimes, ' +
-  'index concentration, US mega-cap tech dynamics. ' +
-  'For each sleeve return TWO fields. "performance": an HONEST assessment of how it is ' +
-  'actually doing — returns vs benchmark, risk taken, what is working and what is dragging — ' +
-  'not a cheerleader summary; name the weak spots plainly. "outlook": a forward view given ' +
-  'the macro backdrop and the positions shown — risks to watch (concentration, correlation, ' +
-  'currency, duration, reinvestment, tax) and genuine opportunities. ' +
-  'Each field is 1-2 tight, high-signal sentences — specific and actionable, never generic ' +
-  'filler. Respect the provided caveats — never overstate short-window or benchmark-flattered ' +
-  'results, and do not invent prices or figures not given. Return an EMPTY STRING for any ' +
-  'field whose underlying data is missing — never fabricate. Your knowledge has a training ' +
-  'cutoff, so frame macro views as analytical context, ' +
-  'not real-time certainty.';
+  'You are a sharp, macro-aware portfolio analyst. You receive a compact aggregates snapshot ' +
+  'of a live portfolio plus a LIVE macro block fetched from the web moments ago. Ground every ' +
+  'macro view in those CURRENT numbers, not memory. ' +
+  'For each sleeve return TWO fields. "performance": the single most honest read of how it is ' +
+  'actually doing — what is working or dragging, risk taken, benchmark-relative; name the weak ' +
+  'spot plainly, never cheerlead. "outlook": the single highest-value forward point given ' +
+  "today's macro and the positions. " +
+  'Be CRISP — ONE sentence per field, ~15-20 words, high signal. Do NOT restate the figures we ' +
+  'already display; give the READ, not a recap. No filler, no hedging boilerplate. ' +
+  'Return an EMPTY STRING for any field whose data is missing — never fabricate prices or ' +
+  'figures beyond the snapshot and the live macro block.';
 
 // Structured-outputs schema — guarantees parseable JSON and replaces the old
 // "Return JSON: {...}" prompt scaffold. Anthropic caps a schema at 16
@@ -84,11 +121,15 @@ const EMPTY = {
   indian_swot: null,
 };
 
-function buildUserMessage(d) {
+function buildUserMessage(d, macroLive) {
   // No stale hardcoded fallbacks — a missing section is 'n/a', never an old figure.
   const s = (x) => (typeof x === 'string' && x.trim() ? x : 'n/a');
+  const macro = (typeof macroLive === 'string' && macroLive.trim()) ? macroLive.trim() : '';
   return (
     `Portfolio snapshot as of ${s(d.asOf)} · USD/INR ${d.usdInr ?? 'n/a'}\n\n` +
+    (macro
+      ? `MACRO (LIVE — fetched from the web just now; ground all macro views in THESE numbers, not memory):\n${macro}\n\n`
+      : `MACRO (LIVE): unavailable this run — keep macro views light and clearly general.\n\n`) +
     `OVERVIEW: ${s(d.overview)}\n` +
     `INDIAN EQUITY: ${s(d.indian)}\n` +
     `INDIAN RISK STATS: ${s(d.indianRisk)}\n` +
@@ -96,12 +137,11 @@ function buildUserMessage(d) {
     `MUTUAL FUNDS: ${s(d.mutualFunds)}\n` +
     `FIXED DEPOSITS: ${s(d.fixedDeposits)}\n` +
     `ALGO (tracked separately, excluded from net worth): ${s(d.algo)}\n\n` +
-    `For each sleeve return {performance, outlook} (1-2 sentences each), keyed: ` +
-    `overview (the whole book), indian (Indian equity — use the risk stats too), us, ` +
-    `mf (mutual funds), fd (fixed deposits), trading (the algo line above). ` +
-    `Also return indian_swot: macro = one-line read of the backdrop (rates, INR, crude, ` +
-    `FII flows, large vs mid/small regime); s/w/o/t = ONE tight, macro-aware sentence each, ` +
-    `grounded in the risk stats and aggregates above. Always populate indian_swot.`
+    `Return {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words), keyed: ` +
+    `overview (whole book), indian (use the risk stats), us, mf (mutual funds), fd (fixed deposits), ` +
+    `trading (the algo line). Also indian_swot: macro = one line on TODAY's backdrop using the ` +
+    `live numbers above (Nifty level/move, repo rate, INR, crude, FII flows); s/w/o/t = ONE tight ` +
+    `sentence each. Always populate indian_swot. Do NOT restate our figures — give the read, not a recap.`
   );
 }
 
@@ -152,18 +192,18 @@ export async function POST(request) {
   }
 
   try {
+    const macroLive = await fetchLiveMacro(); // live web macro via Perplexity (or '' if unavailable)
     const client = new Anthropic();
     const message = await client.messages.create({
       model: MODEL,
-      // 6 cards x {performance, outlook} + a 5-field SWOT routinely runs
-      // ~1.0-1.3K output tokens on a full book; 1200 truncated the JSON
-      // (stop_reason max_tokens) and the parse silently failed to all-null.
-      // 2048 leaves comfortable headroom; Haiku output is cheap and the
-      // client hash-gates to ~one call/day.
+      // 6 cards x {performance, outlook} + a 5-field SWOT; crisp one-liners run
+      // well under this, but 1200 once truncated verbose JSON (stop_reason
+      // max_tokens) and the parse silently failed to all-null — 2048 is a safe
+      // ceiling. Haiku output is cheap and refresh is manual (user-paced).
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       output_config: { format: { type: 'json_schema', schema: INSIGHTS_SCHEMA } },
-      messages: [{ role: 'user', content: buildUserMessage(data) }],
+      messages: [{ role: 'user', content: buildUserMessage(data, macroLive) }],
     });
 
     const text = message.content
