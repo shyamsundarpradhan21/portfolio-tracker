@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { InrC, SInrC, pctS } from '../../lib/fmt';
+import { SInrC, pctS } from '../../lib/fmt';
 import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier } from '../../lib/scenarios';
 import AnalysisCard from '../shared/AnalysisCard';
 
@@ -56,17 +56,112 @@ const CLOCK = [
 
 const confLabel = { hard: 'measured', modelled: 'regression', indicative: 'indicative (too few obs)', assumed: 'stated assumption' };
 
-// Distinct marker per confidence FAILURE MODE — a weak fit (~), too few
-// observations (n=N), and a pure assumption (≈) must each read differently.
-function legFlag(leg) {
-  if (!leg) return null;
-  if (leg.conf === 'modelled' && leg.weak) return <span className="mac-flag" title={`weak fit · R²=${leg.rsq != null ? leg.rsq.toFixed(2) : '—'}`}>~</span>;
-  if (leg.conf === 'indicative') return <span className="mac-flag-n" title={`indicative · only ${leg.n} obs — too few to fit`}>n={leg.n}</span>;
-  if (leg.conf === 'assumed') return <span className="mac-flag-a" title="stated assumption — no series">≈</span>;
-  return null; // hard, or a measured modelled fit → no marker
-}
 // "Soft" = anything that must not read as a hard measured number.
 const isSoft = (leg) => !!leg && (leg.conf === 'assumed' || leg.conf === 'indicative' || (leg.conf === 'modelled' && leg.weak));
+const isSoftConf = (c) => c === 'assumed' || c === 'indicative';
+
+// plain string ₹ formatter for SVG <text> (SInrC renders a span, unusable in SVG)
+const fmtInr = (n) => { const a = Math.abs(Math.round(n)); return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? '₹' + (a / 1e3).toFixed(1) + 'K' : '₹' + a; };
+const redgrn = (v) => (v > 0 ? 'var(--grn)' : v < 0 ? 'var(--red)' : 'var(--txt3)');
+// tiny in-cell confidence mark — weak ~, indicative ⁿ, assumed ≈ (kept distinct)
+const cellMark = (leg) => (leg.conf === 'modelled' && leg.weak ? '~' : leg.conf === 'indicative' ? 'ⁿ' : leg.conf === 'assumed' ? '≈' : '');
+
+// ── CHART 1 · Scenario heatmap (replaces the stress table) ───────────────────
+function ScenarioHeatmap({ evals, sleeves, selId, setSelId }) {
+  const W = 760, labelW = 150, padR = 74, padT = 24, cellH = 26;
+  const colW = (W - labelW - padR) / sleeves.length;
+  const H = padT + evals.length * cellH + 4;
+  const allv = evals.flatMap((e) => e.legs.map((l) => l.inr));
+  const maxLoss = Math.max(1, ...allv.map((v) => (v < 0 ? -v : 0)));
+  const maxGain = Math.max(1, ...allv.map((v) => (v > 0 ? v : 0)));
+  const legOf = (e, k) => e.legs.find((l) => l.key === k);
+  return (
+    <div className="ovx"><svg className="mac-hm" viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ minWidth: 600 }}>
+      {sleeves.map((s, j) => <text key={s.key} x={labelW + j * colW + colW / 2} y={padT - 9} textAnchor="middle" fontSize="10" fill={s.color} fontWeight="600">{s.label.replace(' (Vested)', '').replace(' — Stratzy', '')}</text>)}
+      <text x={labelW + sleeves.length * colW + 6} y={padT - 9} fontSize="10" fill="var(--txt3)">Total</text>
+      {evals.map((e, i) => {
+        const y = padT + i * cellH, sel = e.id === selId;
+        return (
+          <g key={e.id} onClick={() => setSelId(e.id)} style={{ cursor: 'pointer' }}>
+            {sel && <rect x="0" y={y} width={W} height={cellH} rx="3" fill="color-mix(in srgb, var(--acc) 13%, transparent)" />}
+            <text x={labelW - 10} y={y + cellH / 2 + 3.5} textAnchor="end" fontSize="10.5" fill={sel || e.composite ? 'var(--acc2)' : 'var(--txt2)'} fontWeight={e.composite || sel ? 700 : 400}>{e.label}</text>
+            {sleeves.map((s, j) => {
+              const leg = legOf(e, s.key), v = leg ? leg.inr : 0, x = labelW + j * colW;
+              const op = v < 0 ? 0.14 + 0.76 * Math.min(1, -v / maxLoss) : v > 0 ? 0.14 + 0.76 * Math.min(1, v / maxGain) : 1;
+              return (
+                <g key={s.key}>
+                  <rect x={x + 2} y={y + 2} width={colW - 4} height={cellH - 4} rx="3" fill={v < 0 ? 'var(--red)' : v > 0 ? 'var(--grn)' : '#15151d'} opacity={op} stroke="var(--brd)" strokeWidth=".5" />
+                  {v ? <text x={x + colW / 2} y={y + cellH / 2 + 3.5} textAnchor="middle" fontSize="8.5" fill="#0C0C12" fontWeight="700">{fmtInr(v).replace('₹', '')}{cellMark(leg)}</text>
+                    : <text x={x + colW / 2} y={y + cellH / 2 + 3.5} textAnchor="middle" fontSize="10" fill="var(--txt3)">·</text>}
+                </g>
+              );
+            })}
+            <text x={labelW + sleeves.length * colW + 6} y={y + cellH / 2 + 3.5} fontSize="9.5" fontWeight="700" fill={redgrn(e.total.inr)}>{fmtInr(e.total.inr)}</text>
+          </g>
+        );
+      })}
+    </svg></div>
+  );
+}
+
+// ── CHART 2 · Exposure bullets (what's at stake, per sleeve) ─────────────────
+function ExposureBullets({ sleeves, model, worst }) {
+  const rows = sleeves.map((s) => ({ ...s, cap: s.key === 'vol' ? model.sleeves.vol.cap : (model.sleeves[s.key]?.v || 0), ...(worst[s.key] || {}) }))
+    .filter((r) => r.cap > 0).sort((a, b) => (a.worst || 0) - (b.worst || 0));
+  const W = 760, labelW = 150, padR = 100, rowH = 40, padT = 6;
+  const H = padT + rows.length * rowH + 4;
+  const maxCap = Math.max(1, ...rows.map((r) => r.cap));
+  const sc = (W - labelW - padR) / maxCap;
+  return (
+    <div className="ovx"><svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ minWidth: 540 }}>
+      {rows.map((r, i) => {
+        const y = padT + i * rowH, cw = r.cap * sc, lw = Math.abs(r.worst || 0) * sc, cy = y + rowH / 2;
+        return (
+          <g key={r.key}>
+            <text x={labelW - 12} y={cy - 3} textAnchor="end" fontSize="11" fill="var(--txt)">{r.label.replace(' (Vested)', '').replace(' — Stratzy', '')}</text>
+            <text x={labelW - 12} y={cy + 11} textAnchor="end" fontSize="9" fill="var(--txt3)">cap {fmtInr(r.cap)}</text>
+            <rect x={labelW} y={y + 9} width={cw} height={rowH - 22} rx="3" fill={r.color} opacity=".16" stroke={r.color} strokeWidth=".5" strokeOpacity=".4" />
+            {lw > 0 && <rect x={labelW} y={y + 9} width={Math.max(2, lw)} height={rowH - 22} rx="3" fill="var(--red)" opacity={isSoftConf(r.conf) ? 0.5 : 0.85} stroke={r.conf === 'assumed' ? 'var(--red)' : 'none'} strokeWidth="1" strokeDasharray={r.conf === 'assumed' ? '4 3' : '0'} />}
+            <line x1={labelW + lw} y1={y + 5} x2={labelW + lw} y2={y + rowH - 9} stroke="var(--txt)" strokeWidth="1" />
+            <text x={labelW + cw + 8} y={cy} fontSize="10.5" fill={r.worst ? 'var(--red)' : 'var(--txt3)'} dominantBaseline="middle">{r.worst ? fmtInr(r.worst) : '—'}{r.conf === 'assumed' ? ' ≈' : r.conf === 'indicative' ? ' n=' + r.n : ''}</text>
+          </g>
+        );
+      })}
+    </svg></div>
+  );
+}
+
+// ── CHART 3 · Tier-aware sleeve breakdown (replaces the impact bars) ─────────
+function TierBreakdown({ selected, sleeves }) {
+  if (!selected) return null;
+  const legs = sleeves.map((s) => ({ ...s, leg: selected.legs.find((l) => l.key === s.key) }));
+  const W = 760, labelW = 158, padR = 158, rowH = 44, padT = 6;
+  const H = padT + legs.length * rowH + 4;
+  const max = Math.max(1, ...legs.map((s) => (s.leg ? Math.abs(s.leg.inr) : 0)));
+  const x0 = labelW, sc = (W - labelW - padR) / max;
+  return (
+    <div className="ovx"><svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ minWidth: 560 }}>
+      <line x1={x0} y1={padT} x2={x0} y2={H - 4} stroke="var(--brd)" strokeWidth="1" />
+      {legs.map((s, i) => {
+        const leg = s.leg, y = padT + i * rowH, cy = y + rowH / 2, v = leg ? leg.inr : 0, w = Math.abs(v) * sc, soft = leg && isSoft(leg);
+        return (
+          <g key={s.key}>
+            <circle cx="20" cy={cy} r="5" fill={s.color} />
+            <text x="34" y={cy - 3} fontSize="12" fill="var(--txt)" dominantBaseline="middle">{s.label.replace(' — Stratzy', '').replace(' (Vested)', '')}</text>
+            <text x="34" y={cy + 12} fontSize="9.5" fill={!v ? 'var(--txt3)' : leg.conf === 'assumed' || leg.conf === 'indicative' ? 'var(--txt3)' : leg.weak ? 'var(--red)' : 'var(--grn)'} dominantBaseline="middle">{!v ? 'no effect' : confLabel[leg.conf] || leg.conf}</text>
+            {!v ? <text x={x0 + 10} y={cy} fontSize="12" fill="var(--txt3)" dominantBaseline="middle">—</text> : (
+              <>
+                <rect x={x0} y={cy - 9} width={Math.max(2, w)} height="18" rx="3" fill={redgrn(v)} opacity={soft ? 0.5 : 0.9} stroke={leg.conf === 'assumed' ? 'var(--red)' : 'none'} strokeWidth="1" strokeDasharray={leg.conf === 'assumed' ? '4 3' : '0'} />
+                <text x={x0 + w + 12} y={cy - 1} fontSize="12" fill={redgrn(v)} fontWeight="700" dominantBaseline="middle">{fmtInr(v)}</text>
+                <text x={x0 + w + 12} y={cy + 13} fontSize="9.5" fill="var(--txt3)" dominantBaseline="middle">{leg.conf === 'assumed' ? 'assumed ≈' : leg.conf === 'indicative' ? 'n=' + leg.n : leg.rangeInr ? '± ' + fmtInr(leg.rangeInr[0]) + '…' + fmtInr(leg.rangeInr[1]) : leg.weak ? 'weak fit ~' : ''}</text>
+              </>
+            )}
+          </g>
+        );
+      })}
+    </svg></div>
+  );
+}
 
 export default function MacroTab({ model, macro, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
@@ -81,18 +176,6 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
   const vt = useMemo(() => volTier(model), [model]);
   const proxy = model?.sleeves?.vol?.proxy || null;
 
-  // group the scenario rows for sectioned rendering
-  const groups = useMemo(() => {
-    const g = [];
-    for (const e of evals) {
-      let row = g.find((x) => x.group === e.group);
-      if (!row) { row = { group: e.group, rows: [] }; g.push(row); }
-      row.rows.push(e);
-    }
-    return g;
-  }, [evals]);
-
-  const legOf = (ev, key) => ev.legs.find((l) => l.key === key);
   const sleeveBase = (key) => (key === 'vol' ? model.sleeves.vol.cap : (model.sleeves[key]?.v || 0));
 
   // "What's at stake" — the headline numbers, distilled from the scenario model.
@@ -114,15 +197,20 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
     };
   }, [evals, model]);
 
-  // a ₹ impact cell, sign-coloured, with a confidence-tier marker
-  const Cell = (leg) => {
-    if (!leg || !leg.inr) return <span className="mut">—</span>;
-    return (
-      <span className={signCls(leg.inr) + (isSoft(leg) ? ' mac-soft' : '')} title={confLabel[leg.conf] || leg.conf}>
-        <SInrC n={leg.inr} />{legFlag(leg)}
-      </span>
-    );
-  };
+  // worst single-scenario loss per sleeve (+ the tier that produced it) — feeds
+  // the exposure bullets. Composites excluded (they're not a single shock).
+  const worstBySleeve = useMemo(() => {
+    const out = {};
+    SLEEVES.forEach((sl) => {
+      let worst = 0, conf = null, n = null;
+      evals.filter((e) => !e.composite).forEach((e) => {
+        const leg = e.legs.find((l) => l.key === sl.key);
+        if (leg && leg.inr < worst) { worst = leg.inr; conf = leg.conf; n = leg.n ?? null; }
+      });
+      out[sl.key] = { worst, conf, n };
+    });
+    return out;
+  }, [evals]);
 
   return (
     <div>
@@ -152,24 +240,14 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
         )}
       </div>
 
-      {/* ── WHAT'S AT STAKE — the headline numbers, foregrounded ─────────── */}
+      {/* ── WHAT'S AT STAKE — exposure bullets: capital track + worst-case ─ */}
       {ready && stakes && (
-        <div className="g3 sec pulse-stakes">
-          <div className="stake-tile down">
-            <div className="lbl">Tail risk — risk-off</div>
-            <div className="vmd mono"><span className="red"><SInrC n={stakes.riskoff.total.inr} /></span></div>
-            <div className="sub">{pctS(stakes.riskoff.total.pct)} of book if Nasdaq −15 · VIX 35 · ₹88 · HY +150 hit together</div>
+        <div className="card sec">
+          <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+            <div className="ctitle" style={{ margin: 0 }}>What’s at stake <span className="sub" style={{ textTransform: 'none' }}>— worst single-shock loss per sleeve</span></div>
+            <div className="sub mono" style={{ margin: 0 }}>tail risk <span className="red" style={{ fontWeight: 700 }}><SInrC n={stakes.riskoff.total.inr} /></span> ({pctS(stakes.riskoff.total.pct)}) if risk-off hits · {f2(stakes.defensivePct, 0)}% FD+gold cushion</div>
           </div>
-          <div className="stake-tile">
-            <div className="lbl">Largest directional bet</div>
-            <div className="vmd mono" style={{ color: stakes.biggest.color }}>{stakes.biggest.label.replace(' (Vested)', '')}</div>
-            <div className="sub">{f2(stakes.biggestPct, 0)}% of exposed capital · the main market-beta driver</div>
-          </div>
-          <div className="stake-tile up">
-            <div className="lbl">Cushion that won’t flinch</div>
-            <div className="vmd mono"><InrC n={stakes.defensive} /></div>
-            <div className="sub">{f2(stakes.defensivePct, 0)}% in FD + gold · rupee assets, no equity/vol beta</div>
-          </div>
+          <ExposureBullets sleeves={SLEEVES} model={model} worst={worstBySleeve} />
         </div>
       )}
 
@@ -237,57 +315,25 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
             no reliable <em>free</em> calendar + consensus + flow feed. The live clock above <strong>is</strong> connected.
           </div>
 
-          {/* scenario stress table */}
-          <div className="fxc" style={{ marginBottom: 4 }}>
-            <div className="ctitle" style={{ margin: 0 }}>Scenario stress table</div>
-            <div className="sub" style={{ margin: 0 }}>click a row → breakdown below · <span className="mac-flag">~</span> = low confidence</div>
+          {/* scenario heatmap — click a row to drive the breakdown */}
+          <div className="fxc" style={{ marginBottom: 8 }}>
+            <div className="ctitle" style={{ margin: 0 }}>Scenario heatmap</div>
+            <div className="sub" style={{ margin: 0 }}>click a row → breakdown below · <span className="mac-flag-a">≈</span> assumed · <span className="mac-flag">~</span> weak · ⁿ few obs</div>
           </div>
-          <div className="ovx">
-            <table className="tbl mac-scn" style={{ minWidth: 880 }}>
-              <thead>
-                <tr>
-                  <th>Scenario</th>
-                  {SLEEVES.map((s) => <th key={s.key} className="ra">{s.label}</th>)}
-                  <th className="ra">Total ₹</th>
-                  <th className="ra">% book</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groups.map((g) => (
-                  <Group key={g.group} g={g} SLEEVES={SLEEVES} Cell={Cell} legOf={legOf} selId={selId} setSelId={setSelId} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ScenarioHeatmap evals={evals} sleeves={SLEEVES} selId={selId} setSelId={setSelId} />
 
-          {/* selected-scenario impact bars */}
+          {/* selected-scenario tier-aware breakdown */}
           {selected && (
             <div className="sec" style={{ marginTop: 18 }}>
-              <div className="fxc" style={{ marginBottom: 12 }}>
-                <div className="ctitle" style={{ margin: 0 }}>Impact — {selected.label}{selected.composite ? <span className="badge ba" style={{ marginLeft: 8 }}>composite</span> : null}</div>
+              <div className="fxc" style={{ marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                <div className="ctitle" style={{ margin: 0 }}>Breakdown — {selected.label}{selected.composite ? <span className="badge ba" style={{ marginLeft: 8 }}>composite</span> : null}</div>
                 <div className="mono" style={{ fontWeight: 700 }}>
                   <span className={signCls(selected.total.inr)}><SInrC n={selected.total.inr} /></span>
                   <span className="sub" style={{ marginLeft: 8 }}>{pctS(selected.total.pct)} of book</span>
                 </div>
               </div>
-              {SLEEVES.map((s) => {
-                const leg = legOf(selected, s.key);
-                const w = Math.min(100, Math.abs(leg ? leg.pct : 0) * 6);
-                const soft = isSoft(leg);
-                const hatch = leg && leg.conf === 'modelled' && leg.weak;
-                return (
-                  <div className="seg-row mac-bar" key={s.key}>
-                    <div className="seg-lbl"><span className="mac-dot" style={{ background: s.color }} />{s.label}</div>
-                    <div className="seg-trk">
-                      <div className="seg-fil" style={{ width: w + '%', backgroundColor: leg && leg.inr < 0 ? 'var(--red)' : 'var(--grn)', opacity: soft ? 0.5 : 1, backgroundImage: hatch ? 'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.25) 3px,rgba(0,0,0,.25) 6px)' : 'none' }} />
-                    </div>
-                    <div className="seg-val mono" style={{ minWidth: 168, textAlign: 'right' }}>
-                      {leg && leg.inr ? <><span className={signCls(leg.inr)}><SInrC n={leg.inr} /></span> <span className="sub">{pctS(leg.pct)}</span> {legFlag(leg)}</> : <span className="mut">no effect</span>}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="sub mac-note" style={{ marginTop: 12, lineHeight: 1.6 }}>{selected.note}</div>
+              <TierBreakdown selected={selected} sleeves={SLEEVES} />
+              <div className="sub mac-note" style={{ marginTop: 10, lineHeight: 1.6 }}>{selected.note}</div>
             </div>
           )}
 
@@ -329,22 +375,6 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
         </div>
       </details>
     </div>
-  );
-}
-
-function Group({ g, SLEEVES, Cell, legOf, selId, setSelId }) {
-  return (
-    <>
-      <tr className="mac-grouprow"><td colSpan={SLEEVES.length + 3}>{g.group}</td></tr>
-      {g.rows.map((ev) => (
-        <tr key={ev.id} className={'mac-scnrow' + (ev.id === selId ? ' sel' : '') + (ev.composite ? ' mac-comp' : '')} onClick={() => setSelId(ev.id)} style={{ cursor: 'pointer' }}>
-          <td style={{ color: 'var(--txt)', fontWeight: 500, whiteSpace: 'nowrap' }}>{ev.label}</td>
-          {SLEEVES.map((s) => <td key={s.key} className="ra mono">{Cell(legOf(ev, s.key))}</td>)}
-          <td className="ra mono" style={{ fontWeight: 700 }}><span className={ev.total.inr > 0 ? 'grn' : ev.total.inr < 0 ? 'red' : 'mut'}><SInrC n={ev.total.inr} /></span></td>
-          <td className="ra mono"><span className={ev.total.inr > 0 ? 'grn' : ev.total.inr < 0 ? 'red' : 'mut'}>{pctS(ev.total.pct)}</span></td>
-        </tr>
-      ))}
-    </>
   );
 }
 
