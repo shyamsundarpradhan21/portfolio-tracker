@@ -779,9 +779,11 @@ export default function Page() {
     { label: 'Trading', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,
       sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
-    { label: 'Macro', tab: 6, tip: 'Scenario engine — how the book responds to macro shocks (exposure, not a forecast)',
-      val: macro?.live?.vix && !macro.live.vix.stale ? <span className="mono">VIX {macro.live.vix.value.toFixed(1)}</span> : <span style={{ color: 'var(--txt3)' }}>scenarios</span>,
-      sub: macro?.live?.vixTerm && !macro.live.vixTerm.stale ? <>{macro.live.vixTerm.state} · stress tests</> : 'stress tests' },
+    { label: 'Macro', tab: 6, cls: 'hdr-card-quiet', tip: 'Scenario engine — how the book responds to macro shocks (exposure, not a forecast)',
+      val: 'Scenarios',
+      sub: macro?.live?.vix && !macro.live.vix.stale
+        ? <span className="mono" style={{ fontSize: 'var(--fs-2xs)' }}>VIX {macro.live.vix.value.toFixed(1)}{macro.live.vixTerm && !macro.live.vixTerm.stale ? ` · ${macro.live.vixTerm.state}` : ''}</span>
+        : 'stress tests' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
@@ -854,7 +856,7 @@ export default function Page() {
             {/* Asset-class cards — primary navigation */}
             <div className="hdr-cards">
               {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
+                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '') + (c.cls ? ' ' + c.cls : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
                   <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
                   <div className="vmd">{c.val}</div>
                   <div className="sub">{c.sub}</div>

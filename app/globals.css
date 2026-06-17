@@ -1115,6 +1115,12 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
   .main .topbar { padding: 12px 0 10px; }
 }
 
+/* Macro nav card is a utility entry, not an asset — keep it quiet: smaller,
+   muted value and a touch dimmer until it's the active tab. */
+.hdr-card-quiet { opacity: .72; }
+.hdr-card-quiet.active, .hdr-card-quiet:hover { opacity: 1; }
+.hdr-card-quiet .vmd { font-size: var(--fs-md); font-weight: 600; color: var(--txt2); letter-spacing: 0; }
+
 /* ── MACRO tab ──────────────────────────────────────────────────────────────── */
 .mac-contract { border-left: 2px solid var(--acc); font-size: var(--fs-sm); line-height: 1.65; color: var(--txt2); }
 .mac-contract strong { color: var(--acc); }
