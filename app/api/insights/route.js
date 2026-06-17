@@ -8,12 +8,12 @@
 //                   indian_swot: {macro, s, w, o, t} } }
 //
 // Each tab card is a CRISP performance read + forward outlook (ONE sentence
-// each), or empty when its data is missing. Flow: fetch a live macro snapshot
-// from Perplexity (Sonar, web-grounded) → feed it plus the aggregates to Claude
-// (Haiku) with a structured-output schema, so the macro views cite today's
-// numbers instead of training memory. Fires only on the header ✨ refresh (one
-// whole-app, user-paced call). Requires ANTHROPIC_API_KEY; PERPLEXITY_API_KEY
-// is optional — without it the live-macro block is simply omitted.
+// each), or empty when its data is missing. Flow: pull a live macro snapshot of
+// real index/FX/commodity/yield quotes from Yahoo Finance (free, no key — the
+// same source /api/quotes uses) → feed it plus the aggregates to Claude (Haiku)
+// with a structured-output schema, so the macro views cite today's numbers
+// instead of training memory. Fires only on the header ✨ refresh (one
+// whole-app, user-paced call). Requires only the ANTHROPIC_API_KEY env var.
 
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -25,43 +25,61 @@ export const maxDuration = 30;
 // Isolated here so the model is a one-line change (Sonnet 4.6 if quality lags).
 const MODEL = 'claude-haiku-4-5';
 
-// Live macro is fetched from Perplexity Sonar (OpenAI-compatible endpoint,
-// web-grounded). 'sonar' is the cheapest web-search tier — right for a terse
-// numbers-only snapshot. Optional: no PERPLEXITY_API_KEY → macro block omitted.
-const PPLX_URL = 'https://api.perplexity.ai/chat/completions';
-const PPLX_MODEL = 'sonar';
+// Live macro = real quotes from Yahoo Finance v8 (free, no API key). We only
+// need a handful of specific backdrop numbers, so direct quotes beat an LLM
+// web-search: cheaper (free), faster, and exact rather than summarised.
+const YH_HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+const YH_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const MACRO_SYMBOLS = [
+  { sym: '^NSEI',  label: 'Nifty 50' },
+  { sym: '^BSESN', label: 'Sensex' },
+  { sym: 'INR=X',  label: 'USD/INR', kind: 'fx' },
+  { sym: '^GSPC',  label: 'S&P 500' },
+  { sym: '^IXIC',  label: 'Nasdaq' },
+  { sym: 'BZ=F',   label: 'Brent crude ($/bbl)' },
+  { sym: 'GC=F',   label: 'Gold ($/oz)' },
+  { sym: '^TNX',   label: 'US 10Y yield', kind: 'yield' },
+];
 
+async function yhQuote(symbol) {
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+  for (const host of YH_HOSTS) {
+    try {
+      const res = await fetch(host + path, {
+        headers: { 'User-Agent': YH_UA, Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) continue;
+      const meta = (await res.json())?.chart?.result?.[0]?.meta;
+      if (!meta || typeof meta.regularMarketPrice !== 'number') continue;
+      const price = meta.regularMarketPrice;
+      const prev = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPreviousClose ?? price;
+      return { price, pct: prev ? ((price - prev) / prev) * 100 : null };
+    } catch { /* try next host */ }
+  }
+  return null;
+}
+
+// Returns a terse, newline-delimited block of real current macro numbers, or
+// '' if every quote failed (then the analysis runs without a live macro block).
 async function fetchLiveMacro() {
-  const key = process.env.PERPLEXITY_API_KEY;
-  if (!key) return '';
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000); // never let search stall the whole call
   try {
-    const res = await fetch(PPLX_URL, {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: PPLX_MODEL,
-        temperature: 0.1,
-        max_tokens: 450,
-        messages: [
-          { role: 'system', content: 'You are a markets data terminal. Reply with ONLY current numbers, one terse line per item, no prose, no commentary.' },
-          { role: 'user', content:
-            'Latest India + global macro, one line each with the value and as-of date: ' +
-            'Nifty 50 level & 1-day %; Sensex level & 1-day %; India 10Y G-sec yield; RBI repo rate; ' +
-            'USD/INR; Brent crude $/bbl; gold $/oz; S&P 500 & Nasdaq levels & 1-day %; US fed funds target; ' +
-            'FII/DII net equity flow (India, latest session); large-cap vs mid/small-cap tone.' },
-        ],
-      }),
-    });
-    if (!res.ok) return '';
-    const j = await res.json();
-    return (j?.choices?.[0]?.message?.content || '').trim();
+    const rows = await Promise.all(MACRO_SYMBOLS.map(async (m) => {
+      const q = await yhQuote(m.sym);
+      if (!q) return null;
+      const px = m.kind === 'fx' ? q.price.toFixed(2)
+        : m.kind === 'yield' ? q.price.toFixed(2) + '%'
+        : q.price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      const mv = q.pct == null ? '' : ` (${q.pct >= 0 ? '+' : ''}${q.pct.toFixed(2)}% 1d)`;
+      return `${m.label}: ${px}${mv}`;
+    }));
+    const lines = rows.filter(Boolean);
+    return lines.length ? lines.join('\n') : '';
   } catch {
-    return ''; // timeout / network / bad key — degrade to no live macro
-  } finally {
-    clearTimeout(timer);
+    return '';
   }
 }
 
@@ -128,7 +146,7 @@ function buildUserMessage(d, macroLive) {
   return (
     `Portfolio snapshot as of ${s(d.asOf)} · USD/INR ${d.usdInr ?? 'n/a'}\n\n` +
     (macro
-      ? `MACRO (LIVE — fetched from the web just now; ground all macro views in THESE numbers, not memory):\n${macro}\n\n`
+      ? `MACRO (LIVE quotes fetched just now; ground all macro views in THESE numbers, not memory):\n${macro}\n\n`
       : `MACRO (LIVE): unavailable this run — keep macro views light and clearly general.\n\n`) +
     `OVERVIEW: ${s(d.overview)}\n` +
     `INDIAN EQUITY: ${s(d.indian)}\n` +
@@ -140,8 +158,8 @@ function buildUserMessage(d, macroLive) {
     `Return {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words), keyed: ` +
     `overview (whole book), indian (use the risk stats), us, mf (mutual funds), fd (fixed deposits), ` +
     `trading (the algo line). Also indian_swot: macro = one line on TODAY's backdrop using the ` +
-    `live numbers above (Nifty level/move, repo rate, INR, crude, FII flows); s/w/o/t = ONE tight ` +
-    `sentence each. Always populate indian_swot. Do NOT restate our figures — give the read, not a recap.`
+    `live quotes above (Nifty/Sensex move, INR, crude, gold, US indices, 10Y yield); s/w/o/t = ONE ` +
+    `tight sentence each. Always populate indian_swot. Do NOT restate our figures — give the read, not a recap.`
   );
 }
 
