@@ -117,6 +117,10 @@
 :root[data-tab="algo"] {
   --acc: #E879F9; --acc2: #F2A6FF; --acc-bg: rgba(232,121,249,.13);
 }
+/* Macro — teal (distinct from the cyan US sleeve and the blue Indian one) */
+:root[data-tab="macro"] {
+  --acc: #14B8A6; --acc2: #2DD4BF; --acc-bg: rgba(20,184,166,.15);
+}
 
 /* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
 :root[data-time="day"][data-tab="overview"] {
@@ -136,6 +140,9 @@
 }
 :root[data-time="day"][data-tab="algo"] {
   --acc: #A21CAF; --acc2: #C026D3; --acc-bg: rgba(162,28,175,.12);
+}
+:root[data-time="day"][data-tab="macro"] {
+  --acc: #0F766E; --acc2: #0D9488; --acc-bg: rgba(15,118,110,.12);
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
@@ -1107,3 +1114,45 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
   .main { padding: 0 14px 32px; }
   .main .topbar { padding: 12px 0 10px; }
 }
+
+/* ── MACRO tab ──────────────────────────────────────────────────────────────── */
+.mac-contract { border-left: 2px solid var(--acc); font-size: var(--fs-sm); line-height: 1.65; color: var(--txt2); }
+.mac-contract strong { color: var(--acc); }
+.mac-contract em { color: var(--txt); font-style: normal; font-weight: 600; }
+
+/* low-confidence marker: weak regression / stale / stated assumption */
+.mac-weak { text-decoration: underline dotted color-mix(in srgb, var(--red) 60%, transparent); text-underline-offset: 3px; }
+.mac-flag { color: var(--red); font-weight: 700; margin-left: 2px; }
+
+/* section eyebrow for each clock */
+.mac-clocklbl {
+  font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; font-weight: 700;
+  color: var(--acc); margin: 18px 0 8px;
+}
+.mac-clocklbl .sub { display: inline; color: var(--txt3); font-weight: 500; }
+
+/* live-clock cells */
+.mac-cell { display: flex; flex-direction: column; gap: 2px; }
+.mac-cell .vsm { display: flex; align-items: baseline; }
+.mac-unit { color: var(--txt3); font-size: var(--fs-2xs); margin-left: 1px; }
+.mac-hint { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 2px; }
+.mac-src { font-size: var(--fs-2xs); color: var(--txt3); opacity: .8; margin-top: 6px; font-family: var(--mono); }
+.mac-stale { color: var(--red); font-weight: 600; }
+.mac-cell-stale { opacity: .8; border-style: dashed; }
+.mac-term { font-size: var(--fs-sm); color: var(--txt2); }
+
+/* scenario table */
+.mac-scn td, .mac-scn th { white-space: nowrap; }
+.mac-grouprow td {
+  font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
+  color: var(--acc); background: var(--acc-bg); padding-top: 8px; padding-bottom: 8px;
+}
+.mac-scnrow:hover td { background: var(--sur2); }
+.mac-scnrow.sel td { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+.mac-scnrow.sel td:first-child { box-shadow: inset 3px 0 0 var(--acc); }
+.mac-comp td:first-child { font-weight: 700; }
+
+/* per-sleeve impact bars (wider label for sleeve names + colour dot) */
+.mac-bar .seg-lbl { width: 150px; display: flex; align-items: center; gap: 7px; }
+.mac-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.mac-note { border-top: .5px solid var(--brd); padding-top: 10px; color: var(--txt3); }

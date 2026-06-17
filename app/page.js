@@ -18,6 +18,7 @@ import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
+  regressHoldings, regressVsYield,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
 } from './lib/calc';
 import {
@@ -32,6 +33,7 @@ import FDTab        from './components/tabs/FDTab';
 import MFTab        from './components/tabs/MFTab';
 import USTab        from './components/tabs/USTab';
 import AlgoTab      from './components/tabs/AlgoTab';
+import MacroTab     from './components/tabs/MacroTab';
 import Skel         from './components/shared/Skel';
 import FreshnessTag from './components/shared/FreshnessTag';
 
@@ -40,6 +42,7 @@ const FETCH_TS_KEY  = 'nwTracker.cache';
 const INSIGHTS_KEY  = 'nwTracker.insights';
 const MFNAV_KEY     = 'nwTracker.mfnav';
 const HIST_KEY      = 'nwTracker.hist';
+const MACRO_KEY     = 'nwTracker.macro';
 const REFRESH_MS    = 15 * 60 * 1000;
 
 // Relative age of the shown AI analysis → tells fresh ("just now") from cached
@@ -161,6 +164,7 @@ export default function Page() {
   const [loading, setLoading]       = useState(false);
   const [mfNav, setMfNav]           = useState(null);
   const [hist, setHist]             = useState(null);
+  const [macro, setMacro]           = useState(null); // live macro clock (FRED + Yahoo)
   const [flash, setFlash]           = useState({});
   const [ath, setAth]               = useState(false); // all-time-high celebration
   const [heroKey, setHeroKey]       = useState(0);     // bumped once when NW first loads
@@ -169,7 +173,7 @@ export default function Page() {
   const prevNw                      = useRef(null);
 
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
-  const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo'];
+  const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'macro'];
 
   // Tabs are URL-addressable (#overview … #algo): deep-linkable, reload-safe,
   // and back/forward navigable. State stays the source of truth; the hash syncs.
@@ -288,17 +292,20 @@ export default function Page() {
   const fetchMfNav = async () => { try { const res = await fetch('/api/mf-nav', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
   const fetchHistory = async () => {
     try {
-      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`), ...US.map((h) => h.sym)])].join(',');
+      // '^TNX' (US 10Y yield) and '^IXIC' (Nasdaq Composite) feed the macro
+      // sensitivity regressions (duration proxy + Nasdaq beta).
+      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`), ...SWING.map((h) => h.ns), ...US.map((h) => h.sym), '^TNX', '^IXIC'])].join(',');
       const res = await fetch('/api/history?range=5y&symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       return res.ok ? await res.json() : null;
     } catch { return null; }
   };
+  const fetchMacro = async () => { try { const res = await fetch('/api/macro', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
 
   const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true); setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
       const inSyms = INDIAN.map((s) => s.ns).concat(SWING.map((s) => s.ns)).concat(['INR=X']);
-      const [inData, usData, mfData, histData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory()]);
+      const [inData, usData, mfData, histData, macroData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro()]);
       const merged = { ...inData, ...usData };
       const tick = {};
       Object.keys(merged).forEach((k) => {
@@ -309,6 +316,7 @@ export default function Page() {
       if (Object.keys(tick).length) setFlash(tick);
       setPrices(merged);
       if (histData) { setHist(histData); try { sessionStorage.setItem(HIST_KEY, JSON.stringify({ ts: Date.now(), hist: histData })); } catch {} }
+      if (macroData) { setMacro(macroData); try { sessionStorage.setItem(MACRO_KEY, JSON.stringify({ ts: Date.now(), macro: macroData })); } catch {} }
       if (mfData)   { setMfNav(mfData);  try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {} }
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
@@ -326,6 +334,7 @@ export default function Page() {
     try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (hasInsight(ic?.insights)) { setInsights(ic.insights); setInsightsTs(ic.ts || null); } } catch {}
     try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) setMfNav(mc.mfNav); } catch {}
     try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
+    try { const mac = JSON.parse(sessionStorage.getItem(MACRO_KEY) || 'null'); if (mac?.macro) setMacro(mac.macro); } catch {}
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -541,6 +550,36 @@ export default function Page() {
     return Math.round((ov.nw || 0) - gains);
   }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
 
+  // ── Macro sensitivities — computed weekly-returns regressions (with R²) ──────
+  // US-tech beta carves out the gold ETF (GLDM) so a defensive holding doesn't
+  // dilute the high-beta read. India basket = holdings + swing book.
+  const usExGold = useMemo(() => US.filter((h) => h.sym !== 'GLDM'), []);
+  const regUsNdx = useMemo(() => regressHoldings(hist, usExGold, ['^IXIC', '^NDX', 'QQQ'], (h) => h.sym), [hist, usExGold]);
+  const regUsDur = useMemo(() => regressVsYield(hist, usExGold, ['^TNX'], (h) => h.sym), [hist, usExGold]);
+  const indiaHeld = useMemo(() => heldIndian.concat(SWING), [heldIndian]);
+  const regIndia = useMemo(() => regressHoldings(hist, indiaHeld, ['^NSEI', 'NIFTYBEES.NS'], (h) => h.ns), [hist, indiaHeld]);
+
+  // Scenario model — live sleeve values (₹) + the computed sensitivities. All
+  // figures read from the live memos; nothing here is hardcoded.
+  const macroModel = useMemo(() => {
+    const goldRow = usData.rows.find((r) => r.sym === 'GLDM');
+    const goldUsd = goldRow?.liveVal || 0;
+    const usExGoldUsd = (usData.val || 0) - goldUsd;
+    const indiaV = (indian.val || 0) + (swing.valued ? swing.val : 0);
+    const vixLive = macro?.live?.vix && !macro.live.vix.stale ? macro.live.vix.value : null;
+    return {
+      fx: fxRate,
+      vix: vixLive,
+      sleeves: {
+        us:    { v: usExGoldUsd * fxRate, betaNdx: regUsNdx?.beta ?? null, rsqNdx: regUsNdx?.rsq ?? null, weeksNdx: regUsNdx?.weeks ?? null, perBp: regUsDur?.perBp ?? null, rsqDur: regUsDur?.rsq ?? null, weeksDur: regUsDur?.weeks ?? null },
+        india: { v: indiaV, betaNifty: regIndia?.beta ?? null, rsqNifty: regIndia?.rsq ?? null, weeksNifty: regIndia?.weeks ?? null },
+        vol:   { cap: STATIC.algo },
+        gold:  { v: goldUsd * fxRate },
+        fd:    { v: ov.fdValue },
+      },
+    };
+  }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, ov.fdValue]);
+
   // ── AI insights — compact aggregates payload, manual refresh ────────────────
   // Builds one summary string per sleeve (~500 input tokens — never the full
   // holdings books) and POSTs to /api/insights. Fires ONLY on an explicit ✨
@@ -740,6 +779,9 @@ export default function Page() {
     { label: 'Trading', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,
       sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
+    { label: 'Macro', tab: 6, tip: 'Scenario engine — how the book responds to macro shocks (exposure, not a forecast)',
+      val: macro?.live?.vix && !macro.live.vix.stale ? <span className="mono">VIX {macro.live.vix.value.toFixed(1)}</span> : <span style={{ color: 'var(--txt3)' }}>scenarios</span>,
+      sub: macro?.live?.vixTerm && !macro.live.vixTerm.stale ? <>{macro.live.vixTerm.state} · stress tests</> : 'stress tests' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
@@ -860,6 +902,11 @@ export default function Page() {
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               ALGO={ALGO} FY={FY} />
+          )}
+          {tab === 6 && (
+            <MacroTab model={macroModel} macro={macro} fxRate={fxRate}
+              reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
+              insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
           )}
         </div>
 

@@ -141,6 +141,104 @@ export function computeBetaVol(hist, held, _now) {
   };
 }
 
+// ── Generalised sensitivity regressions (macro scenario engine) ──────────────
+// computeBetaVol above is hardwired to Nifty + the full Indian book. The macro
+// engine needs the same weekly-returns math for ANY basket vs ANY driver, and
+// must report R²/lookback so a weak fit can be visually flagged (not rendered
+// as if it were a hard number).
+
+const _closeMap = (ser) => {
+  const m = {};
+  ((ser && ser.closes) || []).forEach((c) => { if (isFinite(c.close) && c.close > 0) m[c.date] = c.close; });
+  return m;
+};
+
+// Build a weekly basket-value series aligned to `driverMap`'s dates, carrying
+// each holding's last-known close forward. Returns { dates, pv, dv } where pv is
+// basket value and dv is the driver level, only for weeks where every holding
+// has a price. symOf(h) → the hist.series key for that holding.
+function _alignedSeries(hist, held, driverMap, symOf) {
+  const dates = Object.keys(driverMap).sort();
+  const holds = held.map((h) => ({ qty: h.qty, m: _closeMap(hist.series[symOf(h)]) }));
+  const last = holds.map(() => null);
+  const pv = [], dv = [];
+  for (const d of dates) {
+    let v = 0, ok = true;
+    for (let i = 0; i < holds.length; i++) {
+      const c = holds[i].m[d];
+      if (c != null) last[i] = c;
+      if (last[i] == null) { ok = false; break; }
+      v += holds[i].qty * last[i];
+    }
+    if (!ok) continue;
+    pv.push(v); dv.push(driverMap[d]);
+  }
+  return { pv, dv };
+}
+
+// Ordinary least squares of series y on series x → slope, R².
+function _ols(y, x) {
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+  const my = mean(y), mx = mean(x);
+  let cov = 0, vx = 0, vy = 0;
+  for (let i = 0; i < y.length; i++) { cov += (y[i]-my)*(x[i]-mx); vx += (x[i]-mx)**2; vy += (y[i]-my)**2; }
+  const n = y.length; cov /= n; vx /= n; vy /= n;
+  return {
+    slope: vx > 0 ? cov / vx : null,
+    rsq:   (vx > 0 && vy > 0) ? (cov*cov)/(vx*vy) : null,
+    volY:  Math.sqrt(vy * 52) * 100,
+    volX:  Math.sqrt(vx * 52) * 100,
+  };
+}
+
+/**
+ * Weekly-returns beta of a holdings basket vs a benchmark price series.
+ * @returns { beta, rsq, weeks, vol, mktVol } or null if data is insufficient.
+ */
+export function regressHoldings(hist, held, benchSyms, symOf) {
+  if (!hist || !hist.series || !held || !held.length) return null;
+  let mkt = null;
+  for (const s of benchSyms) {
+    const ser = hist.series[s];
+    if (ser && Array.isArray(ser.closes) && ser.closes.length >= 24) { mkt = ser; break; }
+  }
+  if (!mkt) return null;
+  const { pv, dv } = _alignedSeries(hist, held, _closeMap(mkt), symOf);
+  if (pv.length < 24) return null;
+  const rp = [], rm = [];
+  for (let i = 1; i < pv.length; i++) {
+    if (pv[i-1] > 0 && dv[i-1] > 0) { rp.push(pv[i]/pv[i-1]-1); rm.push(dv[i]/dv[i-1]-1); }
+  }
+  if (rp.length < 20) return null;
+  const o = _ols(rp, rm);
+  return { beta: o.slope, rsq: o.rsq, vol: o.volY, mktVol: o.volX, weeks: pv.length };
+}
+
+/**
+ * Duration proxy: sensitivity of a basket's weekly RETURN to weekly CHANGES in a
+ * yield level series (e.g. ^TNX, the US 10Y — quoted in %). The slope is the
+ * fractional return per +1bp move in the yield, with R²/lookback for flagging.
+ * @returns { perBp, rsq, weeks } or null.
+ */
+export function regressVsYield(hist, held, yieldSyms, symOf) {
+  if (!hist || !hist.series || !held || !held.length) return null;
+  let ys = null;
+  for (const s of yieldSyms) {
+    const ser = hist.series[s];
+    if (ser && Array.isArray(ser.closes) && ser.closes.length >= 24) { ys = ser; break; }
+  }
+  if (!ys) return null;
+  const { pv, dv } = _alignedSeries(hist, held, _closeMap(ys), symOf); // dv = yield level (%)
+  if (pv.length < 24) return null;
+  const rp = [], dy = [];
+  for (let i = 1; i < pv.length; i++) {
+    if (pv[i-1] > 0) { rp.push(pv[i]/pv[i-1]-1); dy.push((dv[i]-dv[i-1]) * 100); } // Δ in bps
+  }
+  if (rp.length < 20) return null;
+  const o = _ols(rp, dy);
+  return { perBp: o.slope, rsq: o.rsq, weeks: pv.length };
+}
+
 /** Apply bonus corporate actions (ex-date passed) to holdings. */
 export function applyCorpActions(holdings, now, CORPORATE_ACTIONS, isoOf) {
   const today = isoOf(now);
