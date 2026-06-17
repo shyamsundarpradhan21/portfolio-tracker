@@ -9,6 +9,8 @@
 // return an explicit { stale: true, error } for that metric — never a silent
 // guess (the UI renders these as an unavailable cell).
 
+import { regressVsVix } from '../../lib/calc';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -75,8 +77,57 @@ async function yhQuote(symbol, label) {
   return { stale: true, error: 'fetch failed', source: `Yahoo ${symbol}` };
 }
 
+// Monthly closes for a Yahoo symbol → [{ month:'YYYY-MM', close }] (adjusted
+// when available; one row per calendar month, ascending).
+async function yhMonthly(symbol, range = '6y') {
+  const hosts = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1mo&range=${range}`;
+  for (const host of hosts) {
+    try {
+      const res = await fetch(host + path, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(9000) });
+      if (!res.ok) continue;
+      const r = (await res.json())?.chart?.result?.[0];
+      const ts = r?.timestamp, q = r?.indicators?.quote?.[0]?.close, adj = r?.indicators?.adjclose?.[0]?.adjclose;
+      if (!Array.isArray(ts) || !Array.isArray(q)) continue;
+      const byMonth = {};
+      for (let i = 0; i < ts.length; i++) {
+        const c = adj && adj[i] != null ? adj[i] : q[i];
+        if (c == null || !isFinite(c)) continue;
+        const d = new Date(ts[i] * 1000);
+        byMonth[`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`] = c; // last wins
+      }
+      const months = Object.keys(byMonth).sort();
+      if (!months.length) continue;
+      return months.map((m) => ({ month: m, close: byMonth[m] }));
+    } catch { /* try next host */ }
+  }
+  return null;
+}
+
+// Structural short-vol sensitivity from a LONG monthly history of SVXY (a public
+// −0.5x short-VIX-futures ETF) regressed on ΔVIX — a defensible "what a short-vol
+// book typically does per VIX point", independent of the Stratzy book's short
+// life. Also returns the month-end ^VIX map so the client can align the book's
+// own monthly P&L to the same VIX grid.
+async function shortVolProxy() {
+  const [svxy, vixM] = await Promise.all([yhMonthly('SVXY', '6y'), yhMonthly('^VIX', '6y')]);
+  const vixMonthly = {};
+  (vixM || []).forEach((o) => { vixMonthly[o.month] = o.close; });
+  let proxy = { stale: true, error: 'insufficient SVXY/VIX history', source: 'Yahoo SVXY/^VIX (monthly)' };
+  if (svxy && vixM && svxy.length >= 25) {
+    const returns = [], vix = [];
+    for (let i = 0; i < svxy.length; i++) {
+      returns.push(i === 0 ? null : (svxy[i - 1].close > 0 ? svxy[i].close / svxy[i - 1].close - 1 : null));
+      vix.push(vixMonthly[svxy[i].month] ?? null);
+    }
+    const reg = regressVsVix(returns, vix);
+    if (reg) proxy = { ...reg, asOf: svxy[svxy.length - 1].month, source: 'Yahoo SVXY −0.5x short-VIX, monthly' };
+  }
+  return { proxy, vixMonthly };
+}
+
 export async function GET() {
-  const [us10y, spread, hyOas, nfci, vix, vix3m, dxy, usdinr, brent] = await Promise.all([
+  const [us10y, spread, hyOas, nfci, vix, vix3m, dxy, usdinr, brent, monthly] = await Promise.all([
     fredSeries('DGS10'),          // US 10Y yield (%)
     fredSeries('T10Y2Y'),         // 2s10s spread (pp)
     fredSeries('BAMLH0A0HYM2'),   // ICE BofA US HY OAS (%) — risk-off early warning
@@ -86,6 +137,7 @@ export async function GET() {
     yhQuote('DX-Y.NYB', 'DXY'),
     yhQuote('INR=X', 'USDINR'),
     yhQuote('BZ=F', 'Brent'),
+    shortVolProxy(),              // structural short-vol proxy + month-end ^VIX grid
   ]);
 
   // VIX term structure: VIX3M > VIX is contango (calm); VIX > VIX3M is
@@ -102,7 +154,12 @@ export async function GET() {
   }
 
   return Response.json(
-    { fetchedAt: new Date().toISOString(), live: { us10y, spread2s10s: spread, hyOas, nfci, vix, vix3m, vixTerm, dxy, usdinr, brent } },
+    {
+      fetchedAt: new Date().toISOString(),
+      live: { us10y, spread2s10s: spread, hyOas, nfci, vix, vix3m, vixTerm, dxy, usdinr, brent },
+      volProxy: monthly.proxy,      // structural short-vol sensitivity (SVXY, monthly)
+      vixMonthly: monthly.vixMonthly, // { 'YYYY-MM': month-end ^VIX } for book alignment
+    },
     { headers: { 'Cache-Control': 's-maxage=120, stale-while-revalidate=600' } },
   );
 }

@@ -5,12 +5,16 @@
 // shock the caller chooses, never a prediction that it will happen.
 //
 // Confidence is first-class. Each leg is tagged:
-//   'hard'     — deterministic (e.g. FX conversion on a USD book)
-//   'modelled' — from a weekly-returns regression; `weak` when R² is low
-//   'assumed'  — a STATED sensitivity with no series to regress (must be flagged)
-// The UI must render `weak`/'assumed' legs differently from hard numbers.
+//   'hard'       — deterministic (e.g. FX conversion on a USD book)
+//   'modelled'   — a regression with enough points AND a real fit; `weak` when R² is low
+//   'indicative' — real data but TOO FEW points to fit: a descriptive average, n=N
+//   'assumed'    — a STATED sensitivity with no series at all
+// Sample-size insufficiency ('indicative') and a poor fit ('weak') are DIFFERENT
+// failures and MUST render differently — never collapse both into one flag. The
+// cardinal rule: a number must never render at a higher tier than its data supports.
 
-export const LOW_RSQ = 0.4; // below this an R²-flagged regression is "weak"
+export const LOW_RSQ = 0.4;        // below this an R²-flagged regression is "weak"
+export const MIN_OBS_MONTHLY = 24; // a monthly regression is only 'modelled' at/above this
 
 // Stated sensitivities for sleeves with no regressable P&L series. These are
 // ASSUMPTIONS, surfaced as such in the UI and centralised here so they are easy
@@ -36,14 +40,40 @@ export const SLEEVES = [
 const weakRsq = (rsq) => rsq == null || rsq < LOW_RSQ;
 
 // One impact leg: fractional shock `frac` applied to a sleeve's INR base.
-function leg(key, base, frac, conf, weak) {
+// `meta` carries tier evidence the UI renders (n observations, rsq, ₹ CI range).
+function leg(key, base, frac, conf, weak, meta) {
   return {
     key,
     inr: Math.round((base || 0) * frac),
     pct: frac * 100,        // % of THAT sleeve's value
-    conf,                   // 'hard' | 'modelled' | 'assumed'
-    weak: !!weak,           // low-R² or assumption → render flagged
+    conf,                   // 'hard' | 'modelled' | 'indicative' | 'assumed'
+    weak: !!weak,           // low-R² fit only (NOT sample-size — that's 'indicative')
+    ...(meta || {}),        // { n?, rsq?, rangeInr? }
   };
+}
+
+// Resolve the vol sleeve's VIX sensitivity into exactly one tier from the data
+// backing it (single source of truth for shockVix AND the sensitivity table).
+export function volTier(m) {
+  const book = m?.sleeves?.vol?.book; // { perVixPt, rsq, se, n, ciLo, ciHi } | null
+  // Sample size is the gate for "modelled": with ≥MIN_OBS_MONTHLY points it is a
+  // regression (weak-flagged downstream when R² is low). Too few points is a
+  // DIFFERENT failure → 'indicative' (a descriptive average, no R²/CI published).
+  if (book && book.n >= MIN_OBS_MONTHLY) {
+    return { conf: 'modelled', perVixPt: book.perVixPt, n: book.n, rsq: book.rsq, ciLo: book.ciLo, ciHi: book.ciHi };
+  }
+  if (book && book.n >= 1) {
+    return { conf: 'indicative', perVixPt: book.perVixPt, n: book.n, rsq: null };
+  }
+  return { conf: 'assumed', perVixPt: ASSUME.volPerVixPt, n: null, rsq: null };
+}
+
+// One-line human label of the active vol tier (for scenario notes).
+export function volTierLabel(m) {
+  const t = volTier(m);
+  if (t.conf === 'modelled') return `regressed on the book's own monthly P&L (n=${t.n} mo${t.rsq != null ? `, R²=${t.rsq.toFixed(2)}` : ''})`;
+  if (t.conf === 'indicative') return `INDICATIVE — a descriptive average over ${t.n} month${t.n === 1 ? '' : 's'} of book P&L, too few to fit (need ${MIN_OBS_MONTHLY})`;
+  return 'a STATED assumption — no book P&L series yet';
 }
 
 // ── Scenario primitives (each returns { legs, note }) ────────────────────────
@@ -61,13 +91,21 @@ function shockVix(m, target, backwardation) {
   const cur = m.vix ?? ASSUME.vixFallback;
   const noLiveVix = m.vix == null;
   const dvix = target - cur;
-  let frac = ASSUME.volPerVixPt * dvix;
-  if (backwardation) frac *= ASSUME.backwardationMult;
+  const cap = m.sleeves.vol.cap;
+  const bw = backwardation ? ASSUME.backwardationMult : 1;
+  const t = volTier(m); // 'modelled' | 'indicative' | 'assumed'
+  const frac = t.perVixPt * dvix * bw;
+  const meta = { n: t.n, rsq: t.rsq };
+  // Only a real fit publishes a ₹ range; indicative/assumed never fake precision.
+  if (t.conf === 'modelled' && t.ciLo != null && t.ciHi != null) {
+    meta.rangeInr = [Math.round(cap * t.ciLo * dvix * bw), Math.round(cap * t.ciHi * dvix * bw)].sort((a, b) => a - b);
+  }
+  const weak = t.conf === 'modelled' && weakRsq(t.rsq); // sample size is NOT weakness
   return {
-    legs: [leg('vol', m.sleeves.vol.cap, frac, 'assumed', true)],
+    legs: [leg('vol', cap, frac, t.conf, weak, meta)],
     note:
-      `Stratzy short-premium book vs VIX is a STATED sensitivity — no per-trade P&L series exists to regress. ΔVIX measured from ${cur.toFixed(0)}${noLiveVix ? ' (VIX feed stale — fallback level)' : ' (live)'}.` +
-      (backwardation ? ' Term-structure flip to backwardation amplifies the stress (assumption).' : ''),
+      `Stratzy short-premium book vs VIX — ${volTierLabel(m)}. ΔVIX ${cur.toFixed(0)} → ${target}${noLiveVix ? ' (VIX feed stale — fallback)' : ' (live)'}.` +
+      (backwardation ? ` Backwardation amplifies ×${ASSUME.backwardationMult} (assumption).` : ''),
   };
 }
 
@@ -109,9 +147,9 @@ function shockCrude(m, pct) {
   const usFrac = (ASSUME.crudeUsdInrPct / 100) * scale; // INR weaker → USD book worth more in ₹
   return {
     legs: [
-      leg('india', m.sleeves.india.v, indFrac, 'assumed', true),
-      leg('us', m.sleeves.us.v, usFrac, 'assumed', true),
-      leg('gold', m.sleeves.gold.v, usFrac, 'assumed', true),
+      leg('india', m.sleeves.india.v, indFrac, 'assumed', false),
+      leg('us', m.sleeves.us.v, usFrac, 'assumed', false),
+      leg('gold', m.sleeves.gold.v, usFrac, 'assumed', false),
     ],
     note: `Brent +${pct}%: STATED India-equity drag (imported inflation / current-account) and a STATED INR-depreciation tailwind to the USD books. Channels are assumed, not regressed.`,
   };
@@ -120,16 +158,18 @@ function shockCrude(m, pct) {
 function shockHy(m, bps) {
   const scale = bps / 150;
   const frac = ASSUME.hyVolPer150 * scale;
+  // No monthly HY series for the book yet → STATED assumption (not the book's fit).
   return {
-    legs: [leg('vol', m.sleeves.vol.cap, frac, 'assumed', true)],
-    note: `HY OAS +${bps}bp is the risk-off early-warning: a STATED stress on the short-credit/short-premium book. Equity sleeves co-move — see the composite.`,
+    legs: [leg('vol', m.sleeves.vol.cap, frac, 'assumed', false)],
+    note: `HY OAS +${bps}bp is the risk-off early-warning: a STATED stress on the short-credit/short-premium book (no book-vs-HY series yet). Equity sleeves co-move — see the composite.`,
   };
 }
 
 // Merge legs from several primitives by sleeve key (for composites). Confidence
-// of a merged leg is the weakest of its parts; `weak` if any part is weak.
+// of a merged leg drops to the WEAKEST of its parts (hard > modelled >
+// indicative > assumed); `weak` if any part is a weak fit.
 function mergeLegs(parts) {
-  const order = ['hard', 'modelled', 'assumed'];
+  const order = ['hard', 'modelled', 'indicative', 'assumed'];
   const by = {};
   for (const p of parts) for (const l of p.legs) {
     const e = by[l.key] || (by[l.key] = { key: l.key, inr: 0, pct: 0, conf: 'hard', weak: false });
@@ -162,7 +202,7 @@ export const SCENARIOS = [
     composite: true,
     build: (m) => ({
       legs: mergeLegs([shockNasdaq(m, -15), shockVix(m, 35, false), shockFx(m, 88), shockHy(m, 150)]),
-      note: 'SIMULTANEOUS: Nasdaq −15% + VIX → 35 + USDINR → 88 + HY OAS +150bp. These shocks are CORRELATED in a real risk-off — this sums the legs and does NOT assume independence; treat the total as an approximation, not an additive certainty.',
+      note: `SIMULTANEOUS: Nasdaq −15% + VIX → 35 + USDINR → 88 + HY OAS +150bp. These shocks are CORRELATED in a real risk-off — this sums the legs and does NOT assume independence; treat the total as an approximation, not an additive certainty. Vol leg: ${volTierLabel(m)}.`,
     }),
   },
 ];

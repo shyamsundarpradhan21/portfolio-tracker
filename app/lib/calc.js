@@ -176,8 +176,9 @@ function _alignedSeries(hist, held, driverMap, symOf) {
   return { pv, dv };
 }
 
-// Ordinary least squares of series y on series x → slope, R².
-function _ols(y, x) {
+// Ordinary least squares of series y on series x → slope, R². `ann` is the
+// periods-per-year annualisation factor (52 weekly, 12 monthly).
+function _ols(y, x, ann = 52) {
   const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
   const my = mean(y), mx = mean(x);
   let cov = 0, vx = 0, vy = 0;
@@ -186,57 +187,111 @@ function _ols(y, x) {
   return {
     slope: vx > 0 ? cov / vx : null,
     rsq:   (vx > 0 && vy > 0) ? (cov*cov)/(vx*vy) : null,
-    volY:  Math.sqrt(vy * 52) * 100,
-    volX:  Math.sqrt(vx * 52) * 100,
+    volY:  Math.sqrt(vy * ann) * 100,
+    volX:  Math.sqrt(vx * ann) * 100,
   };
 }
 
+// OLS with the slope's standard error, 95% CI (normal approx) and the sample
+// size `n` — needed to gate a regression on observation count, not just R².
+// Sample size and goodness-of-fit are SEPARATE quality signals; both returned.
+function _olsCI(y, x) {
+  const n = y.length;
+  if (n < 3) return null; // can't form a residual variance with <3 points
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / n;
+  const my = mean(y), mx = mean(x);
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) { sxy += (y[i]-my)*(x[i]-mx); sxx += (x[i]-mx)**2; syy += (y[i]-my)**2; }
+  if (sxx <= 0) return null;
+  const slope = sxy / sxx, intercept = my - slope * mx;
+  let sse = 0;
+  for (let i = 0; i < n; i++) { const e = y[i] - (intercept + slope * x[i]); sse += e * e; }
+  const dof = n - 2;
+  const se = dof > 0 ? Math.sqrt((sse / dof) / sxx) : null;
+  const rsq = syy > 0 ? (sxy * sxy) / (sxx * syy) : null;
+  const T = 1.96; // normal approx — honest enough for the range we disclose
+  return { slope, rsq, se, n, ciLo: se != null ? slope - T * se : null, ciHi: se != null ? slope + T * se : null };
+}
+
 /**
- * Weekly-returns beta of a holdings basket vs a benchmark price series.
+ * Returns-beta of a holdings basket vs a benchmark price series.
+ * @param cadence 'weekly' | 'monthly' — sets the annualisation factor (52 / 12).
+ *   The driver series' own date grid defines the alignment; cadence only scales
+ *   the annualised vols and the min-observations bar.
  * @returns { beta, rsq, weeks, vol, mktVol } or null if data is insufficient.
  */
-export function regressHoldings(hist, held, benchSyms, symOf) {
+export function regressHoldings(hist, held, benchSyms, symOf, cadence = 'weekly') {
   if (!hist || !hist.series || !held || !held.length) return null;
+  const ann = cadence === 'monthly' ? 12 : 52;
+  const minObs = cadence === 'monthly' ? 12 : 24;
   let mkt = null;
   for (const s of benchSyms) {
     const ser = hist.series[s];
-    if (ser && Array.isArray(ser.closes) && ser.closes.length >= 24) { mkt = ser; break; }
+    if (ser && Array.isArray(ser.closes) && ser.closes.length >= minObs) { mkt = ser; break; }
   }
   if (!mkt) return null;
   const { pv, dv } = _alignedSeries(hist, held, _closeMap(mkt), symOf);
-  if (pv.length < 24) return null;
+  if (pv.length < minObs) return null;
   const rp = [], rm = [];
   for (let i = 1; i < pv.length; i++) {
     if (pv[i-1] > 0 && dv[i-1] > 0) { rp.push(pv[i]/pv[i-1]-1); rm.push(dv[i]/dv[i-1]-1); }
   }
-  if (rp.length < 20) return null;
-  const o = _ols(rp, rm);
+  if (rp.length < minObs - 4) return null;
+  const o = _ols(rp, rm, ann);
   return { beta: o.slope, rsq: o.rsq, vol: o.volY, mktVol: o.volX, weeks: pv.length };
 }
 
 /**
- * Duration proxy: sensitivity of a basket's weekly RETURN to weekly CHANGES in a
- * yield level series (e.g. ^TNX, the US 10Y — quoted in %). The slope is the
- * fractional return per +1bp move in the yield, with R²/lookback for flagging.
+ * Duration proxy: sensitivity of a basket's RETURN to CHANGES in a yield level
+ * series (e.g. ^TNX, the US 10Y — quoted in %). Slope = fractional return per
+ * +1bp move, with R²/lookback for flagging.
+ * @param cadence 'weekly' | 'monthly'.
  * @returns { perBp, rsq, weeks } or null.
  */
-export function regressVsYield(hist, held, yieldSyms, symOf) {
+export function regressVsYield(hist, held, yieldSyms, symOf, cadence = 'weekly') {
   if (!hist || !hist.series || !held || !held.length) return null;
+  const ann = cadence === 'monthly' ? 12 : 52;
+  const minObs = cadence === 'monthly' ? 12 : 24;
   let ys = null;
   for (const s of yieldSyms) {
     const ser = hist.series[s];
-    if (ser && Array.isArray(ser.closes) && ser.closes.length >= 24) { ys = ser; break; }
+    if (ser && Array.isArray(ser.closes) && ser.closes.length >= minObs) { ys = ser; break; }
   }
   if (!ys) return null;
   const { pv, dv } = _alignedSeries(hist, held, _closeMap(ys), symOf); // dv = yield level (%)
-  if (pv.length < 24) return null;
+  if (pv.length < minObs) return null;
   const rp = [], dy = [];
   for (let i = 1; i < pv.length; i++) {
     if (pv[i-1] > 0) { rp.push(pv[i]/pv[i-1]-1); dy.push((dv[i]-dv[i-1]) * 100); } // Δ in bps
   }
-  if (rp.length < 20) return null;
-  const o = _ols(rp, dy);
+  if (rp.length < minObs - 4) return null;
+  const o = _ols(rp, dy, ann);
   return { perBp: o.slope, rsq: o.rsq, weeks: pv.length };
+}
+
+/**
+ * Sensitivity of a return series to period-over-period CHANGES in the VIX level.
+ * Caller supplies index-aligned `returns` and period-end `vixLevels` (same
+ * length; returns[0] may be null when there's no prior period). Regresses
+ * return[i] on ΔVIX[i] = vix[i] − vix[i−1]. Used for BOTH the Stratzy book's
+ * own monthly P&L and a long-history short-vol proxy — the slope is fractional
+ * return per +1 VIX point.
+ * @returns { perVixPt, rsq, se, n, ciLo, ciHi } or null when <3 usable pairs.
+ *   `n` (observation count) is FIRST-CLASS: the caller gates the confidence
+ *   tier on it, because a slope from a handful of points is noise, not a fit.
+ */
+export function regressVsVix(returns, vixLevels) {
+  if (!Array.isArray(returns) || !Array.isArray(vixLevels) || returns.length !== vixLevels.length) return null;
+  const r = [], dv = [];
+  for (let i = 1; i < returns.length; i++) {
+    const ret = returns[i], v = vixLevels[i], vp = vixLevels[i - 1];
+    if (ret != null && isFinite(ret) && v != null && vp != null && isFinite(v) && isFinite(vp)) {
+      r.push(ret); dv.push(v - vp);
+    }
+  }
+  const o = _olsCI(r, dv);
+  if (!o) return null;
+  return { perVixPt: o.slope, rsq: o.rsq, se: o.se, n: o.n, ciLo: o.ciLo, ciHi: o.ciHi };
 }
 
 /** Apply bonus corporate actions (ex-date passed) to holdings. */

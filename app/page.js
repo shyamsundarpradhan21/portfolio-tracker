@@ -9,6 +9,7 @@ import {
   PAYSLIPS,
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
+import VOL_PNL from '../data/vol_pnl.json';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
@@ -18,7 +19,7 @@ import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
-  regressHoldings, regressVsYield,
+  regressHoldings, regressVsYield, regressVsVix,
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
 } from './lib/calc';
 import {
@@ -566,6 +567,28 @@ export default function Page() {
   const indiaHeld = useMemo(() => heldIndian.concat(SWING), [heldIndian]);
   const regIndia = useMemo(() => regressHoldings(hist, indiaHeld, ['^NSEI', 'NIFTYBEES.NS'], (h) => h.ns), [hist, indiaHeld]);
 
+  // Vol-sleeve VIX sensitivity from the Stratzy book's OWN monthly P&L
+  // (data/vol_pnl.json) aligned to month-end ^VIX (macro.vixMonthly). Return
+  // basis: pnl ÷ prior-month equity; falls back to pnl ÷ deployed capital when a
+  // month doesn't track equity. Returns null when there's no series — the tier
+  // resolver then degrades to the stated assumption. n is reported so the engine
+  // can refuse to label a handful of points a "regression".
+  const regVolVix = useMemo(() => {
+    const vm = macro?.vixMonthly;
+    if (!Array.isArray(VOL_PNL) || VOL_PNL.length < 2 || !vm || !Object.keys(vm).length) return null;
+    const rows = [...VOL_PNL].filter((r) => r && r.month).sort((a, b) => a.month.localeCompare(b.month));
+    const returns = [], vix = [];
+    for (let i = 0; i < rows.length; i++) {
+      const priorEq = i > 0 ? rows[i - 1].equity : null;
+      let ret = null;
+      if (i > 0 && priorEq) ret = rows[i].pnl / priorEq;
+      else if (i > 0 && rows[i].capital) ret = rows[i].pnl / rows[i].capital;
+      returns.push(ret);
+      vix.push(vm[rows[i].month] ?? null);
+    }
+    return regressVsVix(returns, vix);
+  }, [macro]);
+
   // Scenario model — live sleeve values (₹) + the computed sensitivities. All
   // figures read from the live memos; nothing here is hardcoded.
   const macroModel = useMemo(() => {
@@ -580,12 +603,12 @@ export default function Page() {
       sleeves: {
         us:    { v: usExGoldUsd * fxRate, betaNdx: regUsNdx?.beta ?? null, rsqNdx: regUsNdx?.rsq ?? null, weeksNdx: regUsNdx?.weeks ?? null, perBp: regUsDur?.perBp ?? null, rsqDur: regUsDur?.rsq ?? null, weeksDur: regUsDur?.weeks ?? null },
         india: { v: indiaV, betaNifty: regIndia?.beta ?? null, rsqNifty: regIndia?.rsq ?? null, weeksNifty: regIndia?.weeks ?? null },
-        vol:   { cap: STATIC.algo },
+        vol:   { cap: STATIC.algo, book: regVolVix, proxy: macro?.volProxy && !macro.volProxy.stale ? macro.volProxy : null },
         gold:  { v: goldUsd * fxRate },
         fd:    { v: ov.fdValue },
       },
     };
-  }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, ov.fdValue]);
+  }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, regVolVix, ov.fdValue]);
 
   // Compact live-macro backdrop string (FRED + Yahoo) fed to the AI pulse read.
   const macroClockStr = useMemo(() => {

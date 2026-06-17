@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { InrC, SInrC, pctS } from '../../lib/fmt';
-import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, evalScenario } from '../../lib/scenarios';
+import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier } from '../../lib/scenarios';
 import AnalysisCard from '../shared/AnalysisCard';
 
 // Per-sleeve cards that consolidate here when the header ✨ banners are toggled off.
@@ -54,7 +54,19 @@ const CLOCK = [
   { key: 'brent',       label: 'Brent',   unit: '$',  dp: 2, hint: 'India CPI / CAD channel' },
 ];
 
-const confLabel = { hard: 'measured', modelled: 'regression', assumed: 'assumption' };
+const confLabel = { hard: 'measured', modelled: 'regression', indicative: 'indicative (too few obs)', assumed: 'stated assumption' };
+
+// Distinct marker per confidence FAILURE MODE — a weak fit (~), too few
+// observations (n=N), and a pure assumption (≈) must each read differently.
+function legFlag(leg) {
+  if (!leg) return null;
+  if (leg.conf === 'modelled' && leg.weak) return <span className="mac-flag" title={`weak fit · R²=${leg.rsq != null ? leg.rsq.toFixed(2) : '—'}`}>~</span>;
+  if (leg.conf === 'indicative') return <span className="mac-flag-n" title={`indicative · only ${leg.n} obs — too few to fit`}>n={leg.n}</span>;
+  if (leg.conf === 'assumed') return <span className="mac-flag-a" title="stated assumption — no series">≈</span>;
+  return null; // hard, or a measured modelled fit → no marker
+}
+// "Soft" = anything that must not read as a hard measured number.
+const isSoft = (leg) => !!leg && (leg.conf === 'assumed' || leg.conf === 'indicative' || (leg.conf === 'modelled' && leg.weak));
 
 export default function MacroTab({ model, macro, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
@@ -64,6 +76,10 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
   const selected = useMemo(() => evals.find((e) => e.id === selId) || evals[0], [evals, selId]);
   const live = macro?.live || {};
   const ready = !!(model?.sleeves?.us?.v || model?.sleeves?.india?.v);
+
+  // active vol-sleeve tier (shared with shockVix) + the structural proxy
+  const vt = useMemo(() => volTier(model), [model]);
+  const proxy = model?.sleeves?.vol?.proxy || null;
 
   // group the scenario rows for sectioned rendering
   const groups = useMemo(() => {
@@ -98,12 +114,12 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
     };
   }, [evals, model]);
 
-  // a ₹ impact cell, sign-coloured, with a low-confidence flag
+  // a ₹ impact cell, sign-coloured, with a confidence-tier marker
   const Cell = (leg) => {
     if (!leg || !leg.inr) return <span className="mut">—</span>;
     return (
-      <span className={signCls(leg.inr) + (leg.weak ? ' mac-weak' : '')} title={confLabel[leg.conf] + (leg.weak ? ' · low confidence' : '')}>
-        <SInrC n={leg.inr} />{leg.weak ? <span className="mac-flag">~</span> : null}
+      <span className={signCls(leg.inr) + (isSoft(leg) ? ' mac-soft' : '')} title={confLabel[leg.conf] || leg.conf}>
+        <SInrC n={leg.inr} />{legFlag(leg)}
       </span>
     );
   };
@@ -257,14 +273,16 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
               {SLEEVES.map((s) => {
                 const leg = legOf(selected, s.key);
                 const w = Math.min(100, Math.abs(leg ? leg.pct : 0) * 6);
+                const soft = isSoft(leg);
+                const hatch = leg && leg.conf === 'modelled' && leg.weak;
                 return (
                   <div className="seg-row mac-bar" key={s.key}>
                     <div className="seg-lbl"><span className="mac-dot" style={{ background: s.color }} />{s.label}</div>
                     <div className="seg-trk">
-                      <div className="seg-fil" style={{ width: w + '%', backgroundColor: leg && leg.inr < 0 ? 'var(--red)' : 'var(--grn)', opacity: leg?.weak ? 0.5 : 1, backgroundImage: leg?.weak ? 'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.25) 3px,rgba(0,0,0,.25) 6px)' : 'none' }} />
+                      <div className="seg-fil" style={{ width: w + '%', backgroundColor: leg && leg.inr < 0 ? 'var(--red)' : 'var(--grn)', opacity: soft ? 0.5 : 1, backgroundImage: hatch ? 'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(0,0,0,.25) 3px,rgba(0,0,0,.25) 6px)' : 'none' }} />
                     </div>
-                    <div className="seg-val mono" style={{ minWidth: 150, textAlign: 'right' }}>
-                      {leg && leg.inr ? <><span className={signCls(leg.inr)}><SInrC n={leg.inr} /></span> <span className="sub">{pctS(leg.pct)}</span>{leg.weak ? <span className="mac-flag">~</span> : null}</> : <span className="mut">no effect</span>}
+                    <div className="seg-val mono" style={{ minWidth: 168, textAlign: 'right' }}>
+                      {leg && leg.inr ? <><span className={signCls(leg.inr)}><SInrC n={leg.inr} /></span> <span className="sub">{pctS(leg.pct)}</span> {legFlag(leg)}</> : <span className="mut">no effect</span>}
                     </div>
                   </div>
                 );
@@ -274,23 +292,39 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
           )}
 
           {/* sensitivity inputs */}
-          <div className="ctitle" style={{ margin: '20px 0 10px' }}>Sensitivity inputs <span className="sub" style={{ textTransform: 'none' }}>— computed, with fit quality</span></div>
+          <div className="ctitle" style={{ margin: '20px 0 10px' }}>Sensitivity inputs <span className="sub" style={{ textTransform: 'none' }}>— computed, with fit quality AND sample size</span></div>
           <div className="ovx">
-            <table className="tbl" style={{ minWidth: 720 }}>
-              <thead><tr><th>Driver → sleeve</th><th className="ra">Sensitivity</th><th className="ra">R²</th><th className="ra">Lookback</th><th>Basis</th></tr></thead>
+            <table className="tbl" style={{ minWidth: 760 }}>
+              <thead><tr><th>Driver → sleeve</th><th className="ra">Sensitivity</th><th className="ra">R²</th><th className="ra">n</th><th className="ra">Lookback</th><th>Basis</th></tr></thead>
               <tbody>
-                <SensRow label="Nasdaq → US-tech β" val={reg.usNdx?.beta != null ? '×' + f2(reg.usNdx.beta) : '—'} rsq={reg.usNdx?.rsq} weeks={reg.usNdx?.weeks} basis="weekly regression" />
-                <SensRow label="10Y → US-tech (duration)" val={reg.usDur?.perBp != null ? f2(reg.usDur.perBp * 100 * 100, 1) + '% / +100bp' : '—'} rsq={reg.usDur?.rsq} weeks={reg.usDur?.weeks} basis="return vs Δ10Y" />
-                <SensRow label="Nifty → India β" val={reg.india?.beta != null ? '×' + f2(reg.india.beta) : '—'} rsq={reg.india?.rsq} weeks={reg.india?.weeks} basis="weekly regression" />
-                <SensRow label="VIX → vol book" val={f2(ASSUME.volPerVixPt * 100, 1) + '% / +1 pt'} assumed basis="stated — no P&L series" />
-                <SensRow label="HY OAS → vol book" val={f2(ASSUME.hyVolPer150 * 100, 0) + '% / +150bp'} assumed basis="stated — risk-off proxy" />
-                <SensRow label="Brent → India equity" val={f2(ASSUME.crudeIndiaEq * 100, 0) + '% / +20%'} assumed basis="stated — inflation/CAD" />
+                <SensRow label="Nasdaq → US-tech β" val={reg.usNdx?.beta != null ? '×' + f2(reg.usNdx.beta) : '—'} rsq={reg.usNdx?.rsq} n={reg.usNdx?.weeks} lookback={reg.usNdx?.weeks ? reg.usNdx.weeks + 'w' : null} conf={reg.usNdx?.rsq != null && reg.usNdx.rsq < LOW_RSQ ? 'weak' : 'measured'} basis="weekly regression" />
+                <SensRow label="10Y → US-tech (duration)" val={reg.usDur?.perBp != null ? f2(reg.usDur.perBp * 100 * 100, 1) + '% / +100bp' : '—'} rsq={reg.usDur?.rsq} n={reg.usDur?.weeks} lookback={reg.usDur?.weeks ? reg.usDur.weeks + 'w' : null} conf={reg.usDur?.rsq != null && reg.usDur.rsq < LOW_RSQ ? 'weak' : 'measured'} basis="return vs Δ10Y, weekly" />
+                <SensRow label="Nifty → India β" val={reg.india?.beta != null ? '×' + f2(reg.india.beta) : '—'} rsq={reg.india?.rsq} n={reg.india?.weeks} lookback={reg.india?.weeks ? reg.india.weeks + 'w' : null} conf={reg.india?.rsq != null && reg.india.rsq < LOW_RSQ ? 'weak' : 'measured'} basis="weekly regression" />
+
+                {/* VIX → vol book — the live three-tier resolution */}
+                {vt.conf === 'modelled' ? (
+                  <SensRow label="VIX → vol book" val={f2(vt.perVixPt * 100, 2) + '% / +1 pt'} rsq={vt.rsq} n={vt.n} lookback={vt.n + 'mo'} conf={vt.rsq < LOW_RSQ ? 'weak' : 'measured'} basis="book P&L, monthly regression" />
+                ) : vt.conf === 'indicative' ? (
+                  <SensRow label="VIX → vol book" val={f2(vt.perVixPt * 100, 2) + '% / +1 pt avg'} rsq={null} n={vt.n} lookback={vt.n + 'mo'} conf="indicative" basis={`book P&L — descriptive, n<${MIN_OBS_MONTHLY} (not a fit)`} />
+                ) : (
+                  <SensRow label="VIX → vol book" val={f2(ASSUME.volPerVixPt * 100, 1) + '% / +1 pt'} rsq={null} n={null} lookback="—" conf="assumed" basis="stated — no book series yet" />
+                )}
+
+                {/* structural short-vol proxy — shown for contrast, never substituted */}
+                {proxy && (
+                  <SensRow label="VIX → short-vol proxy" val={f2(proxy.perVixPt * 100, 2) + '% / +1 pt'} rsq={proxy.rsq} n={proxy.n} lookback={proxy.n + 'mo'} conf="proxy" basis="SVXY −0.5x short-VIX, monthly — structural, NOT this book" />
+                )}
+
+                <SensRow label="HY OAS → vol book" val={f2(ASSUME.hyVolPer150 * 100, 0) + '% / +150bp'} rsq={null} n={null} lookback="—" conf="assumed" basis="stated — no book-vs-HY series yet" />
+                <SensRow label="Brent → India equity" val={f2(ASSUME.crudeIndiaEq * 100, 0) + '% / +20%'} rsq={null} n={null} lookback="—" conf="assumed" basis="stated — inflation/CAD channel" />
               </tbody>
             </table>
           </div>
-          <div className="sub" style={{ marginTop: 10, lineHeight: 1.6 }}>
-            R² below {LOW_RSQ.toFixed(2)} is a <span className="mac-weak">weak fit<span className="mac-flag">~</span></span> — a noisy input, not a hard number.
-            Assumption rows have no regressable series and are stated, never measured.
+          <div className="sub" style={{ marginTop: 10, lineHeight: 1.7 }}>
+            <span className="mac-flag">~</span> weak fit (R² below {LOW_RSQ.toFixed(2)} — a noisy slope). <span className="mac-flag-n">n=N</span> indicative — real book data but
+            fewer than {MIN_OBS_MONTHLY} monthly points, shown as a descriptive average, <strong>not</strong> a fitted model (no R²/CI).
+            <span className="mac-flag-a">≈</span> a stated assumption with no series. The <span className="mac-proxy-tag">proxy</span> row is a long
+            structural short-vol fit shown for contrast — never substituted for the book's own read, so the gap stays visible.
           </div>
         </div>
       </details>
@@ -314,15 +348,21 @@ function Group({ g, SLEEVES, Cell, legOf, selId, setSelId }) {
   );
 }
 
-function SensRow({ label, val, rsq, weeks, assumed, basis }) {
-  const weak = assumed || rsq == null || rsq < LOW_RSQ;
+// conf: 'measured' | 'weak' | 'indicative' | 'assumed' | 'proxy'
+function SensRow({ label, val, rsq, n, lookback, conf, basis }) {
+  const flag = conf === 'weak' ? <span className="mac-flag">~</span>
+    : conf === 'indicative' ? <span className="mac-flag-n">n={n}</span>
+    : conf === 'assumed' ? <span className="mac-flag-a">≈</span>
+    : null;
+  const soft = conf === 'weak' || conf === 'indicative' || conf === 'assumed';
   return (
-    <tr>
-      <td style={{ color: 'var(--txt)' }}>{label}</td>
-      <td className={'ra mono' + (weak ? ' mac-weak' : '')}>{val}{weak ? <span className="mac-flag">~</span> : null}</td>
-      <td className="ra mono">{assumed ? <span className="mut">n/a</span> : (rsq != null ? <span className={rsq < LOW_RSQ ? 'red' : 'grn'}>{rsq.toFixed(2)}</span> : '—')}</td>
-      <td className="ra mono mut">{assumed ? '—' : (weeks ? weeks + 'w' : '—')}</td>
-      <td className="sub" style={{ color: assumed ? 'var(--acc)' : 'var(--txt3)' }}>{assumed ? 'assumption' : basis}</td>
+    <tr className={conf === 'proxy' ? 'mac-proxyrow' : undefined}>
+      <td style={{ color: 'var(--txt)' }}>{label}{conf === 'proxy' ? <span className="mac-proxy-tag">proxy</span> : null}</td>
+      <td className={'ra mono' + (soft ? ' mac-soft' : '')}>{val} {flag}</td>
+      <td className="ra mono">{rsq != null ? <span className={rsq < LOW_RSQ ? 'red' : 'grn'}>{rsq.toFixed(2)}</span> : <span className="mut">n/a</span>}</td>
+      <td className="ra mono mut">{n != null ? n : '—'}</td>
+      <td className="ra mono mut">{lookback || '—'}</td>
+      <td className="sub" style={{ color: conf === 'assumed' ? 'var(--acc)' : 'var(--txt3)' }}>{basis}</td>
     </tr>
   );
 }
