@@ -36,50 +36,43 @@ const SYSTEM_PROMPT =
   'currency, duration, reinvestment, tax) and genuine opportunities. ' +
   'Each field is 1-2 tight, high-signal sentences — specific and actionable, never generic ' +
   'filler. Respect the provided caveats — never overstate short-window or benchmark-flattered ' +
-  'results, and do not invent prices or figures not given. Null a sleeve only if its data is ' +
-  'missing. Your knowledge has a training cutoff, so frame macro views as analytical context, ' +
+  'results, and do not invent prices or figures not given. Return an EMPTY STRING for any ' +
+  'field whose underlying data is missing — never fabricate. Your knowledge has a training ' +
+  'cutoff, so frame macro views as analytical context, ' +
   'not real-time certainty.';
 
 // Structured-outputs schema — guarantees parseable JSON and replaces the old
-// "Return JSON: {...}" prompt scaffold.
-const nullable = (t) => ({ anyOf: [{ type: t }, { type: 'null' }] });
-// One analysis card per tab: performance + outlook (each nullable), or null.
-const analysis = () => ({
-  anyOf: [
-    {
-      type: 'object',
-      properties: { performance: nullable('string'), outlook: nullable('string') },
-      required: ['performance', 'outlook'],
-      additionalProperties: false,
-    },
-    { type: 'null' },
-  ],
+// "Return JSON: {...}" prompt scaffold. Anthropic caps a schema at 16
+// union-typed parameters (anyOf/nullable), so we avoid nullable fields
+// entirely: every field is a required plain string, and an EMPTY string means
+// "no data for this sleeve". The client (AnalysisCard) already treats an empty
+// performance+outlook as absent, so empty strings render as no card.
+const card = () => ({
+  type: 'object',
+  properties: { performance: { type: 'string' }, outlook: { type: 'string' } },
+  required: ['performance', 'outlook'],
+  additionalProperties: false,
 });
 const INSIGHTS_SCHEMA = {
   type: 'object',
   properties: {
-    overview: analysis(),
-    indian: analysis(),
-    us: analysis(),
-    mf: analysis(),
-    fd: analysis(),
-    trading: analysis(),
+    overview: card(),
+    indian: card(),
+    us: card(),
+    mf: card(),
+    fd: card(),
+    trading: card(),
     indian_swot: {
-      anyOf: [
-        {
-          type: 'object',
-          properties: {
-            macro: nullable('string'),
-            s: nullable('string'),
-            w: nullable('string'),
-            o: nullable('string'),
-            t: nullable('string'),
-          },
-          required: ['macro', 's', 'w', 'o', 't'],
-          additionalProperties: false,
-        },
-        { type: 'null' },
-      ],
+      type: 'object',
+      properties: {
+        macro: { type: 'string' },
+        s: { type: 'string' },
+        w: { type: 'string' },
+        o: { type: 'string' },
+        t: { type: 'string' },
+      },
+      required: ['macro', 's', 'w', 'o', 't'],
+      additionalProperties: false,
     },
   },
   required: ['overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot'],
