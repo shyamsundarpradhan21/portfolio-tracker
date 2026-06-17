@@ -54,6 +54,16 @@ const aiAgo = (ts) => {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 };
 
+// True only if at least one sleeve carries real text. The route degrades to an
+// all-empty object when the key/schema is misconfigured; never cache or surface
+// that — treat it as a miss so a fixed backend self-heals without a hard reload.
+const hasInsight = (o) =>
+  !!o && typeof o === 'object' &&
+  Object.values(o).some(
+    (v) => v && typeof v === 'object' &&
+      (v.performance || v.outlook || v.macro || v.s || v.w || v.o || v.t),
+  );
+
 // ─── pure derivations ─────────────────────────────────────────────────────────
 function deriveMf(mfNav) {
   const fundsNav = (mfNav && mfNav.funds) || {};
@@ -305,7 +315,7 @@ export default function Page() {
   useEffect(() => {
     // Show last-known insights immediately (localStorage — survives sessions);
     // the hash-gated effect below decides whether a fresh API call is needed.
-    try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (ic?.insights) { setInsights(ic.insights); setInsightsTs(ic.ts || null); } } catch {}
+    try { const ic = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null'); if (hasInsight(ic?.insights)) { setInsights(ic.insights); setInsightsTs(ic.ts || null); } } catch {}
     try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) setMfNav(mc.mfNav); } catch {}
     try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
     let hydrated = false;
@@ -582,7 +592,7 @@ export default function Page() {
     ]);
     try {
       const c = JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null');
-      if (c?.insights && c.hash === hash) { setInsights(c.insights); setInsightsTs(c.ts || null); return; } // unchanged — no API spend
+      if (hasInsight(c?.insights) && c.hash === hash) { setInsights(c.insights); setInsightsTs(c.ts || null); return; } // unchanged — no API spend
     } catch {}
 
     let stale = false;
@@ -592,7 +602,7 @@ export default function Page() {
         const res = await fetch('/api/insights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
         if (res.ok && !stale) {
           const d = await res.json();
-          if (d.insights) {
+          if (hasInsight(d.insights)) {
             const ts = Date.now();
             setInsights(d.insights); setInsightsTs(ts);
             try { localStorage.setItem(INSIGHTS_KEY, JSON.stringify({ ts, hash, insights: d.insights })); } catch {}

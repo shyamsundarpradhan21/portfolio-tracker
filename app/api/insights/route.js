@@ -9,7 +9,7 @@
 //
 // Each tab card is performance (honest read) + outlook (forward view), 1–2
 // sentences each, or null when its data is missing. Token economics: Haiku-tier
-// model, ~500-token input, structured outputs, max_tokens 1200. AI fires only
+// model, ~500-token input, structured outputs, max_tokens 2048. AI fires only
 // on the header toggle (one whole-app call) and the client hash-gates so
 // unchanged data never re-bills. Requires the ANTHROPIC_API_KEY env var.
 
@@ -155,7 +155,12 @@ export async function POST(request) {
     const client = new Anthropic();
     const message = await client.messages.create({
       model: MODEL,
-      max_tokens: 1200,
+      // 6 cards x {performance, outlook} + a 5-field SWOT routinely runs
+      // ~1.0-1.3K output tokens on a full book; 1200 truncated the JSON
+      // (stop_reason max_tokens) and the parse silently failed to all-null.
+      // 2048 leaves comfortable headroom; Haiku output is cheap and the
+      // client hash-gates to ~one call/day.
+      max_tokens: 2048,
       system: SYSTEM_PROMPT,
       output_config: { format: { type: 'json_schema', schema: INSIGHTS_SCHEMA } },
       messages: [{ role: 'user', content: buildUserMessage(data) }],
