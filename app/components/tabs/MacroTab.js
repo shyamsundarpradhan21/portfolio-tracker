@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { SInrC, pctS } from '../../lib/fmt';
-import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier } from '../../lib/scenarios';
+import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier, pulseImpact } from '../../lib/scenarios';
 import AnalysisCard from '../shared/AnalysisCard';
 
 // Per-sleeve cards that consolidate here when the header ✨ banners are toggled off.
@@ -58,6 +58,37 @@ const confLabel = { hard: 'measured', modelled: 'regression', indicative: 'indic
 
 // "Soft" = anything that must not read as a hard measured number.
 const isSoft = (leg) => !!leg && (leg.conf === 'assumed' || leg.conf === 'indicative' || (leg.conf === 'modelled' && leg.weak));
+
+// ── Pulse regime + bidirectional helpers ─────────────────────────────────────
+const REGIME_WORD = { 'risk-on': 'Risk-on', neutral: 'Neutral', watch: 'Watch', 'risk-off': 'Risk-off' };
+const LEAN_ARROW = { easing: '▼', stable: '→', tightening: '▲' };
+const absPct = (p) => (p == null || !isFinite(p) ? '' : Math.abs(p).toFixed(1) + '%');
+const bidirMax = (impact) => Math.max(0.5, ...impact.rows.flatMap((r) => [Math.abs(r.up.pct), Math.abs(r.down.pct)]));
+
+// One sleeve's twin readout: market-up leg + market-down leg, side by side.
+// Direction is by COLOUR (gain green / loss red) — no +/- glyph (FEEDBACK rule).
+function TwinRow({ r, max }) {
+  const cell = (leg) => {
+    const w = max > 0 ? Math.min(100, (Math.abs(leg.pct) / max) * 100) : 0;
+    return (
+      <div className="ptwin-cell">
+        <span className="ptwin-bar"><span className="ptwin-fil" style={{ width: w + '%', backgroundColor: leg.inr > 0 ? 'var(--grn)' : leg.inr < 0 ? 'var(--red)' : 'var(--txt3)', opacity: r.weak ? 0.55 : 1 }} /></span>
+        <span className="ptwin-num"><span className={signCls(leg.inr)}><SInrC n={leg.inr} /></span> <span className="sub">{absPct(leg.pct)}</span></span>
+      </div>
+    );
+  };
+  return (
+    <div className="ptwin">
+      <div className="ptwin-lbl">
+        <span className="mac-dot" style={{ background: r.color }} />{r.label}
+        {r.weak ? <span className="mac-flag" title="weak fit — low R²">~</span> : null}
+        {r.stable ? <span className="ptwin-anchor">anchor</span> : null}
+      </div>
+      {cell(r.up)}
+      {cell(r.down)}
+    </div>
+  );
+}
 const isSoftConf = (c) => c === 'assumed' || c === 'indicative';
 
 // plain string ₹ formatter for SVG <text> (SInrC renders a span, unusable in SVG)
@@ -163,7 +194,7 @@ function TierBreakdown({ selected, sleeves }) {
   );
 }
 
-export default function MacroTab({ model, macro, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ model, macro, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
   const pulse = insights?.pulse;
 
@@ -171,6 +202,9 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
   const selected = useMemo(() => evals.find((e) => e.id === selId) || evals[0], [evals, selId]);
   const live = macro?.live || {};
   const ready = !!(model?.sleeves?.us?.v || model?.sleeves?.india?.v);
+
+  // bidirectional market-beta impact (twin up/down legs per sleeve) — Pulse centrepiece
+  const impact = useMemo(() => pulseImpact(model), [model]);
 
   // active vol-sleeve tier (shared with shockVix) + the structural proxy
   const vt = useMemo(() => volTier(model), [model]);
@@ -214,29 +248,55 @@ export default function MacroTab({ model, macro, reg, insights, insightsOn, insi
 
   return (
     <div>
-      {/* ── PULSE — the AI macro read of the book (this tab's reason to exist) ─ */}
-      <div className="card sec pulse-ai">
-        <div className="pulse-ai-head">
-          <span className="pulse-ai-title"><span className="ai-spark">✦</span> Pulse — AI macro read of the book</span>
+      {/* ── PULSE — deterministic regime + symmetric bidirectional impact ──── */}
+      <div className="card sec pulse-card">
+        {/* Line 1 — REGIME BADGE (the computed headline) + lean */}
+        <div className="pulse-regime">
+          {regime && regime.state !== 'unavailable' ? (
+            <>
+              <span className={'regime-badge regime-' + regime.state}>{REGIME_WORD[regime.state]}</span>
+              <span className={'regime-lean lean-' + regime.lean}>{LEAN_ARROW[regime.lean]} {regime.lean}</span>
+              <span className="pulse-card-sub">market regime · conditions now, not a forecast</span>
+            </>
+          ) : (
+            <span className="mac-stale">Regime unavailable — live macro feed incomplete</span>
+          )}
           <span className="pulse-ai-meta">
-            {insightsLoading ? <span className="ai-status">analysing…</span>
-              : insightsTs ? <span className="mut">analysed {agoStr(insightsTs)}</span>
-              : <span className="mut">not generated yet</span>}
-            <button className="pulse-refresh" onClick={onRefresh} disabled={insightsLoading || !aiReady} title="Regenerate the whole-app AI analysis">↻ refresh</button>
+            {insightsLoading ? <span className="ai-status">analysing…</span> : insightsTs ? <span className="mut">AI {agoStr(insightsTs)}</span> : null}
+            <button className="pulse-refresh" onClick={onRefresh} disabled={insightsLoading || !aiReady} title="Regenerate the demoted AI nuance line">↻</button>
           </span>
         </div>
-        {insightsFirstLoad ? (
-          <div className="ai-body"><div className="ins-skel" /><div className="ins-skel" /></div>
-        ) : pulse && (pulse.read || pulse.drivers || pulse.drags) ? (
-          <>
-            {pulse.read && <div className="pulse-read">{pulse.read}</div>}
-            <div className="pulse-dd">
-              {pulse.drivers && <div className="pulse-col"><div className="pulse-col-lbl up">Could drive it up</div><div className="ai-txt">{pulse.drivers}</div></div>}
-              {pulse.drags && <div className="pulse-col"><div className="pulse-col-lbl down">Could pull it down</div><div className="ai-txt">{pulse.drags}</div></div>}
+
+        {/* Line 2 — WHAT MOVED: the drivers actually setting the state */}
+        {regime && regime.drivers && regime.drivers.length > 0 && (
+          <div className="regime-drivers">
+            {regime.drivers.map((d) => (
+              <span className={'rd rd-' + d.dir} key={d.key}>
+                <span className="rd-lbl">{d.label}</span> <span className="rd-val">{d.valueStr}</span>
+                {d.changeStr ? <span className="rd-chg">{d.changeDir > 0 ? '▲' : d.changeDir < 0 ? '▼' : '·'}{d.changeStr}</span> : null}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Line 3+ — BIDIRECTIONAL IMPACT: twin up/down per market-beta sleeve */}
+        {ready && (
+          <div className="pulse-bidir">
+            <div className="pulse-bidir-cap sub">If markets move ±{impact.move.equityPct}% <span className="mut">(equity β · gold on ±{impact.move.fxPct}% INR · FD floor) — IF → THEN, not a forecast</span></div>
+            <div className="ptwin ptwin-head"><div /><div className="ptwin-cell grn">market up</div><div className="ptwin-cell red">market down</div></div>
+            {impact.rows.map((r) => <TwinRow key={r.key} r={r} max={bidirMax(impact)} />)}
+            <div className="ptwin ptwin-total">
+              <div className="ptwin-lbl">Book total</div>
+              <div className="ptwin-cell"><span className={signCls(impact.total.up.inr)}><SInrC n={impact.total.up.inr} /></span> <span className="sub">{absPct(impact.total.up.pct)}</span></div>
+              <div className="ptwin-cell"><span className={signCls(impact.total.down.inr)}><SInrC n={impact.total.down.inr} /></span> <span className="sub">{absPct(impact.total.down.pct)}</span></div>
             </div>
-          </>
-        ) : (
-          <div className="sub">No analysis yet — hit <strong>refresh</strong> to generate a forward macro read of the book (one whole-app AI call). Conditional, never a price call.</div>
+            <div className="pulse-aside">Trading book set aside — under review, not market-beta.</div>
+          </div>
+        )}
+
+        {/* Line last — thin AI nuance, demoted (only if it exists) */}
+        {!insightsFirstLoad && pulse && pulse.read && (
+          <div className="pulse-nuance"><span className="ai-spark">✦</span> {pulse.read}</div>
         )}
       </div>
 

@@ -10,6 +10,7 @@ import {
 } from './portfolio';
 import FY from '../data/fy2526_verified.json';
 import VOL_PNL from '../data/vol_pnl.json';
+import { classifyRegime } from './lib/regime';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
@@ -610,6 +611,10 @@ export default function Page() {
     };
   }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, regVolVix, ov.fdValue]);
 
+  // Deterministic market-regime read (no LLM) from the live macro clock — drives
+  // the Pulse headline + the topbar pill. States current conditions, never predicts.
+  const regime = useMemo(() => classifyRegime(macro?.live), [macro]);
+
   // Compact live-macro backdrop string (FRED + Yahoo) fed to the AI pulse read.
   const macroClockStr = useMemo(() => {
     const L = macro?.live; if (!L) return '';
@@ -838,8 +843,9 @@ export default function Page() {
             <div className="topbar-right">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pulse — AI macro read of the book + scenario stress engine">
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pulse — market regime + how the book responds if markets move up or down">
                 <span className="pulse-spark">✦</span>Pulse
+                {regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
               </button>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
@@ -946,7 +952,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} fxRate={fxRate}
+            <MacroTab model={macroModel} macro={macro} fxRate={fxRate} regime={regime}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

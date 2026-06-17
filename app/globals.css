@@ -1177,6 +1177,56 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .pulse-col-lbl.down { color: var(--red); }
 @media (max-width: 720px) { .pulse-dd { grid-template-columns: 1fr; } }
 
+/* ── Pulse card v2 — deterministic regime + symmetric bidirectional impact ──── */
+.pulse-card { border-left: 2px solid var(--acc); }
+.pulse-regime { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.regime-badge { font-size: var(--fs-sm); font-weight: 700; padding: 3px 12px; border-radius: 8px; letter-spacing: .02em; }
+.regime-risk-on  { background: color-mix(in srgb, var(--grn) 16%, transparent); color: var(--grn); }
+.regime-neutral  { background: var(--acc-bg); color: var(--acc); }
+.regime-watch    { background: rgba(245, 158, 11, .16); color: #E6A23C; }
+.regime-risk-off { background: color-mix(in srgb, var(--red) 16%, transparent); color: var(--red); }
+.regime-lean { font-size: var(--fs-xs); font-weight: 600; font-family: var(--mono); }
+.lean-tightening { color: var(--red); }
+.lean-easing { color: var(--grn); }
+.lean-stable { color: var(--txt3); }
+.pulse-card-sub { font-size: var(--fs-2xs); color: var(--txt3); }
+.pulse-regime .pulse-ai-meta { margin-left: auto; }
+
+/* drivers — the "what moved" delta strip */
+.regime-drivers { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.rd { font-family: var(--mono); font-size: var(--fs-2xs); padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: baseline; gap: 6px; border: .5px solid var(--brd); }
+.rd-stress { background: color-mix(in srgb, var(--red) 8%, transparent); border-color: color-mix(in srgb, var(--red) 26%, transparent); }
+.rd-calm   { background: color-mix(in srgb, var(--grn) 8%, transparent); border-color: color-mix(in srgb, var(--grn) 26%, transparent); }
+.rd-lbl { color: var(--txt3); text-transform: uppercase; letter-spacing: .05em; }
+.rd-stress .rd-val { color: var(--red); font-weight: 700; }
+.rd-calm .rd-val { color: var(--grn); font-weight: 700; }
+.rd-chg { color: var(--txt3); }
+
+/* bidirectional twin impact */
+.pulse-bidir-cap { margin-bottom: 8px; }
+.ptwin { display: grid; grid-template-columns: 150px 1fr 1fr; gap: 12px; align-items: center; padding: 5px 0; }
+.ptwin-head { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; padding-bottom: 2px; }
+.ptwin-head .ptwin-cell { justify-content: flex-end; }
+.ptwin-lbl { font-size: var(--fs-sm); color: var(--txt); display: flex; align-items: center; gap: 7px; }
+.ptwin-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.ptwin-bar { flex: 1; max-width: 84px; height: 7px; background: var(--sur2); border-radius: 3px; overflow: hidden; }
+.ptwin-fil { display: block; height: 7px; border-radius: 3px; min-width: 2px; }
+.ptwin-num { font-family: var(--mono); font-size: var(--fs-xs); white-space: nowrap; min-width: 104px; text-align: right; }
+.ptwin-total { border-top: .5px solid var(--brd); margin-top: 4px; padding-top: 9px; }
+.ptwin-total .ptwin-lbl, .ptwin-total .ptwin-cell { font-weight: 700; }
+.ptwin-anchor { font-size: var(--fs-2xs); color: var(--txt3); }
+.pulse-aside { font-size: var(--fs-2xs); color: var(--txt3); font-style: italic; margin-top: 10px; }
+.pulse-nuance { font-size: var(--fs-sm); color: var(--txt2); line-height: 1.55; border-top: .5px solid var(--brd); margin-top: 12px; padding-top: 11px; display: flex; gap: 8px; }
+.pulse-nuance .ai-spark { color: var(--acc); flex: 0 0 auto; }
+@media (max-width: 560px) { .ptwin { grid-template-columns: 110px 1fr 1fr; gap: 6px; } .ptwin-num { min-width: 0; } .ptwin-bar { display: none; } }
+
+/* topbar pill regime hint */
+.pulse-pill-state { font-weight: 600; opacity: .9; }
+.pulse-pill .regime-risk-on { color: var(--grn); background: none; padding: 0; }
+.pulse-pill .regime-watch { color: #E6A23C; background: none; padding: 0; }
+.pulse-pill .regime-risk-off { color: var(--red); background: none; padding: 0; }
+.pulse-pill .regime-neutral { color: inherit; background: none; padding: 0; }
+
 /* ── MACRO tab ──────────────────────────────────────────────────────────────── */
 .mac-contract { border-left: 2px solid var(--acc); font-size: var(--fs-sm); line-height: 1.65; color: var(--txt2); }
 .mac-contract strong { color: var(--acc); }

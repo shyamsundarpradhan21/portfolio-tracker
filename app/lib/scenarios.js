@@ -183,8 +183,10 @@ function mergeLegs(parts) {
 // ── Scenario catalogue ───────────────────────────────────────────────────────
 // group drives the visual sectioning; build(model) → { legs, note }.
 export const SCENARIOS = [
-  { id: 'r+50',  group: 'Rates',  label: '10Y +50 bps',  build: (m) => shockRates(m, 50) },
   { id: 'r+100', group: 'Rates',  label: '10Y +100 bps', build: (m) => shockRates(m, 100) },
+  { id: 'r+50',  group: 'Rates',  label: '10Y +50 bps',  build: (m) => shockRates(m, 50) },
+  { id: 'r+25',  group: 'Rates',  label: '10Y +25 bps',  build: (m) => shockRates(m, 25) },
+  { id: 'r-25',  group: 'Rates',  label: '10Y −25 bps',  build: (m) => shockRates(m, -25) },
   { id: 'r-50',  group: 'Rates',  label: '10Y −50 bps',  build: (m) => shockRates(m, -50) },
   { id: 'v25',   group: 'Vol',    label: 'VIX → 25',     build: (m) => shockVix(m, 25, false) },
   { id: 'v30',   group: 'Vol',    label: 'VIX → 30',     build: (m) => shockVix(m, 30, false) },
@@ -192,8 +194,11 @@ export const SCENARIOS = [
   { id: 'vbw',   group: 'Vol',    label: 'VIX 30 + backwardation', build: (m) => shockVix(m, 30, true) },
   { id: 'fx86',  group: 'FX',     label: 'USDINR → 86',  build: (m) => shockFx(m, 86) },
   { id: 'fx88',  group: 'FX',     label: 'USDINR → 88',  build: (m) => shockFx(m, 88) },
+  { id: 'nq+20', group: 'Equity', label: 'Nasdaq +20%',  build: (m) => shockNasdaq(m, 20) },
+  { id: 'nq+10', group: 'Equity', label: 'Nasdaq +10%',  build: (m) => shockNasdaq(m, 10) },
   { id: 'nq-10', group: 'Equity', label: 'Nasdaq −10%',  build: (m) => shockNasdaq(m, -10) },
   { id: 'nq-20', group: 'Equity', label: 'Nasdaq −20%',  build: (m) => shockNasdaq(m, -20) },
+  { id: 'ni+10', group: 'Equity', label: 'Nifty +10%',   build: (m) => shockNifty(m, 10) },
   { id: 'ni-10', group: 'Equity', label: 'Nifty −10%',   build: (m) => shockNifty(m, -10) },
   { id: 'br+20', group: 'Crude',  label: 'Brent +20%',   build: (m) => shockCrude(m, 20) },
   { id: 'hy150', group: 'Credit', label: 'HY OAS +150 bps', build: (m) => shockHy(m, 150) },
@@ -205,7 +210,51 @@ export const SCENARIOS = [
       note: `SIMULTANEOUS: Nasdaq −15% + VIX → 35 + USDINR → 88 + HY OAS +150bp. These shocks are CORRELATED in a real risk-off — this sums the legs and does NOT assume independence; treat the total as an approximation, not an additive certainty. Vol leg: ${volTierLabel(m)}.`,
     }),
   },
+  {
+    id: 'riskon', group: 'Composite', label: 'Risk-on (combined)',
+    composite: true,
+    build: (m) => ({
+      legs: mergeLegs([shockNasdaq(m, 15), shockVix(m, 14, false), shockFx(m, 84), shockHy(m, -100)]),
+      note: `SIMULTANEOUS: Nasdaq +15% + VIX → 14 + USDINR → 84 + HY OAS −100bp. A CORRELATED rally — sums the legs and does NOT assume independence; an approximation, not an additive certainty. Vol leg: ${volTierLabel(m)}.`,
+    }),
+  },
 ];
+
+// ── Pulse: symmetric bidirectional impact (market-beta sleeves only) ─────────
+// Default symmetric move. Equity drives US/India via beta; INR drives the gold
+// FX leg; FD is the stable anchor. Vol/Stratzy is EXCLUDED here (set aside).
+export const PULSE_MOVE = { equityPct: 10, ratesBp: 50, fxPct: 1.5 };
+
+const legPair = (v, frac) => ({ inr: Math.round((v || 0) * frac), pct: frac * 100 });
+
+// Returns { move, base, rows:[{key,label,color,conf,weak,rsq,up,down}], total:{up,down} }.
+// up = market rallies, down = market falls — both legs computed at once so the
+// UI shows upside captured vs downside exposed in one glance. IF→THEN only.
+export function pulseImpact(m, move = PULSE_MOVE) {
+  const eq = move.equityPct / 100, fx = move.fxPct / 100;
+  const beta = (b) => (b == null ? 1 : b);
+  const us = m.sleeves.us, ind = m.sleeves.india, gold = m.sleeves.gold, fd = m.sleeves.fd;
+  const rows = [
+    { key: 'us', label: 'US tech', color: 'var(--cyn)', conf: 'modelled', weak: weakRsq(us.rsqNdx), rsq: us.rsqNdx,
+      up: legPair(us.v, beta(us.betaNdx) * eq), down: legPair(us.v, -beta(us.betaNdx) * eq) },
+    { key: 'india', label: 'India equity', color: 'var(--blu)', conf: 'modelled', weak: weakRsq(ind.rsqNifty), rsq: ind.rsqNifty,
+      up: legPair(ind.v, beta(ind.betaNifty) * eq), down: legPair(ind.v, -beta(ind.betaNifty) * eq) },
+    // Gold is the FX hedge: market UP → INR firmer → USD-gold worth less in ₹;
+    // market DOWN → INR weaker → gold gains. Deterministic conversion ('hard').
+    { key: 'gold', label: 'Gold · FX', color: 'var(--gld)', conf: 'hard', weak: false,
+      up: legPair(gold.v, -fx), down: legPair(gold.v, fx) },
+    { key: 'fd', label: 'FD floor', color: 'var(--grn)', conf: 'hard', weak: false, stable: true,
+      up: legPair(fd.v, 0), down: legPair(fd.v, 0) },
+  ];
+  const base = rows.reduce((a, r) => a + (m.sleeves[r.key]?.v || 0), 0);
+  const total = {
+    up:   { inr: rows.reduce((a, r) => a + r.up.inr, 0) },
+    down: { inr: rows.reduce((a, r) => a + r.down.inr, 0) },
+  };
+  total.up.pct = base ? (total.up.inr / base) * 100 : 0;
+  total.down.pct = base ? (total.down.inr / base) * 100 : 0;
+  return { move, base, rows, total };
+}
 
 // Evaluate a scenario against the model → { id, group, label, composite, legs,
 // note, total }. legs is keyed by sleeve; total sums ₹ and expresses it as % of
