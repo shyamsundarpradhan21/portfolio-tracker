@@ -4,14 +4,14 @@
 // the current tab. Driven by the single whole-app insights call fired from the
 // header ✨ toggle. Renders nothing when AI is off, or when the model returned
 // nothing for this sleeve (so tabs stay clean with insights disabled).
-export default function AnalysisCard({ data, on, loading }) {
+export default function AnalysisCard({ data, on, loading, title = 'AI analysis' }) {
   if (!on) return null;
   const hasContent = data && (data.performance || data.outlook);
   if (!loading && !hasContent) return null;
   return (
     <div className="card sec ai-card">
       <div className="ai-head">
-        <span className="ai-spark">✦</span> AI analysis
+        <span className="ai-spark">✦</span> {title}
         <span className="ins-ai">AI</span>
       </div>
       {loading ? (

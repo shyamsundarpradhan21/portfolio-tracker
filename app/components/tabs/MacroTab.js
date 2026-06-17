@@ -2,6 +2,28 @@
 import { useMemo, useState } from 'react';
 import { SInrC, pctS } from '../../lib/fmt';
 import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, evalScenario } from '../../lib/scenarios';
+import AnalysisCard from '../shared/AnalysisCard';
+
+// Per-sleeve cards that consolidate here when the header ✨ banners are toggled off.
+const SLEEVE_CARDS = [
+  { key: 'overview', label: 'Whole book' },
+  { key: 'indian', label: 'Indian equity' },
+  { key: 'us', label: 'US equity' },
+  { key: 'mf', label: 'Mutual funds' },
+  { key: 'fd', label: 'Fixed deposits' },
+  { key: 'trading', label: 'Trading / algo' },
+];
+
+// relative age of the shown analysis (kept local — small + render-cheap)
+function agoStr(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 90) return 'just now';
+  const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`;
+  const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`;
+  const d = h / 24; if (d < 7) return `${Math.round(d)}d ago`;
+  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const f2 = (n, dp = 2) => (n == null || !isFinite(n) ? '—' : n.toFixed(dp));
@@ -43,8 +65,9 @@ const RELEASES = {
 
 const confLabel = { hard: 'measured', modelled: 'regression', assumed: 'assumption' };
 
-export default function MacroTab({ model, macro, reg }) {
+export default function MacroTab({ model, macro, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
+  const pulse = insights?.pulse;
 
   const evals = useMemo(() => SCENARIOS.map((s) => evalScenario(s, model)), [model]);
   const selected = useMemo(() => evals.find((e) => e.id === selId) || evals[0], [evals, selId]);
@@ -77,11 +100,45 @@ export default function MacroTab({ model, macro, reg }) {
 
   return (
     <div>
-      {/* honesty header — the one-line contract for the whole tab */}
+      {/* ── PULSE — the AI macro read of the book (this tab's reason to exist) ─ */}
+      <div className="card sec pulse-ai">
+        <div className="pulse-ai-head">
+          <span className="pulse-ai-title"><span className="ai-spark">✦</span> Pulse — AI macro read of the book</span>
+          <span className="pulse-ai-meta">
+            {insightsLoading ? <span className="ai-status">analysing…</span>
+              : insightsTs ? <span className="mut">analysed {agoStr(insightsTs)}</span>
+              : <span className="mut">not generated yet</span>}
+            <button className="pulse-refresh" onClick={onRefresh} disabled={insightsLoading || !aiReady} title="Regenerate the whole-app AI analysis">↻ refresh</button>
+          </span>
+        </div>
+        {insightsFirstLoad ? (
+          <div className="ai-body"><div className="ins-skel" /><div className="ins-skel" /></div>
+        ) : pulse && (pulse.read || pulse.drivers || pulse.drags) ? (
+          <>
+            {pulse.read && <div className="pulse-read">{pulse.read}</div>}
+            <div className="pulse-dd">
+              {pulse.drivers && <div className="pulse-col"><div className="pulse-col-lbl up">Could drive it up</div><div className="ai-txt">{pulse.drivers}</div></div>}
+              {pulse.drags && <div className="pulse-col"><div className="pulse-col-lbl down">Could pull it down</div><div className="ai-txt">{pulse.drags}</div></div>}
+            </div>
+          </>
+        ) : (
+          <div className="sub">No analysis yet — hit <strong>refresh</strong> to generate a forward macro read of the book (one whole-app AI call). Conditional, never a price call.</div>
+        )}
+      </div>
+
+      {/* When the header ✨ banners are OFF, the per-sleeve cards consolidate here. */}
+      {!insightsOn && insights && (
+        <div className="sec">
+          <div className="mac-clocklbl">Sleeve analysis <span className="sub" style={{ textTransform: 'none', letterSpacing: 0 }}>— consolidated here while tab banners are off (✨)</span></div>
+          {SLEEVE_CARDS.map((c) => <AnalysisCard key={c.key} title={c.label} data={insights?.[c.key]} on loading={false} />)}
+        </div>
+      )}
+
+      {/* honesty header — the one-line contract for the SCENARIO engine below */}
       <div className="card sec mac-contract">
-        <strong>Exposure, not a forecast.</strong> This engine quantifies how the book responds to defined macro shocks for
-        risk-sizing — it does <em>not</em> call direction. Every scenario is conditional (IF → THEN). Numbers from a weak fit
-        (low R²), stale data, or a stated assumption are flagged <span className="mac-flag">~</span> and must not be read as hard figures.
+        <strong>Scenarios: exposure, not a forecast.</strong> The stress table below quantifies how the book responds to defined
+        macro shocks for risk-sizing — it does <em>not</em> call direction. Every scenario is conditional (IF → THEN). Numbers from
+        a weak fit (low R²), stale data, or a stated assumption are flagged <span className="mac-flag">~</span> and must not be read as hard figures.
       </div>
 
       {!ready && <div className="card sec sub">Waiting for live prices to value the sleeves…</div>}

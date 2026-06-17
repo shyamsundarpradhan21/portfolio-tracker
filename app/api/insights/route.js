@@ -87,6 +87,10 @@ const SYSTEM_PROMPT =
   'You are a sharp, macro-aware portfolio analyst. You receive a compact aggregates snapshot ' +
   'of a live portfolio plus a LIVE macro block fetched from the web moments ago. Ground every ' +
   'macro view in those CURRENT numbers, not memory. ' +
+  'The "pulse" is the macro read of the WHOLE book — where the market sits versus THESE holdings, ' +
+  'the live trend that matters most, and the concrete near-term factors that could lift or drag ' +
+  'this specific portfolio (rates/duration on the US-tech sleeve, FII/INR/crude on India, vol ' +
+  'regime on the credit-spread book). Be forward-looking but conditional, never a price call. ' +
   'For each sleeve return TWO fields. "performance": the single most honest read of how it is ' +
   'actually doing — what is working or dragging, risk taken, benchmark-relative; name the weak ' +
   'spot plainly, never cheerlead. "outlook": the single highest-value forward point given ' +
@@ -111,6 +115,14 @@ const card = () => ({
 const INSIGHTS_SCHEMA = {
   type: 'object',
   properties: {
+    // Pulse — the macro read of the whole book: where the market sits versus
+    // THIS portfolio, the live trends, and the near-term tailwinds/risks.
+    pulse: {
+      type: 'object',
+      properties: { read: { type: 'string' }, drivers: { type: 'string' }, drags: { type: 'string' } },
+      required: ['read', 'drivers', 'drags'],
+      additionalProperties: false,
+    },
     overview: card(),
     indian: card(),
     us: card(),
@@ -130,23 +142,26 @@ const INSIGHTS_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ['overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot'],
+  required: ['pulse', 'overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot'],
   additionalProperties: false,
 };
 
 const EMPTY = {
+  pulse: null,
   overview: null, indian: null, us: null, mf: null, fd: null, trading: null,
   indian_swot: null,
 };
 
-function buildUserMessage(d, macroLive) {
+function buildUserMessage(d, macroLive, macroClock) {
   // No stale hardcoded fallbacks — a missing section is 'n/a', never an old figure.
   const s = (x) => (typeof x === 'string' && x.trim() ? x : 'n/a');
   const macro = (typeof macroLive === 'string' && macroLive.trim()) ? macroLive.trim() : '';
+  const clock = (typeof macroClock === 'string' && macroClock.trim()) ? macroClock.trim() : '';
+  const macroBlock = [macro, clock].filter(Boolean).join('\n');
   return (
     `Portfolio snapshot as of ${s(d.asOf)} · USD/INR ${d.usdInr ?? 'n/a'}\n\n` +
-    (macro
-      ? `MACRO (LIVE quotes fetched just now; ground all macro views in THESE numbers, not memory):\n${macro}\n\n`
+    (macroBlock
+      ? `MACRO (LIVE — fetched just now; ground all macro views in THESE numbers, not memory):\n${macroBlock}\n\n`
       : `MACRO (LIVE): unavailable this run — keep macro views light and clearly general.\n\n`) +
     `OVERVIEW: ${s(d.overview)}\n` +
     `INDIAN EQUITY: ${s(d.indian)}\n` +
@@ -155,11 +170,15 @@ function buildUserMessage(d, macroLive) {
     `MUTUAL FUNDS: ${s(d.mutualFunds)}\n` +
     `FIXED DEPOSITS: ${s(d.fixedDeposits)}\n` +
     `ALGO (tracked separately, excluded from net worth): ${s(d.algo)}\n\n` +
-    `Return {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words), keyed: ` +
+    `Return pulse — the macro read of the WHOLE book: read = where the market sits vs THIS ` +
+    `portfolio and the live trend that matters most to it; drivers = the 1-2 near-term factors most ` +
+    `likely to LIFT this specific book; drags = the 1-2 most likely to PULL IT DOWN. ~2 crisp ` +
+    `sentences max per field, specific to these holdings and grounded in the live macro above. ` +
+    `Also {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words), keyed: ` +
     `overview (whole book), indian (use the risk stats), us, mf (mutual funds), fd (fixed deposits), ` +
     `trading (the algo line). Also indian_swot: macro = one line on TODAY's backdrop using the ` +
-    `live quotes above (Nifty/Sensex move, INR, crude, gold, US indices, 10Y yield); s/w/o/t = ONE ` +
-    `tight sentence each. Always populate indian_swot. Do NOT restate our figures — give the read, not a recap.`
+    `live numbers above; s/w/o/t = ONE tight sentence each. Always populate pulse and indian_swot. ` +
+    `Do NOT restate our figures — give the read, not a recap.`
   );
 }
 
@@ -182,7 +201,12 @@ function parseInsights(text) {
     const swot = (sw && typeof sw === 'object')
       ? { macro: sw.macro ?? null, s: sw.s ?? null, w: sw.w ?? null, o: sw.o ?? null, t: sw.t ?? null }
       : null;
+    const pl = obj.pulse;
+    const pulse = (pl && typeof pl === 'object')
+      ? { read: pl.read ?? null, drivers: pl.drivers ?? null, drags: pl.drags ?? null }
+      : null;
     return {
+      pulse,
       overview: an(obj.overview),
       indian: an(obj.indian),
       us: an(obj.us),
@@ -221,7 +245,7 @@ export async function POST(request) {
       max_tokens: 2048,
       system: SYSTEM_PROMPT,
       output_config: { format: { type: 'json_schema', schema: INSIGHTS_SCHEMA } },
-      messages: [{ role: 'user', content: buildUserMessage(data, macroLive) }],
+      messages: [{ role: 'user', content: buildUserMessage(data, macroLive, data.macroClock) }],
     });
 
     const text = message.content

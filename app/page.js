@@ -246,20 +246,27 @@ export default function Page() {
   const [insights, setInsights]               = useState(null);
   const [insightsTs, setInsightsTs]           = useState(null); // when the shown analysis was generated (cache ts), drives the fresh/cached label
   const [insightsLoading, setInsightsLoading] = useState(false);
-  // Insights persist once generated (cards show whenever cached analysis exists);
-  // the ✨ button is a manual REFRESH, never an off switch. Seed "on" from a
-  // valid cache so last-known cards render immediately on load.
+  // ✨ is a PLACEMENT toggle, not a kill switch: ON scatters the AI cards across
+  // each tab; OFF pulls them off the tabs and consolidates them in the Pulse tab.
+  // The analysis is still generated either way (refresh lives on the Pulse tab).
+  // Persisted; default off (consolidated) on first run.
   const [insightsOn, setInsightsOn] = useState(() => {
-    try { return hasInsight(JSON.parse(localStorage.getItem(INSIGHTS_KEY) || 'null')?.insights); } catch { return false; }
+    try { return localStorage.getItem('nwTracker.insightsOn') === 'true'; } catch { return false; }
   });
   // Regeneration "ticket" — bumped when fresh insights are wanted. The payload
   // effect below runs after render, so it reads fully-recomputed derived state
   // (no need to thread prices/fx/nav through as arguments).
   const [insightsReq, setInsightsReq] = useState(0);
   const requestInsights = useCallback(() => setInsightsReq((n) => n + 1), []);
-  // Manual refresh: reveal the cards (if first time) and fire a fresh whole-app
-  // analysis. No off path — the cards stay with their last-analysed date.
-  const refreshInsights = () => { setInsightsOn(true); requestInsights(); };
+  // Force a fresh whole-app analysis (used by the Pulse-tab refresh).
+  const refreshInsights = () => requestInsights();
+  // Header ✨: flip placement; generate on turn-on if we have nothing yet so the
+  // newly-revealed banners aren't empty.
+  const toggleInsights = () => {
+    const turningOn = !insightsOn;
+    setInsightsOn((on) => { const next = !on; try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {} return next; });
+    if (turningOn && !hasInsight(insights)) requestInsights();
+  };
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
@@ -580,6 +587,17 @@ export default function Page() {
     };
   }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, ov.fdValue]);
 
+  // Compact live-macro backdrop string (FRED + Yahoo) fed to the AI pulse read.
+  const macroClockStr = useMemo(() => {
+    const L = macro?.live; if (!L) return '';
+    const parts = [];
+    const add = (lbl, d, unit = '') => { if (d && !d.stale) parts.push(`${lbl} ${d.value}${unit}${d.change != null ? ` (${d.change >= 0 ? '+' : ''}${d.change.toFixed(2)})` : ''}`); };
+    add('US10Y', L.us10y, '%'); add('2s10s', L.spread2s10s, 'pp'); add('HY OAS', L.hyOas, '%');
+    add('NFCI', L.nfci); add('VIX', L.vix); add('DXY', L.dxy); add('Brent', L.brent, '$');
+    if (L.vixTerm && !L.vixTerm.stale) parts.push(`VIX term ${L.vixTerm.state}`);
+    return parts.length ? `Macro clock: ${parts.join(' · ')}` : '';
+  }, [macro]);
+
   // ── AI insights — compact aggregates payload, manual refresh ────────────────
   // Builds one summary string per sleeve (~500 input tokens — never the full
   // holdings books) and POSTs to /api/insights. Fires ONLY on an explicit ✨
@@ -587,7 +605,7 @@ export default function Page() {
   // — refresh weekly/monthly as needed. Results persist in localStorage and show
   // with their last-analysed date until the next refresh.
   useEffect(() => {
-    if (!insightsReq || !insightsOn) return;
+    if (!insightsReq) return; // generate regardless of placement — Pulse needs it even when banners are off
     if (!(indian.valued && usData.val && usdInr)) return; // wait for live data
 
     const r1 = (n) => (n == null || !isFinite(n) ? 'n/a' : n.toFixed(1));
@@ -627,6 +645,7 @@ export default function Page() {
       algo:
         `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.fy2627.net} (own share ₹${Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01))}; S01 pools client capital) S02 +₹${FY.s02.fy2627.net}` +
         `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEnteringFY2627 / 1e5).toFixed(2)}L (tax asset)`,
+      macroClock: macroClockStr, // live FRED+Yahoo backdrop for the pulse read
     };
 
     let stale = false;
@@ -796,8 +815,8 @@ export default function Page() {
             <div className="topbar-right">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'macro-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Macro scenario engine — exposure under shocks, not a forecast">
-                <span className="macro-pill-dot" />Macro{macro?.live?.vix && !macro.live.vix.stale ? <span className="macro-pill-vix"> · VIX {macro.live.vix.value.toFixed(0)}</span> : null}
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pulse — AI macro read of the book + scenario stress engine">
+                <span className="pulse-spark">✦</span>Pulse
               </button>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
@@ -806,7 +825,7 @@ export default function Page() {
                 : insights && insightsTs
                   ? <span className="ai-status ai-fresh" title="When this analysis was last refreshed — click ✨ to regenerate">✦ analysed {aiAgo(insightsTs)}</span>
                   : null}
-              <button className="hdr-toggle" onClick={refreshInsights} disabled={insightsLoading || !(indian.valued && usData.val && usdInr)} style={{ opacity: insightsLoading ? 0.5 : 1 }} title={insightsLoading ? 'Analysing…' : insights ? 'Refresh AI insights' : 'Generate AI insights'} aria-label="Refresh AI insights">✨</button>
+              <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={insightsOn ? 'AI banners ON (in each tab) — click to consolidate into Pulse' : 'AI banners OFF (consolidated in Pulse) — click to show in each tab'} aria-label="Toggle AI banners">✨</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
               <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
             </div>
@@ -906,7 +925,9 @@ export default function Page() {
           {tab === 6 && (
             <MacroTab model={macroModel} macro={macro} fxRate={fxRate}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
-              insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
+              insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
+              insightsLoading={insightsLoading} insightsTs={insightsTs}
+              onRefresh={refreshInsights} aiReady={!!(indian.valued && usData.val && usdInr)} />
           )}
         </div>
 
