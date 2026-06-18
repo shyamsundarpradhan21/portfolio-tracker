@@ -1,7 +1,8 @@
 'use client';
 
-// Per-tab AI analysis card — an honest Performance read + a forward Outlook for
-// the current tab. Driven by the single whole-app insights call fired from the
+// Per-tab AI analysis card — a macro-framed, number-free Performance read + a
+// forward Outlook for the current tab (the figures live in the Macro/Pulse card,
+// not here). Driven by the single whole-app insights call fired from the
 // header ✨ toggle. Renders nothing when AI is off, or when the model returned
 // nothing for this sleeve (so tabs stay clean with insights disabled).
 export default function AnalysisCard({ data, on, loading, title = 'AI analysis' }) {

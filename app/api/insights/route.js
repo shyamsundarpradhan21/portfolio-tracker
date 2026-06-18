@@ -7,8 +7,9 @@
 //   → { insights: { overview, indian, us, mf, fd, trading,   // each {performance, outlook}
 //                   indian_swot: {macro, s, w, o, t} } }
 //
-// Each tab card is a CRISP performance read + forward outlook (ONE sentence
-// each), or empty when its data is missing. Flow: pull a live macro snapshot of
+// Each tab card is a CRISP, NUMBER-FREE performance read + forward outlook (ONE
+// sentence each, macro-framed — figures stay in pulse/swot.macro), or empty when
+// its data is missing. Flow: pull a live macro snapshot of
 // real index/FX/commodity/yield quotes from Yahoo Finance (free, no key — the
 // same source /api/quotes uses) → feed it plus the aggregates to Claude (Haiku)
 // with a structured-output schema, so the macro views cite today's numbers
@@ -91,12 +92,17 @@ const SYSTEM_PROMPT =
   'the live trend that matters most, and the concrete near-term factors that could lift or drag ' +
   'this specific portfolio (rates/duration on the US-tech sleeve, FII/INR/crude on India, vol ' +
   'regime on the credit-spread book). Be forward-looking but conditional, never a price call. ' +
-  'For each sleeve return TWO fields. "performance": the single most honest read of how it is ' +
-  'actually doing — what is working or dragging, risk taken, benchmark-relative; name the weak ' +
-  'spot plainly, never cheerlead. "outlook": the single highest-value forward point given ' +
-  "today's macro and the positions. " +
-  'Be CRISP — ONE sentence per field, ~15-20 words, high signal. Do NOT restate the figures we ' +
-  'already display; give the READ, not a recap. No filler, no hedging boilerplate. ' +
+  'For each sleeve return TWO fields, BOTH NUMBER-FREE — never quote a figure, percentage, ' +
+  'price, level, multiple, or ₹ amount in them; convey direction and regime in words. ' +
+  '"performance": the most honest read of the sleeve FRAMED AGAINST THE MACRO — what the current ' +
+  'backdrop is doing to it and what is working or dragging, the risk taken; name the weak spot ' +
+  'plainly, never cheerlead. "outlook": the single highest-value forward point — where today\'s ' +
+  'macro leaves this sleeve and how the portfolio is set up against it. Use the live macro to ' +
+  'FORM these reads but express it qualitatively ("crude firming", "yields still elevated", ' +
+  '"INR soft", "risk-on tape"), never the figure itself. Numbers belong elsewhere — only ' +
+  '"pulse" and indian_swot.macro may cite the live macro figures. ' +
+  'Be CRISP — ONE sentence per field, ~15-20 words, high signal; give the macro READ and the ' +
+  'positioning, not a recap. No filler, no hedging boilerplate. ' +
   'Return an EMPTY STRING for any field whose data is missing — never fabricate prices or ' +
   'figures beyond the snapshot and the live macro block.';
 
@@ -174,11 +180,13 @@ function buildUserMessage(d, macroLive, macroClock) {
     `portfolio and the live trend that matters most to it; drivers = the 1-2 near-term factors most ` +
     `likely to LIFT this specific book; drags = the 1-2 most likely to PULL IT DOWN. ~2 crisp ` +
     `sentences max per field, specific to these holdings and grounded in the live macro above. ` +
-    `Also {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words), keyed: ` +
+    `Also {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words) and BOTH ` +
+    `NUMBER-FREE: a pure macro read of the sleeve and how it is set up against today's backdrop, ` +
+    `with NO figures, %, prices, levels or ₹. Keyed: ` +
     `overview (whole book), indian (use the risk stats), us, mf (mutual funds), fd (fixed deposits), ` +
     `trading (the algo line). Also indian_swot: macro = one line on TODAY's backdrop using the ` +
     `live numbers above; s/w/o/t = ONE tight sentence each. Always populate pulse and indian_swot. ` +
-    `Do NOT restate our figures — give the read, not a recap.`
+    `Do NOT restate our figures — give the read, not a recap; keep ALL figures to pulse and the swot macro line.`
   );
 }
 
