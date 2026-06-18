@@ -225,34 +225,49 @@ export const SCENARIOS = [
 // FX leg; FD is the stable anchor. Vol/Stratzy is EXCLUDED here (set aside).
 export const PULSE_MOVE = { equityPct: 10, ratesBp: 50, fxPct: 1.5 };
 
-const legPair = (v, frac) => ({ inr: Math.round((v || 0) * frac), pct: frac * 100 });
+// One leg = { inr, pctSleeve (% of THAT sleeve), pctBook (% of the whole book) }.
+// Both percentages are kept so the UI can pick ONE denominator and never mix them.
+const legPair = (v, frac, base) => {
+  const inr = Math.round((v || 0) * frac);
+  return { inr, pctSleeve: frac * 100, pctBook: base ? (inr / base) * 100 : 0 };
+};
 
-// Returns { move, base, rows:[{key,label,color,conf,weak,rsq,up,down}], total:{up,down} }.
-// up = market rallies, down = market falls — both legs computed at once so the
-// UI shows upside captured vs downside exposed in one glance. IF→THEN only.
+// Returns { move, base, rows:[{key,label,color,v,beta,conf,weak,rsq,up,down}], total:{up,down} }.
+// up = market rallies, down = market falls. The two legs are mirror-symmetric by
+// construction (linear β, no convexity), so the UI shows ONE magnitude and the
+// direction via a diverging bar. The non-linear short-vol book is EXCLUDED — its
+// payoff is asymmetric and would break this symmetric read (see MacroTab aside).
 export function pulseImpact(m, move = PULSE_MOVE) {
   const eq = move.equityPct / 100, fx = move.fxPct / 100;
-  const beta = (b) => (b == null ? 1 : b);
   const us = m.sleeves.us, ind = m.sleeves.india, gold = m.sleeves.gold, fd = m.sleeves.fd;
+  // Base = the exposed capital this view spans (its four sleeves) — the SINGLE
+  // denominator for every % here, so rows and the total never sit on different bases.
+  const base = (us.v || 0) + (ind.v || 0) + (gold.v || 0) + (fd.v || 0);
+  const pair = (v, frac) => legPair(v, frac, base);
+  // A missing beta would silently behave as 1.0; surface it as an assumption
+  // (flagged) instead of dressing a guess as a measured leg.
+  const usB = us.betaNdx, indB = ind.betaNifty;
   const rows = [
-    { key: 'us', label: 'US tech', color: 'var(--cyn)', conf: 'modelled', weak: weakRsq(us.rsqNdx), rsq: us.rsqNdx,
-      up: legPair(us.v, beta(us.betaNdx) * eq), down: legPair(us.v, -beta(us.betaNdx) * eq) },
-    { key: 'india', label: 'India equity', color: 'var(--blu)', conf: 'modelled', weak: weakRsq(ind.rsqNifty), rsq: ind.rsqNifty,
-      up: legPair(ind.v, beta(ind.betaNifty) * eq), down: legPair(ind.v, -beta(ind.betaNifty) * eq) },
-    // Gold is the FX hedge: market UP → INR firmer → USD-gold worth less in ₹;
-    // market DOWN → INR weaker → gold gains. Deterministic conversion ('hard').
-    { key: 'gold', label: 'Gold · FX', color: 'var(--gld)', conf: 'hard', weak: false,
-      up: legPair(gold.v, -fx), down: legPair(gold.v, fx) },
-    { key: 'fd', label: 'FD floor', color: 'var(--grn)', conf: 'hard', weak: false, stable: true,
-      up: legPair(fd.v, 0), down: legPair(fd.v, 0) },
+    { key: 'us', label: 'US tech', color: 'var(--cyn)', v: us.v, beta: usB,
+      conf: usB == null ? 'assumed' : 'modelled', weak: usB == null || weakRsq(us.rsqNdx), rsq: us.rsqNdx,
+      up: pair(us.v, (usB ?? 1) * eq), down: pair(us.v, -(usB ?? 1) * eq) },
+    { key: 'india', label: 'India equity', color: 'var(--blu)', v: ind.v, beta: indB,
+      conf: indB == null ? 'assumed' : 'modelled', weak: indB == null || weakRsq(ind.rsqNifty), rsq: ind.rsqNifty,
+      up: pair(ind.v, (indB ?? 1) * eq), down: pair(ind.v, -(indB ?? 1) * eq) },
+    // Gold is a small USD-denominated holding: market UP → INR firmer → gold worth
+    // less in ₹; market DOWN → INR weaker → gold gains. It moves on the INR that
+    // accompanies the move (±fx, an assumed co-move), not on equity β.
+    { key: 'gold', label: 'Gold · FX', color: 'var(--gld)', v: gold.v, beta: null, conf: 'hard', weak: false,
+      up: pair(gold.v, -fx), down: pair(gold.v, fx) },
+    { key: 'fd', label: 'FD floor', color: 'var(--grn)', v: fd.v, beta: null, conf: 'hard', weak: false, stable: true,
+      up: pair(fd.v, 0), down: pair(fd.v, 0) },
   ];
-  const base = rows.reduce((a, r) => a + (m.sleeves[r.key]?.v || 0), 0);
+  const upInr = rows.reduce((a, r) => a + r.up.inr, 0);
+  const dnInr = rows.reduce((a, r) => a + r.down.inr, 0);
   const total = {
-    up:   { inr: rows.reduce((a, r) => a + r.up.inr, 0) },
-    down: { inr: rows.reduce((a, r) => a + r.down.inr, 0) },
+    up:   { inr: upInr, pctBook: base ? (upInr / base) * 100 : 0 },
+    down: { inr: dnInr, pctBook: base ? (dnInr / base) * 100 : 0 },
   };
-  total.up.pct = base ? (total.up.inr / base) * 100 : 0;
-  total.down.pct = base ? (total.down.inr / base) * 100 : 0;
   return { move, base, rows, total };
 }
 

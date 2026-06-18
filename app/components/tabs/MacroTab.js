@@ -63,29 +63,37 @@ const isSoft = (leg) => !!leg && (leg.conf === 'assumed' || leg.conf === 'indica
 
 // ── Bidirectional impact helpers ─────────────────────────────────────────────
 const absPct = (p) => (p == null || !isFinite(p) ? '' : Math.abs(p).toFixed(1) + '%');
-const bidirMax = (impact) => Math.max(0.5, ...impact.rows.flatMap((r) => [Math.abs(r.up.pct), Math.abs(r.down.pct)]));
 
-// One sleeve's twin readout: market-up leg + market-down leg, side by side.
-// Direction is by COLOUR (gain green / loss red) — no +/- glyph (FEEDBACK rule).
-function TwinRow({ r, max }) {
-  const cell = (leg) => {
-    const w = max > 0 ? Math.min(100, (Math.abs(leg.pct) / max) * 100) : 0;
+// One sleeve's bidirectional impact as a single diverging (tornado) bar: left wing
+// = market-DOWN outcome, right wing = market-UP, each coloured by gain/loss (FEEDBACK
+// rule: direction by colour, the ± magnitude itself is unsigned). up/down are mirror-
+// symmetric, so the figure shows ONCE as ±. FD is the flat anchor (no wings).
+function TornadoRow({ r, max, base }) {
+  const w = (inr) => Math.min(100, (Math.abs(inr) / max) * 100) + '%';
+  if (r.stable) {
+    const share = base ? (r.v / base) * 100 : 0;
     return (
-      <div className="ptwin-cell">
-        <span className="ptwin-bar"><span className="ptwin-fil" style={{ width: w + '%', backgroundColor: leg.inr > 0 ? 'var(--grn)' : leg.inr < 0 ? 'var(--red)' : 'var(--txt3)', opacity: r.weak ? 0.55 : 1 }} /></span>
-        <span className="ptwin-num"><span className={signCls(leg.inr)}><SInrC n={leg.inr} /></span> <span className="sub">{absPct(leg.pct)}</span></span>
+      <div className="ptorn ptorn-anchor-row">
+        <div className="ptorn-lbl"><span className="mac-dot" style={{ background: r.color }} />{r.label}<span className="ptorn-anchor">anchor</span></div>
+        <div className="ptorn-bar"><div className="ptorn-half l" /><span className="ptorn-mid" /><div className="ptorn-half r" /></div>
+        <div className="ptorn-mag mut">{share.toFixed(0)}% anchored</div>
       </div>
     );
-  };
+  }
+  const wing = (leg, side) => (
+    <div className={'ptorn-half ' + side}>
+      <span className="ptorn-wing" style={{ width: w(leg.inr), background: redgrn(leg.inr), opacity: r.weak ? 0.55 : 1 }} />
+    </div>
+  );
   return (
-    <div className="ptwin">
-      <div className="ptwin-lbl">
+    <div className="ptorn">
+      <div className="ptorn-lbl">
         <span className="mac-dot" style={{ background: r.color }} />{r.label}
-        {r.weak ? <span className="mac-flag" title="weak fit — low R²">~</span> : null}
-        {r.stable ? <span className="ptwin-anchor">anchor</span> : null}
+        {r.beta != null ? <span className="ptorn-beta">×{r.beta.toFixed(2)}</span> : null}
+        {r.weak ? <span className="mac-flag" title="weak fit or unmeasured β">~</span> : null}
       </div>
-      {cell(r.up)}
-      {cell(r.down)}
+      <div className="ptorn-bar">{wing(r.down, 'l')}<span className="ptorn-mid" />{wing(r.up, 'r')}</div>
+      <div className="ptorn-mag">±{fmtInr(Math.abs(r.up.inr))}<span className="sub">±{absPct(r.up.pctBook)}</span></div>
     </div>
   );
 }
@@ -203,8 +211,12 @@ export default function MacroTab({ model, macro, premarket, nifty50, nifty50Load
   const live = macro?.live || {};
   const ready = !!(model?.sleeves?.us?.v || model?.sleeves?.india?.v);
 
-  // bidirectional market-beta impact (twin up/down legs per sleeve) — Pulse centrepiece
+  // bidirectional market-beta impact (one diverging bar per sleeve) — Pulse centrepiece
   const impact = useMemo(() => pulseImpact(model), [model]);
+  // Shared bar scale: the book total is the largest magnitude, so include it so the
+  // total bar fits within 100% and every row reads on the same scale.
+  const tornMax = Math.max(1, ...impact.rows.flatMap((r) => [Math.abs(r.up.inr), Math.abs(r.down.inr)]), Math.abs(impact.total.up.inr));
+  const tornW = (inr) => Math.min(100, (Math.abs(inr) / tornMax) * 100) + '%';
 
   // active vol-sleeve tier (shared with shockVix) + the structural proxy
   const vt = useMemo(() => volTier(model), [model]);
@@ -283,15 +295,25 @@ export default function MacroTab({ model, macro, premarket, nifty50, nifty50Load
         <div className="card sec pulse-card">
           <div className="ctitle" style={{ marginBottom: 12 }}>If markets move <span className="sub" style={{ textTransform: 'none' }}>— how this book responds, up or down</span></div>
           <div className="pulse-bidir">
-            <div className="pulse-bidir-cap sub">±{impact.move.equityPct}% <span className="mut">(equity β · gold on ±{impact.move.fxPct}% INR · FD floor) — IF → THEN, not a forecast</span></div>
-            <div className="ptwin ptwin-head"><div /><div className="ptwin-cell grn">market up</div><div className="ptwin-cell red">market down</div></div>
-            {impact.rows.map((r) => <TwinRow key={r.key} r={r} max={bidirMax(impact)} />)}
-            <div className="ptwin ptwin-total">
-              <div className="ptwin-lbl">Book total</div>
-              <div className="ptwin-cell"><span className={signCls(impact.total.up.inr)}><SInrC n={impact.total.up.inr} /></span> <span className="sub">{absPct(impact.total.up.pct)}</span></div>
-              <div className="ptwin-cell"><span className={signCls(impact.total.down.inr)}><SInrC n={impact.total.down.inr} /></span> <span className="sub">{absPct(impact.total.down.pct)}</span></div>
+            <div className="pulse-bidir-cap sub">
+              ±{impact.move.equityPct}% <span className="mut">— symmetric, linear β (no convexity): equities on β·{impact.move.equityPct}%, USD gold on the ±{impact.move.fxPct}% INR co-move, FD anchored. % = share of book · IF → THEN, not a forecast.</span>
             </div>
-            <div className="pulse-aside">Trading book set aside — under review, not market-beta.</div>
+            <div className="ptorn-head">
+              <div />
+              <div className="ptorn-axis-lbl"><span>◀ market down</span><span>market up ▶</span></div>
+              <div className="ptorn-mag-lbl">± swing</div>
+            </div>
+            {impact.rows.map((r) => <TornadoRow key={r.key} r={r} max={tornMax} base={impact.base} />)}
+            <div className="ptorn ptorn-total">
+              <div className="ptorn-lbl">Book total</div>
+              <div className="ptorn-bar">
+                <div className="ptorn-half l"><span className="ptorn-wing" style={{ width: tornW(impact.total.down.inr), background: redgrn(impact.total.down.inr) }} /></div>
+                <span className="ptorn-mid" />
+                <div className="ptorn-half r"><span className="ptorn-wing" style={{ width: tornW(impact.total.up.inr), background: redgrn(impact.total.up.inr) }} /></div>
+              </div>
+              <div className="ptorn-mag">±{fmtInr(Math.abs(impact.total.up.inr))}<span className="sub">±{absPct(impact.total.up.pctBook)}</span></div>
+            </div>
+            <div className="pulse-aside">Short-vol / Stratzy book set aside — its payoff is non-linear (asymmetric downside), so it’s excluded from this symmetric read, not because it’s riskless.</div>
           </div>
         </div>
       )}

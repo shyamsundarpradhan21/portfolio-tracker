@@ -11,8 +11,8 @@
   --brd:  rgba(255,255,255,.07);
   --brd2: rgba(255,255,255,.045);
   --txt:  #E8E8EC;
-  --txt2: #6B6B7A;
-  --txt3: #4A4A57;
+  --txt2: #868693;  /* secondary — ~5.4:1 on --bg (WCAG AA; was #6B6B7A ≈3.7:1) */
+  --txt3: #79798B;  /* tertiary — ~4.6:1 on --bg (WCAG AA min; was #4A4A57 ≈2.2:1) */
   --grn:  #34D399;
   --red:  #F87171;
   /* Categorical data palette — six maximally-separated hues for the allocation
@@ -60,6 +60,13 @@
   --fs-2xl: 1.6875rem; /* ≈27px   — summary-card values */
   --fs-h1:  2.625rem;  /* ≈42px   — section heroes */
   --fs-h0:  3rem;      /* ≈48px   — the net-worth figure */
+
+  /* Shared micro-interaction spring (ease-out-quint feel). Every hover/press
+     transition references var(--ease); it's the same curve the keyframe
+     entrances (stagger/tabEnter/heroReveal) use, so transitions and entrances
+     read as one motion language. Without this definition the var() is invalid
+     and the whole transition shorthand resets to `all 0s` — i.e. no animation. */
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* ── Layer 2: Day palette override ─────────────────────────────────────────── */
@@ -70,8 +77,8 @@
   --brd:  rgba(40,60,90,.1);
   --brd2: rgba(40,60,90,.06);
   --txt:  #1C2533;
-  --txt2: #5E6B80;
-  --txt3: #94A0B4;
+  --txt2: #5E6B80;  /* secondary — ~5.0:1 on light --bg (WCAG AA) */
+  --txt3: #636E84;  /* tertiary — ~4.7:1 on light --bg (WCAG AA; was #94A0B4 ≈2.5:1) */
   --grn:  #13A871;
   --red:  #E1453B;
   --blu:  #2563EB;  /* indian — royal blue */
@@ -1202,23 +1209,33 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .rd-calm .rd-val { color: var(--grn); font-weight: 700; }
 .rd-chg { color: var(--txt3); }
 
-/* bidirectional twin impact */
-.pulse-bidir-cap { margin-bottom: 8px; }
-.ptwin { display: grid; grid-template-columns: 150px 1fr 1fr; gap: 12px; align-items: center; padding: 5px 0; }
-.ptwin-head { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; padding-bottom: 2px; }
-.ptwin-head .ptwin-cell { justify-content: flex-end; }
-.ptwin-lbl { font-size: var(--fs-sm); color: var(--txt); display: flex; align-items: center; gap: 7px; }
-.ptwin-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-.ptwin-bar { flex: 1; max-width: 84px; height: 7px; background: var(--sur2); border-radius: 3px; overflow: hidden; }
-.ptwin-fil { display: block; height: 7px; border-radius: 3px; min-width: 2px; }
-.ptwin-num { font-family: var(--mono); font-size: var(--fs-xs); white-space: nowrap; min-width: 104px; text-align: right; }
-.ptwin-total { border-top: .5px solid var(--brd); margin-top: 4px; padding-top: 9px; }
-.ptwin-total .ptwin-lbl, .ptwin-total .ptwin-cell { font-weight: 700; }
-.ptwin-anchor { font-size: var(--fs-2xs); color: var(--txt3); }
+/* bidirectional impact — one diverging (tornado) bar per sleeve */
+.pulse-bidir-cap { margin-bottom: 10px; line-height: 1.55; }
+.ptorn, .ptorn-head { display: grid; grid-template-columns: 150px 1fr 116px; gap: 14px; align-items: center; }
+.ptorn { padding: 5px 0; }
+.ptorn-head { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; padding-bottom: 5px; color: var(--txt3); }
+.ptorn-axis-lbl { display: flex; justify-content: space-between; }
+.ptorn-mag-lbl { text-align: right; }
+.ptorn-lbl { font-size: var(--fs-sm); color: var(--txt); display: flex; align-items: center; gap: 7px; }
+.ptorn-beta { font-family: var(--mono); font-size: var(--fs-2xs); color: var(--txt3); }
+.ptorn-bar { display: flex; align-items: center; }
+.ptorn-half { flex: 1; height: 8px; background: var(--sur2); display: flex; overflow: hidden; }
+.ptorn-half.l { justify-content: flex-end; border-radius: 4px 0 0 4px; }
+.ptorn-half.r { justify-content: flex-start; border-radius: 0 4px 4px 0; }
+.ptorn-wing { display: block; height: 8px; min-width: 2px; }
+.ptorn-half.l .ptorn-wing { border-radius: 4px 0 0 4px; }
+.ptorn-half.r .ptorn-wing { border-radius: 0 4px 4px 0; }
+.ptorn-mid { width: 1.5px; height: 13px; background: var(--txt3); flex: 0 0 1.5px; }
+.ptorn-mag { font-family: var(--mono); font-size: var(--fs-xs); text-align: right; white-space: nowrap; color: var(--txt); }
+.ptorn-mag .sub { display: block; font-size: var(--fs-2xs); margin-top: 1px; }
+.ptorn-anchor { font-size: var(--fs-2xs); color: var(--txt3); }
+.ptorn-anchor-row .ptorn-half { opacity: .5; }
+.ptorn-total { border-top: .5px solid var(--brd); margin-top: 4px; padding-top: 9px; }
+.ptorn-total .ptorn-lbl, .ptorn-total .ptorn-mag { font-weight: 700; }
 .pulse-aside { font-size: var(--fs-2xs); color: var(--txt3); font-style: italic; margin-top: 10px; }
 .pulse-nuance { font-size: var(--fs-sm); color: var(--txt2); line-height: 1.55; border-top: .5px solid var(--brd); margin-top: 12px; padding-top: 11px; display: flex; gap: 8px; }
 .pulse-nuance .ai-spark { color: var(--acc); flex: 0 0 auto; }
-@media (max-width: 560px) { .ptwin { grid-template-columns: 110px 1fr 1fr; gap: 6px; } .ptwin-num { min-width: 0; } .ptwin-bar { display: none; } }
+@media (max-width: 560px) { .ptorn, .ptorn-head { grid-template-columns: 92px 1fr 86px; gap: 8px; } }
 
 /* ── Pre-Market Insights briefing ─────────────────────────────────────────── */
 .pm-window { font-family: var(--title); font-size: var(--fs-md); font-weight: 600; color: var(--txt); letter-spacing: -.2px; }
