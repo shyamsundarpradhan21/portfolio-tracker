@@ -10,7 +10,7 @@
   "crons": [
     {
       "path": "/api/premarket",
-      "schedule": "35 3 * * *"
+      "schedule": "30 0 * * *"
     }
   ]
 }
