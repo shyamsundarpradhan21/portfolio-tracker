@@ -1255,6 +1255,9 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .pm-trail-date { font-size: var(--fs-2xs); color: var(--txt3); white-space: nowrap; }
 
 /* ── Nifty & Sensex overview — pivots, movers, heatmap ─────────────────────── */
+.no-cards { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }
+.no-cards > .card { margin: 0; }
+@media (max-width: 900px) { .no-cards { grid-template-columns: 1fr; } }
 .no-pivots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
 .no-pivot-head { display: flex; align-items: baseline; gap: 8px; font-size: var(--fs-sm); font-weight: 700; color: var(--txt); margin-bottom: 8px; flex-wrap: wrap; }
 .no-ladder { display: grid; gap: 2px; }
