@@ -45,6 +45,7 @@ const INSIGHTS_KEY  = 'nwTracker.insights';
 const MFNAV_KEY     = 'nwTracker.mfnav';
 const HIST_KEY      = 'nwTracker.hist';
 const MACRO_KEY     = 'nwTracker.macro';
+const PREMKT_KEY    = 'nwTracker.premarket';
 const REFRESH_MS    = 15 * 60 * 1000;
 
 // Relative age of the shown AI analysis → tells fresh ("just now") from cached
@@ -167,6 +168,7 @@ export default function Page() {
   const [mfNav, setMfNav]           = useState(null);
   const [hist, setHist]             = useState(null);
   const [macro, setMacro]           = useState(null); // live macro clock (FRED + Yahoo)
+  const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
   const [flash, setFlash]           = useState({});
   const [ath, setAth]               = useState(false); // all-time-high celebration
   const [heroKey, setHeroKey]       = useState(0);     // bumped once when NW first loads
@@ -309,12 +311,13 @@ export default function Page() {
     } catch { return null; }
   };
   const fetchMacro = async () => { try { const res = await fetch('/api/macro', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
+  const fetchPremarket = async () => { try { const res = await fetch('/api/premarket', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
 
   const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true); setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
       const inSyms = INDIAN.map((s) => s.ns).concat(SWING.map((s) => s.ns)).concat(['INR=X']);
-      const [inData, usData, mfData, histData, macroData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro()]);
+      const [inData, usData, mfData, histData, macroData, premarketData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro(), fetchPremarket()]);
       const merged = { ...inData, ...usData };
       const tick = {};
       Object.keys(merged).forEach((k) => {
@@ -326,6 +329,7 @@ export default function Page() {
       setPrices(merged);
       if (histData) { setHist(histData); try { sessionStorage.setItem(HIST_KEY, JSON.stringify({ ts: Date.now(), hist: histData })); } catch {} }
       if (macroData) { setMacro(macroData); try { sessionStorage.setItem(MACRO_KEY, JSON.stringify({ ts: Date.now(), macro: macroData })); } catch {} }
+      if (premarketData) { setPremarket(premarketData); try { sessionStorage.setItem(PREMKT_KEY, JSON.stringify({ ts: Date.now(), premarket: premarketData })); } catch {} }
       if (mfData)   { setMfNav(mfData);  try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {} }
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
@@ -344,6 +348,7 @@ export default function Page() {
     try { const mc = JSON.parse(sessionStorage.getItem(MFNAV_KEY) || 'null'); if (mc?.mfNav) setMfNav(mc.mfNav); } catch {}
     try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
     try { const mac = JSON.parse(sessionStorage.getItem(MACRO_KEY) || 'null'); if (mac?.macro) setMacro(mac.macro); } catch {}
+    try { const pm = JSON.parse(sessionStorage.getItem(PREMKT_KEY) || 'null'); if (pm?.premarket) setPremarket(pm.premarket); } catch {}
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -843,9 +848,11 @@ export default function Page() {
             <div className="topbar-right">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pulse — market regime + how the book responds if markets move up or down">
-                <span className="pulse-spark">✦</span>Pulse
-                {regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pre-Market — overnight global cues, FII/DII flows, and how the book responds if markets move up or down">
+                <span className="pulse-spark">✦</span>Pre-Market
+                {premarket?.window?.open
+                  ? <span className="pulse-pill-state regime-watch">live</span>
+                  : regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
               </button>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
               <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
@@ -952,7 +959,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} fxRate={fxRate} regime={regime}
+            <MacroTab model={macroModel} macro={macro} premarket={premarket} fxRate={fxRate} regime={regime}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}
