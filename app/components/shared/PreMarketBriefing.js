@@ -145,53 +145,55 @@ export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLi
         </span>
       </div>
 
-      {/* Line 2 — the cue board, grouped */}
-      <div className="pm-cues">
-        {GROUPS.map((g) => {
-          const items = cueList.filter((c) => c.group === g.key);
-          if (!items.length) return null;
-          return (
-            <div className="pm-group" key={g.key}>
-              <div className="pm-group-lbl">{g.label}</div>
-              <div className="pm-cue-row">
-                {items.map((c) => <Cue d={c} key={c.label} />)}
+      {/* Line 2 — overnight cues and prior-session flows, side by side */}
+      <div className="pm-context">
+        <div className="pm-cues">
+          {GROUPS.map((g) => {
+            const items = cueList.filter((c) => c.group === g.key);
+            if (!items.length) return null;
+            return (
+              <div className="pm-group" key={g.key}>
+                <div className="pm-group-lbl">{g.label}</div>
+                <div className="pm-cue-row">
+                  {items.map((c) => <Cue d={c} key={c.label} />)}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Line 3 — institutional flows (prior session) */}
-      <div className="pm-flows">
-        <div className="pm-group-lbl">
-          FII / DII flows
-          <span className="sub" style={{ textTransform: 'none', letterSpacing: 0, marginLeft: 6 }}>
-            {latest?.date ? `prior session · ${latest.date}` : 'cash market, net'}
-          </span>
+            );
+          })}
         </div>
-        {latest ? (
-          <>
-            <div className="pm-flow-row">
-              <div className="pm-flow">
-                <span className="pm-flow-lbl">FII / FPI</span>
-                <span className={'pm-flow-val mono ' + fii.cls}>{fii.txt}</span>
+
+        {/* institutional flows (prior session) */}
+        <div className="pm-flows">
+          <div className="pm-group-lbl">
+            FII / DII flows
+            <span className="sub" style={{ textTransform: 'none', letterSpacing: 0, marginLeft: 6 }}>
+              {latest?.date ? `prior session · ${latest.date}` : 'cash market, net'}
+            </span>
+          </div>
+          {latest ? (
+            <>
+              <div className="pm-flow-row">
+                <div className="pm-flow">
+                  <span className="pm-flow-lbl">FII / FPI</span>
+                  <span className={'pm-flow-val mono ' + fii.cls}>{fii.txt}</span>
+                </div>
+                <div className="pm-flow">
+                  <span className="pm-flow-lbl">DII</span>
+                  <span className={'pm-flow-val mono ' + dii.cls}>{dii.txt}</span>
+                </div>
               </div>
-              <div className="pm-flow">
-                <span className="pm-flow-lbl">DII</span>
-                <span className={'pm-flow-val mono ' + dii.cls}>{dii.txt}</span>
+              <FlowTrail trail={trail} />
+            </>
+          ) : (
+            <>
+              <div className="pm-flow-row mac-stale">
+                Flows unavailable{fiidii?.error ? ` — ${fiidii.error}` : ''} (NSE feed not reachable this run)
               </div>
-            </div>
-            <FlowTrail trail={trail} />
-          </>
-        ) : (
-          <>
-            <div className="pm-flow-row mac-stale">
-              Flows unavailable{fiidii?.error ? ` — ${fiidii.error}` : ''} (NSE feed not reachable this run)
-            </div>
-            {/* Even with today's fetch down, show the trail already accumulated. */}
-            <FlowTrail trail={trail} />
-          </>
-        )}
+              {/* Even with today's fetch down, show the trail already accumulated. */}
+              <FlowTrail trail={trail} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Line last — demoted AI nuance, only when present */}

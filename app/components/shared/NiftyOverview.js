@@ -61,21 +61,34 @@ function MoverList({ title, rows, accent }) {
 }
 
 // Tile fill: translucent green/red whose opacity scales with |pct| (capped at a
-// 3% move so a single outlier doesn't wash out the board).
+// 1.5% sector move so the spread across sectors stays readable).
 function tileBg(pct) {
   if (pct == null || !isFinite(pct)) return 'var(--sur2)';
-  const mag = Math.min(1, Math.abs(pct) / 3);
-  const op = (12 + mag * 46).toFixed(0);
+  const mag = Math.min(1, Math.abs(pct) / 1.5);
+  const op = (12 + mag * 50).toFixed(0);
   const col = pct > 0 ? 'var(--grn)' : pct < 0 ? 'var(--red)' : 'var(--txt3)';
   return `color-mix(in srgb, ${col} ${op}%, transparent)`;
 }
 
+// Aggregate constituents into sector tiles: average % move + member count,
+// sorted strongest sector → weakest. Tiles flex-size by member count so heavier
+// sectors read larger, treemap-style.
+function sectorTiles(stocks) {
+  const by = {};
+  stocks.forEach((s) => {
+    if (s.pct == null || !isFinite(s.pct)) return;
+    (by[s.sector] ||= { sector: s.sector, sum: 0, n: 0 }).sum += s.pct;
+    by[s.sector].n += 1;
+  });
+  return Object.values(by)
+    .map((g) => ({ sector: g.sector, avg: g.sum / g.n, n: g.n }))
+    .sort((a, b) => b.avg - a.avg);
+}
+
 export default function NiftyOverview({ premarket, nifty50, loading }) {
   const levels = premarket?.levels;
-  const stocks = nifty50?.stocks || [];
   const movers = nifty50?.movers;
-  // Heatmap reads top-to-bottom strongest gain → deepest loss.
-  const sorted = [...stocks].sort((a, b) => (b.pct ?? -Infinity) - (a.pct ?? -Infinity));
+  const sectors = sectorTiles(nifty50?.stocks || []);
 
   return (
     <>
@@ -99,22 +112,23 @@ export default function NiftyOverview({ premarket, nifty50, loading }) {
         </div>
       </div>
 
-      {/* ── Nifty 50 heatmap ─────────────────────────────────────────────── */}
+      {/* ── Sector heatmap ───────────────────────────────────────────────── */}
       <div className="card sec">
         <div className="ctitle" style={{ marginBottom: 12 }}>
-          Nifty 50 heatmap
+          Sector heatmap
           <span className="sub" style={{ textTransform: 'none' }}>
-            {nifty50?.count ? ` — ${nifty50.count} of 50 live` : ''}
+            {sectors.length ? ' — average move by Nifty 50 sector' : ''}
           </span>
         </div>
-        {loading && !sorted.length ? (
+        {loading && !sectors.length ? (
           <div className="sub">Loading constituents…</div>
-        ) : sorted.length ? (
-          <div className="no-heat">
-            {sorted.map((s) => (
-              <div className="no-tile" key={s.sym} style={{ background: tileBg(s.pct) }} title={`${s.name} · ${s.sector} · ${pctTxt(s.pct)}`}>
-                <span className="no-tile-sym">{s.sym}</span>
-                <span className={'no-tile-pct mono ' + pctCls(s.pct)}>{pctTxt(s.pct)}</span>
+        ) : sectors.length ? (
+          <div className="no-sectors">
+            {sectors.map((s) => (
+              <div className="no-sector" key={s.sector} style={{ background: tileBg(s.avg), flexGrow: s.n }} title={`${s.sector} · ${s.n} stocks · avg ${pctTxt(s.avg)}`}>
+                <span className="no-sector-name">{s.sector}</span>
+                <span className={'no-sector-pct mono ' + pctCls(s.avg)}>{pctTxt(s.avg)}</span>
+                <span className="no-sector-n">{s.n} stocks</span>
               </div>
             ))}
           </div>
