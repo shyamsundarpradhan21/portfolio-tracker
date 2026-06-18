@@ -46,6 +46,7 @@ const MFNAV_KEY     = 'nwTracker.mfnav';
 const HIST_KEY      = 'nwTracker.hist';
 const MACRO_KEY     = 'nwTracker.macro';
 const PREMKT_KEY    = 'nwTracker.premarket';
+const NIFTY50_KEY   = 'nwTracker.nifty50';
 const REFRESH_MS    = 15 * 60 * 1000;
 
 // Relative age of the shown AI analysis → tells fresh ("just now") from cached
@@ -169,6 +170,8 @@ export default function Page() {
   const [hist, setHist]             = useState(null);
   const [macro, setMacro]           = useState(null); // live macro clock (FRED + Yahoo)
   const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
+  const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Pre-Market tab)
+  const [nifty50Loading, setN50Loading] = useState(false);
   const [flash, setFlash]           = useState({});
   const [ath, setAth]               = useState(false); // all-time-high celebration
   const [heroKey, setHeroKey]       = useState(0);     // bumped once when NW first loads
@@ -616,6 +619,30 @@ export default function Page() {
     };
   }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, regVolVix, ov.fdValue]);
 
+  // Nifty 50 heatmap + movers — lazy: fetched only when the Pre-Market tab (6)
+  // is open, since it pulls 50 constituent quotes. Cached in sessionStorage for
+  // 5 min so tab toggles don't re-hammer Yahoo; hydrate from cache instantly.
+  useEffect(() => {
+    if (tab !== 6) return;
+    try {
+      const c = JSON.parse(sessionStorage.getItem(NIFTY50_KEY) || 'null');
+      if (c?.nifty50) setNifty50(c.nifty50);
+      if (c?.ts && Date.now() - c.ts < 5 * 60 * 1000) return; // fresh enough
+    } catch {}
+    let dead = false;
+    setN50Loading(true);
+    fetch('/api/nifty50', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (dead || !j) return;
+        setNifty50(j);
+        try { sessionStorage.setItem(NIFTY50_KEY, JSON.stringify({ ts: Date.now(), nifty50: j })); } catch {}
+      })
+      .catch(() => {})
+      .finally(() => { if (!dead) setN50Loading(false); });
+    return () => { dead = true; };
+  }, [tab]);
+
   // Deterministic market-regime read (no LLM) from the live macro clock — drives
   // the Pulse headline + the topbar pill. States current conditions, never predicts.
   const regime = useMemo(() => classifyRegime(macro?.live), [macro]);
@@ -959,7 +986,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} premarket={premarket} fxRate={fxRate} regime={regime}
+            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fxRate={fxRate} regime={regime}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

@@ -4,6 +4,7 @@ import { SInrC, pctS } from '../../lib/fmt';
 import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier, pulseImpact } from '../../lib/scenarios';
 import AnalysisCard from '../shared/AnalysisCard';
 import PreMarketBriefing from '../shared/PreMarketBriefing';
+import NiftyOverview from '../shared/NiftyOverview';
 
 // Per-sleeve cards that consolidate here when the header ✨ banners are toggled off.
 const SLEEVE_CARDS = [
@@ -193,7 +194,7 @@ function TierBreakdown({ selected, sleeves }) {
   );
 }
 
-export default function MacroTab({ model, macro, premarket, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ model, macro, premarket, nifty50, nifty50Loading, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
   const pulse = insights?.pulse;
 
@@ -257,6 +258,9 @@ export default function MacroTab({ model, macro, premarket, regime, reg, insight
         aiReady={aiReady}
         aiAgo={insightsTs ? agoStr(insightsTs) : null}
       />
+
+      {/* ── NIFTY & SENSEX OVERVIEW + NIFTY 50 HEATMAP ────────────────────── */}
+      <NiftyOverview premarket={premarket} nifty50={nifty50} loading={nifty50Loading} />
 
       {/* ── WHAT MOVED — the macro drivers setting the regime ─────────────── */}
       {regime && regime.drivers && regime.drivers.length > 0 && (

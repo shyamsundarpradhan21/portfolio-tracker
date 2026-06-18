@@ -1237,6 +1237,30 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .pm-flow-lbl { font-size: var(--fs-2xs); color: var(--txt3); text-transform: uppercase; letter-spacing: .05em; }
 .pm-flow-val { font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.3px; }
 
+/* ── Nifty & Sensex overview — pivots, movers, heatmap ─────────────────────── */
+.no-pivots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.no-pivot-head { display: flex; align-items: baseline; gap: 8px; font-size: var(--fs-sm); font-weight: 700; color: var(--txt); margin-bottom: 8px; flex-wrap: wrap; }
+.no-ladder { display: grid; gap: 2px; }
+.no-rung { display: flex; justify-content: space-between; align-items: center; padding: 4px 9px; border-radius: 5px; font-size: var(--fs-xs); }
+.no-rung-k { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .05em; }
+.no-rung-v { font-weight: 600; color: var(--txt); }
+.no-res { background: color-mix(in srgb, var(--red) 7%, transparent); }
+.no-res .no-rung-k { color: var(--red); }
+.no-sup { background: color-mix(in srgb, var(--grn) 7%, transparent); }
+.no-sup .no-rung-k { color: var(--grn); }
+.no-pp { background: var(--sur2); border: .5px solid var(--brd); }
+.no-pp .no-rung-k { color: var(--acc); }
+.no-movers-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.no-mover { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 0; border-bottom: .5px solid var(--brd2); }
+.no-mover-name { font-size: var(--fs-sm); color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.no-mover-pct { font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; }
+.no-heat { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 5px; }
+.no-tile { display: flex; flex-direction: column; gap: 2px; padding: 7px 9px; border-radius: 7px; border: .5px solid var(--brd2); min-height: 46px; }
+.no-tile-sym { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .02em; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.no-tile-pct { font-size: var(--fs-2xs); font-weight: 600; }
+.no-pivot .mac-stale { font-size: var(--fs-xs); }
+@media (max-width: 560px) { .no-pivots, .no-movers-wrap { grid-template-columns: 1fr; } }
+
 /* topbar pill regime hint */
 .pulse-pill-state { font-weight: 600; opacity: .9; }
 .pulse-pill .regime-risk-on { color: var(--grn); background: none; padding: 0; }
