@@ -206,8 +206,44 @@ async function fetchFiiDii() {
   }
 }
 
+// ── Server-side FII/DII trail (Vercel KV, optional) ──────────────────────────
+// When a KV store is wired (env KV_REST_API_URL + KV_REST_API_TOKEN), we persist
+// one point per NSE session here too, so the 10-day trail is cross-device and
+// keeps building even when no browser is open — refreshed by the daily Vercel
+// cron (see vercel.json). Without KV this is a no-op and the client's
+// localStorage trail (lib/fiidii.js) is the source of truth. The import is
+// dynamic + env-guarded so the route never hard-depends on KV being configured.
+const KV_KEY = 'premarket:fiidiiTrail';
+const TRAIL_CAP = 10;
+
+async function persistTrail(latest) {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
+  if (!latest?.date) return null;
+  const fii = latest.fii?.net, dii = latest.dii?.net;
+  if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) {
+    // Nothing live to record — return whatever trail KV already holds.
+    try { const { kv } = await import('@vercel/kv'); return (await kv.get(KV_KEY)) || null; } catch { return null; }
+  }
+  try {
+    const { kv } = await import('@vercel/kv');
+    const arr = (await kv.get(KV_KEY)) || [];
+    const point = { d: latest.date, fii: isFinite(fii) ? fii : null, dii: isFinite(dii) ? dii : null };
+    const i = arr.findIndex((p) => p.d === point.d);
+    if (i >= 0) arr[i] = point; else arr.push(point);
+    arr.sort((a, b) => new Date(a.d) - new Date(b.d));
+    const trimmed = arr.slice(-TRAIL_CAP);
+    await kv.set(KV_KEY, trimmed);
+    return trimmed;
+  } catch {
+    return null; // KV unreachable — fall back to the client trail
+  }
+}
+
 export async function GET() {
   const [cues, levels, fiidii] = await Promise.all([fetchCues(), fetchLevels(), fetchFiiDii()]);
+  // Persist + attach the server trail when KV is configured; null otherwise.
+  const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
+  if (trail) fiidii.trail = trail;
   return Response.json(
     {
       fetchedAt: new Date().toISOString(),

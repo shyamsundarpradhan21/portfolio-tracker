@@ -58,7 +58,50 @@ const GROUPS = [
   { key: 'fx',        label: 'Currency & rates' },
 ];
 
-export default function PreMarketBriefing({ premarket, regime, aiLine, insightsLoading, onRefresh, aiReady, aiAgo }) {
+// Short date for the trail axis: 'DD-Mon-YYYY' (NSE) → 'DD Mon'.
+function shortDate(d) {
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
+// 10-session FII/DII trail — paired bars per session (FII + DII), height by
+// |net| relative to the trail's own max, colour by buy (green) / sell (red).
+function FlowTrail({ trail }) {
+  const pts = (trail || []).filter((p) => p && (p.fii != null || p.dii != null));
+  if (pts.length < 2) {
+    return <div className="sub" style={{ marginTop: 8 }}>10-session trail builds as trading days accumulate ({pts.length} so far).</div>;
+  }
+  const max = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0)]));
+  const bar = (v) => {
+    if (v == null || !isFinite(v)) return <span className="pm-tbar pm-tbar-na" />;
+    const h = Math.max(4, (Math.abs(v) / max) * 100);
+    const up = v >= 0;
+    return (
+      <span className="pm-tbar" title={(up ? '+' : '−') + '₹' + Math.abs(Math.round(v)).toLocaleString('en-IN') + ' Cr'}>
+        <span className="pm-tbar-fill" style={{ height: h + '%', alignSelf: up ? 'flex-end' : 'flex-start', background: up ? 'var(--grn)' : 'var(--red)' }} />
+      </span>
+    );
+  };
+  return (
+    <div className="pm-trail">
+      <div className="pm-trail-legend sub">
+        <span><span className="pm-dot grn" /> FII</span><span><span className="pm-dot red-dot" /> DII</span>
+        <span className="mut">net ₹ Cr · buy green / sell red</span>
+      </div>
+      <div className="pm-trail-cols">
+        {pts.map((p) => (
+          <div className="pm-trail-col" key={p.d}>
+            <div className="pm-trail-pair">{bar(p.fii)}{bar(p.dii)}</div>
+            <div className="pm-trail-date">{shortDate(p.d)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLine, insightsLoading, onRefresh, aiReady, aiAgo }) {
   const win = premarket?.window;
   const cues = premarket?.cues || {};
   const fiidii = premarket?.fiidii;
@@ -79,6 +122,10 @@ export default function PreMarketBriefing({ premarket, regime, aiLine, insightsL
   const latest = fiidii && !fiidii.stale ? fiidii.latest : null;
   const fii = flowFmt(latest?.fii?.net);
   const dii = flowFmt(latest?.dii?.net);
+
+  // Prefer the server-persisted trail (Vercel KV, cron-built, cross-device) when
+  // present; otherwise the per-browser localStorage trail (lib/fiidii.js).
+  const trail = Array.isArray(fiidii?.trail) && fiidii.trail.length ? fiidii.trail : fiidiiTrail;
 
   return (
     <div className="card sec pulse-card pm-brief">
@@ -123,20 +170,27 @@ export default function PreMarketBriefing({ premarket, regime, aiLine, insightsL
           </span>
         </div>
         {latest ? (
-          <div className="pm-flow-row">
-            <div className="pm-flow">
-              <span className="pm-flow-lbl">FII / FPI</span>
-              <span className={'pm-flow-val mono ' + fii.cls}>{fii.txt}</span>
+          <>
+            <div className="pm-flow-row">
+              <div className="pm-flow">
+                <span className="pm-flow-lbl">FII / FPI</span>
+                <span className={'pm-flow-val mono ' + fii.cls}>{fii.txt}</span>
+              </div>
+              <div className="pm-flow">
+                <span className="pm-flow-lbl">DII</span>
+                <span className={'pm-flow-val mono ' + dii.cls}>{dii.txt}</span>
+              </div>
             </div>
-            <div className="pm-flow">
-              <span className="pm-flow-lbl">DII</span>
-              <span className={'pm-flow-val mono ' + dii.cls}>{dii.txt}</span>
-            </div>
-          </div>
+            <FlowTrail trail={trail} />
+          </>
         ) : (
-          <div className="pm-flow-row mac-stale">
-            Flows unavailable{fiidii?.error ? ` — ${fiidii.error}` : ''} (NSE feed not reachable this run)
-          </div>
+          <>
+            <div className="pm-flow-row mac-stale">
+              Flows unavailable{fiidii?.error ? ` — ${fiidii.error}` : ''} (NSE feed not reachable this run)
+            </div>
+            {/* Even with today's fetch down, show the trail already accumulated. */}
+            <FlowTrail trail={trail} />
+          </>
         )}
       </div>
 

@@ -15,6 +15,7 @@ import { classifyRegime } from './lib/regime';
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
 import { getSnapshots, recordSnapshot, historicalSnapshots } from './lib/snapshots';
+import { getFiiDiiTrail, recordFiiDii } from './lib/fiidii';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
@@ -172,6 +173,7 @@ export default function Page() {
   const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
   const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Pre-Market tab)
   const [nifty50Loading, setN50Loading] = useState(false);
+  const [fiidiiTrail, setFiidiiTrail] = useState([]); // 10-session FII/DII flow trail (localStorage, builds forward)
   const [flash, setFlash]           = useState({});
   const [ath, setAth]               = useState(false); // all-time-high celebration
   const [heroKey, setHeroKey]       = useState(0);     // bumped once when NW first loads
@@ -776,6 +778,15 @@ export default function Page() {
   const [snapshots, setSnapshots] = useState([]);
   useEffect(() => { setSnapshots(getSnapshots()); }, []);
 
+  // Hydrate the FII/DII trail from localStorage, then append a point whenever
+  // the pre-market feed carries a live session NSE hasn't already logged — the
+  // trail builds forward, one session per trading day (see lib/fiidii.js).
+  useEffect(() => { setFiidiiTrail(getFiiDiiTrail()); }, []);
+  useEffect(() => {
+    const latest = premarket?.fiidii && !premarket.fiidii.stale ? premarket.fiidii.latest : null;
+    if (latest?.date) setFiidiiTrail(recordFiiDii(latest));
+  }, [premarket?.fiidii?.latest?.date]);
+
   // Ledger-reconstructed weekly history fills the curve before real dailies
   // began. Computed fresh per load (nothing synthetic is persisted); real
   // snapshots always win from their first date onward.
@@ -986,7 +997,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fxRate={fxRate} regime={regime}
+            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}
