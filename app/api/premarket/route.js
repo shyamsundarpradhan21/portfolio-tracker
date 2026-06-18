@@ -206,27 +206,47 @@ async function fetchFiiDii() {
   }
 }
 
-// ── Server-side FII/DII trail (Vercel KV, optional) ──────────────────────────
-// When a KV store is wired (env KV_REST_API_URL + KV_REST_API_TOKEN), we persist
-// one point per NSE session here too, so the 10-day trail is cross-device and
-// keeps building even when no browser is open — refreshed by the daily Vercel
-// cron (see vercel.json). Without KV this is a no-op and the client's
-// localStorage trail (lib/fiidii.js) is the source of truth. The import is
-// dynamic + env-guarded so the route never hard-depends on KV being configured.
+// ── Server-side FII/DII trail (Vercel KV / Upstash Redis, optional) ──────────
+// When a Redis store is wired we persist one point per NSE session here too, so
+// the 10-day trail is cross-device and keeps building even when no browser is
+// open — refreshed by the daily Vercel cron (see vercel.json). Without a store
+// this is a no-op and the client's localStorage trail (lib/fiidii.js) is the
+// source of truth.
+//
+// Vercel KV now ships via the Marketplace (Upstash for Redis), which injects
+// creds under EITHER naming depending on how the store is connected:
+//   - KV_REST_API_URL / KV_REST_API_TOKEN          (legacy / "KV" prefix)
+//   - UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (Upstash default)
+// We accept both and build the client explicitly so it works either way. The
+// import is dynamic so the route never hard-depends on the store being present.
 const KV_KEY = 'premarket:fiidiiTrail';
 const TRAIL_CAP = 10;
 
-async function persistTrail(latest) {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
-  if (!latest?.date) return null;
-  const fii = latest.fii?.net, dii = latest.dii?.net;
-  if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) {
-    // Nothing live to record — return whatever trail KV already holds.
-    try { const { kv } = await import('@vercel/kv'); return (await kv.get(KV_KEY)) || null; } catch { return null; }
-  }
+function kvCreds() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  return url && token ? { url, token } : null;
+}
+
+async function kvClient() {
+  const creds = kvCreds();
+  if (!creds) return null;
   try {
-    const { kv } = await import('@vercel/kv');
+    const { createClient } = await import('@vercel/kv');
+    return createClient(creds);
+  } catch {
+    return null;
+  }
+}
+
+async function persistTrail(latest) {
+  const kv = await kvClient();
+  if (!kv || !latest?.date) return null;
+  const fii = latest.fii?.net, dii = latest.dii?.net;
+  try {
     const arr = (await kv.get(KV_KEY)) || [];
+    // Nothing live to record — return whatever trail the store already holds.
+    if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) return arr.length ? arr : null;
     const point = { d: latest.date, fii: isFinite(fii) ? fii : null, dii: isFinite(dii) ? dii : null };
     const i = arr.findIndex((p) => p.d === point.d);
     if (i >= 0) arr[i] = point; else arr.push(point);
@@ -235,7 +255,7 @@ async function persistTrail(latest) {
     await kv.set(KV_KEY, trimmed);
     return trimmed;
   } catch {
-    return null; // KV unreachable — fall back to the client trail
+    return null; // store unreachable — fall back to the client trail
   }
 }
 
