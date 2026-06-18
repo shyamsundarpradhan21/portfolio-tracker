@@ -69,20 +69,26 @@ accumulates one point per trading day, deduped by session date:
 - **Client (default, zero setup):** persisted in `localStorage`
   (`app/lib/fiidii.js`), per-browser — the same pattern as the net-worth
   dailies.
-- **Server (optional, cross-device):** when a **Vercel KV** store is linked,
-  `/api/premarket` also writes the point into KV and returns the trail, which
-  the client prefers over its local copy. The KV call is env-guarded
-  (`KV_REST_API_URL` / `KV_REST_API_TOKEN`) via a dynamic import, so the route
-  is a clean no-op when KV isn't configured.
+- **Server (optional, cross-device):** when a Redis store is linked,
+  `/api/premarket` also writes the point into the store and returns the trail,
+  which the client prefers over its local copy. Creds are read from **either**
+  `KV_REST_API_URL`/`KV_REST_API_TOKEN` **or**
+  `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (dynamic import), so the
+  route is a clean no-op until one pair is present.
 - **Daily refresh:** `vercel.json` defines a cron that hits `/api/premarket`
-  at `30 0 * * *` UTC (**06:00 IST**), ahead of the pre-open window, so the KV
+  at `30 0 * * *` UTC (**06:00 IST**), ahead of the pre-open window, so the
   trail keeps building even with no browser open. (On Vercel's Hobby plan cron
   timing can drift up to ~1h and is once-daily; Pro fires on the minute.)
 
-**To activate the server trail:** in the Vercel project, create a KV (Upstash
-Redis) store under **Storage** and link it to this project — Vercel injects the
-`KV_REST_API_*` env vars automatically, and the cron starts persisting on the
-next deploy. No env vars are needed for the client-only trail.
+**To activate the server trail** (Vercel → your project):
+1. **Storage → Create Database → Upstash for Redis** (the Marketplace successor
+   to Vercel KV). Pick the free tier and a region near your users.
+2. **Connect** it to this project, **All Environments**. Vercel injects the
+   `KV_REST_API_*` / `UPSTASH_REDIS_REST_*` env vars automatically.
+3. **Redeploy** (Deployments → ⋯ → Redeploy, or push a commit). The route now
+   persists the trail and the 06:00 IST cron keeps it building.
+
+No env vars are needed for the client-only trail — it works out of the box.
 
 ## Local development
 
