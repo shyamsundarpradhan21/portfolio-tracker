@@ -194,7 +194,7 @@ function TierBreakdown({ selected, sleeves }) {
   );
 }
 
-export default function MacroTab({ model, macro, premarket, nifty50, nifty50Loading, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ model, macro, premarket, nifty50, nifty50Loading, fiidiiTrail, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
   const pulse = insights?.pulse;
 
@@ -251,6 +251,7 @@ export default function MacroTab({ model, macro, premarket, nifty50, nifty50Load
       {/* ── PRE-MARKET INSIGHTS — overnight global cues + FII/DII + AI read ── */}
       <PreMarketBriefing
         premarket={premarket}
+        fiidiiTrail={fiidiiTrail}
         regime={regime}
         aiLine={!insightsFirstLoad && pulse && pulse.read ? pulse.read : null}
         insightsLoading={insightsLoading}

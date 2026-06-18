@@ -6,5 +6,11 @@
     "deploymentEnabled": {
       "claude/wonderful-wright-lyx1nd": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/premarket",
+      "schedule": "35 3 * * *"
+    }
+  ]
 }
