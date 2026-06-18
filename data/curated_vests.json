@@ -1,0 +1,204 @@
+{
+  "asOf": "2026-06-11",
+  "broker": {
+    "from": "Vested",
+    "to": "Dhan",
+    "status": "migrating",
+    "note": "US stocks now live on Dhan; SIPs moving from Vested. Dhan has no curated 'vests' \u2014 this file captures Vested's curated baskets so they can be replicated manually on Dhan."
+  },
+  "provenance": "RECONSTRUCTED from app/portfolio.js US holdings (cat field) cross-checked against data/us_trades.json co-purchase batches. Vested's live app (app.vestedfinance.com) is login-gated and could not be scraped from the build environment. weightPct = current cost-basis share within the vest (qty\u00d7cost), NOT Vested's published target allocation. Replace with live Vested holdings to get exact targets.",
+  "vests": [
+    {
+      "name": "Blockchain",
+      "label": "Blockchain vest",
+      "theme": "Crypto miners & digital-asset infrastructure",
+      "entryBatch": "2025-07-08",
+      "totalInvestedUsd": 539.64,
+      "holdings": [
+        {
+          "sym": "MARA",
+          "name": "MARA Holdings",
+          "cat": "Crypto",
+          "investedUsd": 64.61,
+          "weightPct": 12.0,
+          "firstBuy": "2024-03-08"
+        },
+        {
+          "sym": "CLSK",
+          "name": "CleanSpark Inc",
+          "cat": "Crypto",
+          "investedUsd": 51.31,
+          "weightPct": 9.5,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "BTDR",
+          "name": "Bitdeer Technologies",
+          "cat": "Crypto",
+          "investedUsd": 49.7,
+          "weightPct": 9.2,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "KEEL",
+          "name": "Bitfarms Ltd",
+          "cat": "Crypto",
+          "investedUsd": 49.06,
+          "weightPct": 9.1,
+          "firstBuy": "2025-11-20"
+        },
+        {
+          "sym": "GLXY",
+          "name": "Galaxy Digital",
+          "cat": "Crypto",
+          "investedUsd": 48.79,
+          "weightPct": 9.0,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "IREN",
+          "name": "IREN Ltd",
+          "cat": "Crypto",
+          "investedUsd": 46.63,
+          "weightPct": 8.6,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "WULF",
+          "name": "TeraWulf Inc",
+          "cat": "Crypto",
+          "investedUsd": 45.87,
+          "weightPct": 8.5,
+          "firstBuy": "2025-11-20"
+        },
+        {
+          "sym": "RIOT",
+          "name": "Riot Platforms",
+          "cat": "Crypto",
+          "investedUsd": 41.28,
+          "weightPct": 7.6,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "CORZ",
+          "name": "Core Scientific",
+          "cat": "Crypto",
+          "investedUsd": 40.37,
+          "weightPct": 7.5,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "CIFR",
+          "name": "Cipher Mining",
+          "cat": "Crypto",
+          "investedUsd": 37.92,
+          "weightPct": 7.0,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "APLD",
+          "name": "Applied Digital",
+          "cat": "Crypto",
+          "investedUsd": 33.77,
+          "weightPct": 6.3,
+          "firstBuy": "2025-07-08"
+        },
+        {
+          "sym": "HUT",
+          "name": "Hut 8 Mining",
+          "cat": "Crypto",
+          "investedUsd": 30.33,
+          "weightPct": 5.6,
+          "firstBuy": "2024-03-08"
+        }
+      ]
+    },
+    {
+      "name": "GMAAF",
+      "label": "GMAAF vest (Vested display name may differ)",
+      "theme": "Globally diversified / all-weather ETF basket (US + intl equity, bonds, gold, commodities)",
+      "entryBatch": "2025-05-08",
+      "totalInvestedUsd": 764.5,
+      "holdings": [
+        {
+          "sym": "IVV",
+          "name": "iShares Core S&P 500",
+          "cat": "ETF",
+          "investedUsd": 304.85,
+          "weightPct": 39.9,
+          "firstBuy": "2025-05-08"
+        },
+        {
+          "sym": "EFA",
+          "name": "iShares MSCI EAFE",
+          "cat": "ETF",
+          "investedUsd": 188.13,
+          "weightPct": 24.6,
+          "firstBuy": "2025-05-08"
+        },
+        {
+          "sym": "IUSB",
+          "name": "iShares Core USD Bond",
+          "cat": "Bond",
+          "investedUsd": 77.74,
+          "weightPct": 10.2,
+          "firstBuy": "2025-05-08"
+        },
+        {
+          "sym": "EEM",
+          "name": "iShares MSCI Em Mkts",
+          "cat": "ETF",
+          "investedUsd": 75.87,
+          "weightPct": 9.9,
+          "firstBuy": "2025-05-08"
+        },
+        {
+          "sym": "GLDM",
+          "name": "SPDR Gold MiniShares",
+          "cat": "Commodity",
+          "investedUsd": 40.17,
+          "weightPct": 5.3,
+          "firstBuy": "2026-04-10"
+        },
+        {
+          "sym": "HYDB",
+          "name": "iShares Hi-Yld Bond",
+          "cat": "Bond",
+          "investedUsd": 39.45,
+          "weightPct": 5.2,
+          "firstBuy": "2025-05-08"
+        },
+        {
+          "sym": "PDBC",
+          "name": "Invesco Optm Commodity",
+          "cat": "Commodity",
+          "investedUsd": 38.29,
+          "weightPct": 5.0,
+          "firstBuy": "2026-04-10"
+        }
+      ]
+    }
+  ],
+  "standaloneSip": [
+    {
+      "sym": "QQQM",
+      "name": "Invesco NASDAQ 100",
+      "note": "plain ETF SIP, not a curated vest",
+      "firstBuy": "2024-07-02"
+    },
+    {
+      "sym": "SCHD",
+      "name": "Schwab US Dividend",
+      "note": "plain ETF SIP, not a curated vest",
+      "firstBuy": "2024-07-02"
+    }
+  ],
+  "unassigned": {
+    "note": "Crypto-adjacent fintech held directly \u2014 confirm whether part of the Blockchain vest on Vested.",
+    "syms": [
+      "COIN",
+      "HOOD",
+      "PYPL"
+    ]
+  }
+}
