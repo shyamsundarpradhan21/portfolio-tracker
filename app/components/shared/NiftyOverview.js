@@ -91,7 +91,7 @@ export default function NiftyOverview({ premarket, nifty50, loading }) {
   const sectors = sectorTiles(nifty50?.stocks || []);
 
   return (
-    <>
+    <div className="no-cards">
       {/* ── Nifty & Sensex overview — pivots + movers + F&O note ─────────── */}
       <div className="card sec">
         <div className="ctitle" style={{ marginBottom: 12 }}>
@@ -136,6 +136,6 @@ export default function NiftyOverview({ premarket, nifty50, loading }) {
           <div className="mac-stale">Constituent quotes unavailable — Yahoo feed not reachable this run.</div>
         )}
       </div>
-    </>
+    </div>
   );
 }
