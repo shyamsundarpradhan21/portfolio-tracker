@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { SInrC, pctS } from '../../lib/fmt';
 import { SCENARIOS, SLEEVES, ASSUME, LOW_RSQ, MIN_OBS_MONTHLY, evalScenario, volTier, pulseImpact } from '../../lib/scenarios';
 import AnalysisCard from '../shared/AnalysisCard';
+import PreMarketBriefing from '../shared/PreMarketBriefing';
 
 // Per-sleeve cards that consolidate here when the header ✨ banners are toggled off.
 const SLEEVE_CARDS = [
@@ -59,9 +60,7 @@ const confLabel = { hard: 'measured', modelled: 'regression', indicative: 'indic
 // "Soft" = anything that must not read as a hard measured number.
 const isSoft = (leg) => !!leg && (leg.conf === 'assumed' || leg.conf === 'indicative' || (leg.conf === 'modelled' && leg.weak));
 
-// ── Pulse regime + bidirectional helpers ─────────────────────────────────────
-const REGIME_WORD = { 'risk-on': 'Risk-on', neutral: 'Neutral', watch: 'Watch', 'risk-off': 'Risk-off' };
-const LEAN_ARROW = { easing: '▼', stable: '→', tightening: '▲' };
+// ── Bidirectional impact helpers ─────────────────────────────────────────────
 const absPct = (p) => (p == null || !isFinite(p) ? '' : Math.abs(p).toFixed(1) + '%');
 const bidirMax = (impact) => Math.max(0.5, ...impact.rows.flatMap((r) => [Math.abs(r.up.pct), Math.abs(r.down.pct)]));
 
@@ -194,7 +193,7 @@ function TierBreakdown({ selected, sleeves }) {
   );
 }
 
-export default function MacroTab({ model, macro, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ model, macro, premarket, regime, reg, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   const [selId, setSelId] = useState('riskoff');
   const pulse = insights?.pulse;
 
@@ -248,27 +247,21 @@ export default function MacroTab({ model, macro, regime, reg, insights, insights
 
   return (
     <div>
-      {/* ── PULSE — deterministic regime + symmetric bidirectional impact ──── */}
-      <div className="card sec pulse-card">
-        {/* Line 1 — REGIME BADGE (the computed headline) + lean */}
-        <div className="pulse-regime">
-          {regime && regime.state !== 'unavailable' ? (
-            <>
-              <span className={'regime-badge regime-' + regime.state}>{REGIME_WORD[regime.state]}</span>
-              <span className={'regime-lean lean-' + regime.lean}>{LEAN_ARROW[regime.lean]} {regime.lean}</span>
-              <span className="pulse-card-sub">market regime · conditions now, not a forecast</span>
-            </>
-          ) : (
-            <span className="mac-stale">Regime unavailable — live macro feed incomplete</span>
-          )}
-          <span className="pulse-ai-meta">
-            {insightsLoading ? <span className="ai-status">analysing…</span> : insightsTs ? <span className="mut">AI {agoStr(insightsTs)}</span> : null}
-            <button className="pulse-refresh" onClick={onRefresh} disabled={insightsLoading || !aiReady} title="Regenerate the demoted AI nuance line">↻</button>
-          </span>
-        </div>
+      {/* ── PRE-MARKET INSIGHTS — overnight global cues + FII/DII + AI read ── */}
+      <PreMarketBriefing
+        premarket={premarket}
+        regime={regime}
+        aiLine={!insightsFirstLoad && pulse && pulse.read ? pulse.read : null}
+        insightsLoading={insightsLoading}
+        onRefresh={onRefresh}
+        aiReady={aiReady}
+        aiAgo={insightsTs ? agoStr(insightsTs) : null}
+      />
 
-        {/* Line 2 — WHAT MOVED: the drivers actually setting the state */}
-        {regime && regime.drivers && regime.drivers.length > 0 && (
+      {/* ── WHAT MOVED — the macro drivers setting the regime ─────────────── */}
+      {regime && regime.drivers && regime.drivers.length > 0 && (
+        <div className="card sec">
+          <div className="ctitle" style={{ marginBottom: 10 }}>What moved <span className="sub" style={{ textTransform: 'none' }}>— the drivers setting today’s mood</span></div>
           <div className="regime-drivers">
             {regime.drivers.map((d) => (
               <span className={'rd rd-' + d.dir} key={d.key}>
@@ -277,12 +270,15 @@ export default function MacroTab({ model, macro, regime, reg, insights, insights
               </span>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Line 3+ — BIDIRECTIONAL IMPACT: twin up/down per market-beta sleeve */}
-        {ready && (
+      {/* ── IF MARKETS MOVE — symmetric bidirectional impact on the book ───── */}
+      {ready && (
+        <div className="card sec pulse-card">
+          <div className="ctitle" style={{ marginBottom: 12 }}>If markets move <span className="sub" style={{ textTransform: 'none' }}>— how this book responds, up or down</span></div>
           <div className="pulse-bidir">
-            <div className="pulse-bidir-cap sub">If markets move ±{impact.move.equityPct}% <span className="mut">(equity β · gold on ±{impact.move.fxPct}% INR · FD floor) — IF → THEN, not a forecast</span></div>
+            <div className="pulse-bidir-cap sub">±{impact.move.equityPct}% <span className="mut">(equity β · gold on ±{impact.move.fxPct}% INR · FD floor) — IF → THEN, not a forecast</span></div>
             <div className="ptwin ptwin-head"><div /><div className="ptwin-cell grn">market up</div><div className="ptwin-cell red">market down</div></div>
             {impact.rows.map((r) => <TwinRow key={r.key} r={r} max={bidirMax(impact)} />)}
             <div className="ptwin ptwin-total">
@@ -292,13 +288,8 @@ export default function MacroTab({ model, macro, regime, reg, insights, insights
             </div>
             <div className="pulse-aside">Trading book set aside — under review, not market-beta.</div>
           </div>
-        )}
-
-        {/* Line last — thin AI nuance, demoted (only if it exists) */}
-        {!insightsFirstLoad && pulse && pulse.read && (
-          <div className="pulse-nuance"><span className="ai-spark">✦</span> {pulse.read}</div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── WHAT'S AT STAKE — exposure bullets: capital track + worst-case ─ */}
       {ready && stakes && (
