@@ -108,6 +108,54 @@ async function fetchCues() {
   return Object.fromEntries(entries);
 }
 
+// ── Support / resistance pivot levels ────────────────────────────────────────
+// Classic floor-trader pivots from the prior COMPLETED session's high/low/close
+// — a standard, deterministic read of where the pre-open auction sits relative
+// to support and resistance. We pull a few daily candles and use the last one
+// whose OHLC is fully formed (the current day's partial candle is skipped).
+async function yhPivots(symbol, label) {
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=7d`;
+  for (const host of YH_HOSTS) {
+    try {
+      const res = await fetch(host + path, {
+        headers: { 'User-Agent': UA, Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(7000),
+      });
+      if (!res.ok) continue;
+      const r = (await res.json())?.chart?.result?.[0];
+      const ts = r?.timestamp, q = r?.indicators?.quote?.[0];
+      if (!Array.isArray(ts) || !q) continue;
+      // Walk back to the most recent bar with a complete H/L/C.
+      let idx = -1;
+      for (let i = ts.length - 1; i >= 0; i--) {
+        if (q.high?.[i] != null && q.low?.[i] != null && q.close?.[i] != null) { idx = i; break; }
+      }
+      if (idx === -1) continue;
+      const H = q.high[idx], L = q.low[idx], C = q.close[idx];
+      const pp = (H + L + C) / 3;
+      return {
+        prevClose: C, prevHigh: H, prevLow: L,
+        pp,
+        r1: 2 * pp - L, s1: 2 * pp - H,
+        r2: pp + (H - L), s2: pp - (H - L),
+        r3: H + 2 * (pp - L), s3: L - 2 * (H - pp),
+        asOf: new Date(ts[idx] * 1000).toISOString().slice(0, 10),
+        source: `Yahoo ${symbol} (pivots)`,
+      };
+    } catch { /* try next host */ }
+  }
+  return { stale: true, error: 'fetch failed', source: `Yahoo ${symbol} (pivots)` };
+}
+
+async function fetchLevels() {
+  const [nifty, sensex] = await Promise.all([
+    yhPivots('^NSEI', 'Nifty 50'),
+    yhPivots('^BSESN', 'Sensex'),
+  ]);
+  return { nifty, sensex };
+}
+
 // ── FII/DII cash-flow trail (NSE public JSON) ────────────────────────────────
 // NSE gates its JSON behind a session cookie set on the home page, so we bootstrap
 // a cookie with a browser UA, then hit the data endpoint. Often blocked from
@@ -159,12 +207,13 @@ async function fetchFiiDii() {
 }
 
 export async function GET() {
-  const [cues, fiidii] = await Promise.all([fetchCues(), fetchFiiDii()]);
+  const [cues, levels, fiidii] = await Promise.all([fetchCues(), fetchLevels(), fetchFiiDii()]);
   return Response.json(
     {
       fetchedAt: new Date().toISOString(),
       window: preOpenWindow(),
       cues,
+      levels,
       fiidii,
     },
     // Cues move pre-open; a short edge cache keeps the morning refreshes cheap
