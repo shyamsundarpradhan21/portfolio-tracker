@@ -88,6 +88,34 @@ full use of the knowledge graph everywhere:
 
 ---
 
+## Working Style / Task Execution
+
+### Derive from the data the user pointed at — don't substitute a generic answer
+When the user says "go through X, run the numbers, build Y from it" (e.g. "go
+through the vests, run their return nos, come up with a portfolio"), the
+deliverable must be **computed from X**. Load the data, actually run the rankings
+/ stats, and construct the answer on top of that analysis. Producing a plausible
+from-scratch answer out of general knowledge — while the pointed-at dataset sits
+unused — is the failure mode. Show the numbers you ran.
+
+### Stated intent beats a clarifying multiple-choice
+A clicked AskUserQuestion option does NOT override the user's explicit
+natural-language instruction. If the menu options don't match what they actually
+asked (or were mis-framed by me), the words win. Don't hide behind "but you
+selected X." When in doubt, do the thing they said in prose.
+
+### Honour preferences evident from existing holdings
+Build with what the user already demonstrably values. Their book signals intent:
+SCHD (quality-dividend anchor), the crypto-miner sleeve (Blockchain Ecosystem
+mirror), the AI/tech tilt. Omitting those from a "rebuild" reads as not paying
+attention. Cross-check a proposed portfolio against current holdings before
+presenting.
+
+### Fewer upfront questions; do the work, then let them react
+For analysis/strategy tasks, default to producing a concrete, data-grounded draft
+and iterating on it — not a questionnaire. One short round of genuinely
+blocking questions max.
+
 ## Communication Style
 
 ### No narration, no preamble

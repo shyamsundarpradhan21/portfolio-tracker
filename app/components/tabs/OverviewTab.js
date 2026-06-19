@@ -8,7 +8,7 @@ import AllocCard from '../shared/AllocCard';
 import SipCard from '../shared/SipCard';
 
 export default function OverviewTab({
-  ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots,
+  ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots, histSeries,
   projSleeves, projInvested0, baseYear, payslips, dataReady, mfAlloc,
   dayGain, sleeveBasis,
   cmpsPension, cmpsService, cmpsRetirement, cmpsVested, cmpsVestYear,
@@ -27,7 +27,7 @@ export default function OverviewTab({
         <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift} />
         <ProjectionTab
           nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
-          baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} dataReady={dataReady}
+          baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} histSeries={histSeries} dataReady={dataReady}
           dayGain={dayGain} sleeveBasis={sleeveBasis}
           cmpsRetirement={cmpsRetirement} cmpsPension={cmpsPension} cmpsService={cmpsService}
           cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}

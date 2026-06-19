@@ -92,8 +92,9 @@ const CUE_DEFS = [
   { key: 'nifty',  sym: '^NSEI',  group: 'india',      label: 'Nifty 50',   kind: 'index' },
   { key: 'sensex', sym: '^BSESN', group: 'india',      label: 'Sensex',     kind: 'index' },
   // Commodities + currency — the cross-border channels into this book
-  { key: 'gold',   sym: 'GC=F',   group: 'commodity',  label: 'Gold',       kind: 'commodity', unit: '$' },
-  { key: 'brent',  sym: 'BZ=F',   group: 'commodity',  label: 'Brent crude',kind: 'commodity', unit: '$' },
+  { key: 'gold',   sym: 'GC=F',   group: 'commodity',  label: 'Gold',        kind: 'commodity', unit: '$' },
+  { key: 'silver', sym: 'SI=F',   group: 'commodity',  label: 'Silver',      kind: 'commodity', unit: '$' },
+  { key: 'brent',  sym: 'BZ=F',   group: 'commodity',  label: 'Brent crude', kind: 'commodity', unit: '$' },
   { key: 'usdinr', sym: 'INR=X',  group: 'fx',         label: 'USD/INR',    kind: 'fx' },
   { key: 'us10y',  sym: '^TNX',   group: 'fx',         label: 'US 10Y',     kind: 'yield' },
 ];
@@ -149,11 +150,41 @@ async function yhPivots(symbol, label) {
 }
 
 async function fetchLevels() {
-  const [nifty, sensex] = await Promise.all([
+  const [nifty, sensex, sp500, nasdaq] = await Promise.all([
     yhPivots('^NSEI', 'Nifty 50'),
     yhPivots('^BSESN', 'Sensex'),
+    yhPivots('^GSPC', 'S&P 500'),
+    yhPivots('^IXIC', 'Nasdaq'),
   ]);
-  return { nifty, sensex };
+  return { nifty, sensex, sp500, nasdaq };
+}
+
+// ── US sector heatmap (SPDR Select Sector ETFs) ──────────────────────────────
+// The US has no single free constituent feed like the Nifty 50, so we read the
+// 11 SPDR Select Sector ETFs — each tracks one GICS sector of the S&P 500. Their
+// live % move IS the sector heatmap, the US-side mirror of the Nifty sector tiles.
+const US_SECTOR_ETFS = [
+  { key: 'tech',     sym: 'XLK',  label: 'Technology' },
+  { key: 'comm',     sym: 'XLC',  label: 'Communication' },
+  { key: 'discr',    sym: 'XLY',  label: 'Cons. Discretionary' },
+  { key: 'fin',      sym: 'XLF',  label: 'Financials' },
+  { key: 'health',   sym: 'XLV',  label: 'Health Care' },
+  { key: 'indu',     sym: 'XLI',  label: 'Industrials' },
+  { key: 'staples',  sym: 'XLP',  label: 'Cons. Staples' },
+  { key: 'energy',   sym: 'XLE',  label: 'Energy' },
+  { key: 'util',     sym: 'XLU',  label: 'Utilities' },
+  { key: 'mat',      sym: 'XLB',  label: 'Materials' },
+  { key: 'reit',     sym: 'XLRE', label: 'Real Estate' },
+];
+
+async function fetchUsSectors() {
+  const rows = await Promise.all(
+    US_SECTOR_ETFS.map(async (e) => {
+      const q = await yhQuote(e.sym, `Yahoo ${e.sym}`);
+      return { key: e.key, label: e.label, sym: e.sym, pct: q.stale ? null : q.pct, asOf: q.asOf || null };
+    }),
+  );
+  return rows;
 }
 
 // ── FII/DII cash-flow trail (NSE public JSON) ────────────────────────────────
@@ -260,7 +291,7 @@ async function persistTrail(latest) {
 }
 
 export async function GET() {
-  const [cues, levels, fiidii] = await Promise.all([fetchCues(), fetchLevels(), fetchFiiDii()]);
+  const [cues, levels, usSectors, fiidii] = await Promise.all([fetchCues(), fetchLevels(), fetchUsSectors(), fetchFiiDii()]);
   // Persist + attach the server trail when KV is configured; null otherwise.
   const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
   if (trail) fiidii.trail = trail;
@@ -270,6 +301,7 @@ export async function GET() {
       window: preOpenWindow(),
       cues,
       levels,
+      usSectors,
       fiidii,
     },
     // Cues move pre-open; a short edge cache keeps the morning refreshes cheap

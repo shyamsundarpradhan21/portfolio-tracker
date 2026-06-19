@@ -101,11 +101,17 @@ function FlowTrail({ trail }) {
   );
 }
 
-export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLine, insightsLoading, onRefresh, aiReady, aiAgo }) {
+export default function PreMarketBriefing({
+  premarket, fiidiiTrail, regime, aiLine, insightsLoading, onRefresh, aiReady, aiAgo,
+  groups, showFlows = true, showHeader = true, title,
+}) {
   const win = premarket?.window;
   const cues = premarket?.cues || {};
   const fiidii = premarket?.fiidii;
   const cueList = Object.values(cues);
+  // Region split: render only the requested cue groups (e.g. ['india'] vs
+  // ['world','commodity','fx']) so the same board powers both columns.
+  const groupsToShow = Array.isArray(groups) ? GROUPS.filter((g) => groups.includes(g.key)) : GROUPS;
 
   // Window framing — the live morning companion (6:30–9:00 IST) vs context mode.
   const windowLabel =
@@ -129,7 +135,10 @@ export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLi
 
   return (
     <div className="card sec pulse-card pm-brief">
+      {title ? <div className="ctitle" style={{ marginBottom: 12 }}>{title}</div> : null}
+
       {/* Line 1 — window status + market mood (computed regime) + AI meta */}
+      {showHeader && (
       <div className="pulse-regime">
         <span className="pm-window">{windowLabel}</span>
         {countdown && <span className="pm-countdown">NSE opens in {countdown}</span>}
@@ -144,11 +153,12 @@ export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLi
           <button className="pulse-refresh" onClick={onRefresh} disabled={insightsLoading || !aiReady} title="Regenerate the AI read of the morning cues">↻</button>
         </span>
       </div>
+      )}
 
       {/* Line 2 — overnight cues and prior-session flows, side by side */}
       <div className="pm-context">
         <div className="pm-cues">
-          {GROUPS.map((g) => {
+          {groupsToShow.map((g) => {
             const items = cueList.filter((c) => c.group === g.key);
             if (!items.length) return null;
             return (
@@ -163,6 +173,7 @@ export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLi
         </div>
 
         {/* institutional flows (prior session) */}
+        {showFlows && (
         <div className="pm-flows">
           <div className="pm-group-lbl">
             FII / DII flows
@@ -194,6 +205,7 @@ export default function PreMarketBriefing({ premarket, fiidiiTrail, regime, aiLi
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* Line last — demoted AI nuance, only when present */}

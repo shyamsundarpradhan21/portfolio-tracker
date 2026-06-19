@@ -17,15 +17,13 @@ separate lessons file.
 - Use plan mode for verification steps, not just building
 - Write detailed specs upfront to reduce ambiguity
 
-### 2. Subagent Strategy
+### 2. Agent Teams
 
-- Use subagents liberally to keep the main context window clean
-- Offload research, exploration, and parallel analysis to subagents
-- For complex problems, throw more compute at it via subagents
-- One task per subagent for focused execution
-- Pick the right type: `Explore` for read-only search (reads excerpts, locates code — does not audit), `Plan` for implementation design, `claude-code-guide` for Claude Code / SDK / API questions; `claude`/`general-purpose` otherwise
-- Launch independent agents in ONE message so they run concurrently; the agent's final message returns to you, not the user, so relay what matters
-- For codebase/architecture questions, try `graphify query`/`path`/`explain` (see below) before spawning a search agent — the scoped subgraph is usually enough
+- Assemble a team of agents for any task that benefits from breadth or parallel work — keep the main context window clean by delegating research, exploration, and analysis to the team
+- For complex problems, throw more compute at it: divide the work across teammates, one focused task per agent
+- Pick the right teammate for each role: `Explore` for read-only search (reads excerpts, locates code — does not audit), `Plan` for implementation design, `claude-code-guide` for Claude Code / SDK / API questions; `claude`/`general-purpose` otherwise
+- Launch the whole team in ONE message so they run concurrently; each teammate's final message returns to you, not the user, so relay what matters
+- For codebase/architecture questions, try `graphify query`/`path`/`explain` (see below) before sending a teammate to search — the scoped subgraph is usually enough
 - This is opt-in fan-out, not the heavyweight Workflow tool — reserve multi-agent Workflow orchestration for when the user explicitly asks
 
 ### 3. Self-Improvement Loop

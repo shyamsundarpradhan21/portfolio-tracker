@@ -513,13 +513,14 @@ body {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  /* Fluid: 20% of the hero column's width (cqw — .hdr-hero is the container),
-     capped at the 64px design size. A fixed px here clipped the figure when
-     the window was scaled and the grid column shrank under the text width. */
-  font-size: clamp(30px, 20cqw, 64px) !important;
+  /* Fluid: ~6.4% of the viewport width, capped at the 92px design size. Uses vw
+     (not cqw) because the hero column now hugs the figure — a container unit would
+     be circular (figure width → column width → figure font-size → figure width). */
+  font-size: clamp(40px, 5.8vw, 76px) !important;
   font-weight: 900 !important;
   letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
-  line-height: 1;
+  line-height: 0.85; /* the mono font carries ~10% extra leading; trim it so the
+                        label + figure + captions pack tight (shorter, rectangular cards) */
   background: linear-gradient(105deg,
     var(--acc) 0%,
     color-mix(in srgb, var(--acc) 50%, #fff) 38%,
@@ -640,6 +641,27 @@ body {
 /* ── Growth tracker + projection scrubber (ProjectionTab, full-width) ─────── */
 .pjx .up { color: var(--grn); }
 .pjx .dn { color: var(--red); }
+
+/* Value / Return view toggle */
+.pjx-viewtoggle { display: inline-flex; border: .5px solid var(--brd); border-radius: 8px; overflow: hidden; }
+.pjx-viewtoggle button { font: inherit; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 12px; background: transparent; color: var(--txt3); border: none; cursor: pointer; transition: background .18s ease, color .18s ease; }
+.pjx-viewtoggle button.on { background: var(--acc-bg); color: var(--acc); }
+.pjx-viewtoggle button:not(.on):hover { color: var(--txt2); }
+
+/* Performance curve — legend + line keys */
+.pjx-perf-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: var(--fs-xs); color: var(--txt2); }
+.pjx-perf-legend b { font-family: var(--mono); }
+.pjx-perf-key { display: inline-block; width: 16px; border-top: 2.4px solid var(--acc); vertical-align: middle; margin-right: 6px; }
+.pjx-perf-key.nifty { border-top-style: dashed; border-color: var(--txt3); }
+.pjx-perf-beat { margin-left: auto; color: var(--txt3); }
+@media (max-width: 560px) { .pjx-perf-beat { margin-left: 0; flex-basis: 100%; } }
+
+/* Performance compare selector — benchmark toggle chips (colour per benchmark) */
+.pjx-cmp { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 10px; }
+.pjx-cmp-lbl { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--txt3); margin-right: 2px; }
+.pjx-cmp-chip { font: inherit; font-size: var(--fs-2xs); font-weight: 600; padding: 3px 11px; border-radius: 999px; cursor: pointer; background: transparent; color: var(--txt2); border: .5px solid var(--brd); transition: background .15s, color .15s, border-color .15s; }
+.pjx-cmp-chip:hover { color: var(--txt); }
+.pjx-cmp-chip.on { color: var(--bc); border-color: color-mix(in srgb, var(--bc) 55%, transparent); background: color-mix(in srgb, var(--bc) 14%, transparent); }
 .pjx-reset {
   margin-left: 10px; padding: 2px 8px; border-radius: 6px; cursor: pointer;
   border: .5px solid var(--brd2); background: var(--sur2); color: var(--txt2);
@@ -662,14 +684,13 @@ body {
 /* the growth story (at rest) and the projection sentence (scrubbing) both ride
    inside the chart on a frosted-glass card — identical treatment so the two
    renders read as one continuous surface as you scrub between them */
+/* The growth/projection sentence sits ABOVE the plot in normal flow (not an
+   absolute overlay) so it can never collide with the curve or the milestone
+   stars — a frosted card floated over the upper-left looked slick but overlapped
+   data once the line/stars rose into that corner. */
 .pjx-explain {
-  position: absolute; left: 14%; top: 11%; max-width: 52%; z-index: 1;
+  margin: 2px 0 8px; max-width: 100%;
   font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--bg) 58%, transparent);
-  backdrop-filter: blur(10px) saturate(1.3); -webkit-backdrop-filter: blur(10px) saturate(1.3);
-  border: .5px solid color-mix(in srgb, var(--txt) 14%, transparent);
-  padding: 12px 15px; border-radius: 12px;
 }
 .pjx-explain b { font-family: var(--mono); font-weight: 600; font-size: .95em; color: var(--txt); }
 
@@ -869,7 +890,7 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  padding: 0 28px 40px;
+  padding: 24px 28px 40px;
   max-width: 1920px;
   /* Centre the content column on wide screens. */
   margin: 0 auto;
@@ -881,15 +902,14 @@ body { padding: 0; }
 /* Live NW hero (left) + 5 asset cards (right). The hero is the Overview link. */
 .hdr-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 315px) 1fr;
-  gap: 16px; align-items: center; /* cards size to content + centre, not stretch to the hero */
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px; align-items: stretch; /* hero column hugs the figure; cards stretch to the hero's height */
   margin: 12px 0 14px;
 }
 .hdr-hero {
-  display: flex; flex-direction: column; justify-content: space-between;
+  display: flex; flex-direction: column; justify-content: center;
   text-align: left; background: transparent; border: none; cursor: pointer;
-  padding: 7px 6px; border-radius: 12px; transition: background .15s;
-  container-type: inline-size; /* sizing context for .hdr-val's cqw units */
+  padding: 4px 6px; border-radius: 12px; transition: background .15s;
   min-width: 0;
 }
 .hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
@@ -916,22 +936,27 @@ body { padding: 0; }
 /* Always one row of 5 — on narrow screens the row scrolls sideways rather
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
-  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 10px;
-  overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 18px;
+  /* No overflow clip on desktop — it was slicing the rounded corners + active
+     glow off the first/last cards. Scroll is re-enabled below 1080px where the
+     row no longer fits (see media query). */
 }
 .hdr-cards::-webkit-scrollbar { display: none; }
 .hdr-card {
+  display: flex; flex-direction: column; justify-content: center; /* centre content in the taller, hero-matched height */
   text-align: left; cursor: pointer; min-width: 0;
   background: color-mix(in srgb, var(--acc) 6%, var(--sur));
   border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
-  border-radius: 12px; padding: 10px 11px 8px;
+  border-radius: 12px; padding: 12px 14px;
   transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
   .hdr-card:hover {
     transform: scale(1.008);
     border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2));
-    box-shadow: 0 6px 20px -8px rgba(0,0,0,.5);
+    /* tight, mostly-downward drop — a wide soft shadow bled left across the gap
+       onto the net-worth card; keep the blur/spread small so it stays on the card */
+    box-shadow: 0 5px 12px -8px rgba(0,0,0,.45);
   }
 }
 .hdr-card:active { transform: scale(0.97); }
@@ -943,12 +968,15 @@ body { padding: 0; }
 .hdr-card.active .lbl { color: var(--acc); }
 /* Inactive header cards keep muted labels — only the active one takes the
    tab accent (rule above wins on specificity). */
-.hdr-card .lbl { font-size: var(--fs-2xs); margin-bottom: 4px; color: var(--txt2); }
-.hdr-card .vmd { font-size: var(--fs-lg); letter-spacing: -.3px; }
-.hdr-card .sub { font-size: var(--fs-2xs); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Same line-heights + 5:1 gap rhythm as the hero (label 1.25 / number 0.85 /
+   sub 1.35); a card is a small hero: heading→value 5x, value→sub x */
+.hdr-card .lbl { font-size: var(--fs-md); line-height: 1.25; margin-bottom: 20px; color: var(--txt2); }
+.hdr-card .vmd { font-size: clamp(20px, 2.5vw, 36px); line-height: 0.85; letter-spacing: -.5px; }
+.hdr-card .sub { font-size: var(--fs-md); line-height: 1.35; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 1080px) {
-  .hdr-grid { grid-template-columns: minmax(170px, 220px) 1fr; gap: 12px; }
+  .hdr-grid { grid-template-columns: auto minmax(0, 1fr); gap: 10px; }
+  .hdr-cards { overflow-x: auto; scrollbar-width: none; } /* row no longer fits — scroll sideways */
 }
 @media (max-width: 900px) {
   .pj-outlook { grid-template-columns: 1fr; }
@@ -959,7 +987,7 @@ body { padding: 0; }
   position: sticky;
   top: 0;
   z-index: 8;
-  margin: 0 -28px 20px;
+  margin: 0 -28px 38px;
   padding: 0 28px;
   background: rgba(var(--hdr-bg-base), .6);
   -webkit-backdrop-filter: saturate(1.5) blur(18px);
@@ -1003,20 +1031,22 @@ body { padding: 0; }
 .page-header {
   margin-bottom: 20px;
 }
-/* label + sub scale with the hero column width (cqw, container = .hdr-hero),
-   matching .hdr-val so the whole card grows/shrinks together with the window */
+/* label + sub are fixed at the header-tab text sizes — they stay put while the
+   net-worth figure (.hdr-val) grows, so the figure reads as the clear hero */
 .page-header-lbl {
-  font-size: clamp(10px, 3.6cqw, 13px);
+  font-size: var(--fs-md); /* same tier as the asset-card labels — hero is a bigger sibling, same proportions */
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--acc);
-  margin-bottom: 4px;
+  margin-bottom: 21px; /* heading→figure gap = 3× the figure→caption gap (3:1 rhythm) */
+  line-height: 1.25;
   font-weight: 500;
 }
 .page-header-sub {
-  font-size: clamp(11px, 4.2cqw, 15px);
+  font-size: var(--fs-md); /* same tier as the asset-card subs */
   color: var(--txt2);
-  margin-top: 4px;
+  margin-top: 7px; /* figure→caption gap = x; heading→figure above is 3x (hero stays 3:1; cards are 5:1) */
+  line-height: 1.35; /* the global 1.75 made the two caption lines waste ~16px of card height */
 }
 .page-header-kpis {
   display: flex;
@@ -1079,7 +1109,9 @@ body { padding: 0; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .hdr-val-enter {
-  animation: heroReveal 600ms cubic-bezier(0.16,1,0.3,1) both;
+  /* the entrance class stays on the figure after first load, so it must ALSO
+     carry nw-shine — otherwise it overrides the shimmer and the figure goes flat */
+  animation: heroReveal 600ms cubic-bezier(0.16,1,0.3,1) both, nw-shine 11s ease-in-out infinite;
 }
 
 /* ── All-time-high celebration moment (added by JS for 3s) */
@@ -1094,7 +1126,7 @@ body { padding: 0; }
   70%  { opacity: 1; transform: scale(1.1) rotate(-10deg); }
   100% { opacity: 0; transform: scale(.7) rotate(5deg); }
 }
-.ath-moment { animation: athGlow 3s cubic-bezier(0.23,1,0.32,1) forwards; }
+.ath-moment { animation: athGlow 3s cubic-bezier(0.23,1,0.32,1) forwards, nw-shine 11s ease-in-out infinite; }
 .ath-spark  { animation: athSparkle 3s cubic-bezier(0.23,1,0.32,1) forwards; }
 
 /* ── Skeleton: scan-line shimmer (linear gives a faster-feeling load) */
@@ -1148,13 +1180,12 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .stake-tile.up   { border-left: 2px solid var(--grn); }
 .stake-tile .vmd { margin: 2px 0; }
 
-/* Consolidated sleeve reads — one card, compact label + read rows */
-.pulse-sleeves { display: flex; flex-direction: column; gap: 11px; }
-.pulse-sleeve { display: grid; grid-template-columns: 132px 1fr; gap: 12px; align-items: baseline; }
-.pulse-sleeve-lbl { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--acc); }
-.pulse-sleeve-txt { font-size: var(--fs-sm); line-height: 1.55; color: var(--txt2); }
-.pulse-sleeve-out { color: var(--txt3); }
-@media (max-width: 720px) { .pulse-sleeve { grid-template-columns: 1fr; gap: 3px; } }
+/* Portfolio overview — whole-book AI read: a lead synthesis + tailwinds/drags */
+.pulse-ov-read { font-size: var(--fs-sm); line-height: 1.6; color: var(--txt2); margin: 4px 0 14px; }
+.pulse-ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pulse-ov-lbl { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 5px; }
+.pulse-ov-txt { font-size: var(--fs-sm); line-height: 1.55; color: var(--txt2); }
+@media (max-width: 560px) { .pulse-ov-grid { grid-template-columns: 1fr; gap: 12px; } }
 
 /* The mechanics — a quiet collapsible; the data noise lives behind it */
 .mac-details { padding: 0; }
@@ -1270,6 +1301,14 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .pm-tbar-fill { display: block; width: 100%; border-radius: 2px; min-height: 2px; }
 .pm-tbar-na { opacity: .3; }
 .pm-trail-date { font-size: var(--fs-2xs); color: var(--txt3); white-space: nowrap; }
+
+/* Pre-Market India|US row-pairs — each row is a stretched g2 so an India card sits
+   adjacent to (and the same height as) its US replica. The cells are ~half width,
+   so every inner multi-column grid collapses to one column here regardless of
+   viewport (avoids cramped pivots/cues/flows inside a narrow cell). */
+.pm-row > .card { margin: 0; }
+.pm-row .no-pivots, .pm-row .no-movers-wrap, .pm-row .pm-context { grid-template-columns: 1fr; }
+.pm-row .pm-context .pm-flows { border-left: none; padding-left: 0; border-top: .5px solid var(--brd); padding-top: 12px; }
 
 /* ── Nifty & Sensex overview — pivots, movers, heatmap ─────────────────────── */
 .no-cards { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }

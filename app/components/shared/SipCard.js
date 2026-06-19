@@ -27,6 +27,21 @@ const PAYSLIP_MAP = Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net]));
 // Total CMPF deployment = employee + employer match (corpus = 2× emp side)
 const CMPF_MAP = Object.fromEntries(CMPF_CONTRIBUTIONS.map((c) => [c.month, c.emp * 2]));
 
+// Catmull-Rom → cubic Bézier: a smooth line through every point (rounds the
+// corners between months without moving the data).
+function smoothPath(pts) {
+  if (!pts.length) return '';
+  if (pts.length < 3) return 'M ' + pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ');
+  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
 function SavingsSparkline({ months }) {
   const svgRef = useRef(null);
 
@@ -69,7 +84,9 @@ function SavingsSparkline({ months }) {
     const dataMin = Math.min(...rs), dataMax = Math.max(...rs);
     const FLOOR = Math.max(0, Math.floor(Math.min(mu - 2 * sd, dataMin) / 10) * 10);
     const CEILV = Math.ceil(Math.max(mu + 2 * sd, Math.min(dataMax, mu + 3 * sd), FLOOR + 40) / 10) * 10;
-    const toY = (r) => gH - ((Math.max(FLOOR, Math.min(r, CEILV)) - FLOOR) / (CEILV - FLOOR)) * gH + 4;
+    // ~16px of top headroom so a smoothed peak's overshoot stays inside the
+    // sparkline box and can't bleed up into the legend above (the svg is clipped too).
+    const toY = (r) => (gH + 4) - ((Math.max(FLOOR, Math.min(r, CEILV)) - FLOOR) / (CEILV - FLOOR)) * (gH - 12);
     // toX maps a month's calendar index (0=APR … 11=MAR) to its x position
     // so every month lands at the same horizontal slot regardless of whether
     // it has data — temporal alignment is preserved across FYs.
@@ -91,11 +108,11 @@ function SavingsSparkline({ months }) {
       [100, gld, .55, .75, '4,4', '100%'],
     ].filter(([v]) => v >= FLOOR && v <= CEILV);
 
-    const linePath = pts.map((p, j) => `${j === 0 ? 'M' : 'L'} ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ');
+    const xy = pts.map((p) => ({ x: toX(p.i), y: toY(p.r) }));
+    const sp = smoothPath(xy);
+    const linePath = sp;
     const areaPath =
-      `M ${toX(pts[0].i).toFixed(1)},${R50.toFixed(1)} ` +
-      pts.map((p) => `L ${toX(p.i).toFixed(1)},${toY(p.r).toFixed(1)}`).join(' ') +
-      ` L ${toX(pts[pts.length - 1].i).toFixed(1)},${R50.toFixed(1)} Z`;
+      `M ${xy[0].x.toFixed(1)},${R50.toFixed(1)} L ${sp.slice(2)} L ${xy[xy.length - 1].x.toFixed(1)},${R50.toFixed(1)} Z`;
 
     const id = Math.random().toString(36).slice(2);
 
@@ -154,7 +171,7 @@ function SavingsSparkline({ months }) {
   }, [months]);
 
   return (
-    <svg ref={svgRef} style={{ width: '100%', display: 'block', overflow: 'visible', marginBottom: 14 }} height={110} />
+    <svg ref={svgRef} style={{ width: '100%', display: 'block', overflow: 'hidden', marginBottom: 14 }} height={110} />
   );
 }
 const monthKey = (d) => d.slice(0, 7);

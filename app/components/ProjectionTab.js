@@ -15,6 +15,7 @@ import { useMemo, useRef, useState, useEffect, memo } from 'react';
 import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
+import PerformanceCurve from './shared/PerformanceCurve';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
 // the pre-history fallback rate and the Cons/Opt bracket all read from here.
@@ -147,6 +148,22 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
+// Catmull-Rom → cubic Bézier: a smooth line THROUGH every point — rounds the
+// corners between the weekly history vertices without moving the data. <3 points
+// fall back to a straight polyline.
+function smoothPath(pts) {
+  if (!pts.length) return '';
+  if (pts.length < 3) return 'M' + pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L');
+  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
 // One milestone flag: a twinkling ★ planted ON the curve where a net-worth
 // level is reached (the star IS the marker — no separate dot), with a value·date
 // chip and a faint rule back to the axis so low crossings don't read as zero.
@@ -224,10 +241,14 @@ function Waffle({ parts, n = 10 }) {
   );
 }
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
+  // 'value' = net-worth growth + projection scrubber; 'return' = Zerodha-style
+  // time-weighted performance curve (indexed to 100) vs Nifty 50.
+  const [view, setView] = useState('value');
+  const [hoverX, setHoverX] = useState(null); // hovered viewBox x → read values off the curve (history or projection)
   const [playing, setPlaying] = useState(false);
   // bumped each time live NW first crosses a not-yet-celebrated milestone; the
   // bump remounts the TODAY-dot celebration so its CSS animation re-fires.
@@ -460,8 +481,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
 
   // Report the drifted allocation upward so the Allocation sunburst card
   // moves with the scrubbed projection (null = back to live values).
-  // MUST sit above the early return below — hooks can't be conditional.
-  const scrubbing = t > 0.001;
+  // MUST sit above the early return below — hooks can't be conditional. Return
+  // mode never scrubs (no projection on a returns curve).
+  const scrubbing = view === 'value' && t > 0.001;
   useEffect(() => {
     if (!onDrift) return;
     onDrift(scrubbing ? { year: baseYear + Math.round(t), out: model.allocAt(sc, t).out } : null);
@@ -528,11 +550,11 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const ySpan = yMax - yMin || 1;
   const Y = (v) => PADT + (1 - (Math.max(yMin, Math.min(yMax, v)) - yMin) / ySpan) * (H - PADT - PADB);
 
-  const histNwPts  = pts.map((s) => `${xHist(s.d).toFixed(1)},${Y(s.nw ?? 0).toFixed(1)}`);
-  const histInvPts = pts.map((s) => `${xHist(s.d).toFixed(1)},${Y(s.invested ?? 0).toFixed(1)}`);
+  const histNwXY   = pts.map((s) => ({ x: xHist(s.d), y: Y(s.nw ?? 0) }));
+  const histInvXY  = pts.map((s) => ({ x: xHist(s.d), y: Y(s.invested ?? 0) }));
   const baseLineY  = (H - PADB).toFixed(1);
-  const histNwPath  = 'M' + histNwPts.join(' L');
-  const histInvPath = 'M' + histInvPts.join(' L');
+  const histNwPath  = smoothPath(histNwXY);
+  const histInvPath = smoothPath(histInvXY);
   const histNwFill  = histNwPath  + ` L${xToday.toFixed(1)},${baseLineY} L${PADL},${baseLineY} Z`;
   const histInvFill = histInvPath + ` L${xToday.toFixed(1)},${baseLineY} L${PADL},${baseLineY} Z`;
 
@@ -585,31 +607,52 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const onPlay  = () => (playing ? stopPlay() : startPlay());
   const reset   = () => { stopPlay(); setT(0); };
 
+  // Hover-to-read: capture the cursor's x (viewBox space); the tooltip resolves it
+  // to a history snapshot (left of TODAY) or the projected scenario (right of it).
+  const onHoverMove = (e) => {
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg) return;
+    const r = svg.getBoundingClientRect();
+    const vx = ((e.clientX - r.left) / r.width) * W;
+    setHoverX(Math.max(PADL, Math.min(W - PADR, vx)));
+  };
+
   return (
     <div className="card sec pjx">
       <div className="fxc" style={{ alignItems: 'baseline' }}>
         <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          {scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
+          {view === 'return' ? 'Performance · returns vs market' : scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
           {!dataReady && (
             <span style={{ fontSize: 'var(--fs-2xs)', fontFamily: 'var(--mono)', color: 'var(--gld)', textTransform: 'none', letterSpacing: 0 }}>
               ⚠ live pricing incomplete — figures provisional
             </span>
           )}
         </div>
-        <div className="sub" style={{ margin: 0, fontFamily: 'var(--mono)' }}>
-          {monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
-          {scrubbing && (
-            <button className="pjx-reset" onClick={reset} title="Back to today">⟲ today</button>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="pjx-viewtoggle" role="tablist" aria-label="Chart view">
+            <button role="tab" aria-selected={view === 'value'} className={view === 'value' ? 'on' : ''} onClick={() => setView('value')}>Value</button>
+            <button role="tab" aria-selected={view === 'return'} className={view === 'return' ? 'on' : ''} onClick={() => setView('return')}>Return</button>
+          </div>
+          <div className="sub" style={{ margin: 0, fontFamily: 'var(--mono)' }}>
+            {view === 'return' ? 'indexed to 100' : <>{monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
+            {scrubbing && (
+              <button className="pjx-reset" onClick={reset} title="Back to today">⟲ today</button>
+            )}</>}
+          </div>
         </div>
       </div>
 
+      {view === 'return' ? (
+        <PerformanceCurve hist={hist} series={histSeries} range={range} />
+      ) : (
       <div style={{ position: 'relative', marginTop: 10 }}>
       {/* the growth story rides INSIDE the chart's empty upper-left;
           methodology lives in the small footnote below the card */}
       {!scrubbing && maxRow && dataReady && (
         <div className="pjx-explain">
-          {/* honest decomposition: ΔNW = deposits + market gains */}
+          {/* lifetime decomposition: ΔNW = deposits + market gains. This is the
+              all-time story (distinct from the per-window pills below), so it stays
+              put as you switch D/W/M/Y — the pills already carry each window's move. */}
           Net worth <b><Crs n={liveNw} /></b> since {monYr(hist[0].d)} ={' '}
           <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed {histGains >= 0 ? '+' : '−'}{' '}
           <b className={histGains >= 0 ? 'up' : 'dn'}><Crs n={histGains} /></b> market {histGains >= 0 ? 'gains' : 'loss'}
@@ -783,10 +826,52 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           <text x={W - PADR} y={H - 5} fontSize={SVG_FS.grid} fill="var(--txt)"
             fontWeight="700" textAnchor="end" fontFamily="var(--mono)">{baseYear + yr}</text>
         )}
+
+        {/* hover-to-read: capture strip over the whole plot — history left of TODAY,
+            projection right of it (when scrubbing) — with a crosshair + value tooltip */}
+        <rect x={PADL} y={PADT - 12} width={Math.max(1, (W - PADR) - PADL)} height={Math.max(1, H - PADB - (PADT - 12))}
+          fill="transparent" style={{ pointerEvents: 'all', cursor: 'crosshair' }}
+          onMouseMove={onHoverMove} onMouseLeave={() => setHoverX(null)} />
+        {hoverX != null && (() => {
+          const dmy = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+          const tw = 152, th = 62;
+          let hx, hyMain, hySub, gain, l1, v2;
+          if (!scrubbing || hoverX <= xToday) {
+            // history — snap to the nearest recorded snapshot
+            let best = 0, bd = Infinity;
+            for (let i = 0; i < pts.length; i++) { const dx = Math.abs(xHist(pts[i].d) - hoverX); if (dx < bd) { bd = dx; best = i; } }
+            const s = pts[best]; if (!s) return null;
+            hx = xHist(s.d); hyMain = Y(s.nw ?? 0); hySub = Y(s.invested ?? 0);
+            gain = (s.nw ?? 0) - (s.invested ?? 0); l1 = dmy(s.d); v2 = cr(s.nw ?? 0);
+          } else {
+            // projection — read the active scenario at the hovered year
+            const hYr = ((hoverX - xToday) / Math.max(1, (W - PADR) - xToday)) * t;
+            const corpus = sampleAt(model.arr[sc].corpus, hYr);
+            const inv = sampleAt(model.arr.base.invested, hYr);
+            hx = hoverX; hyMain = Y(corpus); hySub = Y(inv);
+            gain = corpus - inv; l1 = `${baseYear + Math.round(hYr)} · projected`; v2 = cr(corpus);
+          }
+          const tx = Math.min(W - PADR - tw, Math.max(PADL, hx - tw / 2));
+          return (
+            <g style={{ pointerEvents: 'none' }}>
+              <line x1={hx} y1={PADT - 6} x2={hx} y2={H - PADB} stroke="var(--acc)" strokeOpacity=".45" strokeWidth="1" />
+              <circle cx={hx} cy={hySub} r="3" fill="var(--txt3)" />
+              <circle cx={hx} cy={hyMain} r="4.5" fill="var(--acc)" stroke="var(--bg)" strokeWidth="1.6" />
+              <g transform={`translate(${tx.toFixed(1)},${PADT - 4})`}>
+                <rect width={tw} height={th} rx="9" fill="var(--bg)" stroke="var(--brd)" strokeWidth=".5" />
+                <text x="12" y="17" fontSize={SVG_FS.caption} fill="var(--txt3)" fontFamily="var(--mono)">{l1}</text>
+                <RsSvg x="12" y="38" fontSize="19" fill="var(--txt)" fontWeight="700" fontFamily="var(--mono)">{v2}</RsSvg>
+                <RsSvg x="12" y="54" fontSize={SVG_FS.caption} fill={gain >= 0 ? 'var(--grn)' : 'var(--red)'} fontFamily="var(--mono)">{`${cr(Math.abs(gain))} ${gain >= 0 ? 'gain' : 'loss'}`}</RsSvg>
+              </g>
+            </g>
+          );
+        })()}
       </svg>
       </div>
+      )}
 
-      {/* scrub rail — fill color tracks the active scenario */}
+      {/* scrub rail — only in Value mode (a returns curve has no projection) */}
+      {view === 'value' && (
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
         {/* at rest the button wears the tab accent (the growth view's colour);
             once scrubbing it adopts the scrubber/scenario tone to match the rail */}
@@ -811,6 +896,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           </div>
         </div>
       </div>
+      )}
 
       {!scrubbing ? (
         <>
@@ -894,10 +980,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
 
       {/* methodology footnote — one compact line; every number is derived */}
       <div className="pjx-foot">
-        {MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
-        stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
-        {' '}{(rates.base.longRun * 100).toFixed(0)}% long-run · Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts ·
-        inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice
+        {view === 'return' ? (
+          <>Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.</>
+        ) : (
+          <>{MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
+          stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
+          {' '}{(rates.base.longRun * 100).toFixed(0)}% long-run · Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts ·
+          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice</>
+        )}
       </div>
     </div>
   );

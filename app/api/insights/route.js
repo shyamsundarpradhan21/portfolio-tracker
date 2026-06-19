@@ -3,9 +3,9 @@
 // books) and asks Claude for one analysis card per tab.
 //
 //   POST /api/insights   body: { asOf, usdInr, overview, indian, indianRisk,
-//                                us, mutualFunds, fixedDeposits, algo }
-//   → { insights: { overview, indian, us, mf, fd, trading,   // each {performance, outlook}
-//                   indian_swot: {macro, s, w, o, t} } }
+//                                us, usRisk, mutualFunds, fixedDeposits, algo }
+//   → { insights: { pulse, overview, indian, us, mf, fd, trading, // each {performance, outlook}
+//                   indian_swot, us_swot } }   // *_swot = {macro, s, w, o, t}
 //
 // Each tab card is a CRISP, NUMBER-FREE performance read + forward outlook (ONE
 // sentence each, macro-framed — figures stay in pulse/swot.macro), or empty when
@@ -100,7 +100,7 @@ const SYSTEM_PROMPT =
   'macro leaves this sleeve and how the portfolio is set up against it. Use the live macro to ' +
   'FORM these reads but express it qualitatively ("crude firming", "yields still elevated", ' +
   '"INR soft", "risk-on tape"), never the figure itself. Numbers belong elsewhere — only ' +
-  '"pulse" and indian_swot.macro may cite the live macro figures. ' +
+  '"pulse", indian_swot.macro and us_swot.macro may cite the live macro figures. ' +
   'Be CRISP — ONE sentence per field, ~15-20 words, high signal; give the macro READ and the ' +
   'positioning, not a recap. No filler, no hedging boilerplate. ' +
   'Return an EMPTY STRING for any field whose data is missing — never fabricate prices or ' +
@@ -116,6 +116,17 @@ const card = () => ({
   type: 'object',
   properties: { performance: { type: 'string' }, outlook: { type: 'string' } },
   required: ['performance', 'outlook'],
+  additionalProperties: false,
+});
+// Per-sleeve SWOT (macro line + strengths/weaknesses/opportunities/threats).
+// One factory so every sleeve's SWOT stays the same shape — add a sleeve by
+// adding `<sleeve>_swot: swot()` below, nothing else changes.
+const swot = () => ({
+  type: 'object',
+  properties: {
+    macro: { type: 'string' }, s: { type: 'string' }, w: { type: 'string' }, o: { type: 'string' }, t: { type: 'string' },
+  },
+  required: ['macro', 's', 'w', 'o', 't'],
   additionalProperties: false,
 });
 const INSIGHTS_SCHEMA = {
@@ -135,27 +146,17 @@ const INSIGHTS_SCHEMA = {
     mf: card(),
     fd: card(),
     trading: card(),
-    indian_swot: {
-      type: 'object',
-      properties: {
-        macro: { type: 'string' },
-        s: { type: 'string' },
-        w: { type: 'string' },
-        o: { type: 'string' },
-        t: { type: 'string' },
-      },
-      required: ['macro', 's', 'w', 'o', 't'],
-      additionalProperties: false,
-    },
+    indian_swot: swot(),
+    us_swot: swot(),
   },
-  required: ['pulse', 'overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot'],
+  required: ['pulse', 'overview', 'indian', 'us', 'mf', 'fd', 'trading', 'indian_swot', 'us_swot'],
   additionalProperties: false,
 };
 
 const EMPTY = {
   pulse: null,
   overview: null, indian: null, us: null, mf: null, fd: null, trading: null,
-  indian_swot: null,
+  indian_swot: null, us_swot: null,
 };
 
 function buildUserMessage(d, macroLive, macroClock) {
@@ -173,6 +174,7 @@ function buildUserMessage(d, macroLive, macroClock) {
     `INDIAN EQUITY: ${s(d.indian)}\n` +
     `INDIAN RISK STATS: ${s(d.indianRisk)}\n` +
     `US EQUITY: ${s(d.us)}\n` +
+    `US RISK STATS: ${s(d.usRisk)}\n` +
     `MUTUAL FUNDS: ${s(d.mutualFunds)}\n` +
     `FIXED DEPOSITS: ${s(d.fixedDeposits)}\n` +
     `ALGO (tracked separately, excluded from net worth): ${s(d.algo)}\n\n` +
@@ -183,9 +185,11 @@ function buildUserMessage(d, macroLive, macroClock) {
     `Also {performance, outlook} per sleeve — ONE crisp sentence each (~15-20 words) and BOTH ` +
     `NUMBER-FREE: a pure macro read of the sleeve and how it is set up against today's backdrop, ` +
     `with NO figures, %, prices, levels or ₹. Keyed: ` +
-    `overview (whole book), indian (use the risk stats), us, mf (mutual funds), fd (fixed deposits), ` +
-    `trading (the algo line). Also indian_swot: macro = one line on TODAY's backdrop using the ` +
-    `live numbers above; s/w/o/t = ONE tight sentence each. Always populate pulse and indian_swot. ` +
+    `overview (whole book), indian (use the Indian risk stats), us (use the US risk stats), mf (mutual funds), fd (fixed deposits), ` +
+    `trading (the algo line). Also indian_swot AND us_swot (same shape): macro = one line on TODAY's ` +
+    `backdrop using the live numbers above (Nifty / India channels for indian_swot; S&P / Nasdaq / US-rates ` +
+    `for us_swot), s/w/o/t = ONE tight sentence each, specific to that sleeve. Always populate pulse, ` +
+    `indian_swot and us_swot. ` +
     `Do NOT restate our figures — give the read, not a recap; keep ALL figures to pulse and the swot macro line.`
   );
 }
@@ -205,9 +209,8 @@ function parseInsights(text) {
     const an = (x) => (x && typeof x === 'object')
       ? { performance: x.performance ?? null, outlook: x.outlook ?? null }
       : null;
-    const sw = obj.indian_swot;
-    const swot = (sw && typeof sw === 'object')
-      ? { macro: sw.macro ?? null, s: sw.s ?? null, w: sw.w ?? null, o: sw.o ?? null, t: sw.t ?? null }
+    const swotOf = (x) => (x && typeof x === 'object')
+      ? { macro: x.macro ?? null, s: x.s ?? null, w: x.w ?? null, o: x.o ?? null, t: x.t ?? null }
       : null;
     const pl = obj.pulse;
     const pulse = (pl && typeof pl === 'object')
@@ -221,7 +224,8 @@ function parseInsights(text) {
       mf: an(obj.mf),
       fd: an(obj.fd),
       trading: an(obj.trading),
-      indian_swot: swot,
+      indian_swot: swotOf(obj.indian_swot),
+      us_swot: swotOf(obj.us_swot),
     };
   } catch {
     return null;

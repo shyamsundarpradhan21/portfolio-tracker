@@ -220,7 +220,7 @@ function _olsCI(y, x) {
  *   the annualised vols and the min-observations bar.
  * @returns { beta, rsq, weeks, vol, mktVol } or null if data is insufficient.
  */
-export function regressHoldings(hist, held, benchSyms, symOf, cadence = 'weekly') {
+export function regressHoldings(hist, held, benchSyms, symOf, cadence = 'weekly', rfAnnual = 0.065) {
   if (!hist || !hist.series || !held || !held.length) return null;
   const ann = cadence === 'monthly' ? 12 : 52;
   const minObs = cadence === 'monthly' ? 12 : 24;
@@ -238,7 +238,13 @@ export function regressHoldings(hist, held, benchSyms, symOf, cadence = 'weekly'
   }
   if (rp.length < minObs - 4) return null;
   const o = _ols(rp, rm, ann);
-  return { beta: o.slope, rsq: o.rsq, vol: o.volY, mktVol: o.volX, weeks: pv.length };
+  // Annualised Sharpe from the basket's OWN return series (excess of the per-period
+  // risk-free), so any sleeve gets a risk-adjusted read — not just beta. rfAnnual
+  // defaults to the India 1-yr T-bill; pass the local risk-free for a USD book.
+  const mp = rp.reduce((s, r) => s + r, 0) / rp.length;
+  let vp = 0; for (const r of rp) vp += (r - mp) ** 2; vp /= rp.length;
+  const sharpe = vp > 0 ? ((mp - rfAnnual / ann) / Math.sqrt(vp)) * Math.sqrt(ann) : null;
+  return { beta: o.slope, sharpe, rsq: o.rsq, vol: o.volY, mktVol: o.volX, weeks: pv.length };
 }
 
 /**

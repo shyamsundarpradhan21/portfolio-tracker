@@ -157,6 +157,9 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
       loanCash = Math.max(0, LOAN.sanctioned - deployedSince);
     }
     const assets = Math.round(ind + us + mf + fd + pf + loanCash);
-    return { d, nw: assets - loanOutstanding(d), assets, invested: Math.round(invested), synth: true };
+    // invAssets = the deployed INVESTMENT sleeves only (no PF corpus, no loan cash) —
+    // a clean value basis paired with `invested` for the time-weighted performance
+    // curve, which must not treat PF accrual or loan mechanics as investment return.
+    return { d, nw: assets - loanOutstanding(d), assets, invested: Math.round(invested), invAssets: Math.round(ind + us + mf + fd), synth: true };
   });
 }

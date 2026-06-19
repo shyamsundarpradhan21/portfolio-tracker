@@ -310,7 +310,10 @@ export default function Page() {
     try {
       // '^TNX' (US 10Y yield) and '^IXIC' (Nasdaq Composite) feed the macro
       // sensitivity regressions (duration proxy + Nasdaq beta).
-      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`), ...SWING.map((h) => h.ns), ...US.map((h) => h.sym), '^TNX', '^IXIC'])].join(',');
+      // '^TNX'/'^IXIC' feed the macro regressions; '^GDAXI','^FTSE','000300.SS',
+      // 'BTC-USD','GC=F' are the Performance-curve compare benchmarks (Nifty +
+      // Nasdaq already covered by the benchmark/macro syms above).
+      const syms = [...new Set([...INDIAN_BENCHMARKS.flatMap((b) => b.yahooSyms), ...US_BENCHMARKS.flatMap((b) => b.yahooSyms), ...INDIAN.map((h) => `${h.sym}.NS`), ...SWING.map((h) => h.ns), ...US.map((h) => h.sym), '^TNX', '^IXIC', '^GDAXI', '^FTSE', '000300.SS', 'BTC-USD', 'GC=F'])].join(',');
       const res = await fetch('/api/history?range=5y&symbols=' + encodeURIComponent(syms), { cache: 'no-store' });
       return res.ok ? await res.json() : null;
     } catch { return null; }
@@ -573,7 +576,10 @@ export default function Page() {
   // US-tech beta carves out the gold ETF (GLDM) so a defensive holding doesn't
   // dilute the high-beta read. India basket = holdings + swing book.
   const usExGold = useMemo(() => US.filter((h) => h.sym !== 'GLDM'), []);
-  const regUsNdx = useMemo(() => regressHoldings(hist, usExGold, ['^IXIC', '^NDX', 'QQQ'], (h) => h.sym), [hist, usExGold]);
+  const regUsNdx = useMemo(() => regressHoldings(hist, usExGold, ['^IXIC', '^NDX', 'QQQ'], (h) => h.sym, 'weekly', 0.043), [hist, usExGold]);
+  // US sleeve risk read for the insights card — same engine as the Indian book,
+  // benchmarked to Nasdaq with the US 1-yr T-bill (~4.3%) as the risk-free.
+  const usRisk = useMemo(() => ({ ...(regUsNdx || {}), hasReg: !!regUsNdx }), [regUsNdx]);
   const regUsDur = useMemo(() => regressVsYield(hist, usExGold, ['^TNX'], (h) => h.sym), [hist, usExGold]);
   const indiaHeld = useMemo(() => heldIndian.concat(SWING), [heldIndian]);
   const regIndia = useMemo(() => regressHoldings(hist, indiaHeld, ['^NSEI', 'NIFTYBEES.NS'], (h) => h.ns), [hist, indiaHeld]);
@@ -696,6 +702,9 @@ export default function Page() {
         `${US.length} holdings $${usData.inv.toFixed(0)}→$${usData.val.toFixed(0)} · XIRR ${r1(usStats.xirr)}% · ` +
         `top sector ${usStats.topSector ? `${usStats.topSector.label} ${r1(usStats.topSector.pct)}%` : 'n/a'} (ETF look-through) · ` +
         `movers: ${movers(usData.rows, 'livePct')}`,
+      usRisk: usRisk.hasReg
+        ? `beta ${usRisk.beta?.toFixed(2)} vs Nasdaq · Sharpe ${usRisk.sharpe?.toFixed(2)} · vol ${r1(usRisk.vol)}% vs Nasdaq ${r1(usRisk.mktVol)}% (weekly regression)`
+        : 'n/a',
       mutualFunds:
         `invested ₹${Math.round(mf.totCost)} value ₹${Math.round(mf.totVal)} (${r1(mf.totRet)}%) · XIRR ${r1(mfx.port)}% vs Nifty ${r1(mfx.bench)}% · ` +
         `mix equity ${r1((mf.alloc.equity / (mf.totVal || 1)) * 100)}% arbitrage ${r1((mf.alloc.arbitrage / (mf.totVal || 1)) * 100)}% · ` +
@@ -893,7 +902,6 @@ export default function Page() {
                   : regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
               </button>
               <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
-              <span className="status-txt" style={{ color: 'var(--txt3)' }}>{lastUpdate}</span>
               {insightsLoading
                 ? <span className="ai-status">✦ analysing…</span>
                 : insights && insightsTs
@@ -962,7 +970,7 @@ export default function Page() {
           {tab === 0 && (
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              FY={FY} snapshots={chartSnapshots}
+              FY={FY} snapshots={chartSnapshots} histSeries={hist?.series || null}
               projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
               payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
               dayGain={daySleeveGain} sleeveBasis={sleeveBasis}

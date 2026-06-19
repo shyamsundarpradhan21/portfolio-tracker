@@ -195,7 +195,7 @@ export default function IndianTab({
 
       <div className="g2 sec">
         <RealizedPanel data={INDIAN_REALIZED} currency="inr" note="Avg-cost realised gains/losses booked across all exits." />
-        <InsightsCard stats={indianRisk} swot={insights && insights.indian_swot} loading={insightsFirstLoad} />
+        <InsightsCard stats={indianRisk} />
       </div>
 
       <CFMemo

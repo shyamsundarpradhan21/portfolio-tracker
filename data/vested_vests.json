@@ -1,0 +1,2821 @@
+{
+  "source": "app.vestedfinance.com/vests",
+  "api": "vested-api-prod-ga.vestedfinance.com /vests + /vest-details-v2",
+  "scrapedAt": "2026-06-19",
+  "count": 24,
+  "summary": {
+    "byType": {
+      "SYSTEM": 22,
+      "MANUFACTURED": 2
+    },
+    "byRisk": {
+      "Aggressive": 18,
+      "Conservative": 3,
+      "Moderate": 2,
+      "Unlabelled": 1
+    }
+  },
+  "vests": [
+    {
+      "vestId": "63627ef8-b75f-4b0d-8448-04a13fc9ace1",
+      "name": "Clean Energy",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-12-15",
+      "minInvestmentAmount": "100",
+      "dividendYield": "0.32%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-06-17T07:25:33.159Z",
+      "oneYearVolatility": "43.72%",
+      "shortBlurb": "This portfolio invests in companies across the clean energy ecosystem - spanning renewable power, electric mobility, battery materials, energy storage, and grid infrastructure.",
+      "blurb": "The Clean Energy portfolio offers targeted exposure to the energy transition ecosystem by investing in a curated set of companies that demonstrate technological leadership, scalable business models, and strategic importance. By emphasizing businesses aligned with long-term energy transition trends such as electrification, infrastructure expansion, and decarbonization, the portfolio seeks to benefit from the structural shift toward a more sustainable global energy landscape.",
+      "returns": {
+        "oneYear": "114.25%",
+        "oneYearValue": 114.25,
+        "yearToDate": "+43.72%",
+        "latestCAGR": "49.80",
+        "byPeriod": {
+          "INCEPTION": "43.34%",
+          "6M": "44.83%",
+          "3M": "23.73%",
+          "1M": "1.91%",
+          "1W": "1.51%"
+        },
+        "cagrReturns": {
+          "INCEPTION": "49.80"
+        },
+        "costAdjustedCagrReturns": {
+          "INCEPTION": "49.80"
+        }
+      },
+      "holdingsCount": 19,
+      "holdings": [
+        {
+          "ticker": "MPWR",
+          "name": "Monolithic Power Systems Inc",
+          "weight": "9.18%"
+        },
+        {
+          "ticker": "FSLR",
+          "name": "First Solar, Inc.",
+          "weight": "7.44%"
+        },
+        {
+          "ticker": "TSLA",
+          "name": "Tesla, Inc.",
+          "weight": "7.30%"
+        },
+        {
+          "ticker": "NVTS",
+          "name": "Navitas Semiconductor Corp",
+          "weight": "5.39%"
+        },
+        {
+          "ticker": "AEIS",
+          "name": "Advanced Energy Industries Inc",
+          "weight": "5.28%"
+        },
+        {
+          "ticker": "NXT",
+          "name": "Nextpower Inc",
+          "weight": "5.27%"
+        },
+        {
+          "ticker": "MP",
+          "name": "MP Materials Corp.",
+          "weight": "5.20%"
+        },
+        {
+          "ticker": "RIVN",
+          "name": "RIVIAN AUTOMOTIVE, INC.",
+          "weight": "4.95%"
+        },
+        {
+          "ticker": "ALB",
+          "name": "Albemarle Corporation",
+          "weight": "4.51%"
+        },
+        {
+          "ticker": "ENPH",
+          "name": "Enphase Energy, Inc.",
+          "weight": "4.34%"
+        },
+        {
+          "ticker": "ORA",
+          "name": "Ormat Technologies Inc",
+          "weight": "4.16%"
+        },
+        {
+          "ticker": "PLUG",
+          "name": "Plug Power Inc.",
+          "weight": "4.04%"
+        },
+        {
+          "ticker": "OLED",
+          "name": "Universal Display Corp.",
+          "weight": "3.70%"
+        },
+        {
+          "ticker": "DAR",
+          "name": "Darling Ingredients Inc.",
+          "weight": "3.66%"
+        },
+        {
+          "ticker": "SQM",
+          "name": "Chemical & Mining Co. of Chile Inc.",
+          "weight": "3.61%"
+        },
+        {
+          "ticker": "ITRI",
+          "name": "Itron, Inc.",
+          "weight": "3.54%"
+        },
+        {
+          "ticker": "SEDG",
+          "name": "SolarEdge Technologies, Inc.",
+          "weight": "3.53%"
+        },
+        {
+          "ticker": "RUN",
+          "name": "Sunrun Inc.",
+          "weight": "3.48%"
+        },
+        {
+          "ticker": "BE",
+          "name": "Bloom Energy, Corp.",
+          "weight": "11.44%"
+        }
+      ]
+    },
+    {
+      "vestId": "e4e460f6-8ba4-4965-9a3f-dd7d45de9c32",
+      "name": "Blockchain Ecosystem",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2022-02-07",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-25T20:01:00.500Z",
+      "oneYearVolatility": "69.85%",
+      "shortBlurb": "This portfolio invests in companies driving the digital asset ecosystem, offering diversified exposure to the growth of cryptocurrencies and decentralized networks.",
+      "blurb": "This portfolio invests in companies across the digital asset ecosystem, including exchanges, miners, infrastructure providers, and fintech firms, to offer diversified exposure to the long-term growth of cryptocurrencies and decentralized networks.",
+      "returns": {
+        "oneYear": "105.89%",
+        "oneYearValue": 105.89,
+        "yearToDate": "+65.9%",
+        "latestCAGR": "34.76",
+        "byPeriod": {
+          "INCEPTION": "218.62%",
+          "5Y": "176.11%",
+          "3Y": "577.40%",
+          "2Y": "303.03%",
+          "1Y": "105.89%",
+          "9M": "36.66%",
+          "6M": "60.07%",
+          "3M": "61.32%",
+          "1M": "19.79%",
+          "1W": "5.15%"
+        },
+        "cagrReturns": {
+          "1Y": "113.09",
+          "2Y": "104.24",
+          "3Y": "91.39",
+          "5Y": "23.37",
+          "INCEPTION": "34.76"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "113.09",
+          "2Y": "104.24",
+          "3Y": "91.39",
+          "5Y": "23.37",
+          "INCEPTION": "34.76"
+        }
+      },
+      "holdingsCount": 16,
+      "holdings": [
+        {
+          "ticker": "HUT",
+          "name": "HUT 8 MINING CORP",
+          "weight": "9.75%"
+        },
+        {
+          "ticker": "KEEL",
+          "name": "Bitfarms Ltd",
+          "weight": "8.87%"
+        },
+        {
+          "ticker": "CIFR",
+          "name": "Cipher Digital Inc",
+          "weight": "8.50%"
+        },
+        {
+          "ticker": "IREN",
+          "name": "IREN Ltd",
+          "weight": "7.95%"
+        },
+        {
+          "ticker": "WULF",
+          "name": "Terawulf Inc",
+          "weight": "7.67%"
+        },
+        {
+          "ticker": "APLD",
+          "name": "Applied Digital Corp",
+          "weight": "7.06%"
+        },
+        {
+          "ticker": "RIOT",
+          "name": "Riot Platforms Inc",
+          "weight": "6.87%"
+        },
+        {
+          "ticker": "GLXY",
+          "name": "GALAXY DIGITAL PUBCO INC-A",
+          "weight": "6.10%"
+        },
+        {
+          "ticker": "CORZ",
+          "name": "CORE SCIENTIFIC INC",
+          "weight": "6.06%"
+        },
+        {
+          "ticker": "CLSK",
+          "name": "Cleanspark Inc",
+          "weight": "5.94%"
+        },
+        {
+          "ticker": "MARA",
+          "name": "MARA Holdings Inc",
+          "weight": "5.91%"
+        },
+        {
+          "ticker": "BTDR",
+          "name": "Bitdeer Technologies Group",
+          "weight": "5.85%"
+        },
+        {
+          "ticker": "COIN",
+          "name": "Coinbase Global Inc",
+          "weight": "5.00%"
+        },
+        {
+          "ticker": "BMNR",
+          "name": "Bitmine Immersion Technologies Inc",
+          "weight": "3.53%"
+        },
+        {
+          "ticker": "HOOD",
+          "name": "Robinhood Markets, Inc.",
+          "weight": "3.44%"
+        },
+        {
+          "ticker": "PYPL",
+          "name": "PayPal Holdings, Inc.",
+          "weight": "1.52%"
+        }
+      ]
+    },
+    {
+      "vestId": "5501a818-fcf5-469f-ab7a-2c35daa098e7",
+      "name": "US Top10",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Weekend Investing",
+      "poweredByText": "Powered by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-06-02",
+      "minInvestmentAmount": "1000",
+      "dividendYield": "5.91%",
+      "rebalanceFrequency": "Monthly",
+      "lastRebalanceDate": "2026-06-01T05:47:29.278Z",
+      "oneYearVolatility": "30.14%",
+      "shortBlurb": "This portfolio offers concentrated exposure to S&P 100 stocks with strong momentum, identified by their relative strength versus the index. It holds rising stocks and exits those losing trend strength, regardless of sector or market cap.",
+      "blurb": "This portfolio offers concentrated exposure to companies within the S&P 100 index with focus on selecting stocks that are satisfying the momentum criterion. The strategy is to stay with stocks that are trending up and regularly reject stocks where strength of the trends gets weakened. The strategy is sector and market cap agnostic and will select stocks basis the relative strength of each stock versus the rest of the index.",
+      "returns": {
+        "oneYear": "69.8%",
+        "oneYearValue": 69.8,
+        "yearToDate": "+61.38%",
+        "latestCAGR": "76.41",
+        "byPeriod": {
+          "INCEPTION": "67.88%",
+          "5Y": "198.21%",
+          "3Y": "164.25%",
+          "2Y": "68.99%",
+          "1Y": "69.80%",
+          "9M": "52.75%",
+          "6M": "59.58%",
+          "3M": "60.34%",
+          "1M": "17.11%",
+          "1W": "4.69%"
+        },
+        "cagrReturns": {
+          "1Y": "78.43",
+          "2Y": "33.26",
+          "3Y": "40.55",
+          "5Y": "25.66",
+          "INCEPTION": "76.41"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "78.43",
+          "2Y": "33.26",
+          "3Y": "40.55",
+          "5Y": "25.66",
+          "INCEPTION": "76.41"
+        }
+      },
+      "holdingsCount": 3,
+      "holdings": [
+        {
+          "ticker": "TXN",
+          "name": "Texas Instruments Inc.",
+          "weight": "9.54%"
+        },
+        {
+          "ticker": "AMD",
+          "name": "Advanced Micro Devices, Inc.",
+          "weight": "9.43%"
+        },
+        {
+          "ticker": "GOOG",
+          "name": "Alphabet Inc. - Class C Shares",
+          "weight": "8.81%"
+        }
+      ]
+    },
+    {
+      "vestId": "4b374ef4-3c14-4cc4-9bbe-727215dd1812",
+      "name": "Artificial Intelligence",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-06-06",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0.41%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2025-12-26T21:01:00.826Z",
+      "oneYearVolatility": "25.99%",
+      "shortBlurb": "This portfolio offers access to companies shaping the future through the development, integration, and application of AI technologies.",
+      "blurb": "This portfolio provides exposure to companies involved in the development, integration, and utilization of AI technologies, offering investors access to a sector that is shaping future innovations across industries.",
+      "returns": {
+        "oneYear": "59.82%",
+        "oneYearValue": 59.82,
+        "yearToDate": "+31.51%",
+        "latestCAGR": "66.45",
+        "byPeriod": {
+          "INCEPTION": "62.08%",
+          "5Y": "260.23%",
+          "3Y": "191.43%",
+          "2Y": "81.86%",
+          "1Y": "59.82%",
+          "9M": "36.86%",
+          "6M": "30.98%",
+          "3M": "35.74%",
+          "1M": "7.77%",
+          "1W": "2.40%"
+        },
+        "cagrReturns": {
+          "1Y": "64.13",
+          "2Y": "36.66",
+          "3Y": "44.11",
+          "5Y": "29.91",
+          "INCEPTION": "66.45"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "64.13",
+          "2Y": "36.66",
+          "3Y": "44.11",
+          "5Y": "29.91",
+          "INCEPTION": "66.45"
+        }
+      },
+      "holdingsCount": 18,
+      "holdings": [
+        {
+          "ticker": "AMD",
+          "name": "Advanced Micro Devices, Inc.",
+          "weight": "9.80%"
+        },
+        {
+          "ticker": "GOOGL",
+          "name": "Alphabet Inc. - Class A Shares",
+          "weight": "8.74%"
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom Inc.",
+          "weight": "8.19%"
+        },
+        {
+          "ticker": "NBIS",
+          "name": "Nebius Group  N.V.",
+          "weight": "7.97%"
+        },
+        {
+          "ticker": "NVDA",
+          "name": "NVIDIA Corporation",
+          "weight": "7.38%"
+        },
+        {
+          "ticker": "AMZN",
+          "name": "Amazon.com Inc.",
+          "weight": "5.33%"
+        },
+        {
+          "ticker": "META",
+          "name": "Meta Platforms Inc",
+          "weight": "4.86%"
+        },
+        {
+          "ticker": "ANET",
+          "name": "Arista Networks, Inc.",
+          "weight": "4.68%"
+        },
+        {
+          "ticker": "PANW",
+          "name": "Palo Alto Networks, Inc.",
+          "weight": "4.03%"
+        },
+        {
+          "ticker": "MSFT",
+          "name": "Microsoft Corporation",
+          "weight": "3.94%"
+        },
+        {
+          "ticker": "TSLA",
+          "name": "Tesla, Inc.",
+          "weight": "3.75%"
+        },
+        {
+          "ticker": "DDOG",
+          "name": "Datadog Inc",
+          "weight": "3.60%"
+        },
+        {
+          "ticker": "ORCL",
+          "name": "Oracle Corp.",
+          "weight": "3.59%"
+        },
+        {
+          "ticker": "IBM",
+          "name": "International Business Machines Corp.",
+          "weight": "3.03%"
+        },
+        {
+          "ticker": "SNOW",
+          "name": "Snowflake Inc.",
+          "weight": "2.62%"
+        },
+        {
+          "ticker": "NOW",
+          "name": "ServiceNow, Inc.",
+          "weight": "2.47%"
+        },
+        {
+          "ticker": "MU",
+          "name": "Micron Technology Inc.",
+          "weight": "14.12%"
+        },
+        {
+          "ticker": "CRM",
+          "name": "Salesforce Inc",
+          "weight": "1.93%"
+        }
+      ]
+    },
+    {
+      "vestId": "20f7bd6c-9b62-476c-9778-4e555e0e8dc6",
+      "name": "Space Tech",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-06-06",
+      "minInvestmentAmount": "10",
+      "dividendYield": "11.41%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-01-14T21:01:00.678Z",
+      "oneYearVolatility": "37.74%",
+      "shortBlurb": "This portfolio offers exposure to companies across satellite communications, aerospace, defense technologies, and space exploration.",
+      "blurb": "This portfolio provides exposure to companies engaged in space-related businesses, including satellite communications, aerospace manufacturing, defense technologies, and space exploration initiatives.",
+      "returns": {
+        "oneYear": "48.78%",
+        "oneYearValue": 48.78,
+        "yearToDate": "+13.63%",
+        "latestCAGR": "44.86",
+        "byPeriod": {
+          "INCEPTION": "46.24%",
+          "3Y": "161.45%",
+          "2Y": "181.63%",
+          "1Y": "48.78%",
+          "9M": "34.31%",
+          "6M": "30.40%",
+          "3M": "8.04%",
+          "1M": "-10.26%",
+          "1W": "-5.63%"
+        },
+        "cagrReturns": {
+          "1Y": "47.37",
+          "2Y": "67.02",
+          "3Y": "37.33",
+          "INCEPTION": "44.86"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "47.37",
+          "2Y": "67.02",
+          "3Y": "37.33",
+          "INCEPTION": "44.86"
+        }
+      },
+      "holdingsCount": 11,
+      "holdings": [
+        {
+          "ticker": "GRMN",
+          "name": "Garmin Ltd.",
+          "weight": "8.27%"
+        },
+        {
+          "ticker": "BA",
+          "name": "Boeing Company, The",
+          "weight": "7.03%"
+        },
+        {
+          "ticker": "TRMB",
+          "name": "Trimble Navigation Limited",
+          "weight": "6.59%"
+        },
+        {
+          "ticker": "TDY",
+          "name": "Teledyne Technologies Inc",
+          "weight": "6.25%"
+        },
+        {
+          "ticker": "HON",
+          "name": "Honeywell International Inc.",
+          "weight": "6.13%"
+        },
+        {
+          "ticker": "HEI",
+          "name": "Heico Corp",
+          "weight": "5.55%"
+        },
+        {
+          "ticker": "LMT",
+          "name": "Lockheed Martin Corporation",
+          "weight": "4.89%"
+        },
+        {
+          "ticker": "RKLB",
+          "name": "Rocket Lab USA Inc",
+          "weight": "18.56%"
+        },
+        {
+          "ticker": "PL",
+          "name": "Planet Labs PBC",
+          "weight": "14.35%"
+        },
+        {
+          "ticker": "VSAT",
+          "name": "ViaSat, Inc.",
+          "weight": "12.31%"
+        },
+        {
+          "ticker": "LHX",
+          "name": "L3Harris Technologies Inc",
+          "weight": "10.07%"
+        }
+      ]
+    },
+    {
+      "vestId": "5f0318f6-a593-4652-8c93-d281bef895bc",
+      "name": "Deglobalization",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2023-01-05",
+      "minInvestmentAmount": "10",
+      "dividendYield": "57.3%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-05-18T20:01:00.832Z",
+      "oneYearVolatility": "22.31%",
+      "shortBlurb": "This portfolio offers exposure to companies benefiting from the global shift toward deglobalization, including defense, automation, and commodities.",
+      "blurb": "This portfolio is designed for investors who want to capitalize on the global shift toward deglobalization by gaining exposure to sectors likely to benefit from it, such as increased defense spending, automation, and commodities.",
+      "returns": {
+        "oneYear": "46.85%",
+        "oneYearValue": 46.85,
+        "yearToDate": "+27.31%",
+        "latestCAGR": "26.92",
+        "byPeriod": {
+          "INCEPTION": "103.71%",
+          "5Y": "110.66%",
+          "3Y": "95.26%",
+          "2Y": "75.92%",
+          "1Y": "46.85%",
+          "9M": "35.45%",
+          "6M": "28.61%",
+          "3M": "20.75%",
+          "1M": "10.10%",
+          "1W": "2.60%"
+        },
+        "cagrReturns": {
+          "1Y": "47.41",
+          "2Y": "32.88",
+          "3Y": "25.14",
+          "5Y": "16.16",
+          "INCEPTION": "26.92"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "47.41",
+          "2Y": "32.88",
+          "3Y": "25.14",
+          "5Y": "16.16",
+          "INCEPTION": "26.92"
+        }
+      },
+      "holdingsCount": 18,
+      "holdings": [
+        {
+          "ticker": "ETN",
+          "name": "Eaton Corporation plc",
+          "weight": "9.74%"
+        },
+        {
+          "ticker": "ATI",
+          "name": "ATI Inc.",
+          "weight": "7.79%"
+        },
+        {
+          "ticker": "PH",
+          "name": "Parker-Hannifin Corporation",
+          "weight": "7.65%"
+        },
+        {
+          "ticker": "ROK",
+          "name": "Rockwell Automation Inc.",
+          "weight": "6.86%"
+        },
+        {
+          "ticker": "GE",
+          "name": "General Electric Company",
+          "weight": "6.14%"
+        },
+        {
+          "ticker": "HON",
+          "name": "Honeywell International Inc.",
+          "weight": "5.97%"
+        },
+        {
+          "ticker": "JBHT",
+          "name": "JB Hunt Transport Services Inc.",
+          "weight": "5.38%"
+        },
+        {
+          "ticker": "GD",
+          "name": "General Dynamics Corporation",
+          "weight": "5.23%"
+        },
+        {
+          "ticker": "HWM",
+          "name": "Howmet Aerospace Inc",
+          "weight": "5.09%"
+        },
+        {
+          "ticker": "WWD",
+          "name": "Woodward Inc",
+          "weight": "4.66%"
+        },
+        {
+          "ticker": "HUBB",
+          "name": "Hubbell Inc.",
+          "weight": "3.92%"
+        },
+        {
+          "ticker": "LMT",
+          "name": "Lockheed Martin Corporation",
+          "weight": "3.64%"
+        },
+        {
+          "ticker": "HEI",
+          "name": "Heico Corp",
+          "weight": "3.42%"
+        },
+        {
+          "ticker": "LHX",
+          "name": "L3Harris Technologies Inc",
+          "weight": "3.40%"
+        },
+        {
+          "ticker": "NOC",
+          "name": "Northrop Grumman Corporation",
+          "weight": "3.33%"
+        },
+        {
+          "ticker": "CW",
+          "name": "Curtiss-Wright Corp",
+          "weight": "3.32%"
+        },
+        {
+          "ticker": "AXON",
+          "name": "Axon Enterprise Inc.",
+          "weight": "2.97%"
+        },
+        {
+          "ticker": "CAT",
+          "name": "Caterpillar Inc.",
+          "weight": "11.52%"
+        }
+      ]
+    },
+    {
+      "vestId": "6c76fb15-d57a-4e20-83d7-6e09facb5cb6",
+      "name": "BayFort Capital Global Innovation Portfolio",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "BayFort Capital",
+      "poweredByText": "Powered by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2022-07-01",
+      "minInvestmentAmount": "10000",
+      "dividendYield": "0.27%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-05-08T07:16:36.062Z",
+      "oneYearVolatility": "22.08%",
+      "shortBlurb": "This portfolio aims to deliver long-term capital growth by investing predominantly in global companies driving or benefiting from disruptive innovation.",
+      "blurb": "This portfolio offers diversified exposure to large-cap global companies driving transformative change through disruptive innovation. The portfolio focuses on high-conviction themes such as Artificial Intelligence, Genomics, Robotics, Cloud Infrastructure, Telehealth, Fintech, and more. By targeting leaders in these sectors, the strategy aims to deliver long-term capital growth while maintaining a risk profile comparable to traditional global large-cap growth portfolios.",
+      "returns": {
+        "oneYear": "36.25%",
+        "oneYearValue": 36.25,
+        "yearToDate": "+23.51%",
+        "latestCAGR": "29.75",
+        "byPeriod": {
+          "INCEPTION": "174.21%",
+          "3Y": "107.45%",
+          "2Y": "40.82%",
+          "1Y": "31.84%",
+          "9M": "18.30%",
+          "6M": "22.06%",
+          "3M": "24.87%",
+          "1M": "8.56%",
+          "1W": "1.01%"
+        },
+        "cagrReturns": {
+          "1Y": "36.25",
+          "2Y": "20.64",
+          "3Y": "28.95",
+          "INCEPTION": "29.75"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "36.25",
+          "2Y": "20.64",
+          "3Y": "28.95",
+          "INCEPTION": "29.75"
+        }
+      },
+      "holdingsCount": 3,
+      "holdings": [
+        {
+          "ticker": "NVDA",
+          "name": "NVIDIA Corporation",
+          "weight": "8.75%"
+        },
+        {
+          "ticker": "KLAC",
+          "name": "KLA-Tencor Corporation",
+          "weight": "6.24%"
+        },
+        {
+          "ticker": "TER",
+          "name": "Teradyne Inc.",
+          "weight": "5.71%"
+        }
+      ]
+    },
+    {
+      "vestId": "e9321be4-dac7-4b9b-aa4c-71bdf38da657",
+      "name": "BlackRock Smart Beta",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 4,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2019-07-16",
+      "minInvestmentAmount": "10",
+      "dividendYield": "11.27%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2022-10-17T03:36:46.663Z",
+      "oneYearVolatility": "12.46%",
+      "shortBlurb": "This portfolio employs a long term investment strategy that takes advantage of smart beta that screen for persistent drivers of return, similar to strategies that are employed by institutional investors.",
+      "blurb": "This portfolio employs a long term investment strategy that takes advantage of smart beta that screen for persistent drivers of return, similar to strategies that are employed by institutional investors.",
+      "returns": {
+        "oneYear": "35.87%",
+        "oneYearValue": 35.87,
+        "yearToDate": "+20.76%",
+        "latestCAGR": "9.84",
+        "byPeriod": {
+          "INCEPTION": "90.89%",
+          "5Y": "64.36%",
+          "3Y": "67.59%",
+          "2Y": "45.99%",
+          "1Y": "34.47%",
+          "9M": "24.88%",
+          "6M": "21.07%",
+          "3M": "18.14%",
+          "1M": "5.16%",
+          "1W": "-0.52%"
+        },
+        "cagrReturns": {
+          "1Y": "35.87",
+          "2Y": "21.46",
+          "3Y": "19.19",
+          "5Y": "10.68",
+          "INCEPTION": "9.84"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "35.87",
+          "2Y": "21.46",
+          "3Y": "19.19",
+          "5Y": "10.68",
+          "INCEPTION": "9.84"
+        }
+      },
+      "holdingsCount": 7,
+      "holdings": [
+        {
+          "ticker": "MTUM",
+          "name": "iShares MSCI USA Momentum Factor",
+          "weight": "7.89%"
+        },
+        {
+          "ticker": "QUAL",
+          "name": "iShares MSCI USA Quality Factor ETF",
+          "weight": "5.46%"
+        },
+        {
+          "ticker": "VLUE",
+          "name": "iShares MSCI USA Value Factor ETF",
+          "weight": "43.82%"
+        },
+        {
+          "ticker": "USMV",
+          "name": "iShares MSCI USA Min Vol Factor ETF",
+          "weight": "26.31%"
+        },
+        {
+          "ticker": "SIZE",
+          "name": "iShares MSCI USA Size Factor ETF",
+          "weight": "13.28%"
+        },
+        {
+          "ticker": "EFAV",
+          "name": "iShares MSCI EAFE Min Vol Factor ETF",
+          "weight": "1.63%"
+        },
+        {
+          "ticker": "EEMV",
+          "name": "MSCI Emerging Markets Mini Vol iShares",
+          "weight": "1.61%"
+        }
+      ]
+    },
+    {
+      "vestId": "dd006653-8e4b-49d9-a963-bb046886189d",
+      "name": "Genomics",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-06-06",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-01-14T21:01:01.557Z",
+      "oneYearVolatility": "30.37%",
+      "shortBlurb": "This portfolio offers exposure to companies advancing genomic research, diagnostics, therapeutics, and personalized medicine.",
+      "blurb": "This portfolio provides exposure to companies engaged in genomic research, diagnostics, therapeutics, and related technologies, offering investors an opportunity to participate in advancements shaping the future of healthcare and personalized medicine.",
+      "returns": {
+        "oneYear": "33.09%",
+        "oneYearValue": 33.09,
+        "yearToDate": "+5.07%",
+        "latestCAGR": "38.46",
+        "byPeriod": {
+          "INCEPTION": "37.19%",
+          "5Y": "16.82%",
+          "3Y": "87.01%",
+          "2Y": "36.25%",
+          "1Y": "31.87%",
+          "9M": "19.54%",
+          "6M": "5.89%",
+          "3M": "10.98%",
+          "1M": "11.76%",
+          "1W": "-0.74%"
+        },
+        "cagrReturns": {
+          "1Y": "33.09",
+          "2Y": "17.27",
+          "3Y": "23.58",
+          "5Y": "3.35",
+          "INCEPTION": "38.46"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "33.09",
+          "2Y": "17.27",
+          "3Y": "23.58",
+          "5Y": "3.35",
+          "INCEPTION": "38.46"
+        }
+      },
+      "holdingsCount": 9,
+      "holdings": [
+        {
+          "ticker": "VRTX",
+          "name": "Vertex Pharmaceuticals Incorporated",
+          "weight": "8.92%"
+        },
+        {
+          "ticker": "REGN",
+          "name": "Regeneron Pharmaceuticals, Inc.",
+          "weight": "8.87%"
+        },
+        {
+          "ticker": "INCY",
+          "name": "Incyte Corporation",
+          "weight": "8.62%"
+        },
+        {
+          "ticker": "ALNY",
+          "name": "Alnylam Pharmaceuticals, Inc.",
+          "weight": "7.87%"
+        },
+        {
+          "ticker": "QGEN",
+          "name": "Qiagen NV",
+          "weight": "5.32%"
+        },
+        {
+          "ticker": "GH",
+          "name": "Guardant Health, Inc.",
+          "weight": "19.65%"
+        },
+        {
+          "ticker": "ILMN",
+          "name": "Illumina Inc.",
+          "weight": "15.08%"
+        },
+        {
+          "ticker": "NTRA",
+          "name": "Natera Inc",
+          "weight": "14.19%"
+        },
+        {
+          "ticker": "CRSP",
+          "name": "CRISPR Therapeutics AG",
+          "weight": "11.48%"
+        }
+      ]
+    },
+    {
+      "vestId": "466a38f2-2e5c-40bf-9498-e9fb440e09bc",
+      "name": "Big Tech",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-12-15",
+      "minInvestmentAmount": "100",
+      "dividendYield": "0.46%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-13T07:38:44.755Z",
+      "oneYearVolatility": "18.99%",
+      "shortBlurb": "This portfolio invests in large, globally dominant technology companies that form the backbone of the digital economy.",
+      "blurb": "The Big Tech portfolio provides focused exposure to this theme by investing in a select group of US-listed technology leaders that combine scale, innovation, and financial strength. By emphasizing platform ownership, recurring revenue streams, and long-term compounding potential, the portfolio aims to participate in the sustained growth of the digital economy through businesses that have demonstrated resilience across market cycles.",
+      "returns": {
+        "oneYear": "27.48%",
+        "oneYearValue": 27.48,
+        "yearToDate": "+23.33%",
+        "latestCAGR": "27.48",
+        "byPeriod": {
+          "INCEPTION": "23.29%",
+          "6M": "23.50%",
+          "3M": "23.10%",
+          "1M": "2.06%",
+          "1W": "0.70%"
+        },
+        "cagrReturns": {
+          "INCEPTION": "27.48"
+        },
+        "costAdjustedCagrReturns": {
+          "INCEPTION": "27.48"
+        }
+      },
+      "holdingsCount": 12,
+      "holdings": [
+        {
+          "ticker": "AAPL",
+          "name": "Apple, Inc.",
+          "weight": "9.96%"
+        },
+        {
+          "ticker": "TSM",
+          "name": "Taiwan Semiconductor Manufacturing Co.",
+          "weight": "9.13%"
+        },
+        {
+          "ticker": "AMZN",
+          "name": "Amazon.com Inc.",
+          "weight": "8.23%"
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom Inc.",
+          "weight": "7.13%"
+        },
+        {
+          "ticker": "MSFT",
+          "name": "Microsoft Corporation",
+          "weight": "6.69%"
+        },
+        {
+          "ticker": "ASML",
+          "name": "ASML Holding NV",
+          "weight": "6.28%"
+        },
+        {
+          "ticker": "META",
+          "name": "Meta Platforms Inc",
+          "weight": "5.63%"
+        },
+        {
+          "ticker": "TSLA",
+          "name": "Tesla, Inc.",
+          "weight": "5.03%"
+        },
+        {
+          "ticker": "ORCL",
+          "name": "Oracle Corp.",
+          "weight": "3.22%"
+        },
+        {
+          "ticker": "MU",
+          "name": "Micron Technology Inc.",
+          "weight": "15.30%"
+        },
+        {
+          "ticker": "NVDA",
+          "name": "NVIDIA Corporation",
+          "weight": "12.09%"
+        },
+        {
+          "ticker": "GOOGL",
+          "name": "Alphabet Inc. - Class A Shares",
+          "weight": "11.32%"
+        }
+      ]
+    },
+    {
+      "vestId": "1fdd075c-3cb0-4717-8ff6-523630e329fc",
+      "name": "Electric Vehicles",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-06-06",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0.73%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-02-02T07:21:28.062Z",
+      "oneYearVolatility": "33.88%",
+      "shortBlurb": "This portfolio offers exposure to companies driving the growth of electric vehicles and their key components.",
+      "blurb": "This portfolio offers exposure to companies involved in the production of electric vehicles and their key components, providing investors an opportunity to participate in the long-term growth of the EV industry.",
+      "returns": {
+        "oneYear": "22.02%",
+        "oneYearValue": 22.02,
+        "yearToDate": "-1.87%",
+        "latestCAGR": "24.37",
+        "byPeriod": {
+          "INCEPTION": "23.35%",
+          "3Y": "-12.32%",
+          "2Y": "21.28%",
+          "1Y": "21.01%",
+          "9M": "6.64%",
+          "6M": "-5.23%",
+          "3M": "3.05%",
+          "1M": "-2.73%",
+          "1W": "-1.71%"
+        },
+        "cagrReturns": {
+          "1Y": "22.02",
+          "2Y": "10.58",
+          "3Y": "-4.02",
+          "INCEPTION": "24.37"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "22.02",
+          "2Y": "10.58",
+          "3Y": "-4.02",
+          "INCEPTION": "24.37"
+        }
+      },
+      "holdingsCount": 13,
+      "holdings": [
+        {
+          "ticker": "XPEV",
+          "name": "XPeng Inc.",
+          "weight": "9.92%"
+        },
+        {
+          "ticker": "NIO",
+          "name": "NIO Inc.",
+          "weight": "9.18%"
+        },
+        {
+          "ticker": "LEA",
+          "name": "Lear Corp.",
+          "weight": "7.93%"
+        },
+        {
+          "ticker": "LI",
+          "name": "Li Auto Inc",
+          "weight": "6.58%"
+        },
+        {
+          "ticker": "ON",
+          "name": "ON Semiconductor Corp.",
+          "weight": "4.62%"
+        },
+        {
+          "ticker": "VC",
+          "name": "Visteon Corporation",
+          "weight": "4.51%"
+        },
+        {
+          "ticker": "SWKS",
+          "name": "Skyworks Solutions Inc.",
+          "weight": "4.24%"
+        },
+        {
+          "ticker": "MBLY",
+          "name": "MOBILEYE GLOBAL INC.",
+          "weight": "2.17%"
+        },
+        {
+          "ticker": "NXPI",
+          "name": "NXP Semiconductors NV",
+          "weight": "14.45%"
+        },
+        {
+          "ticker": "ALB",
+          "name": "Albemarle Corporation",
+          "weight": "12.28%"
+        },
+        {
+          "ticker": "TSLA",
+          "name": "Tesla, Inc.",
+          "weight": "11.83%"
+        },
+        {
+          "ticker": "RIVN",
+          "name": "RIVIAN AUTOMOTIVE, INC.",
+          "weight": "11.28%"
+        },
+        {
+          "ticker": "LCID",
+          "name": "Lucid Group Inc.",
+          "weight": "1.00%"
+        }
+      ]
+    },
+    {
+      "vestId": "5299078d-6895-4266-87f8-d407802fa719",
+      "name": "Global Multi-Asset (Aggressive)",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": "MULTI_ASSET_CLASS",
+      "categoryId": "Aggressive",
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2020-02-28",
+      "minInvestmentAmount": "10",
+      "dividendYield": "4.76%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-31T11:57:58.135Z",
+      "oneYearVolatility": "11.67%",
+      "shortBlurb": "A growth-oriented portfolio emphasizing global stocks, accepting higher market fluctuations to pursue greater long-term returns.",
+      "blurb": "Designed for long-term capital appreciation, this portfolio emphasizes broad global equity exposure, including U.S., developed, and emerging markets, accepting higher volatility in pursuit of greater growth potential.",
+      "returns": {
+        "oneYear": "20.46%",
+        "oneYearValue": 20.46,
+        "yearToDate": "+7.37%",
+        "latestCAGR": "12.19",
+        "byPeriod": {
+          "INCEPTION": "97.56%",
+          "5Y": "44.36%",
+          "3Y": "47.55%",
+          "2Y": "24.48%",
+          "1Y": "19.33%",
+          "9M": "9.68%",
+          "6M": "8.34%",
+          "3M": "7.66%",
+          "1M": "0.09%",
+          "1W": "-0.14%"
+        },
+        "cagrReturns": {
+          "1Y": "20.46",
+          "2Y": "12.10",
+          "3Y": "14.20",
+          "5Y": "7.82",
+          "INCEPTION": "12.19"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "20.46",
+          "2Y": "12.10",
+          "3Y": "14.20",
+          "5Y": "7.82",
+          "INCEPTION": "12.19"
+        }
+      },
+      "holdingsCount": 7,
+      "holdings": [
+        {
+          "ticker": "IUSB",
+          "name": "iShares Core Universal USD Bond ETF",
+          "weight": "8.89%"
+        },
+        {
+          "ticker": "IVV",
+          "name": "Core S&P 500 iShares ETF",
+          "weight": "42.08%"
+        },
+        {
+          "ticker": "HYDB",
+          "name": "iShares High Yield Systematic Bond ETF",
+          "weight": "4.51%"
+        },
+        {
+          "ticker": "PDBC",
+          "name": "Invesco Optimum Yield Diversified Commodity Strategy No K-1",
+          "weight": "4.19%"
+        },
+        {
+          "ticker": "GLDM",
+          "name": "SPDR Gold MiniShares Trust",
+          "weight": "4.15%"
+        },
+        {
+          "ticker": "EFA",
+          "name": "EAFE MSCI ETF iShares",
+          "weight": "24.68%"
+        },
+        {
+          "ticker": "EEM",
+          "name": "MSCI Emerging Markets ETF iShares",
+          "weight": "11.49%"
+        }
+      ]
+    },
+    {
+      "vestId": "bc6a4fa8-2e62-421c-8b55-5afbba71d727",
+      "name": "Defense & Security",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-12-15",
+      "minInvestmentAmount": "100",
+      "dividendYield": "14.35%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-13T07:52:59.999Z",
+      "oneYearVolatility": "18.63%",
+      "shortBlurb": "This portfolio invests in companies across the defense, aerospace, and national security ecosystem.",
+      "blurb": "The Defense & Security portfolio provides focused exposure to this theme by investing in a select group of companies across the defense and national security value chain that combine technological leadership, deep government relationships, and long-duration contract visibility. By emphasizing businesses aligned with the structural increase in global defense spending, the modernization of military platforms, and the digitization of national security infrastructure, the portfolio aims to participate in what is shaping up to be a multi-decade expansion in defense investment globally.",
+      "returns": {
+        "oneYear": "16.51%",
+        "oneYearValue": 16.51,
+        "yearToDate": "+10.33%",
+        "latestCAGR": "16.51",
+        "byPeriod": {
+          "INCEPTION": "18.28%",
+          "6M": "19.06%",
+          "3M": "3.78%",
+          "1M": "7.75%",
+          "1W": "1.24%"
+        },
+        "cagrReturns": {
+          "INCEPTION": "16.51"
+        },
+        "costAdjustedCagrReturns": {
+          "INCEPTION": "16.51"
+        }
+      },
+      "holdingsCount": 23,
+      "holdings": [
+        {
+          "ticker": "GE",
+          "name": "General Electric Company",
+          "weight": "9.50%"
+        },
+        {
+          "ticker": "RTX",
+          "name": "RTX Corp",
+          "weight": "7.36%"
+        },
+        {
+          "ticker": "LMT",
+          "name": "Lockheed Martin Corporation",
+          "weight": "6.26%"
+        },
+        {
+          "ticker": "RKLB",
+          "name": "Rocket Lab USA Inc",
+          "weight": "6.12%"
+        },
+        {
+          "ticker": "BA",
+          "name": "Boeing Company, The",
+          "weight": "6.03%"
+        },
+        {
+          "ticker": "HWM",
+          "name": "Howmet Aerospace Inc",
+          "weight": "5.93%"
+        },
+        {
+          "ticker": "ATI",
+          "name": "ATI Inc.",
+          "weight": "5.56%"
+        },
+        {
+          "ticker": "GD",
+          "name": "General Dynamics Corporation",
+          "weight": "4.66%"
+        },
+        {
+          "ticker": "LHX",
+          "name": "L3Harris Technologies Inc",
+          "weight": "4.40%"
+        },
+        {
+          "ticker": "CW",
+          "name": "Curtiss-Wright Corp",
+          "weight": "4.31%"
+        },
+        {
+          "ticker": "NOC",
+          "name": "Northrop Grumman Corporation",
+          "weight": "4.28%"
+        },
+        {
+          "ticker": "WWD",
+          "name": "Woodward Inc",
+          "weight": "4.27%"
+        },
+        {
+          "ticker": "MOG.A",
+          "name": "Moog Inc.",
+          "weight": "3.66%"
+        },
+        {
+          "ticker": "TDG",
+          "name": "TransDigm Group Incorporated",
+          "weight": "3.55%"
+        },
+        {
+          "ticker": "BWXT",
+          "name": "BWX Technologies, Inc.",
+          "weight": "3.37%"
+        },
+        {
+          "ticker": "HXL",
+          "name": "Hexcel Corp.",
+          "weight": "3.18%"
+        },
+        {
+          "ticker": "DRS",
+          "name": "Leonardo DRS, Inc.",
+          "weight": "3.07%"
+        },
+        {
+          "ticker": "HEI",
+          "name": "Heico Corp",
+          "weight": "2.82%"
+        },
+        {
+          "ticker": "TXT",
+          "name": "Textron Inc.",
+          "weight": "2.77%"
+        },
+        {
+          "ticker": "HII",
+          "name": "Huntington Ingalls Industries, Inc.",
+          "weight": "2.55%"
+        },
+        {
+          "ticker": "AXON",
+          "name": "Axon Enterprise Inc.",
+          "weight": "2.52%"
+        },
+        {
+          "ticker": "LOAR",
+          "name": "LOAR HOLDINGS INC.",
+          "weight": "2.07%"
+        },
+        {
+          "ticker": "AVAV",
+          "name": "AeroVironment Inc",
+          "weight": "1.74%"
+        }
+      ]
+    },
+    {
+      "vestId": "9fccae3e-364e-4008-8803-25a4f5e51297",
+      "name": "Swensen Portfolio",
+      "type": "SYSTEM",
+      "riskLabel": "Conservative",
+      "risk": 2,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2019-07-25",
+      "minInvestmentAmount": "10",
+      "dividendYield": "106.8%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2023-08-08T20:05:00.691Z",
+      "oneYearVolatility": "9.3%",
+      "shortBlurb": "This portfolio invests in three core-assets (stocks, bonds, and real estate). Ideal for long-term investors seeking equity growth with downside protection.",
+      "blurb": "This portfolio invests in three core assets (stocks, bonds, and real estate) that have well-established, enduring marketplaces. You may like this if you have a long term investment horizon and want to gain from equity growth, while maintaining downside protection.",
+      "returns": {
+        "oneYear": "15.72%",
+        "oneYearValue": 15.72,
+        "yearToDate": "+7.57%",
+        "latestCAGR": "6.10",
+        "byPeriod": {
+          "INCEPTION": "50.43%",
+          "5Y": "23.43%",
+          "3Y": "34.50%",
+          "2Y": "23.02%",
+          "1Y": "15.05%",
+          "9M": "7.95%",
+          "6M": "7.39%",
+          "3M": "7.05%",
+          "1M": "0.83%",
+          "1W": "-0.05%"
+        },
+        "cagrReturns": {
+          "1Y": "15.72",
+          "2Y": "11.24",
+          "3Y": "10.60",
+          "5Y": "4.42",
+          "INCEPTION": "6.10"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "15.72",
+          "2Y": "11.24",
+          "3Y": "10.60",
+          "5Y": "4.42",
+          "INCEPTION": "6.10"
+        }
+      },
+      "holdingsCount": 6,
+      "holdings": [
+        {
+          "ticker": "VWO",
+          "name": "Emerging Markets Stock Idx ETF Vanguard",
+          "weight": "5.44%"
+        },
+        {
+          "ticker": "VOO",
+          "name": "S&P 500 Vanguard ETF",
+          "weight": "37.32%"
+        },
+        {
+          "ticker": "VEA",
+          "name": "FTSE Developed Market Index ETF Vanguard",
+          "weight": "17.42%"
+        },
+        {
+          "ticker": "VNQ",
+          "name": "REIT Vanguard ETF",
+          "weight": "17.00%"
+        },
+        {
+          "ticker": "TIP",
+          "name": "TIPS Bond iShares",
+          "weight": "11.51%"
+        },
+        {
+          "ticker": "VGIT",
+          "name": "Vanguard Interm-Term Govt Bond",
+          "weight": "11.32%"
+        }
+      ]
+    },
+    {
+      "vestId": "d6708276-c205-4cf0-b6e6-bedb4f831b92",
+      "name": "All Weather",
+      "type": "SYSTEM",
+      "riskLabel": "Conservative",
+      "risk": 2,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2019-07-16",
+      "minInvestmentAmount": "10",
+      "dividendYield": "5.29%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-05-19T10:56:42.134Z",
+      "oneYearVolatility": "8.22%",
+      "shortBlurb": "This portfolio follows Ray Dalio’s All Weather Portfolio Strategy and invests in four core asset classes: stocks, bonds, commodities, and gold.",
+      "blurb": "This portfolio follows Ray Dalio’s All Weather Portfolio Strategy and has a balanced risk exposure to different possible market conditions, by investing in four core asset classes: stocks, bonds, commodities, and gold.",
+      "returns": {
+        "oneYear": "14.94%",
+        "oneYearValue": 14.94,
+        "yearToDate": "+5.65%",
+        "latestCAGR": "4.44",
+        "byPeriod": {
+          "INCEPTION": "34.76%",
+          "5Y": "11.17%",
+          "3Y": "24.60%",
+          "2Y": "18.85%",
+          "1Y": "14.30%",
+          "9M": "7.67%",
+          "6M": "4.83%",
+          "3M": "2.77%",
+          "1M": "0.28%",
+          "1W": "0.01%"
+        },
+        "cagrReturns": {
+          "1Y": "14.94",
+          "2Y": "9.32",
+          "3Y": "7.81",
+          "5Y": "2.25",
+          "INCEPTION": "4.44"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "14.94",
+          "2Y": "9.32",
+          "3Y": "7.81",
+          "5Y": "2.25",
+          "INCEPTION": "4.44"
+        }
+      },
+      "holdingsCount": 5,
+      "holdings": [
+        {
+          "ticker": "GLD",
+          "name": "Gold Shares SPDR",
+          "weight": "6.88%"
+        },
+        {
+          "ticker": "DBC",
+          "name": "DB Commodity Tracking PowerShares",
+          "weight": "6.55%"
+        },
+        {
+          "ticker": "TLT",
+          "name": "20+ Year Treasury Bond iShares",
+          "weight": "41.15%"
+        },
+        {
+          "ticker": "VTI",
+          "name": "U.S. Total Stock Market Index Vanguard",
+          "weight": "30.41%"
+        },
+        {
+          "ticker": "IEF",
+          "name": "7-10 Year Treasury Bond iShares",
+          "weight": "15.01%"
+        }
+      ]
+    },
+    {
+      "vestId": "b3fed130-4ce1-4ede-88a8-bab161cfa476",
+      "name": "Aging",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 4,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2023-01-25",
+      "minInvestmentAmount": "10",
+      "dividendYield": "35.42%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-04-24T09:29:28.558Z",
+      "oneYearVolatility": "13.79%",
+      "shortBlurb": "This portfolio invests in companies serving aging populations across healthcare providers, biopharma, diagnostics, life sciences, and senior living infrastructure.",
+      "blurb": "This portfolio invests in healthcare providers, biopharmaceuticals, life sciences, diagnostics, and senior living REITs to benefit from global aging trends. It aims to capture long-term value from increased healthcare demand, pharmaceutical innovation, and infrastructure needs of older demographics.",
+      "returns": {
+        "oneYear": "14.46%",
+        "oneYearValue": 14.46,
+        "yearToDate": "-2.05%",
+        "latestCAGR": "2.82",
+        "byPeriod": {
+          "INCEPTION": "9.29%",
+          "5Y": "21.48%",
+          "3Y": "8.55%",
+          "2Y": "0.42%",
+          "1Y": "15.07%",
+          "9M": "9.68%",
+          "6M": "-1.17%",
+          "3M": "-0.12%",
+          "1M": "1.64%",
+          "1W": "-2.01%"
+        },
+        "cagrReturns": {
+          "1Y": "14.46",
+          "2Y": "-0.06",
+          "3Y": "2.59",
+          "5Y": "3.86",
+          "INCEPTION": "2.82"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "14.46",
+          "2Y": "-0.06",
+          "3Y": "2.59",
+          "5Y": "3.86",
+          "INCEPTION": "2.82"
+        }
+      },
+      "holdingsCount": 17,
+      "holdings": [
+        {
+          "ticker": "VTR",
+          "name": "Ventas, Inc.",
+          "weight": "7.94%"
+        },
+        {
+          "ticker": "ZBH",
+          "name": "Zimmer Biomet Holdings, Inc.",
+          "weight": "7.70%"
+        },
+        {
+          "ticker": "MRK",
+          "name": "Merck & Co. Inc.",
+          "weight": "7.57%"
+        },
+        {
+          "ticker": "JNJ",
+          "name": "Johnson & Johnson",
+          "weight": "7.38%"
+        },
+        {
+          "ticker": "BMY",
+          "name": "Bristol-Myers Squibb Co.",
+          "weight": "7.34%"
+        },
+        {
+          "ticker": "WELL",
+          "name": "Welltower Inc.",
+          "weight": "6.29%"
+        },
+        {
+          "ticker": "EW",
+          "name": "Edwards Lifesciences Corp.",
+          "weight": "6.25%"
+        },
+        {
+          "ticker": "AMGN",
+          "name": "Amgen Inc.",
+          "weight": "6.25%"
+        },
+        {
+          "ticker": "INCY",
+          "name": "Incyte Corporation",
+          "weight": "5.28%"
+        },
+        {
+          "ticker": "SYK",
+          "name": "Stryker Corporation",
+          "weight": "4.67%"
+        },
+        {
+          "ticker": "MDT",
+          "name": "Medtronic PLC",
+          "weight": "4.64%"
+        },
+        {
+          "ticker": "ABBV",
+          "name": "AbbVie Inc",
+          "weight": "4.60%"
+        },
+        {
+          "ticker": "LLY",
+          "name": "Eli Lilly and Company",
+          "weight": "4.47%"
+        },
+        {
+          "ticker": "DXCM",
+          "name": "DexCom, Inc.",
+          "weight": "3.74%"
+        },
+        {
+          "ticker": "REGN",
+          "name": "Regeneron Pharmaceuticals, Inc.",
+          "weight": "2.51%"
+        },
+        {
+          "ticker": "PODD",
+          "name": "Insulet Corporation",
+          "weight": "2.34%"
+        },
+        {
+          "ticker": "DVA",
+          "name": "DaVita HealthCare Partners Inc.",
+          "weight": "11.02%"
+        }
+      ]
+    },
+    {
+      "vestId": "8f35449c-6497-4f90-8569-4408bf388386",
+      "name": "Global Multi-Asset (Moderate)",
+      "type": "SYSTEM",
+      "riskLabel": "Moderate",
+      "risk": 3,
+      "category": "MULTI_ASSET_CLASS",
+      "categoryId": "Moderate",
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2020-02-28",
+      "minInvestmentAmount": "10",
+      "dividendYield": "3.57%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-31T11:59:43.886Z",
+      "oneYearVolatility": "9.15%",
+      "shortBlurb": "A balanced approach combining global equity exposure across U.S., developed, and emerging markets with bonds to support stable growth and manage risk.",
+      "blurb": "Balanced for growth and stability, this core portfolio offers diversified exposure across U.S., developed, and emerging markets, complemented by fixed income investments to manage risk effectively.",
+      "returns": {
+        "oneYear": "13.63%",
+        "oneYearValue": 13.63,
+        "yearToDate": "+4.15%",
+        "latestCAGR": "9.75",
+        "byPeriod": {
+          "INCEPTION": "73.55%",
+          "5Y": "32.42%",
+          "3Y": "37.56%",
+          "2Y": "18.04%",
+          "1Y": "12.84%",
+          "9M": "5.54%",
+          "6M": "4.52%",
+          "3M": "5.08%",
+          "1M": "-0.17%",
+          "1W": "-0.25%"
+        },
+        "cagrReturns": {
+          "1Y": "13.63",
+          "2Y": "9.03",
+          "3Y": "11.48",
+          "5Y": "5.92",
+          "INCEPTION": "9.75"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "13.63",
+          "2Y": "9.03",
+          "3Y": "11.48",
+          "5Y": "5.92",
+          "INCEPTION": "9.75"
+        }
+      },
+      "holdingsCount": 8,
+      "holdings": [
+        {
+          "ticker": "HYDB",
+          "name": "iShares High Yield Systematic Bond ETF",
+          "weight": "8.41%"
+        },
+        {
+          "ticker": "EEM",
+          "name": "MSCI Emerging Markets ETF iShares",
+          "weight": "5.95%"
+        },
+        {
+          "ticker": "PDBC",
+          "name": "Invesco Optimum Yield Diversified Commodity Strategy No K-1",
+          "weight": "4.34%"
+        },
+        {
+          "ticker": "GLDM",
+          "name": "SPDR Gold MiniShares Trust",
+          "weight": "4.30%"
+        },
+        {
+          "ticker": "IVV",
+          "name": "Core S&P 500 iShares ETF",
+          "weight": "32.66%"
+        },
+        {
+          "ticker": "IUSB",
+          "name": "iShares Core Universal USD Bond ETF",
+          "weight": "23.00%"
+        },
+        {
+          "ticker": "EFA",
+          "name": "EAFE MSCI ETF iShares",
+          "weight": "20.43%"
+        },
+        {
+          "ticker": "SGOV",
+          "name": "ISHARES 0-3 MONTH TREASURY B",
+          "weight": "0.92%"
+        }
+      ]
+    },
+    {
+      "vestId": "9aa14eb6-f887-477b-854d-ad091ff13c77",
+      "name": "Moat",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2020-04-06",
+      "minInvestmentAmount": "10",
+      "dividendYield": "2.73%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2025-12-09T05:41:38.539Z",
+      "oneYearVolatility": "15.66%",
+      "shortBlurb": "This portfolio contains a curated list of companies with deep business moats and leading market shares in their respective sub-sectors.",
+      "blurb": "This portfolio contains a curated list of companies with deep business moats and leading market shares in their respective sub-sectors.",
+      "returns": {
+        "oneYear": "13.4%",
+        "oneYearValue": 13.4,
+        "yearToDate": "+1.2%",
+        "latestCAGR": "26.23",
+        "byPeriod": {
+          "INCEPTION": "299.55%",
+          "5Y": "103.57%",
+          "3Y": "106.69%",
+          "2Y": "37.08%",
+          "1Y": "12.00%",
+          "9M": "-0.80%",
+          "6M": "0.22%",
+          "3M": "7.07%",
+          "1M": "-1.49%",
+          "1W": "-0.29%"
+        },
+        "cagrReturns": {
+          "1Y": "13.40",
+          "2Y": "17.81",
+          "3Y": "27.91",
+          "5Y": "15.56",
+          "INCEPTION": "26.23"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "13.40",
+          "2Y": "17.81",
+          "3Y": "27.91",
+          "5Y": "15.56",
+          "INCEPTION": "26.23"
+        }
+      },
+      "holdingsCount": 25,
+      "holdings": [
+        {
+          "ticker": "TSM",
+          "name": "Taiwan Semiconductor Manufacturing Co.",
+          "weight": "6.98%"
+        },
+        {
+          "ticker": "ASML",
+          "name": "ASML Holding NV",
+          "weight": "6.94%"
+        },
+        {
+          "ticker": "FTNT",
+          "name": "Fortinet Inc.",
+          "weight": "5.72%"
+        },
+        {
+          "ticker": "GOOG",
+          "name": "Alphabet Inc. - Class C Shares",
+          "weight": "5.07%"
+        },
+        {
+          "ticker": "DE",
+          "name": "Deere & Company",
+          "weight": "4.89%"
+        },
+        {
+          "ticker": "MA",
+          "name": "MasterCard Inc.",
+          "weight": "4.45%"
+        },
+        {
+          "ticker": "AMZN",
+          "name": "Amazon.com Inc.",
+          "weight": "4.19%"
+        },
+        {
+          "ticker": "PG",
+          "name": "Procter & Gamble Company, The",
+          "weight": "4.14%"
+        },
+        {
+          "ticker": "AAPL",
+          "name": "Apple, Inc.",
+          "weight": "4.11%"
+        },
+        {
+          "ticker": "JPM",
+          "name": "JPMorgan Chase & Co.",
+          "weight": "4.06%"
+        },
+        {
+          "ticker": "AVGO",
+          "name": "Broadcom Inc.",
+          "weight": "4.04%"
+        },
+        {
+          "ticker": "PEP",
+          "name": "Pepsico, Inc.",
+          "weight": "3.98%"
+        },
+        {
+          "ticker": "V",
+          "name": "Visa, Inc.",
+          "weight": "3.91%"
+        },
+        {
+          "ticker": "KO",
+          "name": "Coca-Cola Company, The",
+          "weight": "3.89%"
+        },
+        {
+          "ticker": "MSFT",
+          "name": "Microsoft Corporation",
+          "weight": "3.88%"
+        },
+        {
+          "ticker": "NVDA",
+          "name": "NVIDIA Corporation",
+          "weight": "3.85%"
+        },
+        {
+          "ticker": "META",
+          "name": "Meta Platforms Inc",
+          "weight": "3.80%"
+        },
+        {
+          "ticker": "SHW",
+          "name": "Sherwin-Williams Company, The",
+          "weight": "3.79%"
+        },
+        {
+          "ticker": "TMO",
+          "name": "Thermo Fisher Scientific, Inc.",
+          "weight": "3.20%"
+        },
+        {
+          "ticker": "CPRT",
+          "name": "Copart, Inc.",
+          "weight": "3.07%"
+        },
+        {
+          "ticker": "DIS",
+          "name": "The Walt Disney Company",
+          "weight": "2.64%"
+        },
+        {
+          "ticker": "CRM",
+          "name": "Salesforce Inc",
+          "weight": "2.61%"
+        },
+        {
+          "ticker": "ADBE",
+          "name": "ADOBE INC",
+          "weight": "2.52%"
+        },
+        {
+          "ticker": "MCO",
+          "name": "Moody's Corporation",
+          "weight": "2.31%"
+        },
+        {
+          "ticker": "INTU",
+          "name": "Intuit Inc.",
+          "weight": "1.95%"
+        }
+      ]
+    },
+    {
+      "vestId": "f2038674-50a7-4a1f-a079-9038a266f6ee",
+      "name": "Cybersecurity",
+      "type": "SYSTEM",
+      "riskLabel": null,
+      "risk": null,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2025-05-14",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0.17%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-02-17T07:20:30.107Z",
+      "oneYearVolatility": "32.52%",
+      "shortBlurb": "This portfolio offers exposure to companies providing cybersecurity solutions to address the rising security needs across industries.",
+      "blurb": "This portfolio provides exposure to companies focused on cybersecurity solutions, aligned with the increasing demand for security measures across industries to manage cyber risks.",
+      "returns": {
+        "oneYear": "11.21%",
+        "oneYearValue": 11.21,
+        "yearToDate": "+22%",
+        "latestCAGR": "14.10",
+        "byPeriod": {
+          "INCEPTION": "13.55%",
+          "5Y": "85.51%",
+          "3Y": "87.05%",
+          "2Y": "50.31%",
+          "1Y": "10.68%",
+          "9M": "8.73%",
+          "6M": "16.37%",
+          "3M": "28.92%",
+          "1M": "4.51%",
+          "1W": "-0.96%"
+        },
+        "cagrReturns": {
+          "1Y": "11.21",
+          "2Y": "22.90",
+          "3Y": "23.41",
+          "5Y": "13.26",
+          "INCEPTION": "14.10"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "11.21",
+          "2Y": "22.90",
+          "3Y": "23.41",
+          "5Y": "13.26",
+          "INCEPTION": "14.10"
+        }
+      },
+      "holdingsCount": 16,
+      "holdings": [
+        {
+          "ticker": "AKAM",
+          "name": "Akamai Technologies, Inc.",
+          "weight": "9.45%"
+        },
+        {
+          "ticker": "OKTA",
+          "name": "Okta, Inc.",
+          "weight": "6.67%"
+        },
+        {
+          "ticker": "NET",
+          "name": "CloudFlare Inc.",
+          "weight": "6.50%"
+        },
+        {
+          "ticker": "FFIV",
+          "name": "F5 Inc.",
+          "weight": "5.85%"
+        },
+        {
+          "ticker": "S",
+          "name": "SentinelOne, Inc.",
+          "weight": "4.93%"
+        },
+        {
+          "ticker": "ATEN",
+          "name": "A10 Networks Inc",
+          "weight": "4.84%"
+        },
+        {
+          "ticker": "TENB",
+          "name": "Tenable Holdings Inc.",
+          "weight": "4.76%"
+        },
+        {
+          "ticker": "GEN",
+          "name": "Gen Digital Inc.",
+          "weight": "4.65%"
+        },
+        {
+          "ticker": "QLYS",
+          "name": "Qualys, Inc.",
+          "weight": "4.07%"
+        },
+        {
+          "ticker": "CHKP",
+          "name": "Check Point Software Technologies Ltd.",
+          "weight": "4.04%"
+        },
+        {
+          "ticker": "ZS",
+          "name": "Zscaler, Inc.",
+          "weight": "3.58%"
+        },
+        {
+          "ticker": "VRNS",
+          "name": "Varonis Systems, Inc.",
+          "weight": "3.39%"
+        },
+        {
+          "ticker": "CRWD",
+          "name": "CrowdStrike Holdings, Inc.",
+          "weight": "12.92%"
+        },
+        {
+          "ticker": "PANW",
+          "name": "Palo Alto Networks, Inc.",
+          "weight": "11.84%"
+        },
+        {
+          "ticker": "FTNT",
+          "name": "Fortinet Inc.",
+          "weight": "11.48%"
+        },
+        {
+          "ticker": "RPD",
+          "name": "Rapid7 Inc",
+          "weight": "1.03%"
+        }
+      ]
+    },
+    {
+      "vestId": "7d3d7ec1-27b3-4e21-9d56-6b8df7a62622",
+      "name": "Global Multi-Asset (Conservative)",
+      "type": "SYSTEM",
+      "riskLabel": "Conservative",
+      "risk": 1,
+      "category": "MULTI_ASSET_CLASS",
+      "categoryId": "Conservative",
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2020-02-28",
+      "minInvestmentAmount": "10",
+      "dividendYield": "1.46%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-03-31T12:00:52.713Z",
+      "oneYearVolatility": "5.41%",
+      "shortBlurb": "Focused on preserving capital and generating steady income, with selective exposure to U.S. and developed market stocks for modest long-term growth.",
+      "blurb": "A stability-focused core portfolio that prioritizes income generation and capital preservation, with moderate exposure to U.S. and developed market equities to support steady, long-term growth.",
+      "returns": {
+        "oneYear": "4.29%",
+        "oneYearValue": 4.29,
+        "yearToDate": "+0.18%",
+        "latestCAGR": "5.18",
+        "byPeriod": {
+          "INCEPTION": "34.92%",
+          "5Y": "12.15%",
+          "3Y": "21.22%",
+          "2Y": "8.01%",
+          "1Y": "3.93%",
+          "9M": "0.10%",
+          "6M": "-0.13%",
+          "3M": "1.22%",
+          "1M": "-0.25%",
+          "1W": "-0.08%"
+        },
+        "cagrReturns": {
+          "1Y": "4.29",
+          "2Y": "4.11",
+          "3Y": "6.75",
+          "5Y": "2.39",
+          "INCEPTION": "5.18"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "4.29",
+          "2Y": "4.11",
+          "3Y": "6.75",
+          "5Y": "2.39",
+          "INCEPTION": "5.18"
+        }
+      },
+      "holdingsCount": 6,
+      "holdings": [
+        {
+          "ticker": "GLDM",
+          "name": "SPDR Gold MiniShares Trust",
+          "weight": "9.08%"
+        },
+        {
+          "ticker": "EFA",
+          "name": "EAFE MSCI ETF iShares",
+          "weight": "5.40%"
+        },
+        {
+          "ticker": "IUSB",
+          "name": "iShares Core Universal USD Bond ETF",
+          "weight": "48.61%"
+        },
+        {
+          "ticker": "SGOV",
+          "name": "ISHARES 0-3 MONTH TREASURY B",
+          "weight": "4.86%"
+        },
+        {
+          "ticker": "IVV",
+          "name": "Core S&P 500 iShares ETF",
+          "weight": "17.25%"
+        },
+        {
+          "ticker": "HYDB",
+          "name": "iShares High Yield Systematic Bond ETF",
+          "weight": "14.80%"
+        }
+      ]
+    },
+    {
+      "vestId": "cc19fc6d-883e-42c8-a2ca-479a528e8b8e",
+      "name": "Cloud Computing",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2019-07-29",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0.13%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-06-15T20:01:00.770Z",
+      "oneYearVolatility": "32.73%",
+      "shortBlurb": "This portfolio provides exposure to companies benefiting from cloud adoption through software services, platform services, infrastructure, and data centers.",
+      "blurb": "This portfolio provides exposure to companies positioned to benefit from the cloud computing industry's growth. It includes investments across subthemes such as Software-as-a-Service (SaaS), Platform-as-a-Service (PaaS), Infrastructure-as-a-Service (IaaS), server storage, data center real estate investment trusts (REITs), and cloud and edge computing infrastructure.",
+      "returns": {
+        "oneYear": "-1.48%",
+        "oneYearValue": -1.48,
+        "yearToDate": "+3.39%",
+        "latestCAGR": "7.25",
+        "byPeriod": {
+          "INCEPTION": "64.71%",
+          "5Y": "-21.67%",
+          "3Y": "19.53%",
+          "2Y": "16.92%",
+          "1Y": "-0.60%",
+          "9M": "-2.12%",
+          "6M": "1.95%",
+          "3M": "20.14%",
+          "1M": "-0.95%",
+          "1W": "-4.18%"
+        },
+        "cagrReturns": {
+          "1Y": "-1.48",
+          "2Y": "7.65",
+          "3Y": "5.81",
+          "5Y": "-4.94",
+          "INCEPTION": "7.25"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "-1.48",
+          "2Y": "7.65",
+          "3Y": "5.81",
+          "5Y": "-4.94",
+          "INCEPTION": "7.25"
+        }
+      },
+      "holdingsCount": 16,
+      "holdings": [
+        {
+          "ticker": "DDOG",
+          "name": "Datadog Inc",
+          "weight": "8.72%"
+        },
+        {
+          "ticker": "SNOW",
+          "name": "Snowflake Inc.",
+          "weight": "7.99%"
+        },
+        {
+          "ticker": "MSFT",
+          "name": "Microsoft Corporation",
+          "weight": "7.94%"
+        },
+        {
+          "ticker": "NET",
+          "name": "CloudFlare Inc.",
+          "weight": "7.77%"
+        },
+        {
+          "ticker": "NOW",
+          "name": "ServiceNow, Inc.",
+          "weight": "7.49%"
+        },
+        {
+          "ticker": "TWLO",
+          "name": "Twilio",
+          "weight": "7.19%"
+        },
+        {
+          "ticker": "AMZN",
+          "name": "Amazon.com Inc.",
+          "weight": "7.12%"
+        },
+        {
+          "ticker": "CRM",
+          "name": "Salesforce Inc",
+          "weight": "6.46%"
+        },
+        {
+          "ticker": "NTNX",
+          "name": "Nutanix, Inc.",
+          "weight": "5.13%"
+        },
+        {
+          "ticker": "MDB",
+          "name": "MongoDB, Inc.",
+          "weight": "4.80%"
+        },
+        {
+          "ticker": "ZM",
+          "name": "Zoom Communications Inc",
+          "weight": "4.63%"
+        },
+        {
+          "ticker": "WDAY",
+          "name": "Workday, Inc.",
+          "weight": "4.34%"
+        },
+        {
+          "ticker": "HUBS",
+          "name": "HubSpot, Inc.",
+          "weight": "3.59%"
+        },
+        {
+          "ticker": "ZS",
+          "name": "Zscaler, Inc.",
+          "weight": "3.50%"
+        },
+        {
+          "ticker": "DBX",
+          "name": "Dropbox, Inc.",
+          "weight": "3.14%"
+        },
+        {
+          "ticker": "DOCN",
+          "name": "DigitalOcean Holdings, Inc.",
+          "weight": "10.20%"
+        }
+      ]
+    },
+    {
+      "vestId": "ba726e04-051c-4536-8a4d-6b5da0965c39",
+      "name": "Digital Cash",
+      "type": "SYSTEM",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "Vested",
+      "poweredByText": "Managed by",
+      "manufacturer": null,
+      "rank": "",
+      "inceptionDate": "2019-07-22",
+      "minInvestmentAmount": "10",
+      "dividendYield": "0.59%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2026-06-02T04:06:32.907Z",
+      "oneYearVolatility": "24.9%",
+      "shortBlurb": "This portfolio invests in companies in the digital payments value chain (processors, card networks, payment solutions, and payments infrastructure).",
+      "blurb": "This portfolio offers diversified exposure to companies across the digital payments value chain, including payment processors, card networks, payment solution providers, and infrastructure enablers, positioned to benefit from the ongoing shift toward digital and contactless transactions.",
+      "returns": {
+        "oneYear": "-16.18%",
+        "oneYearValue": -16.18,
+        "yearToDate": "-8.32%",
+        "latestCAGR": "-2.71",
+        "byPeriod": {
+          "INCEPTION": "-17.88%",
+          "5Y": "-28.83%",
+          "3Y": "14.58%",
+          "2Y": "0.32%",
+          "1Y": "-16.57%",
+          "9M": "-18.34%",
+          "6M": "-10.93%",
+          "3M": "4.92%",
+          "1M": "0.23%",
+          "1W": "3.89%"
+        },
+        "cagrReturns": {
+          "1Y": "-16.18",
+          "2Y": "0.39",
+          "3Y": "4.80",
+          "5Y": "-6.49",
+          "INCEPTION": "-2.71"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "-16.18",
+          "2Y": "0.39",
+          "3Y": "4.80",
+          "5Y": "-6.49",
+          "INCEPTION": "-2.71"
+        }
+      },
+      "holdingsCount": 15,
+      "holdings": [
+        {
+          "ticker": "HOOD",
+          "name": "Robinhood Markets, Inc.",
+          "weight": "9.07%"
+        },
+        {
+          "ticker": "COF",
+          "name": "Capital One Financial Corporation",
+          "weight": "8.79%"
+        },
+        {
+          "ticker": "XYZ",
+          "name": "Block Inc",
+          "weight": "8.74%"
+        },
+        {
+          "ticker": "PYPL",
+          "name": "PayPal Holdings, Inc.",
+          "weight": "8.44%"
+        },
+        {
+          "ticker": "V",
+          "name": "Visa, Inc.",
+          "weight": "7.92%"
+        },
+        {
+          "ticker": "AFRM",
+          "name": "Affirm Holdings Inc",
+          "weight": "7.50%"
+        },
+        {
+          "ticker": "MA",
+          "name": "MasterCard Inc.",
+          "weight": "7.24%"
+        },
+        {
+          "ticker": "AXP",
+          "name": "American Express Co.",
+          "weight": "6.98%"
+        },
+        {
+          "ticker": "GPN",
+          "name": "Global Payments Inc.",
+          "weight": "5.89%"
+        },
+        {
+          "ticker": "COIN",
+          "name": "Coinbase Global Inc",
+          "weight": "5.88%"
+        },
+        {
+          "ticker": "FISV",
+          "name": "Fiserv, Inc.",
+          "weight": "5.24%"
+        },
+        {
+          "ticker": "FIS",
+          "name": "Fidelity National Information Services",
+          "weight": "4.73%"
+        },
+        {
+          "ticker": "WSE",
+          "name": "WISE GROUP PLC-CL A",
+          "weight": "4.61%"
+        },
+        {
+          "ticker": "TOST",
+          "name": "Toast Inc",
+          "weight": "4.52%"
+        },
+        {
+          "ticker": "CRCL",
+          "name": "Circle Internet Group Inc",
+          "weight": "4.44%"
+        }
+      ]
+    },
+    {
+      "vestId": "41a70cef-7781-4c3d-85a7-4c1f1e6a27df",
+      "name": "99rises ZeroCarbon",
+      "type": "MANUFACTURED",
+      "riskLabel": "Aggressive",
+      "risk": 5,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "99rises",
+      "poweredByText": "Powered by",
+      "manufacturer": "99rises",
+      "rank": "",
+      "inceptionDate": "2023-03-15",
+      "minInvestmentAmount": "10",
+      "dividendYield": "1.25%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2023-05-15T13:22:16.775Z",
+      "oneYearVolatility": "38%",
+      "shortBlurb": "High-risk US equities portfolio focusing on renewable energy sector",
+      "blurb": "One of the revolutionary thinkers of our time, Chamath Palihapitiya has said that the next trillionaire is going to be a pioneer in climate change and carbon neutrality. The ZeroCarbon Vest entails investments in public companies in the renewable energy sector, including solar, wind, geothermal, hydropower, battery storage, and smart grid technologies. These investments not only have the potential to reduce carbon emissions and combat climate change but also create jobs and stimulate economic growth. By investing in the transition to a zero-carbon economy, not only can we protect our planet, but also build a more sustainable and equitable future for all.",
+      "returns": {
+        "oneYear": "61.42%",
+        "oneYearValue": 61.42,
+        "yearToDate": "+23.66%",
+        "latestCAGR": "13.66",
+        "byPeriod": {
+          "INCEPTION": "44.49%",
+          "5Y": "43.53%",
+          "3Y": "35.01%",
+          "2Y": "43.05%",
+          "1Y": "58.84%",
+          "9M": "35.20%",
+          "6M": "25.80%",
+          "3M": "6.50%",
+          "1M": "-4.72%",
+          "1W": "1.58%"
+        },
+        "cagrReturns": {
+          "1Y": "61.42",
+          "2Y": "20.57",
+          "3Y": "11.12",
+          "5Y": "7.84",
+          "INCEPTION": "13.66"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "61.42",
+          "2Y": "20.57",
+          "3Y": "11.12",
+          "5Y": "7.84",
+          "INCEPTION": "13.66"
+        }
+      },
+      "holdingsCount": 17,
+      "holdings": [
+        {
+          "ticker": "CLSK",
+          "name": "Cleanspark Inc",
+          "weight": "6.79%"
+        },
+        {
+          "ticker": "NXT",
+          "name": "Nextpower Inc",
+          "weight": "54.33%"
+        },
+        {
+          "ticker": "SMOG",
+          "name": "VanEck Vectors Global Alternative Energy ETF",
+          "weight": "5.77%"
+        },
+        {
+          "ticker": "SHEL",
+          "name": "SHELL PLC  - ADS",
+          "weight": "5.18%"
+        },
+        {
+          "ticker": "REX",
+          "name": "REX American Resources Corp",
+          "weight": "4.45%"
+        },
+        {
+          "ticker": "MP",
+          "name": "MP Materials Corp.",
+          "weight": "3.98%"
+        },
+        {
+          "ticker": "CRBN",
+          "name": "iShares Low Carbon Optimized MSCI ACWI  ETF",
+          "weight": "10.02%"
+        },
+        {
+          "ticker": "TALO",
+          "name": "Talos Energy Inc.",
+          "weight": "1.74%"
+        },
+        {
+          "ticker": "DRIP",
+          "name": "Direxion Daily S&P Oil & Gas Exp. & Prod. Bear 2X ETF",
+          "weight": "1.57%"
+        },
+        {
+          "ticker": "ENPH",
+          "name": "Enphase Energy, Inc.",
+          "weight": "1.51%"
+        },
+        {
+          "ticker": "SARK",
+          "name": "Tradr 1X Short Innovation Daily ETF",
+          "weight": "0.89%"
+        },
+        {
+          "ticker": "UUP",
+          "name": "Invesco DB US Dollar Index Bullish Fund",
+          "weight": "0.81%"
+        },
+        {
+          "ticker": "SPXS",
+          "name": "Direxion Daily S&P 500 Bear 3X ETF",
+          "weight": "0.79%"
+        },
+        {
+          "ticker": "GEVO",
+          "name": "Gevo Inc",
+          "weight": "0.79%"
+        },
+        {
+          "ticker": "AMTX",
+          "name": "Aemetis Inc",
+          "weight": "0.72%"
+        },
+        {
+          "ticker": "CLNE",
+          "name": "Clean Energy Fuels Corp",
+          "weight": "0.41%"
+        },
+        {
+          "ticker": "SQQQ",
+          "name": "ProShares UltraPro Short QQQ",
+          "weight": "0.23%"
+        }
+      ]
+    },
+    {
+      "vestId": "0aef7869-1f01-47cf-bc97-676996a62632",
+      "name": "99rises Fixed Income",
+      "type": "MANUFACTURED",
+      "riskLabel": "Moderate",
+      "risk": 3,
+      "category": null,
+      "categoryId": null,
+      "poweredBy": "99rises",
+      "poweredByText": "Powered by",
+      "manufacturer": "99rises",
+      "rank": "",
+      "inceptionDate": "2023-03-15",
+      "minInvestmentAmount": "10",
+      "dividendYield": "5.32%",
+      "rebalanceFrequency": null,
+      "lastRebalanceDate": "2023-05-15T13:28:06.880Z",
+      "oneYearVolatility": "7.36%",
+      "shortBlurb": "This Vest follows a fixed-income ETF (Exchange-Traded Fund) based investment strategy. Fixed-income ETFs provide exposure to various fixed-income securities with varying maturities, credit ratings, and yields, allowing investors to manage risk and generate income.",
+      "blurb": "The Fixed Income Vest is a mix of multiple duration fixed income ETFs with bond-like characteristics. The Vest is designed to take advantage of bond market dislocations due to macro upswings with longer duration Treasuries or corporate bonds while offering protection with higher rate yielding and lower volatility short-term notes. This Vest selects bond ETFs based on interest rate policies, yield curve dynamics, consumer price index (inflation), and macro data like gross domestic product (GDP) and employment numbers, with a technical overlay using relative strength index metrics to better manage position sizing, as well as entry and exit points. The weights are optimized to maximize yield and optimize duration. This low-risk portfolio seeks to beat the bond index benchmarks by providing positive inflation-adjusted returns.",
+      "returns": {
+        "oneYear": "-3.26%",
+        "oneYearValue": -3.26,
+        "yearToDate": "-1.7%",
+        "latestCAGR": "-9.05",
+        "byPeriod": {
+          "INCEPTION": "-25.02%",
+          "5Y": "-26.90%",
+          "3Y": "-19.69%",
+          "2Y": "-11.01%",
+          "1Y": "-3.57%",
+          "9M": "-4.91%",
+          "6M": "-3.22%",
+          "3M": "-2.02%",
+          "1M": "2.09%",
+          "1W": "0.06%"
+        },
+        "cagrReturns": {
+          "1Y": "-3.26",
+          "2Y": "-5.51",
+          "3Y": "-6.95",
+          "5Y": "-6.01",
+          "INCEPTION": "-9.05"
+        },
+        "costAdjustedCagrReturns": {
+          "1Y": "-3.26",
+          "2Y": "-5.51",
+          "3Y": "-6.95",
+          "5Y": "-6.01",
+          "INCEPTION": "-9.05"
+        }
+      },
+      "holdingsCount": 11,
+      "holdings": [
+        {
+          "ticker": "TIP",
+          "name": "TIPS Bond iShares",
+          "weight": "9.44%"
+        },
+        {
+          "ticker": "VCIT",
+          "name": "Interm-Tm Corp Bd Idx ETF Vanguard",
+          "weight": "5.66%"
+        },
+        {
+          "ticker": "MUB",
+          "name": "National AMT-Free Muni Bond iShares",
+          "weight": "4.35%"
+        },
+        {
+          "ticker": "IVOL",
+          "name": "Quadratic Interest Rate Volatility and Inflation ETF",
+          "weight": "3.86%"
+        },
+        {
+          "ticker": "EDV",
+          "name": "Vanguard Extended Duration ETF",
+          "weight": "20.74%"
+        },
+        {
+          "ticker": "BTAL",
+          "name": "AGF US Market Neutral Anti-Beta Fund",
+          "weight": "2.15%"
+        },
+        {
+          "ticker": "LQD",
+          "name": "Corporate Bond Index ETF iShares",
+          "weight": "15.02%"
+        },
+        {
+          "ticker": "GIGB",
+          "name": "GOLDMAN SACHS INV GRD CORP",
+          "weight": "13.80%"
+        },
+        {
+          "ticker": "TLT",
+          "name": "20+ Year Treasury Bond iShares",
+          "weight": "12.94%"
+        },
+        {
+          "ticker": "ZROZ",
+          "name": "PIMCO 25+ Year Zero Coupon US Treasury Index ETF",
+          "weight": "10.10%"
+        },
+        {
+          "ticker": "SPXS",
+          "name": "Direxion Daily S&P 500 Bear 3X ETF",
+          "weight": "1.94%"
+        }
+      ]
+    }
+  ]
+}
