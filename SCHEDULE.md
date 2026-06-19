@@ -15,6 +15,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 |---|---|---|---|
 | `/api/premarket` (FII/DII trail → KV) | 00:30 UTC daily | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
+| **UpstoxDailyLogin** (mint Upstox token) | 06:20 IST daily | this laptop, headless | Windows Task Scheduler |
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
@@ -50,7 +51,25 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 - **Manage:** `Get-ScheduledTask -TaskName FyersDailyLogin`;
   `Start-ScheduledTask -TaskName FyersDailyLogin` to run now.
 
-## 3. daily-networth-snapshot — daily NW + per-sleeve history (Claude routine, Remote)
+## 3. UpstoxDailyLogin — daily Upstox token mint (Windows Task Scheduler)
+
+- **Schedule:** daily 06:20 IST, **headless**, "run only when logged on"
+  (`StartWhenAvailable`). 06:20 is after the token's ~03:30 expiry and Upstox's
+  funds-API maintenance window (00:00–05:30 IST).
+- **What:** runs `mcp/upstox/.venv/Scripts/python.exe mcp/upstox/login.py` —
+  Playwright drives mobile → TOTP → PIN (no Cloudflare check, so it runs headless
+  and invisible), captures the auth_code, exchanges it, writes the day's token to
+  `mcp/upstox/.token.json`. The Upstox MCP server reads it.
+- **Deps:** Upstox venv (`playwright`, `pyotp`, `requests`) + Chromium; secrets in
+  `mcp/upstox/.env` (`UPSTOX_CLIENT_ID/SECRET`, `UPSTOX_MOBILE`, `UPSTOX_TOTP_SEED`,
+  `UPSTOX_PIN`).
+- **Verify:** `import server; server._get('/v2/user/profile')` → `status: success`
+  (note: the funds API is down 00:00–05:30 IST — not an auth failure); or the mtime
+  of `mcp/upstox/.token.json`.
+- **Manage:** `Get-ScheduledTask -TaskName UpstoxDailyLogin`;
+  `Start-ScheduledTask -TaskName UpstoxDailyLogin` to run now.
+
+## 4. daily-networth-snapshot — daily NW + per-sleeve history (Claude routine, Remote)
 
 - **Schedule:** daily 06:00 IST, **Remote** (Claude cloud workspace).
 - **Command:** `node scripts/record-snapshot.mjs`.
@@ -72,14 +91,14 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 - **Note:** distinct from the app's per-browser `localStorage` snapshots
   (`getSnapshots`), which only record on the days you open the app.
 
-## 4. Weekly Dhan US sleeve review (Claude routine, Remote)
+## 5. Weekly Dhan US sleeve review (Claude routine, Remote)
 
 - **Schedule:** Saturdays 09:00 IST, Remote.
 - **What:** a weekly review of the Dhan US (GIFT City) sleeve. Full prompt lives in
   the **Claude Routines panel** (not in this repo) — portfolio context in
   [tasks/dhan-portfolio.md](tasks/dhan-portfolio.md).
 
-## 5. Monthly stratzy algo briefing (Claude routine, Local)
+## 6. Monthly stratzy algo briefing (Claude routine, Local)
 
 - **Schedule:** ~day 26 of each month, 09:00 IST, **Local** (only runs while the
   computer is awake).
