@@ -37,3 +37,8 @@ next-env.d.ts
 # session debug artifacts — screenshots + browser tooling, not for the repo
 /.playwright-mcp/
 /scripts/*.png
+
+# python (mcp servers under mcp/)
+__pycache__/
+*.pyc
+.venv/
