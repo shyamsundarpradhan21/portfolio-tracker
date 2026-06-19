@@ -128,6 +128,17 @@ opposite, confirm scope first. Rule of thumb: if it's critical, costly to undo, 
 a ready-made path might exist, ask before starting. (When docs won't render via
 fetch, ask the user to check rather than assuming and building.)
 
+### Verify external facts before asserting them — don't guess pricing / capability / limits
+This session I stated several third-party facts from memory that were wrong, and the
+user corrected each: Kite Connect "₹2,000/mo" (really ~₹500 base; the ₹2k is the
+historical-data add-on a portfolio reader doesn't need), and Dhan "SMS-only, so
+blocked" (only the *consumer* QR/SMS login is blocked — the DhanHQ *developer* TOTP
+endpoint mints tokens fully headless). Before asserting a broker/API's pricing, auth
+method, capability, or limit, **verify it** — inspect the live page, dispatch a
+research agent, or ask the user (who knows their own account) — or explicitly mark it
+"unconfirmed." Repeated confident-but-wrong claims erode trust and cause churn.
+(Pairs with "Check for the easy/official path".)
+
 ## Communication Style
 
 ### No narration, no preamble

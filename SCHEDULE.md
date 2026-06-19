@@ -20,6 +20,10 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
 
+> **Dhan** has no scheduled job *by design* — the Dhan MCP server (`mcp/dhan/`)
+> self-mints its 24h access token on demand via DhanHQ's pure-API TOTP endpoint,
+> so there's nothing to schedule.
+
 ---
 
 ## 1. Vercel cron — FII/DII trail
