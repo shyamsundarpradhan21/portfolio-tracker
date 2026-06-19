@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-20T04:14:24+05:30",
+  "syncedAt": "2026-06-20T05:19:46+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -15,14 +15,14 @@
       "note": ""
     },
     "kite": {
-      "ok": false,
-      "note": "hosted MCP — needs daily OAuth login"
+      "ok": true,
+      "note": ""
     }
   },
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-20T04:14:35+05:30",
+      "syncedAt": "2026-06-20T05:09:20+05:30",
       "rows": [
         {
           "sym": "HAPPSTMNDS",
@@ -41,14 +41,6 @@
           "dayPct": 0.07
         },
         {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43,
-          "ltp": 1272.7,
-          "pnl": 4762.65,
-          "dayPct": 0.29
-        },
-        {
           "sym": "BANKBARODA",
           "qty": 28,
           "avg": 291.8,
@@ -63,20 +55,148 @@
           "ltp": 1412.9,
           "pnl": 3408.35,
           "dayPct": 3.22
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43,
+          "ltp": 1272.7,
+          "pnl": 4762.65,
+          "dayPct": 0.29
         }
       ]
     },
     "INDIAN": {
       "source": "Zerodha",
-      "stale": true,
-      "note": "Kite hosted MCP not logged in at sync time — equity sleeve falls back to curated app/portfolio.js values.",
-      "rows": []
+      "syncedAt": "2026-06-20T05:19:46+05:30",
+      "rows": [
+        {
+          "sym": "AURIONPRO",
+          "qty": 35,
+          "avg": 840.69,
+          "ltp": 876.4,
+          "pnl": 1249.85,
+          "dayPct": -0.0684
+        },
+        {
+          "sym": "COFORGE",
+          "qty": 21,
+          "avg": 1398.138095,
+          "ltp": 1463.3,
+          "pnl": 1368.4,
+          "dayPct": -1.3284
+        },
+        {
+          "sym": "CUB",
+          "qty": 188,
+          "avg": 159.086436,
+          "ltp": 196.65,
+          "pnl": 7061.95,
+          "dayPct": -0.8571
+        },
+        {
+          "sym": "FEDERALBNK",
+          "qty": 155,
+          "avg": 192.28,
+          "ltp": 323.9,
+          "pnl": 20401.1,
+          "dayPct": 0.9978
+        },
+        {
+          "sym": "GODREJCP",
+          "qty": 30,
+          "avg": 999,
+          "ltp": 1000.6,
+          "pnl": 48,
+          "dayPct": -0.8522
+        },
+        {
+          "sym": "LT",
+          "qty": 8,
+          "avg": 3616.6,
+          "ltp": 4209.4,
+          "pnl": 4742.4,
+          "dayPct": 0.463
+        },
+        {
+          "sym": "MARKSANS",
+          "qty": 135,
+          "avg": 217.801333,
+          "ltp": 259.67,
+          "pnl": 5652.27,
+          "dayPct": -0.6808
+        },
+        {
+          "sym": "NH",
+          "qty": 17,
+          "avg": 1674,
+          "ltp": 1878.7,
+          "pnl": 3479.9,
+          "dayPct": 0.519
+        },
+        {
+          "sym": "PITTIENG",
+          "qty": 38,
+          "avg": 772.263157,
+          "ltp": 1009.45,
+          "pnl": 9013.1,
+          "dayPct": 1.795
+        },
+        {
+          "sym": "POWERGRID",
+          "qty": 102,
+          "avg": 289.45,
+          "ltp": 292.25,
+          "pnl": 285.6,
+          "dayPct": 1.2297
+        },
+        {
+          "sym": "PRICOLLTD",
+          "qty": 56,
+          "avg": 528.7625,
+          "ltp": 559.15,
+          "pnl": 1701.7,
+          "dayPct": -0.0447
+        },
+        {
+          "sym": "STYRENIX",
+          "qty": 15,
+          "avg": 1927,
+          "ltp": 2312.9,
+          "pnl": 5788.5,
+          "dayPct": 2.7134
+        },
+        {
+          "sym": "SUPRIYA",
+          "qty": 36,
+          "avg": 586.976388,
+          "ltp": 932.2,
+          "pnl": 12428.05,
+          "dayPct": -0.0054
+        },
+        {
+          "sym": "TECHNOE",
+          "qty": 33,
+          "avg": 907.8,
+          "ltp": 1090,
+          "pnl": 6012.6,
+          "dayPct": 1.6175
+        },
+        {
+          "sym": "ZYDUSLIFE",
+          "qty": 33,
+          "avg": 894.25,
+          "ltp": 1070.8,
+          "pnl": 5826.15,
+          "dayPct": -0.3351
+        }
+      ]
     }
   },
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-20T04:14:36+05:30",
+      "syncedAt": "2026-06-20T05:09:21+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jun2026-24150-CE",
