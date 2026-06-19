@@ -44,5 +44,14 @@ __pycache__/
 .venv/
 .token.json
 
+# broker SDK logs written to repo root (may contain request data)
+fyersApi.log
+fyersRequests.log
+
+# playwright login profile + debug screenshots (machine-specific; screenshots
+# can show the login page / client id — never commit)
+.pw-profile/
+login-*.png
+
 # local MCP client config — machine-specific paths + broker secrets, never commit
 /.mcp.json

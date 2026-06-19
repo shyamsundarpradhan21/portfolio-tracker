@@ -1,2 +1,4 @@
 mcp>=1.2.0
 fyers-apiv3
+playwright
+pyotp

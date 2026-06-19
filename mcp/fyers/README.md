@@ -22,6 +22,7 @@ this process; it is **not** auto-wired into any agent's config. Built on
    cd mcp/fyers
    python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
+   python -m playwright install chromium          # for the unattended login
    ```
 3. **Configure env** — copy `.env.example` to `.env` and fill in, or export the
    vars in your shell before launching the MCP client.
@@ -51,11 +52,30 @@ trade tools). Use an absolute path to `server.py`.
 (For Claude Desktop the same block goes in `claude_desktop_config.json`. Point
 `command` at your venv's python if you used one.)
 
-## Daily auth flow
+## Daily auth — automated (hands-off)
+
+SEBI has the broker refresh-token APIs disabled, so a Fyers access token lasts
+only ~1 trading day and cannot be renewed silently — the only way to stay logged
+in is to replay the login daily. `login.py` does that with no human in the loop:
+
+```bash
+python login.py --show    # Playwright + TOTP: Client ID -> TOTP -> PIN -> token
+```
+
+It writes the day's access token to `.token.json`; the server reads it. Needs in
+`.env`: `FYERS_FY_ID` (login Client ID) and `FYERS_TOTP_SEED` (the base32 secret
+from **External TOTP** setup — the seed, not a 6-digit code), plus `FYERS_PIN`.
+Run it **headed** (`--show`): headless is refused by the login's bot check, and a
+persistent `.pw-profile` clears the "verify you are human" step.
+
+Schedule it daily (Windows): a Task Scheduler task running `python login.py
+--show` each morning, **only when logged on** (a ~30s browser flash, zero clicks).
+
+## Daily auth — manual (fallback)
 
 1. Call **`fyers_auth_url`** → open the returned URL, log in (TOTP).
 2. Copy the `auth_code` from the redirect (or the whole redirect URL).
-3. Call **`fyers_set_token`** with it → today's token is cached in memory.
+3. Call **`fyers_set_token`** with it → today's token is saved to `.token.json`.
 4. `fyers_status` shows auth + whether trading is armed.
 
 Set `FYERS_ACCESS_TOKEN` instead if you already minted today's token elsewhere.
