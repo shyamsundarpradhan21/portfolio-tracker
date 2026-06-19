@@ -116,6 +116,18 @@ For analysis/strategy tasks, default to producing a concrete, data-grounded draf
 and iterating on it — not a questionnaire. One short round of genuinely
 blocking questions max.
 
+### Check for the easy/official path; ask before a critical build
+Before hand-rolling something significant — a custom server, a large refactor, a
+big install, a multi-file sweep — first check whether an official / hosted /
+one-command option already exists, then STOP and confirm before committing to the
+build. Building the custom Dhan MCP server when an official hosted one existed
+(`claude mcp add --transport http dhan https://mcp.dhan.co/mcp`, browser auth) was
+wasted effort the user had to catch. This does NOT contradict "do the work, don't
+questionnaire" — that's for analysis drafts; a large or hard-to-undo build is the
+opposite, confirm scope first. Rule of thumb: if it's critical, costly to undo, or
+a ready-made path might exist, ask before starting. (When docs won't render via
+fetch, ask the user to check rather than assuming and building.)
+
 ## Communication Style
 
 ### No narration, no preamble
