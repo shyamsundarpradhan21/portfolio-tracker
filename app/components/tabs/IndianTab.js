@@ -3,6 +3,7 @@ import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, inrCd, sFull, fmtNavDate 
 import { SECTOR_PALETTE } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
+import SyncBadge from '../shared/SyncBadge';
 import CFMemo from '../shared/CFMemo';
 import Skel from '../shared/Skel';
 import SunburstMix from '../SunburstMix';
@@ -25,12 +26,13 @@ const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' }
 export default function IndianTab({
   indian, indianDayPl, indianDayPct, inStats, indianRisk, inSorted, inSort, sortIn,
   flash, markets, lastUpdate, insights, insightsOn, insightsFirstLoad,
-  INDIAN, INDIAN_REALIZED, CORPORATE_ACTIONS, FY,
+  INDIAN, INDIAN_REALIZED, CORPORATE_ACTIONS, FY, indianRec,
 }) {
   return (
     <div>
       <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <SyncBadge rec={indianRec} />
         <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
 

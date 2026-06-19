@@ -17,6 +17,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
 | **UpstoxDailyLogin** (mint Upstox token) | 06:20 IST daily | this laptop, headless | Windows Task Scheduler |
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
+| **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop (logon task) | Windows Task Scheduler |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
 
@@ -94,6 +95,45 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   command (proven to work on the laptop) — same pattern as FyersDailyLogin.
 - **Note:** distinct from the app's per-browser `localStorage` snapshots
   (`getSnapshots`), which only record on the days you open the app.
+
+## 4b. DailyBrokerSync — live broker holdings → `data/broker-state.json` (Windows logon task)
+
+- **Schedule:** daily **06:00 IST**, `-StartWhenAvailable` (so a missed slot runs on
+  your first logon after 06:00). Interactive (needs your desktop for the terminal +
+  the Kite browser login).
+- **Chain:** task → `scripts/sync.cmd` → `scripts/sync-launch.ps1` (resolves the
+  newest installed `claude.exe` — it ships version-pinned in the VS Code extension /
+  Desktop app) → `wt -d <repo> -- claude "/sync"`. A terminal opens and runs the
+  **`/sync` skill** ([.claude/skills/sync/SKILL.md](.claude/skills/sync/SKILL.md)).
+- **What `/sync` does:**
+  1. `node scripts/sync-brokers.mjs` — the **3 zero-touch brokers** by direct REST,
+     with **mint-on-demand** (if an Upstox/Fyers token is expired it runs that
+     broker's `login.py` inline, then retries; Dhan self-mints). Writes
+     `holdings.SWING` (Upstox, **broker-driven**), `positions.DHAN_FNO`, `funds.*`;
+     preserves `holdings.INDIAN`. Any broker that still can't refresh keeps its last
+     values + an honest stale flag — never blocks the others.
+  2. **Kite/Zerodha** (the one piece only Claude can do — hosted-OAuth MCP, no token
+     file): walks you through `mcp__kite__login` (you're present at boot), pulls
+     `get_holdings` → `holdings.INDIAN` (a **drift check**; the app keeps its curated
+     corp-action/XIRR ledger). Skip it and INDIAN just stays stale.
+  3. One `git add data/broker-state.json && commit && push`.
+- **Why 06:00 works despite the ~03:30 token expiry:** mint-on-demand makes the sync
+  self-healing regardless of when it fires or whether `UpstoxDailyLogin`/`FyersDailyLogin`
+  have run — it mints whatever's stale. (Those login tasks stay only to keep the MCP
+  servers warm for mid-day Claude queries.)
+- **How the app consumes it:** [app/lib/brokerState.js](app/lib/brokerState.js) →
+  `reconcileSleeve(curated, key)` merges the live numbers over the curated metadata
+  (sector/cap/ns/name) without mutating it; [SyncBadge](app/components/shared/SyncBadge.js)
+  shows `synced · <broker> · <date>` / `N drifted vs <broker>` / `<broker> · not synced today`
+  on the Trading (SWING) and Indian tabs. Committed file → the deployed Vercel app
+  reads it like `data/snapshot-sleeves.json` (no broker creds in the cloud).
+- **Manual run:** double-click `scripts/sync.cmd`, or type **`/sync`** in any Claude
+  session.
+- **Verify:** the Trading tab's swing badge reads `synced · Upstox · <today>`; a fresh
+  `syncedAt` in `data/broker-state.json`; a `chore: broker sync <date>` commit.
+- **Manage:** `Get-ScheduledTask -TaskName DailyBrokerSync`;
+  `Start-ScheduledTask -TaskName DailyBrokerSync` to run now.
+- Zero broker tokens/passwords leave the laptop; only derived qty/value/MTM is committed.
 
 ## 5. Weekly Dhan US sleeve review (Claude routine, Remote)
 

@@ -1,0 +1,141 @@
+{
+  "syncedAt": "2026-06-20T04:14:24+05:30",
+  "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
+  "brokers": {
+    "upstox": {
+      "ok": true,
+      "note": ""
+    },
+    "dhan": {
+      "ok": true,
+      "note": ""
+    },
+    "fyers": {
+      "ok": true,
+      "note": ""
+    },
+    "kite": {
+      "ok": false,
+      "note": "hosted MCP — needs daily OAuth login"
+    }
+  },
+  "holdings": {
+    "SWING": {
+      "source": "Upstox",
+      "syncedAt": "2026-06-20T04:14:35+05:30",
+      "rows": [
+        {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5,
+          "ltp": 345.35,
+          "pnl": -963,
+          "dayPct": -1.57
+        },
+        {
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04,
+          "ltp": 179.92,
+          "pnl": 1397.68,
+          "dayPct": 0.07
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43,
+          "ltp": 1272.7,
+          "pnl": 4762.65,
+          "dayPct": 0.29
+        },
+        {
+          "sym": "BANKBARODA",
+          "qty": 28,
+          "avg": 291.8,
+          "ltp": 281.05,
+          "pnl": -301,
+          "dayPct": -0.69
+        },
+        {
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86,
+          "ltp": 1412.9,
+          "pnl": 3408.35,
+          "dayPct": 3.22
+        }
+      ]
+    },
+    "INDIAN": {
+      "source": "Zerodha",
+      "stale": true,
+      "note": "Kite hosted MCP not logged in at sync time — equity sleeve falls back to curated app/portfolio.js values.",
+      "rows": []
+    }
+  },
+  "positions": {
+    "DHAN_FNO": {
+      "source": "Dhan",
+      "syncedAt": "2026-06-20T04:14:36+05:30",
+      "rows": [
+        {
+          "sym": "NIFTY-Jun2026-24150-CE",
+          "type": "CALL",
+          "strike": 24150,
+          "expiry": "2026-06-23",
+          "status": "CLOSED",
+          "netQty": 0,
+          "buyAvg": 53,
+          "realized": 22847.5,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-24550-CE",
+          "type": "CALL",
+          "strike": 24550,
+          "expiry": "2026-06-23",
+          "status": "CLOSED",
+          "netQty": 0,
+          "buyAvg": 15.75,
+          "realized": -2600,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-23600-PE",
+          "type": "PUT",
+          "strike": 23600,
+          "expiry": "2026-06-23",
+          "status": "LONG",
+          "netQty": 325,
+          "buyAvg": 14.25,
+          "realized": 0,
+          "unrealized": -2730
+        },
+        {
+          "sym": "NIFTY-Jun2026-24000-PE",
+          "type": "PUT",
+          "strike": 24000,
+          "expiry": "2026-06-23",
+          "status": "CLOSED",
+          "netQty": 0,
+          "buyAvg": 121.15,
+          "realized": -2356.25,
+          "unrealized": 0
+        }
+      ]
+    }
+  },
+  "funds": {
+    "fyers": {
+      "available": 238417.65
+    },
+    "dhan": {
+      "available": 650635.3,
+      "utilized": 4810
+    },
+    "upstox": {
+      "available": null,
+      "note": "The Funds service is accessible from 5:30 AM to 12:00 AM IST daily. Please try again during these service hours."
+    }
+  }
+}

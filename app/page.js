@@ -28,7 +28,14 @@ import {
   cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, InrF, SInrC, SInrF, sFull, Rs, pctS,
 } from './lib/fmt';
 import { ETF_LOOKTHROUGH, ETF_CAP, US_CAP, usSectorOf } from './lib/constants';
+import { reconcileSleeve } from './lib/brokerState';
 const COLORS = ALLOC_COLORS;
+
+// Live broker reconcile (see data/broker-state.json + SCHEDULE.md). Broker drives
+// qty/avg; the curated arrays supply metadata/history. Same row shape out, so the
+// derivations below are untouched — only the numbers (and a freshness badge) change.
+const SWING_R  = reconcileSleeve(SWING, 'SWING');   // Upstox — zero-touch
+const INDIAN_R = reconcileSleeve(INDIAN, 'INDIAN'); // Zerodha — stale until Kite login
 
 import OverviewTab  from './components/tabs/OverviewTab';
 import IndianTab    from './components/tabs/IndianTab';
@@ -255,10 +262,10 @@ export default function Page() {
   const [insights, setInsights]               = useState(null);
   const [insightsTs, setInsightsTs]           = useState(null); // when the shown analysis was generated (cache ts), drives the fresh/cached label
   const [insightsLoading, setInsightsLoading] = useState(false);
-  // ✨ is a PLACEMENT toggle, not a kill switch: ON scatters the AI cards across
-  // each tab; OFF pulls them off the tabs and consolidates them in the Pulse tab.
-  // The analysis is still generated either way (refresh lives on the Pulse tab).
-  // Persisted; default off (consolidated) on first run.
+  // Placement of the AI cards: ON scatters them across each tab, OFF keeps them
+  // consolidated in the Pulse tab. The unified header ↻ flips this ON as it
+  // regenerates, so a manual refresh surfaces the fresh analysis. Persisted;
+  // default off (consolidated) on first run.
   const [insightsOn, setInsightsOn] = useState(() => {
     try { return localStorage.getItem('nwTracker.insightsOn') === 'true'; } catch { return false; }
   });
@@ -269,12 +276,14 @@ export default function Page() {
   const requestInsights = useCallback(() => setInsightsReq((n) => n + 1), []);
   // Force a fresh whole-app analysis (used by the Pulse-tab refresh).
   const refreshInsights = () => requestInsights();
-  // Header ✨: flip placement; generate on turn-on if we have nothing yet so the
-  // newly-revealed banners aren't empty.
-  const toggleInsights = () => {
-    const turningOn = !insightsOn;
-    setInsightsOn((on) => { const next = !on; try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {} return next; });
-    if (turningOn && !hasInsight(insights)) requestInsights();
+  // Unified header ↻ — one control that refreshes live prices AND regenerates the
+  // whole-app AI analysis, surfacing the banners. (Merged from the old ✨ + ↻: the
+  // analyse toggle folded into the refresh.) The 15-min auto-refresh still calls
+  // doRefresh() directly, so only a deliberate click pays for the AI call.
+  const refreshAll = () => {
+    if (!insightsOn) { setInsightsOn(true); try { localStorage.setItem('nwTracker.insightsOn', 'true'); } catch {} }
+    doRefresh();
+    requestInsights();
   };
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
@@ -489,7 +498,7 @@ export default function Page() {
   // ─── derived: swing ─────────────────────────────────────────────────────────
   const swing = useMemo(() => {
     let inv = 0, val = 0, valued = true;
-    const rows = SWING.map((s) => {
+    const rows = SWING_R.rows.map((s) => {
       const q = prices[s.ns]; const ltp = q && !q.error ? q.price : null;
       const v = ltp != null ? s.qty * ltp : null; const pl = v != null ? v - s.inv : null;
       inv += s.inv; if (v != null) val += v; else valued = false;
@@ -905,11 +914,10 @@ export default function Page() {
               {insightsLoading
                 ? <span className="ai-status">✦ analysing…</span>
                 : insights && insightsTs
-                  ? <span className="ai-status ai-fresh" title="When this analysis was last refreshed — click ✨ to regenerate">✦ analysed {aiAgo(insightsTs)}</span>
+                  ? <span className="ai-status ai-fresh" title="When this analysis was last refreshed — click ↻ to regenerate">✦ analysed {aiAgo(insightsTs)}</span>
                   : null}
-              <button className="hdr-toggle" onClick={toggleInsights} aria-pressed={insightsOn} style={{ opacity: insightsOn ? 1 : 0.45 }} title={insightsOn ? 'AI banners ON (in each tab) — click to consolidate into Pulse' : 'AI banners OFF (consolidated in Pulse) — click to show in each tab'} aria-label="Toggle AI banners">✨</button>
+              <button className={'hdr-toggle' + (loading || insightsLoading ? ' loading' : '')} onClick={refreshAll} title="Refresh — live prices + AI analysis" aria-label="Refresh prices and AI analysis">↻</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
-              <button className={'hdr-toggle' + (loading ? ' loading' : '')} onClick={() => doRefresh()} title="Refresh prices" aria-label="Refresh prices">↻</button>
             </div>
           </div>
 
@@ -981,7 +989,8 @@ export default function Page() {
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}
               inStats={inStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
               flash={flash} markets={markets} lastUpdate={lastUpdate} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY} />
+              INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
+              indianRec={INDIAN_R} />
           )}
           {tab === 2 && (
             <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
@@ -998,7 +1007,7 @@ export default function Page() {
               US={US} US_REALIZED={US_REALIZED} US_DIVIDENDS={US_DIVIDENDS} FY={FY} />
           )}
           {tab === 5 && (
-            <AlgoTab swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw}
+            <AlgoTab swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw} swingRec={SWING_R}
               markets={markets} ytdTotal={ytdAccountTotal} ytdRealised={ytdRealised}
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}

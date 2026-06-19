@@ -2,6 +2,7 @@
 import { cl, pctS, InrF, SInrF, SInrC, RsText, inrFull } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
+import SyncBadge from '../shared/SyncBadge';
 import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
 import Skel from '../shared/Skel';
@@ -13,7 +14,7 @@ export default function AlgoTab({
   swing, swingSorted, swSort, sortSw, markets,
   ytdTotal, ytdRealised, cfEntering, cfAfterRealised,
   insights, insightsOn, insightsFirstLoad,
-  ALGO, FY,
+  ALGO, FY, swingRec,
 }) {
   return (
     <div>
@@ -112,9 +113,10 @@ export default function AlgoTab({
             </div>
             <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
             <div className="mini">
-              <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 Swing positions{' '}
                 <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'}` }} />
+                <SyncBadge rec={swingRec} />
               </div>
               <div className="ovx">
                 <table className="tbl" style={{ minWidth: 360 }}>
