@@ -5,6 +5,8 @@
 //
 // Returns: { "AAPL": { price, prevClose, change, pct, state, currency }, ... }
 
+import { deriveMarketState } from '../../lib/market';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +58,7 @@ async function fetchOne(symbol) {
         prevClose,
         change,
         pct,
-        state: meta.marketState || 'UNKNOWN',
+        state: deriveMarketState(meta),
         currency: meta.currency || null,
       };
     } catch (e) {

@@ -13,6 +13,8 @@
 // explicit { stale:true, error } so the UI renders an honest "unavailable"
 // cell instead of a stale or fabricated number.
 
+import { deriveMarketState } from '../../lib/market';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -49,7 +51,7 @@ async function yhQuote(symbol, source) {
         prev,
         change: prev != null ? price - prev : null,
         pct: prev ? ((price - prev) / prev) * 100 : null,
-        state: meta.marketState || null,
+        state: deriveMarketState(meta),
         asOf,
         source: source || `Yahoo ${symbol}`,
       };
