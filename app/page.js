@@ -171,7 +171,7 @@ export default function Page() {
   const [hist, setHist]             = useState(null);
   const [macro, setMacro]           = useState(null); // live macro clock (FRED + Yahoo)
   const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
-  const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Pre-Market tab)
+  const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Wrap tab)
   const [nifty50Loading, setN50Loading] = useState(false);
   const [fiidiiTrail, setFiidiiTrail] = useState([]); // 10-session FII/DII flow trail (localStorage, builds forward)
   const [flash, setFlash]           = useState({});
@@ -627,7 +627,7 @@ export default function Page() {
     };
   }, [usData, indian.val, swing, fxRate, macro, regUsNdx, regUsDur, regIndia, regVolVix, ov.fdValue]);
 
-  // Nifty 50 heatmap + movers — lazy: fetched only when the Pre-Market tab (6)
+  // Nifty 50 heatmap + movers — lazy: fetched only when the Wrap tab (6)
   // is open, since it pulls 50 constituent quotes. Cached in sessionStorage for
   // 5 min so tab toggles don't re-hammer Yahoo; hydrate from cache instantly.
   useEffect(() => {
@@ -895,9 +895,9 @@ export default function Page() {
             <div className="topbar-right">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Pre-Market — overnight global cues, FII/DII flows, and how the book responds if markets move up or down">
-                <span className="pulse-spark">✦</span>Pre-Market
-                {premarket?.window?.open
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Market Wrap — how the session closed: index moves, sector performance, FII/DII flows, and how the book fared">
+                <span className="pulse-spark">✦</span>Wrap
+                {markets.nse
                   ? <span className="pulse-pill-state regime-watch">live</span>
                   : regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
               </button>
@@ -1005,7 +1005,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime}
+            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

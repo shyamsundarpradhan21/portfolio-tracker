@@ -1,8 +1,8 @@
 'use client';
 
-// Reusable market-overview card — support/resistance pivots for a market's indices
-// + an optional movers list. Drives both columns of the Pre-Market tab: India
-// (Nifty/Sensex pivots + Nifty-50 movers) and US (S&P/Nasdaq pivots, no movers).
+// Reusable market-overview card — how each index did this session (close, day
+// change, range) + an optional movers list. Drives both columns of the Wrap tab:
+// India (Nifty/Sensex close + Nifty-50 movers) and US (S&P/Nasdaq close, no movers).
 // The sector heatmap is a sibling card (see SectorHeatmap). All live or honestly blank.
 
 const n0 = (v) => (v == null || !isFinite(v) ? '—' : v.toLocaleString('en-IN', { maximumFractionDigits: 0 }));
@@ -23,34 +23,34 @@ export function aggregateSectors(stocks) {
     .sort((a, b) => b.pct - a.pct);
 }
 
-// Pivot ladder for one index — resistances above, pivot, supports below.
-function PivotLadder({ lv, label }) {
-  if (!lv || lv.stale) {
+// Today's performance for one index — close, day change %, points, and day range.
+function SessionStat({ s, label }) {
+  if (!s || s.stale) {
     return (
       <div className="no-pivot">
         <div className="no-pivot-head">{label}</div>
-        <div className="mac-stale">Levels unavailable{lv?.error ? ` — ${lv.error}` : ''}</div>
+        <div className="mac-stale">Session data unavailable{s?.error ? ` — ${s.error}` : ''}</div>
       </div>
     );
   }
-  const rows = [
-    { k: 'R3', v: lv.r3, t: 'res' }, { k: 'R2', v: lv.r2, t: 'res' }, { k: 'R1', v: lv.r1, t: 'res' },
-    { k: 'PP', v: lv.pp, t: 'pp' },
-    { k: 'S1', v: lv.s1, t: 'sup' }, { k: 'S2', v: lv.s2, t: 'sup' }, { k: 'S3', v: lv.s3, t: 'sup' },
-  ];
+  const pts = s.change == null || !isFinite(s.change)
+    ? null
+    : (s.change > 0 ? '+' : s.change < 0 ? '−' : '') + n0(Math.abs(s.change));
   return (
     <div className="no-pivot">
       <div className="no-pivot-head">
         {label}
-        <span className="sub" style={{ textTransform: 'none', letterSpacing: 0 }}>prev close {n0(lv.prevClose)} · {lv.asOf}</span>
+        <span className="sub" style={{ textTransform: 'none', letterSpacing: 0 }}>at close · {s.asOf}</span>
       </div>
-      <div className="no-ladder">
-        {rows.map((r) => (
-          <div className={'no-rung no-' + r.t} key={r.k}>
-            <span className="no-rung-k">{r.k}</span>
-            <span className="no-rung-v mono">{n0(r.v)}</span>
-          </div>
-        ))}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 7 }}>
+        <span className="mono" style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, letterSpacing: '-.5px' }}>{n0(s.close)}</span>
+        <span className={'mono ' + pctCls(s.pct)} style={{ fontSize: 'var(--fs-sm)', fontWeight: 700 }}>{pctTxt(s.pct)}</span>
+      </div>
+      <div className="sub" style={{ marginTop: 5 }}>
+        {pts != null && <span className={pctCls(s.pct)} style={{ fontWeight: 600 }}>{pts} pts</span>}
+        {pts != null && <span className="mut"> · </span>}
+        <span className="mut">day range </span>
+        <span className="mono">{n0(s.low)}–{n0(s.high)}</span>
       </div>
     </div>
   );
@@ -70,7 +70,7 @@ function MoverList({ title, rows, accent }) {
   );
 }
 
-export default function MarketOverview({ title, sub, pivots = [], movers, note }) {
+export default function MarketOverview({ title, sub, sessions = [], movers, note }) {
   return (
     <div className="card sec">
       <div className="ctitle" style={{ marginBottom: 12 }}>
@@ -78,7 +78,7 @@ export default function MarketOverview({ title, sub, pivots = [], movers, note }
         {sub ? <span className="sub" style={{ textTransform: 'none' }}> {sub}</span> : null}
       </div>
       <div className="no-pivots">
-        {pivots.map((p) => <PivotLadder key={p.label} lv={p.lv} label={p.label} />)}
+        {sessions.map((p) => <SessionStat key={p.label} s={p.s} label={p.label} />)}
       </div>
       {movers && (
         <div className="no-movers-wrap">

@@ -1,12 +1,13 @@
-// Pre-Market Insights feed — the morning companion that lands BEFORE NSE opens.
-// Modelled on Dhan's pre-market window (a cohesive overnight read in one place),
-// adapted to this book. Two keyless sources, same discipline as /api/macro:
-//   - Yahoo Finance v8 chart for overnight global cues (indices/commodities/FX)
+// Market Wrap feed — the post-session recap that lands AFTER the close.
+// One cohesive read of how the day went: index closes + day change, today's
+// range, sector performance, and the prior-session FII/DII flows. Two keyless
+// sources, same discipline as /api/macro:
+//   - Yahoo Finance v8 chart for closes / day moves / ranges (indices/commodities/FX)
 //   - NSE public JSON (fiidiiTradeReact) for the FII/DII cash-flow trail
 //
-//   GET /api/premarket
-//   → { fetchedAt, window:{ open, label, opensInMin }, cues:{ <key>:{…}|{stale} },
-//       fiidii:{ trail:[…], latest:{…} } | { stale } }
+//   GET /api/premarket   (route name kept for plumbing; content is the Wrap)
+//   → { fetchedAt, cues:{ <key>:{…}|{stale} },
+//       sessions:{ <idx>:{ close, change, pct, high, low } }, usSectors, fiidii }
 //
 // Every datum carries its source + as-of stamp; a failed source returns an
 // explicit { stale:true, error } so the UI renders an honest "unavailable"
@@ -20,32 +21,10 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-// ── Pre-open window (IST) ────────────────────────────────────────────────────
-// Dhan surfaces Pre-Market Insights 6:30–9:00 AM IST on trading days. We compute
-// the same wall-clock window deterministically (Mon–Fri); outside it the tab
-// runs in "market context" mode rather than the live morning companion.
-const PRE_START = 6 * 60 + 30; // 06:30 IST
-const PRE_END = 9 * 60;        // 09:00 IST
-const NSE_OPEN = 9 * 60 + 15;  // 09:15 IST
-
-function preOpenWindow() {
-  try {
-    const p = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Kolkata', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(new Date());
-    const get = (t) => p.find((x) => x.type === t)?.value;
-    const wd = get('weekday');
-    const weekend = wd === 'Sat' || wd === 'Sun';
-    let hh = parseInt(get('hour'), 10); if (hh === 24) hh = 0;
-    const mins = hh * 60 + parseInt(get('minute'), 10);
-    const open = !weekend && mins >= PRE_START && mins < PRE_END;
-    const label = weekend ? 'weekend' : open ? 'pre-open' : mins < PRE_START ? 'before-window' : mins < NSE_OPEN ? 'pre-open auction' : mins < 15 * 60 + 30 ? 'market open' : 'after-close';
-    const opensInMin = !weekend && mins < NSE_OPEN ? NSE_OPEN - mins : null;
-    return { open, label, opensInMin, istMinutes: mins, weekend };
-  } catch {
-    return { open: false, label: 'unknown', opensInMin: null, istMinutes: null, weekend: false };
-  }
-}
+// The session's open/closed state is NOT computed here from a wall clock — it's
+// derived client-side from the live index quotes (holiday-aware Yahoo marketState,
+// the same source as the topbar NSE/NYSE pills), so the Wrap header is market-
+// driven and never disagrees with reality on holidays or special sessions.
 
 // ── Yahoo v8 chart quote ─────────────────────────────────────────────────────
 // Returns { price, prev, change, pct, asOf, source } or { stale, error, source }.
@@ -109,13 +88,13 @@ async function fetchCues() {
   return Object.fromEntries(entries);
 }
 
-// ── Support / resistance pivot levels ────────────────────────────────────────
-// Classic floor-trader pivots from the prior COMPLETED session's high/low/close
-// — a standard, deterministic read of where the pre-open auction sits relative
-// to support and resistance. We pull a few daily candles and use the last one
-// whose OHLC is fully formed (the current day's partial candle is skipped).
-async function yhPivots(symbol, label) {
-  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=7d`;
+// ── Session summary (today's OHLC) ───────────────────────────────────────────
+// How each index did this session: open / high / low / close + day change vs the
+// prior close. We read daily candles and use the latest bar (today — partial
+// while the session is live, complete after the close), falling back to the live
+// meta price for the close and the prior bar (or meta) for the previous close.
+async function yhSession(symbol) {
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
   for (const host of YH_HOSTS) {
     try {
       const res = await fetch(host + path, {
@@ -125,36 +104,35 @@ async function yhPivots(symbol, label) {
       });
       if (!res.ok) continue;
       const r = (await res.json())?.chart?.result?.[0];
-      const ts = r?.timestamp, q = r?.indicators?.quote?.[0];
+      const ts = r?.timestamp, q = r?.indicators?.quote?.[0], meta = r?.meta;
       if (!Array.isArray(ts) || !q) continue;
-      // Walk back to the most recent bar with a complete H/L/C.
+      // Latest bar with a high/low = the current / most-recent session.
       let idx = -1;
       for (let i = ts.length - 1; i >= 0; i--) {
-        if (q.high?.[i] != null && q.low?.[i] != null && q.close?.[i] != null) { idx = i; break; }
+        if (q.high?.[i] != null && q.low?.[i] != null) { idx = i; break; }
       }
       if (idx === -1) continue;
-      const H = q.high[idx], L = q.low[idx], C = q.close[idx];
-      const pp = (H + L + C) / 3;
+      const close = q.close?.[idx] ?? meta?.regularMarketPrice ?? null;
+      const prevClose = idx > 0 ? (q.close?.[idx - 1] ?? null) : (meta?.chartPreviousClose ?? null);
+      if (close == null) continue;
       return {
-        prevClose: C, prevHigh: H, prevLow: L,
-        pp,
-        r1: 2 * pp - L, s1: 2 * pp - H,
-        r2: pp + (H - L), s2: pp - (H - L),
-        r3: H + 2 * (pp - L), s3: L - 2 * (H - pp),
+        open: q.open?.[idx] ?? null, high: q.high[idx], low: q.low[idx], close, prevClose,
+        change: prevClose != null ? close - prevClose : null,
+        pct: prevClose ? ((close - prevClose) / prevClose) * 100 : null,
         asOf: new Date(ts[idx] * 1000).toISOString().slice(0, 10),
-        source: `Yahoo ${symbol} (pivots)`,
+        source: `Yahoo ${symbol} (session)`,
       };
     } catch { /* try next host */ }
   }
-  return { stale: true, error: 'fetch failed', source: `Yahoo ${symbol} (pivots)` };
+  return { stale: true, error: 'fetch failed', source: `Yahoo ${symbol} (session)` };
 }
 
-async function fetchLevels() {
+async function fetchSessions() {
   const [nifty, sensex, sp500, nasdaq] = await Promise.all([
-    yhPivots('^NSEI', 'Nifty 50'),
-    yhPivots('^BSESN', 'Sensex'),
-    yhPivots('^GSPC', 'S&P 500'),
-    yhPivots('^IXIC', 'Nasdaq'),
+    yhSession('^NSEI'),
+    yhSession('^BSESN'),
+    yhSession('^GSPC'),
+    yhSession('^IXIC'),
   ]);
   return { nifty, sensex, sp500, nasdaq };
 }
@@ -291,20 +269,19 @@ async function persistTrail(latest) {
 }
 
 export async function GET() {
-  const [cues, levels, usSectors, fiidii] = await Promise.all([fetchCues(), fetchLevels(), fetchUsSectors(), fetchFiiDii()]);
+  const [cues, sessions, usSectors, fiidii] = await Promise.all([fetchCues(), fetchSessions(), fetchUsSectors(), fetchFiiDii()]);
   // Persist + attach the server trail when KV is configured; null otherwise.
   const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
   if (trail) fiidii.trail = trail;
   return Response.json(
     {
       fetchedAt: new Date().toISOString(),
-      window: preOpenWindow(),
       cues,
-      levels,
+      sessions,
       usSectors,
       fiidii,
     },
-    // Cues move pre-open; a short edge cache keeps the morning refreshes cheap
+    // Closes/levels move intraday; a short edge cache keeps refreshes cheap
     // without serving a number that's more than a minute or two old.
     { headers: { 'Cache-Control': 's-maxage=90, stale-while-revalidate=300' } },
   );

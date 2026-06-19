@@ -1,10 +1,10 @@
 'use client';
 
-// Pre-Market Insights — the morning companion that lands before NSE opens.
-// A cohesive overnight read in one card: market mood (computed regime), the
-// global cue board (world / India ref / commodities / FX), prior-session FII/DII
-// flows, and a demoted AI nuance line. Every cell is live or honestly blank —
-// a failed feed renders "n/a", never a stale or invented number (FEEDBACK rule).
+// Market Wrap briefing — the post-session recap card. A cohesive read of how the
+// day went: market mood (computed regime), the cue board at the close (world /
+// India / commodities / FX), the session's FII/DII flows, and a demoted AI nuance
+// line. Every cell is live or honestly blank — a failed feed renders "n/a", never
+// a stale or invented number (FEEDBACK rule).
 
 const REGIME_WORD = { 'risk-on': 'Risk-on', neutral: 'Neutral', watch: 'Watch', 'risk-off': 'Risk-off' };
 const LEAN_ARROW = { easing: '▼', stable: '→', tightening: '▲' };
@@ -103,9 +103,8 @@ function FlowTrail({ trail }) {
 
 export default function PreMarketBriefing({
   premarket, fiidiiTrail, regime, aiLine, insightsLoading, onRefresh, aiReady, aiAgo,
-  groups, showFlows = true, showHeader = true, title,
+  groups, showFlows = true, showHeader = true, title, nseOpen, nseState,
 }) {
-  const win = premarket?.window;
   const cues = premarket?.cues || {};
   const fiidii = premarket?.fiidii;
   const cueList = Object.values(cues);
@@ -113,17 +112,16 @@ export default function PreMarketBriefing({
   // ['world','commodity','fx']) so the same board powers both columns.
   const groupsToShow = Array.isArray(groups) ? GROUPS.filter((g) => groups.includes(g.key)) : GROUPS;
 
-  // Window framing — the live morning companion (6:30–9:00 IST) vs context mode.
+  // Session framing — MARKET-driven: the holiday-aware NSE open/closed state from
+  // the live quotes (same source as the topbar pill), never the wall clock. Keyed
+  // on the open boolean, then refined by Yahoo's PRE*/POST* phase when closed.
   const windowLabel =
-    win?.open ? 'Pre-open window · live'
-      : win?.label === 'weekend' ? 'Markets closed · weekend'
-      : win?.label === 'before-window' ? 'Before the pre-open window'
-      : win?.label === 'pre-open auction' ? 'Pre-open auction'
-      : win?.label === 'market open' ? 'NSE open · session live'
-      : 'Overnight & market context';
-  const countdown = win?.opensInMin != null
-    ? (win.opensInMin >= 60 ? `${Math.floor(win.opensInMin / 60)}h ${win.opensInMin % 60}m` : `${win.opensInMin}m`)
-    : null;
+    nseOpen ? 'Session live · NSE open'
+      : nseOpen === false
+        ? (/^PRE/.test(nseState || '') ? 'Pre-open · last session’s wrap'
+          : /^POST/.test(nseState || '') ? 'Market closed · today’s wrap'
+          : 'Markets closed · latest session')
+        : 'Latest session';
 
   const latest = fiidii && !fiidii.stale ? fiidii.latest : null;
   const fii = flowFmt(latest?.fii?.net);
@@ -141,7 +139,6 @@ export default function PreMarketBriefing({
       {showHeader && (
       <div className="pulse-regime">
         <span className="pm-window">{windowLabel}</span>
-        {countdown && <span className="pm-countdown">NSE opens in {countdown}</span>}
         {regime && regime.state !== 'unavailable' && (
           <span className={'regime-badge regime-' + regime.state} title="Computed market mood from the live macro clock — conditions now, not a forecast">
             {REGIME_WORD[regime.state]}

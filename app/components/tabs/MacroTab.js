@@ -15,12 +15,12 @@ function agoStr(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTrail, regime, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
 
-  const lv = premarket?.levels;
+  const sx = premarket?.sessions;
   const inSectors = aggregateSectors(nifty50?.stocks);
   // US sector heatmap tiles from the SPDR sector ETFs (equal-weight tiles).
   const usSectors = (premarket?.usSectors || [])
@@ -65,10 +65,11 @@ export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTra
         <SwotCard swot={insights?.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />
       </div>
 
-      {/* Row 2 — overnight cues (India: indices + bullion + FII/DII | US & global) */}
+      {/* Row 2 — today's close cues (India: indices + bullion + FII/DII | US & global) */}
       <div className="g2 sec pm-row">
         <PreMarketBriefing
           premarket={premarket} fiidiiTrail={fiidiiTrail} regime={regime}
+          nseOpen={markets?.nse} nseState={markets?.nseState}
           insightsLoading={insightsLoading} onRefresh={onRefresh} aiReady={aiReady}
           aiAgo={insightsTs ? agoStr(insightsTs) : null}
           groups={['india', 'commodity']} showFlows showHeader
@@ -76,30 +77,30 @@ export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTra
         <PreMarketBriefing
           premarket={premarket} regime={regime}
           groups={['world', 'fx']} showFlows={false} showHeader={false}
-          title="US & global overnight"
+          title="US & global · at the close"
         />
       </div>
 
-      {/* Row 3 — index overview / support–resistance (Nifty/Sensex | S&P/Nasdaq) */}
+      {/* Row 3 — how the session went (Nifty/Sensex | S&P/Nasdaq): close, day change, range */}
       <div className="g2 sec pm-row">
         <MarketOverview
-          title="Nifty & Sensex overview"
-          sub="— support / resistance & the day’s movers"
-          pivots={[{ lv: lv?.nifty, label: 'Nifty 50' }, { lv: lv?.sensex, label: 'Sensex' }]}
+          title="Nifty & Sensex"
+          sub="— today’s close & the day’s movers"
+          sessions={[{ s: sx?.nifty, label: 'Nifty 50' }, { s: sx?.sensex, label: 'Sensex' }]}
           movers={nifty50?.movers}
-          note={<>Classic pivot levels from the prior session’s high/low/close — deterministic, not a forecast. F&amp;O insights (OI, PCR, max-pain) aren’t wired — no reliable free options-chain feed.</>}
+          note={<>Close, day change and range from the session’s candles. F&amp;O insights (OI, PCR, max-pain) aren’t wired — no reliable free options-chain feed.</>}
         />
         <MarketOverview
-          title="S&P 500 & Nasdaq overview"
-          sub="— prior-session support / resistance"
-          pivots={[{ lv: lv?.sp500, label: 'S&P 500' }, { lv: lv?.nasdaq, label: 'Nasdaq' }]}
-          note={<>Pivot levels from the prior US session’s high/low/close — deterministic, not a forecast. Constituent movers aren’t shown — no free US constituent feed.</>}
+          title="S&P 500 & Nasdaq"
+          sub="— today’s close"
+          sessions={[{ s: sx?.sp500, label: 'S&P 500' }, { s: sx?.nasdaq, label: 'Nasdaq' }]}
+          note={<>Close, day change and range from the session’s candles. Constituent movers aren’t shown — no free US constituent feed.</>}
         />
       </div>
 
-      {/* Row 4 — sector heatmap (Nifty 50 sectors | SPDR sector ETFs) */}
+      {/* Row 4 — sector performance today (Nifty 50 sectors | SPDR sector ETFs) */}
       <div className="g2 sec pm-row">
-        <SectorHeatmap title="Nifty sector heatmap" sub="average move by Nifty 50 sector" sectors={inSectors} loading={nifty50Loading} />
+        <SectorHeatmap title="Nifty sector heatmap" sub="today’s average move by Nifty 50 sector" sectors={inSectors} loading={nifty50Loading} />
         <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />
       </div>
     </div>
