@@ -55,11 +55,11 @@
   --fs-xs:  0.8125rem; /* ≈13px   — subs, badges, table headers, status */
   --fs-sm:  0.875rem;  /* ≈14px   — table cells, dense body */
   --fs-md:  0.97rem;   /* ≈15.5px — body */
-  --fs-lg:  1.27rem;   /* ≈20px   — small values (lifted +12% so figures anchor cards) */
-  --fs-xl:  1.55rem;   /* ≈25px   — card titles, mid values (+12%) */
-  --fs-2xl: 1.9rem;    /* ≈30px   — summary-card values (+12%) */
-  --fs-h1:  2.95rem;   /* ≈47px   — section heroes (+12%) */
-  --fs-h0:  3.4rem;    /* ≈54px   — the net-worth figure (+13%) */
+  --fs-lg:  1.12rem;   /* small values — calmed back from the +12% lift */
+  --fs-xl:  1.36rem;   /* card titles, mid values */
+  --fs-2xl: 1.62rem;   /* summary-card values */
+  --fs-h1:  2.55rem;   /* section heroes */
+  --fs-h0:  2.95rem;   /* the net-worth figure */
   /* label/table tiers (--fs-2xs/xs/sm) deliberately HELD — bigger values fill the
      dead space without bloating dense tables: more presence, same breathing room. */
 
@@ -273,10 +273,10 @@ body {
 
 
 /* 2-col / 3-col / 4-col grids — single grid, equal-height rows (Section 0a/0c). */
-.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: stretch; }
-.g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: stretch; }
-.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: stretch; }
-.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: stretch; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: stretch; }
+.g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; align-items: stretch; }
+.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-items: stretch; }
+.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; align-items: stretch; }
 .g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
@@ -518,8 +518,8 @@ body {
   /* Fluid: ~6.4% of the viewport width, capped at the 92px design size. Uses vw
      (not cqw) because the hero column now hugs the figure — a container unit would
      be circular (figure width → column width → figure font-size → figure width). */
-  font-size: clamp(40px, 5.8vw, 76px) !important;
-  font-weight: 900 !important;
+  font-size: clamp(34px, 4.2vw, 56px) !important;
+  font-weight: 800 !important;
   letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
   line-height: 0.85; /* the mono font carries ~10% extra leading; trim it so the
                         label + figure + captions pack tight (shorter, rectangular cards) */
@@ -892,14 +892,21 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  /* Side gutters scale with the viewport so the content breathes on the left/right
-     instead of running edge-to-edge; min 28px keeps laptops from being squeezed,
-     max 96px stops ultrawides from over-indenting. Top/bottom unchanged. */
-  padding: 24px clamp(28px, 4.5vw, 96px) 40px;
-  max-width: 1920px;
-  /* Centre the content column on wide screens. */
+  /* Capped, centred content column. At 1920px the old full-bleed column stretched
+     the cards edge-to-edge; capping at 1600 and centring gives side breathing room
+     at full font size (the look you otherwise only got by zooming the browser out).
+     Flat 28px gutters — the auto margins, not padding, now provide the breathing
+     room, so the header cards keep their width and labels don't truncate. Below
+     1600 the column fills the viewport with the same 28px gutters. */
+  padding: 24px 32px 40px;
+  max-width: 1560px;
   margin: 0 auto;
 }
+/* Big landscape displays (large PC monitors, TVs): widen the column so the
+   dashboard doesn't strand the screen as a narrow centred strip. The 1920 laptop
+   view (≤2099px) is unchanged — this only kicks in on genuinely large screens. */
+@media (min-width: 2100px) { .main { max-width: 1840px; } }
+@media (min-width: 3200px) { .main { max-width: 2560px; } }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
 .topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
@@ -941,7 +948,7 @@ body { padding: 0; }
 /* Always one row of 5 — on narrow screens the row scrolls sideways rather
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
-  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 18px;
+  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 20px;
   /* No overflow clip on desktop — it was slicing the rounded corners + active
      glow off the first/last cards. Scroll is re-enabled below 1080px where the
      row no longer fits (see media query). */
@@ -979,12 +986,16 @@ body { padding: 0; }
    ("FIXED DEPOSITS", "INDIAN EQUITY" + live-dot) fit on one line inside the
    gutter-narrowed cards instead of truncating to "INDIAN EQU…". */
 .hdr-card .lbl { font-size: var(--fs-sm); letter-spacing: .035em; line-height: 1.25; margin-bottom: 20px; color: var(--txt2); }
-.hdr-card .vmd { font-size: clamp(20px, 2.5vw, 36px); line-height: 0.85; letter-spacing: -.5px; }
+.hdr-card .vmd { font-size: clamp(17px, 1.85vw, 28px); line-height: 0.85; letter-spacing: -.5px; }
 .hdr-card .sub { font-size: var(--fs-md); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 1080px) {
-  .hdr-grid { grid-template-columns: auto minmax(0, 1fr); gap: 10px; }
-  .hdr-cards { overflow-x: auto; scrollbar-width: none; } /* row no longer fits — scroll sideways */
+  /* Below 1080 (portrait/rotated monitors, narrow windows) the hero + 5-across row
+     no longer fits. Instead of scrolling the cards sideways (hides values), stack
+     the hero on its own row and WRAP the asset cards into a fluid grid so all five
+     stay visible. Phones get a dedicated UI; this targets portrait desktop monitors. */
+  .hdr-grid { grid-template-columns: 1fr; gap: 12px; }
+  .hdr-cards { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); overflow: visible; }
 }
 @media (max-width: 900px) {
   .pj-outlook { grid-template-columns: 1fr; }
