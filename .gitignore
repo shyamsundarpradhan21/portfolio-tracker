@@ -22,6 +22,10 @@
 *.xlsx
 *.xls
 
+# private portfolio data — holdings/salary/loans, pulled out of the bundle into KV.
+# Local dev + the KV seed read this; the deployed app reads KV. .example is committed.
+/data/portfolio.private.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
