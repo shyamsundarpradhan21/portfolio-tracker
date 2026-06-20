@@ -362,18 +362,20 @@ if (!process.env.SYNC_SKIP_GIT) {
       const scope = ONLY.length ? ` (${ONLY.join(',')})` : '';
       execSync(`git commit -m "chore: broker sync ${ts.slice(0, 10)}${scope}"`, { cwd: ROOT, stdio: 'inherit' });
     }
-    // Two committers can write these files (laptop sync + always-on cloud-Dhan
-    // routine), so rebase onto the remote before pushing instead of a bare push.
-    // On the rare append-conflict, abort cleanly — the row is idempotent (upsert
-    // by date:broker), so the next run re-applies + pushes it.
+    // Always land on origin/main. The laptop is on main, but a cloud routine session
+    // runs on a throwaway branch (claude/*), so a bare `git push` lands the data on
+    // that branch where the deployed app never sees it. Rebase onto + push to main
+    // explicitly. Two committers (laptop + cloud) → rebase first; on the rare
+    // append-conflict, abort cleanly (the ledger upsert is idempotent → next run heals).
+    execSync('git fetch origin main', { cwd: ROOT });
     try {
-      execSync('git pull --rebase --autostash', { cwd: ROOT, stdio: 'inherit' });
+      execSync('git rebase origin/main', { cwd: ROOT, stdio: 'inherit' });
     } catch {
       try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
-      throw new Error('pull --rebase conflicted — skipping push, next run retries');
+      throw new Error('rebase onto main conflicted — skipping push, next run retries');
     }
-    const ahead = +execSync('git rev-list --count @{u}..HEAD', { cwd: ROOT }).toString().trim();
-    if (ahead > 0) { execSync('git push', { cwd: ROOT, stdio: 'inherit' }); console.log(`pushed ${ahead} commit(s)`); }
+    const ahead = +execSync('git rev-list --count origin/main..HEAD', { cwd: ROOT }).toString().trim();
+    if (ahead > 0) { execSync('git push origin HEAD:main', { cwd: ROOT, stdio: 'inherit' }); console.log(`pushed ${ahead} to main`); }
     else { console.log('nothing to push'); }
   } catch (e) { console.error('git step:', e.message); }
 }
