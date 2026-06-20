@@ -14,6 +14,7 @@
 // cell instead of a stale or fabricated number.
 
 import { deriveMarketState } from '../../lib/market';
+import { mapAllIndices, mapYahooIndices, YH_INDEX_SYMS } from '../../lib/wrapIndices';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -167,22 +168,69 @@ async function fetchUsSectors() {
   return rows;
 }
 
-// ── FII/DII cash-flow trail (NSE public JSON) ────────────────────────────────
-// NSE gates its JSON behind a session cookie set on the home page, so we bootstrap
-// a cookie with a browser UA, then hit the data endpoint. Often blocked from
-// data-centre IPs — on any failure we return { stale } and the UI shows the trail
-// as unavailable rather than inventing flows.
-async function fetchFiiDii() {
-  const src = 'NSE fiidiiTradeReact';
+// ── NSE session cookie (shared) ──────────────────────────────────────────────
+// NSE gates its JSON behind a cookie set on the home page. We bootstrap it ONCE
+// per request (browser UA) and reuse it for every NSE endpoint below (indices +
+// FII/DII), so the home page is hit a single time. Returns '' on failure — the
+// callers then degrade to a fallback / { stale } rather than throwing.
+async function nseCookie() {
   try {
     const boot = await fetch('https://www.nseindia.com/', {
       headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9' },
       cache: 'no-store',
       signal: AbortSignal.timeout(8000),
     });
-    const cookie = (boot.headers.get('set-cookie') || '')
+    return (boot.headers.get('set-cookie') || '')
       .split(/,(?=[^ ;]+=)/).map((c) => c.split(';')[0].trim()).filter(Boolean).join('; ');
+  } catch {
+    return '';
+  }
+}
 
+// ── NSE index board (sectoral + breadth + India VIX) ─────────────────────────
+// Replaces the manual Kite EOD snapshot (data/market-wrap.json): one allIndices
+// call returns every NSE index, mapped to the same wrap shape. NSE often blocks
+// data-centre IPs, so on any failure we fall back to Yahoo's NSE index symbols;
+// the client then falls back again to the committed snapshot — never a worse
+// state than today, and live whenever NSE is reachable.
+async function fetchIndices(cookie) {
+  const src = 'NSE allIndices';
+  // Primary — NSE allIndices (authoritative; the same source Kite mirrors).
+  try {
+    const res = await fetch('https://www.nseindia.com/api/allIndices', {
+      headers: {
+        'User-Agent': UA,
+        Accept: 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        Referer: 'https://www.nseindia.com/market-data/live-market-indices',
+        ...(cookie ? { Cookie: cookie } : {}),
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const mapped = mapAllIndices(await res.json());
+      if (mapped) return mapped;
+    }
+  } catch { /* fall through to Yahoo */ }
+
+  // Fallback — Yahoo's NSE index symbols. Fetch exactly what the mapper looks up,
+  // then hand it the lookup. Breadth is thin on Yahoo, so it returns what resolves.
+  const quotes = {};
+  await Promise.all(YH_INDEX_SYMS.map(async (s) => { quotes[s] = await yhQuote(s, `Yahoo ${s}`); }));
+  const yh = mapYahooIndices((s) => quotes[s]);
+  if (yh) return yh;
+
+  return { stale: true, error: 'NSE + Yahoo index feeds unavailable', source: src };
+}
+
+// ── FII/DII cash-flow trail (NSE public JSON) ────────────────────────────────
+// Uses the shared NSE session cookie (see nseCookie). Often blocked from
+// data-centre IPs — on any failure we return { stale } and the UI shows the trail
+// as unavailable rather than inventing flows.
+async function fetchFiiDii(cookie) {
+  const src = 'NSE fiidiiTradeReact';
+  try {
     const res = await fetch('https://www.nseindia.com/api/fiidiiTradeReact', {
       headers: {
         'User-Agent': UA,
@@ -271,7 +319,11 @@ async function persistTrail(latest) {
 }
 
 export async function GET() {
-  const [cues, sessions, usSectors, fiidii] = await Promise.all([fetchCues(), fetchSessions(), fetchUsSectors(), fetchFiiDii()]);
+  // One NSE cookie bootstrap, reused by both NSE endpoints (indices + FII/DII).
+  const cookie = await nseCookie();
+  const [cues, sessions, usSectors, fiidii, indices] = await Promise.all([
+    fetchCues(), fetchSessions(), fetchUsSectors(), fetchFiiDii(cookie), fetchIndices(cookie),
+  ]);
   // Persist + attach the server trail when KV is configured; null otherwise.
   const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
   if (trail) fiidii.trail = trail;
@@ -282,6 +334,7 @@ export async function GET() {
       sessions,
       usSectors,
       fiidii,
+      indices,
     },
     // Closes/levels move intraday; a short edge cache keeps refreshes cheap
     // without serving a number that's more than a minute or two old.

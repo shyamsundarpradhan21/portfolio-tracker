@@ -19,18 +19,52 @@ function agoStr(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MacroTab({ premarket, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, macro, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
 
   const sx = premarket?.sessions;
   const inSectors = aggregateSectors(nifty50?.stocks);
-  // Authoritative NSE sector + breadth + India VIX from the Kite snapshot (captured
-  // EOD during /sync). Preferred over inSectors, which only averages the 50 Nifty
-  // constituents by sector — the real sectoral indices are properly weighted & broader.
-  const wrapSectors = (marketWrap?.sectors || []).map((s) => ({ name: s.name, pct: s.pct, weight: 1 }));
-  const wrapDate = marketWrap?.asOf ? new Date(marketWrap.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
+  // Authoritative NSE sector + breadth + India VIX. Prefer the LIVE feed
+  // (/api/premarket → NSE allIndices, with a Yahoo fallback); when it's
+  // unavailable, use the committed Kite EOD snapshot (data/market-wrap.json). Same
+  // shape either way, so the cards render identically — the live feed just drops the
+  // manual /sync dependency and gives breadth + India VIX a live source for the
+  // first time. Both beat inSectors, which only averages the 50 Nifty constituents.
+  const liveWrap = premarket?.indices && !premarket.indices.stale ? premarket.indices : null;
+  const wrap = liveWrap || marketWrap;
+  const wrapLive = !!liveWrap;
+  const wrapSectors = (wrap?.sectors || []).map((s) => ({ name: s.name, pct: s.pct, weight: 1 }));
+  const wrapDate = wrap?.asOf ? new Date(wrap.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
+  // Data-driven freshness label (no hardcoded "Kite"/date): live vs snapshot + as-of.
+  const wrapWhen = wrapLive ? (wrapDate ? `live · ${wrapDate}` : 'live') : (wrapDate ? `close ${wrapDate}` : 'snapshot');
+
+  // Global macro backdrop — the FRED/Yahoo series the app already fetches
+  // (/api/macro) but the Wrap never rendered. Level in mono; the delta vs the prior
+  // observation carries the colour + ▲/▼ (consistent with the breadth/VIX strip).
+  const ml = macro?.live || {};
+  const wdelta = (c, d = 2) => (c == null || !isFinite(c) ? '' : `${c > 0 ? '▲' : c < 0 ? '▼' : '·'}${Math.abs(c).toFixed(d)}`);
+  const macroCells = [
+    { key: 'us10y', label: 'US 10Y', unit: '%', d: 2 },
+    { key: 'spread2s10s', label: '2s10s', unit: ' pp', d: 2 },
+    { key: 'hyOas', label: 'HY OAS', unit: '%', d: 2 },
+    { key: 'nfci', label: 'NFCI', unit: '', d: 2 },
+    { key: 'dxy', label: 'DXY', unit: '', d: 1 },
+    { key: 'vix', label: 'US VIX', unit: '', d: 2 },
+  ].map((m) => {
+    const o = ml[m.key];
+    const live = o && !o.stale && o.value != null && isFinite(o.value);
+    return {
+      label: m.label,
+      live,
+      change: live ? o.change : null,
+      valueStr: live ? `${o.value.toFixed(m.d)}${m.unit}` : '—',
+      deltaStr: live ? wdelta(o.change, m.d) : '',
+    };
+  });
+  const macroAsOfRaw = (ml.us10y || ml.dxy || ml.vix || {}).asOf;
+  const macroAsOf = macroAsOfRaw ? new Date(macroAsOfRaw).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
   // US sector heatmap tiles from the SPDR sector ETFs (equal-weight tiles).
   const usSectors = (premarket?.usSectors || [])
     .map((s) => ({ name: s.label, pct: s.pct, meta: s.sym, weight: 1 }))
@@ -111,35 +145,58 @@ export default function MacroTab({ premarket, nifty50, nifty50Loading, marketWra
       <div className="g2 sec pm-row">
         <SectorHeatmap
           title="NSE sector heatmap"
-          sub={wrapSectors.length ? `NSE sectoral indices · close ${wrapDate}` : 'today’s average move by Nifty 50 sector'}
+          sub={wrapSectors.length ? `NSE sectoral indices · ${wrapWhen}` : 'today’s average move by Nifty 50 sector'}
           sectors={wrapSectors.length ? wrapSectors : inSectors}
           loading={nifty50Loading} />
         <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />
       </div>
 
-      {/* Row 5 — market breadth & volatility (large-cap vs broad, India VIX) — Kite EOD */}
-      {(marketWrap?.breadth?.length || marketWrap?.vix) && (
+      {/* Row 5 — market breadth & volatility (large-cap vs broad, India VIX) */}
+      {(wrap?.breadth?.length || wrap?.vix) && (
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 12 }}>
             Breadth &amp; volatility
-            <span className="sub" style={{ textTransform: 'none' }}> — large-cap vs broad market{wrapDate ? ` · close ${wrapDate}` : ''}</span>
+            <span className="sub" style={{ textTransform: 'none' }}> — large-cap vs broad market{wrapDate ? ` · ${wrapWhen}` : ''}</span>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(marketWrap.breadth || []).map((b) => (
+            {(wrap.breadth || []).map((b) => (
               <div key={b.name} className="csm" style={{ flex: '1 1 90px', minWidth: 88 }}>
                 <div className="sub" style={{ margin: 0 }}>{b.name}</div>
                 <div className={'vsm mono ' + wcls(b.pct)} style={{ marginTop: 3 }}>{wpct(b.pct)}</div>
               </div>
             ))}
-            {marketWrap.vix && (
+            {wrap.vix && (
               <div className="csm" style={{ flex: '1 1 90px', minWidth: 88, borderColor: 'var(--warn-brd)' }}>
                 <div className="sub" style={{ margin: 0 }}>India VIX</div>
                 <div className="vsm mono" style={{ marginTop: 3 }}>
-                  {marketWrap.vix.last != null ? marketWrap.vix.last.toFixed(2) : '—'}
-                  <span className={wcls(marketWrap.vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(marketWrap.vix.pct)}</span>
+                  {wrap.vix.last != null ? wrap.vix.last.toFixed(2) : '—'}
+                  <span className={wcls(wrap.vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(wrap.vix.pct)}</span>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Row 6 — global macro backdrop (rates · curve · credit · the dollar) — FRED + Yahoo */}
+      {macroCells.some((c) => c.live) && (
+        <div className="card sec">
+          <div className="ctitle" style={{ marginBottom: 12 }}>
+            Global macro backdrop
+            <span className="sub" style={{ textTransform: 'none' }}> — rates, curve, credit &amp; the dollar{macroAsOf ? ` · as of ${macroAsOf}` : ''}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {macroCells.map((c) => (
+              <div key={c.label} className="csm" style={{ flex: '1 1 90px', minWidth: 88 }}>
+                <div className="sub" style={{ margin: 0 }}>{c.label}</div>
+                <div className="vsm mono" style={{ marginTop: 3 }}>
+                  {c.valueStr}
+                  {c.live && c.deltaStr && (
+                    <span className={wcls(c.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{c.deltaStr}</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

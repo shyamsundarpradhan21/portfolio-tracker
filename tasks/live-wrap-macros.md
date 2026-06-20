@@ -96,4 +96,29 @@ floated a dedicated **Research tab** (look up/compare any security) as a richer 
   mapping + sample-payload unit tests + deploy validation.
 
 ## Review
-(to fill after implementation)
+
+### Built (Phase 1a + 1b) — local gates green
+- `app/lib/wrapIndices.js` — pure mappers `mapAllIndices` (NSE) + `mapYahooIndices`
+  (fallback) → the existing `market-wrap.json` shape; tolerant field access.
+- `app/lib/wrapIndices.test.js` — 8 tests (sector selection + worst-first sort, breadth
+  order, Nifty/India-VIX parse, ISO timestamp, partial/empty tolerance, Yahoo fallback).
+- `app/api/premarket/route.js` — extracted shared `nseCookie()` (one homepage hit reused
+  by FII/DII + indices); new `fetchIndices(cookie)` = NSE allIndices → Yahoo fallback →
+  `{stale}`; `indices` added to the response.
+- `app/components/tabs/MacroTab.js` — `wrap = live indices || committed snapshot`;
+  data-driven freshness label (`live · DD Mon` vs `close DD Mon`); new **Global macro
+  backdrop** card (US 10Y, 2s10s, HY OAS, NFCI, DXY, US VIX) from the already-fetched
+  `/api/macro`, stale-aware, ▲/▼ + colour deltas. No `page.js` change (props already passed).
+
+- Decision chosen: **build defensively + validate on Vercel** ("better vercel it") — the
+  sandbox can't reach NSE/Yahoo, so live field-shape confirmation happens on the preview.
+
+### Gates
+- `npx vitest run` → 18/18 pass. `npm run build` → compiled, lint/types ok.
+- [ ] **Live validation on Vercel preview** — hit the deployed `/api/premarket`, confirm
+      `indices` is populated (NSE primary; check VIX row name + percent field), eyeball the
+      Wrap tab. Adjust mapper field names if NSE shape differs from the assumed schema.
+
+### Not done / future
+- Phase 2 (per-company analysis on click) — unchanged, deferred.
+- `market-wrap.json` + `merge-market.mjs` retained as the last-resort fallback.
