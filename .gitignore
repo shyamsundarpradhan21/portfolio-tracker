@@ -18,6 +18,10 @@
 .DS_Store
 *.pem
 
+# personal financial documents — never commit (real name + tax/holdings data)
+*.xlsx
+*.xls
+
 # debug
 npm-debug.log*
 yarn-debug.log*
