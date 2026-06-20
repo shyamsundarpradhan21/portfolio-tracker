@@ -55,11 +55,13 @@
   --fs-xs:  0.8125rem; /* ≈13px   — subs, badges, table headers, status */
   --fs-sm:  0.875rem;  /* ≈14px   — table cells, dense body */
   --fs-md:  0.97rem;   /* ≈15.5px — body */
-  --fs-lg:  1.125rem;  /* ≈18px   — small values */
-  --fs-xl:  1.375rem;  /* ≈22px   — card titles, mid values */
-  --fs-2xl: 1.6875rem; /* ≈27px   — summary-card values */
-  --fs-h1:  2.625rem;  /* ≈42px   — section heroes */
-  --fs-h0:  3rem;      /* ≈48px   — the net-worth figure */
+  --fs-lg:  1.27rem;   /* ≈20px   — small values (lifted +12% so figures anchor cards) */
+  --fs-xl:  1.55rem;   /* ≈25px   — card titles, mid values (+12%) */
+  --fs-2xl: 1.9rem;    /* ≈30px   — summary-card values (+12%) */
+  --fs-h1:  2.95rem;   /* ≈47px   — section heroes (+12%) */
+  --fs-h0:  3.4rem;    /* ≈54px   — the net-worth figure (+13%) */
+  /* label/table tiers (--fs-2xs/xs/sm) deliberately HELD — bigger values fill the
+     dead space without bloating dense tables: more presence, same breathing room. */
 
   /* Shared micro-interaction spring (ease-out-quint feel). Every hover/press
      transition references var(--ease); it's the same curve the keyframe
@@ -279,9 +281,9 @@ body {
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 16px; padding: 20px 24px; }
+.card { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 16px; padding: 17px 20px; }
 /* Summary card (Section 0a): radius 14px. */
-.csm { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 14px; padding: 14px 16px; overflow: hidden; }
+.csm { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 14px; padding: 12px 15px; overflow: hidden; }
 /* Values inside summary cards must not push the card wider */
 .csm .vlg, .csm .vmd, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */

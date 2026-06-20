@@ -52,6 +52,7 @@ import USTab        from './components/tabs/USTab';
 import AlgoTab      from './components/tabs/AlgoTab';
 import MacroTab     from './components/tabs/MacroTab';
 import Skel         from './components/shared/Skel';
+import AnimatedNumber from './components/shared/AnimatedNumber';
 import FreshnessTag from './components/shared/FreshnessTag';
 
 // ─── cache keys ───────────────────────────────────────────────────────────────
@@ -941,12 +942,12 @@ export default function Page() {
                 {ath && <span className="spark ath-spark" style={{ marginLeft: 3 }}>✦</span>}
               </div>
               <div key={heroKey} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
-                {indian.valued && usdInr ? <InrC n={ov.nw} /> : <Skel w={150} h={36} />}
+                {indian.valued && usdInr ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} /> : <Skel w={150} h={36} />}
               </div>
               <div className="page-header-sub">
                 {/* line 1 — assets (with the CMPF flag, since it has no own card) */}
                 <div>
-                  Assets <strong>{indian.valued && usdInr ? <InrC n={ov.totalAssets} /> : '—'}</strong>
+                  Assets <strong>{indian.valued && usdInr ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
                   {indian.valued && usdInr && (
                     <span style={{ whiteSpace: 'nowrap' }}
                       title={`Indian ${inrFull(Math.round(indian.val))} + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
@@ -962,7 +963,7 @@ export default function Page() {
                       {' · '}
                       <span style={{ whiteSpace: 'nowrap' }}
                         title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
-                        incl. trading <strong style={{ color: 'var(--acc)' }}><InrC n={ov.nw + STATIC.algo + (ytdTotal || 0)} /></strong>
+                        incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
                       </span>
                     </>
                   ) : <>{' · '}excl. trading</>}
