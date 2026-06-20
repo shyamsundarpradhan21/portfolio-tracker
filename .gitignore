@@ -70,3 +70,6 @@ login-*.png
 
 # laptop KV credentials for the Fyers refresh-token handoff (the .example is committed)
 /mcp/.kv.env
+
+# transient cloud secrets bundle — copy to the Remote workspace, then delete
+/cloud-secrets.txt
