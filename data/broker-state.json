@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-20T05:19:46+05:30",
+  "syncedAt": "2026-06-20T20:41:10+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,12 +7,12 @@
       "note": ""
     },
     "dhan": {
-      "ok": true,
-      "note": ""
+      "ok": false,
+      "note": "Unexpected token 'H', \"Host not i\"... is not valid JSON"
     },
     "fyers": {
-      "ok": true,
-      "note": ""
+      "ok": false,
+      "note": "mint failed (fyers refresh creds missing (need FYERS_APP_ID/SECRET_ID/PIN + refresh_token in KV))"
     },
     "kite": {
       "ok": true,
