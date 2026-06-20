@@ -1,5 +1,5 @@
 {
-  "_note": "Shape reference only — real values are gitignored in data/portfolio.private.json and stored in KV (portfolio:v1). Regenerate the real file with: node scripts/seed-portfolio-kv.mjs --dump",
+  "_note": "Shape reference only — real values are gitignored in data/portfolio.private.json and stored in KV (portfolio:v1). Regenerate with: node scripts/seed-portfolio-kv.mjs --dump",
   "ALGO": {},
   "CMPF_CONTRIBUTIONS": [],
   "CMPF_RATES": {},
@@ -16,11 +16,9 @@
   "MF_SIP": {},
   "PAYSLIPS": [],
   "PROJECTION": {},
-  "REALIZED_PNL": 0,
   "STATIC": {},
   "SWING": [],
   "TRANSACTIONS": [],
-  "UNITS_AS_OF": "",
   "US": [],
   "US_BENCHMARKS": [],
   "US_CASHFLOWS": [],

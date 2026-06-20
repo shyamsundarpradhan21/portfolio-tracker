@@ -11,7 +11,10 @@
 // On any failure we fall back to the last-known casNav (date null, fresh
 // false, no hist) so the UI never breaks.
 
-import { MF_FUNDS, MF_BENCHMARK, MF_CASHFLOWS } from '../../portfolio';
+// MF_FUNDS / MF_BENCHMARK / MF_CASHFLOWS are private data — loaded server-side at
+// request time (the portfolio.js exports are empty on the server, hydrated only
+// on the client).
+import { loadPortfolio } from '../../lib/serverPortfolio';
 
 export const runtime = 'nodejs';
 export const revalidate = 86400; // 24h
@@ -45,12 +48,9 @@ async function resolveCode(spec) {
   return match ? match.schemeCode : null;
 }
 
-// History window starts at the earliest MF cashflow (with a small lead so the
-// purchase-day NAV itself resolves).
-const HIST_FROM = MF_CASHFLOWS.map((c) => c.date).sort()[0];
-
 // Full NAV series for a scheme → latest point + weekly-downsampled history.
-async function fundSeries(code) {
+// histFrom = earliest MF cashflow date (history window start), passed in by GET.
+async function fundSeries(code, histFrom) {
   const j = await jget(`https://api.mfapi.in/mf/${code}`);
   const rows = (j?.data || [])
     .map((r) => ({ iso: toIso(r.date), nav: +r.nav }))
@@ -61,7 +61,7 @@ async function fundSeries(code) {
   const hist = [];
   let lastKept = '';
   for (const r of rows) {
-    if (r.iso < HIST_FROM) continue;
+    if (r.iso < histFrom) continue;
     // keep ~weekly points: at least 6 days since the last kept NAV
     if (!lastKept || (new Date(r.iso) - new Date(lastKept)) / 86400000 >= 6) {
       hist.push([r.iso, r.nav]);
@@ -72,11 +72,11 @@ async function fundSeries(code) {
   return { latest, hist };
 }
 
-async function resolveFund(f) {
+async function resolveFund(f, histFrom) {
   try {
     const code = await resolveCode(f);
     if (!code) throw new Error('no code');
-    const s = await fundSeries(code);
+    const s = await fundSeries(code, histFrom);
     if (!s || !isFinite(s.latest.nav)) throw new Error('no nav');
     return [f.id, { nav: s.latest.nav, date: s.latest.iso, fresh: true, hist: s.hist }];
   } catch {
@@ -85,8 +85,7 @@ async function resolveFund(f) {
 }
 
 // Build the Nifty 50 benchmark: NAV on-or-before each cashflow date + latest NAV.
-async function resolveBenchmark(liveNifty50) {
-  const dates = MF_CASHFLOWS.map((c) => c.date);
+async function resolveBenchmark(liveNifty50, MF_BENCHMARK, dates) {
   try {
     const code = await resolveCode(MF_BENCHMARK);
     if (!code) throw new Error('no code');
@@ -122,9 +121,15 @@ async function resolveBenchmark(liveNifty50) {
 }
 
 export async function GET() {
-  const entries = await Promise.all(MF_FUNDS.map(resolveFund));
+  const data = await loadPortfolio();
+  const MF_FUNDS = data?.MF_FUNDS || [];
+  const MF_BENCHMARK = data?.MF_BENCHMARK || {};
+  const dates = (data?.MF_CASHFLOWS || []).map((c) => c.date);
+  const histFrom = [...dates].sort()[0];
+
+  const entries = await Promise.all(MF_FUNDS.map((f) => resolveFund(f, histFrom)));
   const funds = Object.fromEntries(entries);
-  const benchmark = await resolveBenchmark(funds.nifty50?.nav);
+  const benchmark = await resolveBenchmark(funds.nifty50?.nav, MF_BENCHMARK, dates);
 
   return Response.json(
     { funds, benchmark, asOf: new Date().toISOString() },

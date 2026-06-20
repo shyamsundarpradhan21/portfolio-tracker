@@ -21,8 +21,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KEY = 'portfolio:v1';
 const OUT = join(ROOT, 'data', 'portfolio.private.json');
 
-// Presentation constants + logic stay in portfolio.js (not private data).
-const KEEP_STATIC = new Set(['ALLOC_COLORS', 'CAT_COLORS', 'CMPF_HATCH']);
+// Presentation constants + logic stay in portfolio.js. The two scalars stay too:
+// they can't be hydrated in place (a string/number binding isn't mutable) and are
+// non-sensitive (a CAS date; a legacy realised-P&L figure unused outside this file).
+const KEEP_STATIC = new Set(['ALLOC_COLORS', 'CAT_COLORS', 'CMPF_HATCH', 'UNITS_AS_OF', 'REALIZED_PNL']);
 
 // Minimal .env reader (mirrors sync-brokers): strips quotes, ignores comments.
 function loadEnv(p) {

@@ -40,9 +40,31 @@ still loads) and avoids splitting the 1.4k-line `page.js` across the RSC boundar
 
 ## Stages (build + `npm test` gate after each)
 
-- [ ] Stage 1 (additive, non-regressive): extract private data → gitignored JSON
+- [x] Stage 1 (additive, non-regressive): extract private data → gitignored JSON
       (+ .example); `seed-portfolio-kv.mjs`; `/api/portfolio` route. App still
-      uses static imports → behaviour unchanged. Verify build.
+      uses static imports → behaviour unchanged. SHIPPED (137b9ff) — build ✓,
+      tests 10/10 ✓, route returns 200 with full 27-key payload ✓.
+
+## Stage 2 execution notes (confirmed by scoping)
+- Architecture: runtime HYDRATION (lower risk than threading). portfolio.js
+  exports become empty mutable containers filled in place by `hydratePortfolio(d)`
+  (idempotent: arrays `len=0;push(...)`, objects `Object.assign`). Captured dump
+  holds FINAL values, so NO re-derivation needed in hydrate.
+- portfolio.js: 15 arrays (INDIAN, TRANSACTIONS, CORPORATE_ACTIONS,
+  INDIAN_BENCHMARKS, US_CASHFLOWS, US_CORP_ACTIONS, US_BENCHMARKS, US, FDS,
+  MF_FUNDS, MF_CASHFLOWS, CMPF_CONTRIBUTIONS, CMPS_CONTRIBUTIONS, PAYSLIPS,
+  SWING) + 10 objects (INDIAN_REALIZED, US_REALIZED, US_DIVIDENDS, STATIC, LOAN,
+  MF_SIP, MF_BENCHMARK, ALGO, CMPF_RATES, PROJECTION). KEEP STATIC: UNITS_AS_OF
+  (date), REALIZED_PNL (unused externally), ALLOC_COLORS, CAT_COLORS, CMPF_HATCH,
+  and ALL functions. DELETE eval-time derivations: `STATIC.algo = …` (line 464)
+  and SWING's `.map` (dump already has the mapped value).
+- page.js: rename body → `Dashboard()`; new default `Page()` fetches
+  /api/portfolio → hydratePortfolio(d) → gate (render Dashboard only when ready,
+  reusing existing loading UX). Move `SWING_R = reconcileSleeve(SWING,…)` (line
+  43) INSIDE Dashboard (useMemo). It's the ONLY module-eval private read in page.
+- mf-nav route: read KV/JSON server-side (its portfolio import is empty
+  server-side — never hydrated there).
+- Verify: build + tests + manual smoke of ALL 7 tabs (numbers match pre-refactor).
 - [ ] Stage 2 (the switch): page.js fetch+thread; lib fns take data param;
       components take props; mf-nav reads KV; portfolio.js drops private data.
       Verify build + tests + manual smoke of every tab.

@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  INDIAN, US, FDS, MF, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
+  INDIAN, US, FDS, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
   ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
-  PAYSLIPS,
+  PAYSLIPS, hydratePortfolio, isPortfolioHydrated,
 } from './portfolio';
 import FY_SEED from '../data/fy2526_verified.json';
 import { deriveFY } from './lib/fnoLedger';
@@ -37,12 +37,10 @@ import { ETF_LOOKTHROUGH, ETF_CAP, US_CAP, usSectorOf } from './lib/constants';
 import { reconcileSleeve } from './lib/brokerState';
 const COLORS = ALLOC_COLORS;
 
-// Live broker reconcile (see data/broker-state.json + SCHEDULE.md). Broker drives
-// qty/avg; the curated arrays supply metadata/history. Same row shape out, so the
-// derivations below are untouched — only the numbers (and a freshness badge) change.
-const SWING_R  = reconcileSleeve(SWING, 'SWING');   // Upstox — zero-touch
-// INDIAN reconcile is corp-action-aware — computed from heldIndian (post-bonus/split)
-// inside the component, so an action the app already applies isn't flagged as drift.
+// SWING_R (broker-reconciled swing book) is computed INSIDE Dashboard now — the
+// private data is hydrated at runtime, so it can't be derived at module scope.
+// INDIAN reconcile is corp-action-aware — computed from heldIndian (post-bonus/
+// split) inside the component, so an action the app already applies isn't flagged.
 
 import OverviewTab  from './components/tabs/OverviewTab';
 import IndianTab    from './components/tabs/IndianTab';
@@ -175,7 +173,39 @@ function mfXirr(mf, mfNav) {
 // Projection now lives inside the Overview tab; the header asset cards are the
 // primary nav (each opens its tab) and the live net-worth figure opens Overview.
 // ─── page component ───────────────────────────────────────────────────────────
+// Gate: fetch the private portfolio data (served out-of-bundle from /api/portfolio),
+// hydrate the portfolio module in place, THEN mount the dashboard — so every
+// consumer reads filled values. Mirrors how the app already gates on live prices.
 export default function Page() {
+  const [pReady, setPReady] = useState(isPortfolioHydrated());
+  const [pErr, setPErr] = useState(false);
+  useEffect(() => {
+    if (isPortfolioHydrated()) { setPReady(true); return; }
+    let on = true;
+    fetch('/api/portfolio')
+      .then((r) => { if (!r.ok) throw new Error('portfolio ' + r.status); return r.json(); })
+      .then((d) => { if (on) { hydratePortfolio(d); setPReady(true); } })
+      .catch(() => { if (on) setPErr(true); });
+    return () => { on = false; };
+  }, []);
+  if (pErr) return (
+    <div className="layout"><main className="main" style={{ padding: 48 }}>
+      <div className="ctitle">Couldn’t load portfolio data</div>
+      <div className="sub" style={{ marginTop: 8 }}>The data service is unreachable — refresh to retry.</div>
+    </main></div>
+  );
+  if (!pReady) return (
+    <div className="layout"><main className="main" style={{ padding: 48 }}>
+      <div className="sub">Loading portfolio…</div>
+    </main></div>
+  );
+  return <Dashboard />;
+}
+
+function Dashboard() {
+  // Broker-reconciled swing book — derived here (not at module scope) because the
+  // SWING data only exists after runtime hydration.
+  const SWING_R = useMemo(() => reconcileSleeve(SWING, 'SWING'), []);
   const [tab, setTab]               = useState(0);
   const [prices, setPrices]         = useState({});
   const [usdInr, setUsdInr]         = useState(null);

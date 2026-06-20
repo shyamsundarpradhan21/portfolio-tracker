@@ -22,10 +22,12 @@ import INDIAN_EXITS from '../../../data/indian_exits.json';
 // FD gold — uniform with the rest of the dashboard.
 const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)', CMPF: 'var(--grn)' };
 
-// Build a lookup from PAYSLIPS: { 'YYYY-MM': netPay }
-const PAYSLIP_MAP = Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net]));
-// Total CMPF deployment = employee + employer match (corpus = 2× emp side)
-const CMPF_MAP = Object.fromEntries(CMPF_CONTRIBUTIONS.map((c) => [c.month, c.emp * 2]));
+// Lazy lookups — built on first access (post-hydration), since PAYSLIPS /
+// CMPF_CONTRIBUTIONS are empty at module-eval now that data hydrates at runtime.
+// { 'YYYY-MM': netPay } and { 'YYYY-MM': employee+employer CMPF deployment }.
+let _payslipMap, _cmpfMap;
+const PAYSLIP_MAP = () => (_payslipMap ||= Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net])));
+const CMPF_MAP = () => (_cmpfMap ||= Object.fromEntries(CMPF_CONTRIBUTIONS.map((c) => [c.month, c.emp * 2])));
 
 // Catmull-Rom → cubic Bézier: a smooth line through every point (rounds the
 // corners between months without moving the data).
@@ -62,7 +64,7 @@ function SavingsSparkline({ months }) {
 
     // Compute rates: deployed gross ÷ net pay, uncapped
     const pts = months.map((m, i) => {
-      const netPay = PAYSLIP_MAP[m.key];
+      const netPay = PAYSLIP_MAP()[m.key];
       if (!netPay || m.gross === 0) return null;
       const r = Math.round((m.gross / netPay) * 100);
       return { i, r };
@@ -279,7 +281,7 @@ export default function SipCard({ fx }) {
       + exitBuysIn((dt) => monthKey(dt) === key);
     const fd = fdFlows().filter((f) => monthKey(f.date) === key)
       .reduce((s, f) => s + f.amount, 0);
-    const cmpf = CMPF_MAP[key] || 0;
+    const cmpf = CMPF_MAP()[key] || 0;
     const streams = [
       { label: 'MF',   amount: Math.round(mf) },
       { label: 'US',   amount: Math.round(us) },
@@ -372,7 +374,7 @@ export default function SipCard({ fx }) {
   // Always FY-level (or all-time) — never scoped to a single month so it
   // stays consistent with the other four minis which also show FY context.
   const srFor = (ms) => {
-    const net = ms.reduce((s, m) => s + (PAYSLIP_MAP[m.key] || 0), 0);
+    const net = ms.reduce((s, m) => s + (PAYSLIP_MAP()[m.key] || 0), 0);
     const gross = ms.reduce((s, m) => s + m.gross, 0);
     return net > 0 ? Math.round(gross / net * 100) : null;
   };
@@ -382,7 +384,7 @@ export default function SipCard({ fx }) {
         return net > 0 ? Math.round(allTime.gross / net * 100) : null;
       })()
     : monthView
-    ? (PAYSLIP_MAP[mo.key] > 0 && mo.gross > 0 ? Math.round(mo.gross / PAYSLIP_MAP[mo.key] * 100) : null)
+    ? (PAYSLIP_MAP()[mo.key] > 0 && mo.gross > 0 ? Math.round(mo.gross / PAYSLIP_MAP()[mo.key] * 100) : null)
     : srFor(elapsed); // FY view
 
   // Summary sentence stats (robust: median + MAD).
@@ -399,7 +401,7 @@ export default function SipCard({ fx }) {
   // counting it in both numerator and denominator would inflate the savings rate.
   const srRates = allFys
     ? PAYSLIPS.map((p) => { const g = grossForMonthKey(p.month); return g > 0 ? Math.round(g / p.net * 100) : null; }).filter(Boolean)
-    : elapsed.map((m) => { const net = PAYSLIP_MAP[m.key]; return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null; }).filter(Boolean);
+    : elapsed.map((m) => { const net = PAYSLIP_MAP()[m.key]; return net && m.gross > 0 ? Math.round(m.gross / net * 100) : null; }).filter(Boolean);
   const srMu = srRates.length ? Math.round(_med(srRates)) : null;
   const srSd = srRates.length ? Math.round(1.4826 * _med(srRates.map((r) => Math.abs(r - srMu)))) : null;
   const srCV = srMu ? Math.round(srSd / srMu * 100) : null;

@@ -21,7 +21,8 @@ import PerformanceCurve from './shared/PerformanceCurve';
 // the pre-history fallback rate and the Cons/Opt bracket all read from here.
 const MIN_HISTORY_DAYS = 90;
 const SPREAD = 0.03;
-const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?? 0.12;
+// FALLBACK_RATE is read inside `rates` (post-hydration); PROJECTION is empty at
+// module-eval now that private data is hydrated at runtime.
 
 // Raw hex values — needed for SVG linearGradient stopColor (CSS vars don't
 // work inside SVG stop elements in all browsers). These are FALLBACKS only:
@@ -286,6 +287,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   // Each scenario: live starting rate (XIRR ∓ spread) gliding to the
   // scenario's long-run anchor — see simMonthly for the glide schedule.
   const rates = useMemo(() => {
+    const FALLBACK_RATE = PROJECTION.scenarios.find((s) => s.key === 'base')?.rate ?? 0.12;
     const start = liveXirr ?? FALLBACK_RATE;
     const longOf = (k) => PROJECTION.scenarios.find((s) => s.key === k)?.rate ?? FALLBACK_RATE;
     return {
