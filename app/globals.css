@@ -892,7 +892,10 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  padding: 24px 28px 40px;
+  /* Side gutters scale with the viewport so the content breathes on the left/right
+     instead of running edge-to-edge; min 28px keeps laptops from being squeezed,
+     max 96px stops ultrawides from over-indenting. Top/bottom unchanged. */
+  padding: 24px clamp(28px, 4.5vw, 96px) 40px;
   max-width: 1920px;
   /* Centre the content column on wide screens. */
   margin: 0 auto;
