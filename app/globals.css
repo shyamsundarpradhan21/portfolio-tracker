@@ -990,12 +990,21 @@ body { padding: 0; }
 .hdr-card .sub { font-size: var(--fs-md); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 1080px) {
-  /* Below 1080 (portrait/rotated monitors, narrow windows) the hero + 5-across row
-     no longer fits. Instead of scrolling the cards sideways (hides values), stack
-     the hero on its own row and WRAP the asset cards into a fluid grid so all five
-     stay visible. Phones get a dedicated UI; this targets portrait desktop monitors. */
+  /* Portrait / rotated monitors + narrow windows: stack the hero on its own row and
+     lay the 5 asset cards in a tidy single row (no sideways scroll — every value
+     stays visible). Phones get a dedicated UI; this targets portrait desktop monitors. */
   .hdr-grid { grid-template-columns: 1fr; gap: 12px; }
-  .hdr-cards { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); overflow: visible; }
+  .hdr-cards { grid-template-columns: repeat(5, 1fr); overflow: visible; }
+  /* Stacked Overview: the allocation card now spans full width, so cap the donut —
+     otherwise it balloons to its 500px max and dominates the landing page. */
+  .ov-top > :first-child svg { max-width: 340px !important; }
+}
+@media (max-width: 920px) {
+  /* Too narrow for 5-across: wrap into a balanced grid. flex-grow lets the last row
+     stretch to fill, so the 5th card never sits orphaned beside empty space — it
+     pairs up as a clean 3 + 2 instead of a lone 4 + 1. */
+  .hdr-cards { display: flex; flex-wrap: wrap; }
+  .hdr-cards > * { flex: 1 1 210px; }
 }
 @media (max-width: 900px) {
   .pj-outlook { grid-template-columns: 1fr; }
