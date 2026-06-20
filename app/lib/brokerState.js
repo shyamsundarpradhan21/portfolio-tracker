@@ -4,13 +4,12 @@
 // data/snapshot-sleeves.json. The broker is the source of truth for live qty,
 // avg-cost and MTM — the numbers you'd otherwise hand-edit after every trade —
 // while app/portfolio.js stays the curated metadata + history layer.
-import STATE from '../../data/broker-state.json';
+import { APP } from './appData';
 
-export const brokerState = STATE;
-export const syncedAt = STATE.syncedAt || null;
-
-export function brokerFunds() { return STATE.funds || {}; }
-export function brokerPositions(key) { return (STATE.positions && STATE.positions[key]) || null; }
+// broker-state is hydrated at runtime (server-imported in /api/portfolio, out of
+// the client bundle); read it at call time, never at module-eval.
+export function brokerFunds() { return APP.brokerState?.funds || {}; }
+export function brokerPositions(key) { return APP.brokerState?.positions?.[key] || null; }
 
 // Merge live broker holdings over a curated sleeve array WITHOUT mutating it.
 // Broker drives qty + avg; the curated row keeps sector/cap/ns/name/history, so
@@ -25,9 +24,9 @@ export function brokerPositions(key) { return (STATE.positions && STATE.position
 // Kite), the curated rows are handed back untouched and `stale` is set so the
 // badge can explain why the numbers are the hand-maintained ones.
 export function reconcileSleeve(curated, key) {
-  const h = STATE.holdings && STATE.holdings[key];
+  const h = APP.brokerState?.holdings?.[key];
   const source = (h && h.source) || null;
-  const when = (h && h.syncedAt) || STATE.syncedAt || null;
+  const when = (h && h.syncedAt) || APP.brokerState?.syncedAt || null;
 
   if (!h || h.stale || !Array.isArray(h.rows) || !h.rows.length) {
     return { rows: curated, drift: [], source, syncedAt: when, stale: true };

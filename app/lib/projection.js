@@ -6,7 +6,7 @@
 // ledgers (below) — never typed in.
 
 import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, fdFlows, fdRedemptions, PAYSLIPS, PROJECTION } from '../portfolio';
-import INDIAN_EXITS from '../../data/indian_exits.json';
+import { APP } from './appData';
 
 // Projection inputs derived from real money movement:
 //   monthly — average NET deployment (buys − redemptions/sells, all sleeves)
@@ -28,8 +28,8 @@ export function deriveProjInputs(fx) {
   net += TRANSACTIONS.filter((t) => inWin(t.date)).reduce((s, t) => s + t.invested, 0);
   net += fdFlows().filter((f) => inWin(f.date)).reduce((s, f) => s + f.amount, 0);
   net -= fdRedemptions().filter((r) => inWin(r.date)).reduce((s, r) => s + r.amount, 0);
-  net += INDIAN_EXITS.trades.filter(([e]) => inWin(e)).reduce((s, [, , buy]) => s + buy, 0);
-  net -= INDIAN_EXITS.trades.filter(([, x]) => inWin(x)).reduce((s, [, , , sell]) => s + sell, 0);
+  net += APP.indianExits.trades.filter(([e]) => inWin(e)).reduce((s, [, , buy]) => s + buy, 0);
+  net -= APP.indianExits.trades.filter(([, x]) => inWin(x)).reduce((s, [, , , sell]) => s + sell, 0);
   const monthly = Math.max(0, Math.round(net / 12 / 500) * 500);
 
   let stepUp = 0;

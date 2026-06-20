@@ -2,9 +2,8 @@
 // Trading tab's current-FY (fy2627) blocks drive themselves — no mid-year hand-
 // edits. The seed (data/fy2526_verified.json → s0X.fy2627) is the YTD realised
 // through its `seedThrough` date; this adds every captured ledger day AFTER that,
-// per sleeve. Pure: never mutates the imported seed. Mirrors brokerState.js.
-
-import LEDGER from '../../data/fno-ledger.json';
+// per sleeve. Pure: never mutates the seed. Both the seed and the ledger are
+// passed in (hydrated at runtime, out of the bundle). Mirrors brokerState.js.
 
 const r2 = (n) => Math.round(n * 100) / 100;
 
@@ -40,7 +39,7 @@ function mergeBlock(seed, inc) {
 // Returns a NEW FY object with fy2627 blocks (and cf.fy2627Realised) driven by the
 // ledger. The rest of the FY object (prior-FY verified, carryforward, labels) is
 // passed through untouched.
-export function deriveFY(seedFY, ledger = LEDGER) {
+export function deriveFY(seedFY, ledger) {
   const rows = ledger?.rows || [];
   const s01seed = seedFY.s01.fy2627, s02seed = seedFY.s02.fy2627;
   const s01 = mergeBlock(s01seed, increment(rows, 'S01', s01seed.seedThrough));

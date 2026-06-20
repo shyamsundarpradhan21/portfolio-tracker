@@ -17,7 +17,10 @@
 import { loadPortfolio } from '../../lib/serverPortfolio';
 
 export const runtime = 'nodejs';
-export const revalidate = 86400; // 24h
+// Reads private data at runtime (loadPortfolio) + the external NAV API, so it must
+// NOT be statically prerendered at build. CDN caching is handled by the response
+// Cache-Control header below (s-maxage 24h), so freshness is unchanged.
+export const dynamic = 'force-dynamic';
 
 const SEARCH = 'https://api.mfapi.in/mf/search?q=';
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -111,9 +114,9 @@ async function resolveBenchmark(liveNifty50, MF_BENCHMARK, dates) {
     // Proxy fallback: given NAVs for the two big contributions, live JioBLK
     // Nifty 50 NAV for today.
     return {
-      name: MF_BENCHMARK.name + ' (proxy)',
-      navByDate: { ...MF_BENCHMARK.proxy },
-      latestNav: liveNifty50 || MF_BENCHMARK.proxy['2026-03-20'],
+      name: (MF_BENCHMARK.name || 'Nifty 50') + ' (proxy)',
+      navByDate: { ...(MF_BENCHMARK.proxy || {}) },
+      latestNav: liveNifty50 || MF_BENCHMARK.proxy?.['2026-03-20'] || null,
       latestDate: null,
       fresh: false,
     };
@@ -122,6 +125,7 @@ async function resolveBenchmark(liveNifty50, MF_BENCHMARK, dates) {
 
 export async function GET() {
   const data = await loadPortfolio();
+  if (!data) return Response.json({ funds: {}, benchmark: null, asOf: null, error: 'portfolio data unavailable' }, { status: 503 });
   const MF_FUNDS = data?.MF_FUNDS || [];
   const MF_BENCHMARK = data?.MF_BENCHMARK || {};
   const dates = (data?.MF_CASHFLOWS || []).map((c) => c.date);

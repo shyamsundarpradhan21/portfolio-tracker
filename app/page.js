@@ -8,15 +8,13 @@ import {
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS, hydratePortfolio, isPortfolioHydrated,
 } from './portfolio';
-import FY_SEED from '../data/fy2526_verified.json';
 import { deriveFY } from './lib/fnoLedger';
-import VOL_PNL from '../data/vol_pnl.json';
+import { APP, hydrateAppData } from './lib/appData';
 import MARKET_WRAP from '../data/market-wrap.json';
 import { classifyRegime } from './lib/regime';
 
-// Current-FY (fy2627) F&O blocks drive themselves from the auto-captured realised
-// ledger, rolled on top of the frozen ITR seed. Only the annual ritual is manual.
-const FY = deriveFY(FY_SEED);
+// FY (current-FY F&O blocks rolled on the frozen ITR seed) is computed INSIDE
+// Dashboard now — fySeed/fnoLedger are hydrated at runtime (out of the bundle).
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
@@ -184,7 +182,7 @@ export default function Page() {
     let on = true;
     fetch('/api/portfolio')
       .then((r) => { if (!r.ok) throw new Error('portfolio ' + r.status); return r.json(); })
-      .then((d) => { if (on) { hydratePortfolio(d); setPReady(true); } })
+      .then((d) => { if (on) { hydratePortfolio(d); hydrateAppData(d._app); setPReady(true); } })
       .catch(() => { if (on) setPErr(true); });
     return () => { on = false; };
   }, []);
@@ -203,9 +201,10 @@ export default function Page() {
 }
 
 function Dashboard() {
-  // Broker-reconciled swing book — derived here (not at module scope) because the
-  // SWING data only exists after runtime hydration.
+  // Computed here (not at module scope) because SWING / fySeed / fnoLedger only
+  // exist after runtime hydration.
   const SWING_R = useMemo(() => reconcileSleeve(SWING, 'SWING'), []);
+  const FY = useMemo(() => deriveFY(APP.fySeed, APP.fnoLedger), []);
   const [tab, setTab]               = useState(0);
   const [prices, setPrices]         = useState({});
   const [usdInr, setUsdInr]         = useState(null);
@@ -643,8 +642,8 @@ function Dashboard() {
   // can refuse to label a handful of points a "regression".
   const regVolVix = useMemo(() => {
     const vm = macro?.vixMonthly;
-    if (!Array.isArray(VOL_PNL) || VOL_PNL.length < 2 || !vm || !Object.keys(vm).length) return null;
-    const rows = [...VOL_PNL].filter((r) => r && r.month).sort((a, b) => a.month.localeCompare(b.month));
+    if (!Array.isArray(APP.volPnl) || APP.volPnl.length < 2 || !vm || !Object.keys(vm).length) return null;
+    const rows = [...APP.volPnl].filter((r) => r && r.month).sort((a, b) => a.month.localeCompare(b.month));
     const returns = [], vix = [];
     for (let i = 0; i < rows.length; i++) {
       const priorEq = i > 0 ? rows[i - 1].equity : null;

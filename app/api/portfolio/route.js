@@ -4,6 +4,18 @@
 // data/portfolio.private.json. Never cached (private).
 
 import { loadPortfolio } from '../../lib/serverPortfolio';
+// Committed app JSONs are server-imported here (server bundle only) and served to
+// the client, so they no longer ship in the client JS bundle. They stay committed
+// (the sync pipeline writes broker-state/fno-ledger); freshness tracks redeploys
+// exactly as before. Non-personal market-wrap.json stays a normal client import.
+import fySeed from '../../../data/fy2526_verified.json';
+import fnoLedger from '../../../data/fno-ledger.json';
+import volPnl from '../../../data/vol_pnl.json';
+import brokerState from '../../../data/broker-state.json';
+import usTrades from '../../../data/us_trades.json';
+import indianExits from '../../../data/indian_exits.json';
+import snapSleeves from '../../../data/snapshot-sleeves.json';
+import snapMd from '../../../data/SNAPSHOT.md';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +24,11 @@ export async function GET() {
   if (!data) {
     return Response.json({ error: 'portfolio data unavailable (KV unseeded + no local file)' }, { status: 503 });
   }
-  return new Response(JSON.stringify(data), {
+  const payload = {
+    ...data,
+    _app: { fySeed, fnoLedger, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd },
+  };
+  return new Response(JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }

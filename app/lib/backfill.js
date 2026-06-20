@@ -26,8 +26,7 @@
 
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, LOAN, loanOutstanding } from '../portfolio';
 import { cmpfCorpus } from './cmpf';
-import US_TRADES from '../../data/us_trades.json';
-import INDIAN_EXITS from '../../data/indian_exits.json';
+import { APP } from './appData';
 
 const DAY = 24 * 3600 * 1000;
 const YEAR = 365.25 * DAY;
@@ -76,7 +75,7 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
     ...FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, inr: f.newMoney ?? f.principal })),
     // Exited Indian delivery trades (Zerodha tax P&L): buy in at entry,
     // proceeds out at exit — keeps "invested" a true net-deployed line.
-    ...INDIAN_EXITS.trades.flatMap(([e, x, buy, sell]) => [
+    ...APP.indianExits.trades.flatMap(([e, x, buy, sell]) => [
       { date: e, inr: buy },
       { date: x, inr: -sell },
     ]),
@@ -91,10 +90,10 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
   if (!grid.length) return [];
 
   // US: actual cash balance at t (last statement balance ≤ t)
-  const cashDays = Object.keys(US_TRADES.cash).sort();
+  const cashDays = Object.keys(APP.usTrades.cash).sort();
   const cashAt = (d) => {
     let v = 0;
-    for (const k of cashDays) { if (k > d) break; v = US_TRADES.cash[k]; }
+    for (const k of cashDays) { if (k > d) break; v = APP.usTrades.cash[k]; }
     return v;
   };
 
@@ -108,12 +107,12 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
       const c0 = closeAt(s, tx.date), c1 = closeAt(s, d);
       ind += c0 && c1 ? tx.invested * (c1 / c0) : tx.invested;
     }
-    for (const [e, x, buy] of INDIAN_EXITS.trades) {
+    for (const [e, x, buy] of APP.indianExits.trades) {
       if (e <= d && d < x) ind += buy;
     }
     // US: per-ticker unit replay from the tradebook + cash + exited-at-cost
     let usd = cashAt(d);
-    for (const [sym, fls] of Object.entries(US_TRADES.flows)) {
+    for (const [sym, fls] of Object.entries(APP.usTrades.flows)) {
       const s = series[sym];
       let units = 0, costFallback = 0;
       for (const [fd, amt] of fls) {
@@ -126,7 +125,7 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
     }
     // exited positions (no price history fetched): carry at net cost ≥ 0
     let otherCost = 0;
-    for (const [fd, amt] of US_TRADES.other) { if (fd <= d) otherCost += amt; }
+    for (const [fd, amt] of APP.usTrades.other) { if (fd <= d) otherCost += amt; }
     usd += Math.max(0, otherCost);
     const us = usd * fx(d);
     // MF: units × NAV(t) per fund from its bought date; cost when NAV missing
