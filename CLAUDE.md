@@ -69,6 +69,28 @@ separate lessons file.
 - **No Laziness:** find root causes. No temporary fixes. Senior-developer standards
 - **Minimal Impact:** changes should only touch what's necessary. Avoid introducing bugs
 
+## Project Rules
+
+Scoped conventions for this codebase (merged from the former `.claude/rules/`).
+
+### Frontend (`app/`)
+- Component boundaries: `tabs/` compose a view, `shared/` is reused, `lib/` is pure logic (no JSX).
+- Hydration: private data is empty until the render gate runs — never read `portfolio.js` / `appData.js` exports at module-eval, only inside render or a post-gate call. Module-eval reads of that data are bugs.
+- Numbers: format through `app/lib/fmt.js`; headline figures use the `Live*` count-up wrappers (`app/components/shared/Live.js`). Never hardcode a subtext — derive it from data.
+- Direction (gain/loss): encode by COLOR, never +/- glyphs.
+- Type: size via `--fs-*` tokens in `globals.css`, never raw px.
+- Theming: every change must hold in both day and night themes.
+
+### Data layer (Vercel KV + committed JSON — no SQL DB)
+- Source of truth for private data: KV `portfolio:v1`, seeded from gitignored `data/portfolio.private.json` via `scripts/seed-portfolio-kv.mjs`. To change holdings/salary/loans: edit the JSON, run the seed. Never hand-edit KV. `data/portfolio.private.example.json` is the empty template.
+- Committed JSONs (`broker-state`, `fno-ledger`, `trades-log`, …) are written by the sync pipeline — don't hand-edit; re-run the script. The seed has a sanity guard that refuses near-empty data; don't bypass it. `data/SNAPSHOT.md` is generated.
+
+### API routes (`app/api/*/route.js`)
+- Private-data routes use `loadPortfolio()` and must set `export const dynamic = 'force-dynamic'` (build-time data is null) so private figures never ship in the client bundle.
+- External APIs: always `AbortSignal.timeout(...)`, validate the shape, fall back to last-known so the UI never breaks; optional-chain everything off the response.
+- Caching: private routes → `no-store`; once-daily data (NAV) → `s-maxage` + `stale-while-revalidate`.
+- Brokers are READ-ONLY: never `place_order` / `modify_order` / `cancel_order`.
+
 ## graphify
 
 This project has a graphify knowledge graph at .graphify/.

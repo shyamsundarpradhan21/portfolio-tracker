@@ -10,7 +10,12 @@
 
 # local agent tooling (graphify / claude)
 /CLAUDE.md
-/.claude/
+# .claude — track shareable project config (agents/commands/hooks/skills);
+# keep the machine/secret-bearing bits local:
+/.claude/settings.json
+/.claude/settings.local.json
+/.claude/statusline.js
+/.claude/skills/sync/
 /.graphify/
 /graphify-out/
 

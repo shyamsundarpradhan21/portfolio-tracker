@@ -1,3 +1,86 @@
+# Repo Prune + .claude Reshape (2026-06-21)
+
+Goal: cut the tree to fruit + flowers. `.claude` was 333/484 tracked files
+(11 MB, mostly generic design-skill bundles). Reshape it to the lean guide and
+prune dead wood. **Destructive steps are PREPARED, NOT executed — review then run.**
+
+## Done (additive, already on disk — untracked)
+- [x] Built lean `.claude` structure:
+  - agents/ — reviewer, debugger, test-writer, refactorer, doc-writer, security-auditor
+  - commands/ — fix-issue, deploy, pr-review
+  - hooks/ — pre-commit.sh, lint-on-save.sh
+  - rules/ — frontend, data (guide's "database"; no SQL DB here), api
+  - skills/ — frontend-design (new, project-tuned) + council (kept)
+- [x] Verified orphans: `data/nifty50.js`, `data/vested_vests.json` — zero refs.
+- [x] Verified `design/` = only `previews/`.
+
+## EXECUTED 2026-06-21 (staged, NOT committed)
+- 484 → **119 tracked files** (365 staged deletions + CLAUDE.md/README.md mods). Build ✓, tests 10/10 ✓.
+- README.md ← consolidated from docs/OVERVIEW.md (deleted) + corrected ops sections.
+- rules/ merged into CLAUDE.md (§ Project Rules); `.claude/rules/` dropped.
+- Generic design skills + impeccable agent removed; kept `council` + new `frontend-design`.
+- design/, .planning/ removed; untracked scripts/*.png + scripts/signals/ deleted.
+- **CORRECTION:** `data/nifty50.js` was NOT an orphan (imported by `app/api/nifty50/route.js`)
+  — my verify grep wrongly excluded that file; restored. Only `data/vested_vests.json` removed.
+- New lean `.claude/{agents,commands,hooks,skills/frontend-design}` exist on disk but are
+  **UNTRACKED** — `/.claude/` is gitignored (line 13). Tracking decision pending (settings.json).
+
+## Commands run (record)
+
+### 1. Strip the generic design-skill pile (~11 MB, ~325 files). Keep council + frontend-design.
+```
+git rm -r .claude/skills/animate .claude/skills/banner-design .claude/skills/brand \
+  .claude/skills/brandkit .claude/skills/design .claude/skills/design-system \
+  .claude/skills/design-taste-frontend .claude/skills/emil-design-eng \
+  .claude/skills/full-output-enforcement .claude/skills/high-end-visual-design \
+  .claude/skills/image-to-code .claude/skills/imagegen-frontend-mobile \
+  .claude/skills/imagegen-frontend-web .claude/skills/impeccable \
+  .claude/skills/industrial-brutalist-ui .claude/skills/minimalist-ui \
+  .claude/skills/redesign-existing-projects .claude/skills/slides \
+  .claude/skills/stitch-design-taste .claude/skills/ui-styling \
+  .claude/skills/ui-ux-pro-max \
+  .claude/agents/impeccable-manual-edit-applier.md
+```
+- Removes from disk too. To keep a LOCAL copy but untrack, append `--cached` to the line
+  and add the paths to `.gitignore`. To keep any globally, first copy to `~/.claude/skills/`.
+
+### 2. Stale planning docs (superseded by docs/OVERVIEW.md, which says so).
+```
+git rm -r .planning
+```
+
+### 3. One-off theme/font mockups (not referenced by app or build).
+```
+git rm -r design
+```
+
+### 4. Orphan data files (confirmed zero refs).
+```
+git rm data/nifty50.js data/vested_vests.json
+```
+
+### 5. Untracked junk (not in git — just delete from disk).
+```
+rm -f scripts/*.png && rm -rf scripts/signals
+```
+
+### 6. Stage the new lean .claude.
+```
+git add .claude/agents .claude/commands .claude/hooks .claude/rules .claude/skills/frontend-design
+```
+
+Then review `git status`, commit (footer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`).
+
+## Decide (genuine conflicts with the guide)
+- **settings.json** — your guide lists it, but `.claude/settings.json` is GITIGNORED
+  (correct: it's local/secret-bearing). Hooks here won't auto-wire from it. Wire pre-commit
+  via `.git/hooks/` (see file header) or commit a non-secret settings.json if you want it shared.
+- **rules vs CLAUDE.md** — CLAUDE.md is already the brain; the new rules/ are scoped, thinner
+  restatements. Fine to keep both, but don't let them drift apart.
+- **Stale package.json** — name `networth-tracker`, desc mentions "Yahoo Finance"; update if you care.
+
+---
+
 # KV Pullback — Private Data Out of the Client Bundle
 
 Goal: the private financial data (holdings, salary, contributions, loans) must
