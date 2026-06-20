@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { appendTrades } from './lib/trades-log.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE_PATH = join(ROOT, 'data', 'broker-state.json');
@@ -57,10 +58,28 @@ writeFileSync(STATE_PATH, out);
 if (existsSync(KITE_TMP)) { try { rmSync(KITE_TMP); } catch {} }
 console.log(`kite: ${merged}`);
 
+// Today's Kite fills (dumped by /sync via mcp__kite__get_trades) → tradebook pile.
+const KITE_TRADES = join(ROOT, 'data', '.kite-trades.json');
+const ktRaw = readJSON(KITE_TRADES);
+if (ktRaw) {
+  const list = Array.isArray(ktRaw) ? ktRaw : (ktRaw.data || ktRaw.trades || []);
+  const added = appendTrades('Kite', list.map((t) => ({
+    id: String(t.trade_id ?? t.order_id ?? ''),
+    sym: t.tradingsymbol,
+    date: String(t.fill_timestamp || t.exchange_timestamp || t.order_timestamp || '').slice(0, 10),
+    side: t.transaction_type,
+    qty: t.quantity,
+    price: t.average_price ?? t.price,
+    value: +((t.quantity || 0) * (t.average_price ?? t.price ?? 0)).toFixed(2),
+  })));
+  if (existsSync(KITE_TRADES)) { try { rmSync(KITE_TRADES); } catch {} }
+  console.log(`kite trades: +${added}`);
+}
+
 if (!process.env.SYNC_SKIP_GIT) {
   try {
-    execSync('git add data/broker-state.json', { cwd: ROOT });
-    if (execSync('git status --porcelain data/broker-state.json', { cwd: ROOT }).toString().trim()) {
+    execSync('git add data/broker-state.json data/trades-log.json', { cwd: ROOT });
+    if (execSync('git status --porcelain data/broker-state.json data/trades-log.json', { cwd: ROOT }).toString().trim()) {
       execSync(`git commit -m "chore: broker sync ${nowIst().slice(0, 10)}"`, { cwd: ROOT, stdio: 'inherit' });
       execSync('git push', { cwd: ROOT, stdio: 'inherit' });
       console.log('committed + pushed');

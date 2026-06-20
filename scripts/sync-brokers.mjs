@@ -15,6 +15,7 @@ import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { appendTrades } from './lib/trades-log.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE_PATH = join(ROOT, 'data', 'broker-state.json');
@@ -136,6 +137,44 @@ function mint(name) {
   catch { return false; }
 }
 
+// ── today's fills → durable tradebook (broker APIs are intraday-only, so we pile
+// them up daily). Field maps are best-effort — they self-validate on the first
+// real fill; until then the responses are empty and nothing is captured. ──
+async function tradesUpstox() {
+  const tok = readJSON(join(ROOT, 'mcp', 'upstox', '.token.json'))?.access_token;
+  if (!tok) return [];
+  const r = await getJSON('https://api.upstox.com/v2/order/trades/get-trades', { Authorization: `Bearer ${tok}`, Accept: 'application/json' });
+  return (r.json?.data || []).map((t) => ({
+    id: String(t.trade_id ?? t.order_id ?? ''), sym: t.tradingsymbol || t.trading_symbol,
+    date: String(t.trade_timestamp || t.order_timestamp || '').slice(0, 10), side: t.transaction_type,
+    qty: t.quantity, price: t.average_price ?? t.trade_price ?? t.price,
+    value: +((t.quantity || 0) * (t.average_price ?? t.price ?? 0)).toFixed(2),
+  }));
+}
+async function tradesDhan() {
+  const r = await getJSON('https://api.dhan.co/v2/trades', { 'access-token': await dhanToken(), Accept: 'application/json' });
+  const list = Array.isArray(r.json) ? r.json : (r.json?.data || []);
+  return list.map((t) => ({
+    id: String(t.exchangeTradeId ?? t.orderId ?? ''), sym: t.tradingSymbol || t.customSymbol,
+    date: String(t.exchangeTime || t.createTime || '').slice(0, 10), side: t.transactionType,
+    qty: t.tradedQuantity, price: t.tradedPrice,
+    value: +((t.tradedQuantity || 0) * (t.tradedPrice || 0)).toFixed(2),
+  }));
+}
+async function tradesFyers() {
+  const tok = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.access_token;
+  const appId = process.env.FYERS_APP_ID;
+  if (!tok || !appId) return [];
+  let r = await getJSON('https://api-t1.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
+  if (!r.json?.tradeBook) r = await getJSON('https://api.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
+  return (r.json?.tradeBook || []).map((t) => ({
+    id: String(t.tradeNumber ?? t.orderNumber ?? t.id ?? ''), sym: t.symbol,
+    date: String(t.orderDateTime || '').slice(0, 10), side: t.side === 1 ? 'BUY' : t.side === -1 ? 'SELL' : t.side,
+    qty: t.tradedQty, price: t.tradePrice,
+    value: +((t.tradedQty || 0) * (t.tradePrice || 0)).toFixed(2),
+  }));
+}
+
 // ── orchestrate ──
 const state = readJSON(STATE_PATH) || { brokers: {}, holdings: {}, positions: {}, funds: {} };
 const ts = nowIst();
@@ -165,6 +204,16 @@ for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', 
     log.push(`${name}: FAILED — ${e.message || e} (kept previous values)`);
   }
 }
+
+// Capture today's fills into the durable tradebook — only for brokers that authed.
+for (const [name, label, fn] of [['upstox', 'Upstox', tradesUpstox], ['dhan', 'Dhan', tradesDhan], ['fyers', 'Fyers', tradesFyers]]) {
+  try {
+    if (!state.brokers[name]?.ok) continue;
+    const added = appendTrades(label, await fn());
+    if (added) log.push(`${name} trades: +${added}`);
+  } catch (e) { log.push(`${name} trades: skipped (${e.message || e})`); }
+}
+
 // Kite / INDIAN is never touched here — only /sync refreshes it.
 state.brokers.kite = state.brokers.kite || { ok: false, note: 'hosted MCP — refreshed only by /sync' };
 
@@ -174,8 +223,8 @@ log.forEach((l) => console.log('  ' + l));
 
 if (!process.env.SYNC_SKIP_GIT) {
   try {
-    execSync('git add data/broker-state.json', { cwd: ROOT });
-    if (execSync('git status --porcelain data/broker-state.json', { cwd: ROOT }).toString().trim()) {
+    execSync('git add data/broker-state.json data/trades-log.json', { cwd: ROOT });
+    if (execSync('git status --porcelain data/broker-state.json data/trades-log.json', { cwd: ROOT }).toString().trim()) {
       execSync(`git commit -m "chore: broker sync ${ts.slice(0, 10)}"`, { cwd: ROOT, stdio: 'inherit' });
       execSync('git push', { cwd: ROOT, stdio: 'inherit' });
       console.log('committed + pushed');
