@@ -115,9 +115,16 @@ floated a dedicated **Research tab** (look up/compare any security) as a richer 
 
 ### Gates
 - `npx vitest run` → 18/18 pass. `npm run build` → compiled, lint/types ok.
-- [ ] **Live validation on Vercel preview** — hit the deployed `/api/premarket`, confirm
-      `indices` is populated (NSE primary; check VIX row name + percent field), eyeball the
-      Wrap tab. Adjust mapper field names if NSE shape differs from the assumed schema.
+- [x] **Live validation on Vercel preview** (dpl_9tkCf…, branch deploy of 37d09ec, READY).
+      `GET /api/premarket` → 200, `indices.source = "NSE allIndices (live)"` — the NSE
+      PRIMARY path works from Vercel (not even the Yahoo fallback). All 10 sectors
+      (worst-first), all 5 breadth indices, Nifty, and India VIX resolved; every field
+      mapped (percentChange, variation→change, high/low, "INDIA VIX" row, "NIFTY FINANCIAL
+      SERVICES"→"Fin Services"). Output is IDENTICAL to the committed Kite snapshot
+      (IT -3.65, VIX 12.97 …) → faithful drop-in, now automatic.
+- [~] Phase 1b: `/api/macro` is pre-existing + unchanged (regime engine already consumes
+      it); programmatic fetch hit Vercel's auth wall / a transient gateway 502, but the
+      backdrop card is defensively gated (renders only live cells) and the shape is known.
 
 ### Not done / future
 - Phase 2 (per-company analysis on click) — unchanged, deferred.
