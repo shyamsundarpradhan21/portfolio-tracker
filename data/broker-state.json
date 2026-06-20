@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-20T20:41:10+05:30",
+  "syncedAt": "2026-06-20T21:10:41+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,8 +7,8 @@
       "note": ""
     },
     "dhan": {
-      "ok": false,
-      "note": "Unexpected token 'H', \"Host not i\"... is not valid JSON"
+      "ok": true,
+      "note": ""
     },
     "fyers": {
       "ok": false,
@@ -196,30 +196,8 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-20T05:09:21+05:30",
+      "syncedAt": "2026-06-20T21:10:44+05:30",
       "rows": [
-        {
-          "sym": "NIFTY-Jun2026-24150-CE",
-          "type": "CALL",
-          "strike": 24150,
-          "expiry": "2026-06-23",
-          "status": "CLOSED",
-          "netQty": 0,
-          "buyAvg": 53,
-          "realized": 22847.5,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Jun2026-24550-CE",
-          "type": "CALL",
-          "strike": 24550,
-          "expiry": "2026-06-23",
-          "status": "CLOSED",
-          "netQty": 0,
-          "buyAvg": 15.75,
-          "realized": -2600,
-          "unrealized": 0
-        },
         {
           "sym": "NIFTY-Jun2026-23600-PE",
           "type": "PUT",
@@ -227,20 +205,9 @@
           "expiry": "2026-06-23",
           "status": "LONG",
           "netQty": 325,
-          "buyAvg": 14.25,
+          "buyAvg": 9.35,
           "realized": 0,
           "unrealized": -2730
-        },
-        {
-          "sym": "NIFTY-Jun2026-24000-PE",
-          "type": "PUT",
-          "strike": 24000,
-          "expiry": "2026-06-23",
-          "status": "CLOSED",
-          "netQty": 0,
-          "buyAvg": 121.15,
-          "realized": -2356.25,
-          "unrealized": 0
         }
       ]
     }
@@ -250,8 +217,8 @@
       "available": 238417.65
     },
     "dhan": {
-      "available": 650635.3,
-      "utilized": 4810
+      "available": 640593,
+      "utilized": 0
     },
     "upstox": {
       "available": null,
