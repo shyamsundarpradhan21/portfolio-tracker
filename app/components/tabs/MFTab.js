@@ -148,10 +148,10 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         <div className="csm">
           <div className="fxc">
             <div className="lbl" style={{ margin: 0 }}>current value</div>
-            <FreshnessTag mode="nav" date={mfDate} />
+            <FreshnessTag mode="nav" date={mfDate} casDate={UNITS_AS_OF} />
           </div>
           <div className="vmd grn" style={{ marginTop: 6 }}><LiveInrF n={mf.totVal} /></div>
-          <div className="sub">live NAV × CAS units ({UNITS_AS_OF})</div>
+          <div className="sub">NAV × CAS units{mfDate ? ` · ${UNITS_AS_OF}` : ''}</div>
         </div>
         <div className="csm">
           <div className="lbl">total return</div>
