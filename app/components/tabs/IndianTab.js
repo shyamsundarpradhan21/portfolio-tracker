@@ -1,5 +1,6 @@
 'use client';
 import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, inrCd, sFull, fmtNavDate } from '../../lib/fmt';
+import { LiveInrC, LiveSInrC } from '../shared/Live';
 import { SECTOR_PALETTE } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -44,13 +45,13 @@ export default function IndianTab({
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd">{indian.valued ? <InrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
+          <div className="vmd">{indian.valued ? <LiveInrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">marked live · NSE LTP</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
           <div className={'vmd ' + (indian.valued ? cl(indian.pl) : '')}>
-            {indian.valued ? <SInrC n={indian.pl} /> : <Skel w={80} h={20} />}
+            {indian.valued ? <LiveSInrC n={indian.pl} /> : <Skel w={80} h={20} />}
           </div>
           <div className="sub">{indian.valued ? pctS(indian.pct) + ' on cost' : 'value − invested'}</div>
         </div>
@@ -59,7 +60,7 @@ export default function IndianTab({
         <div className="csm">
           <div className="lbl">Day change</div>
           <div className={'vmd ' + (indian.valued ? cl(indianDayPl) : '')}>
-            {indian.valued ? <SInrC n={indianDayPl} /> : <Skel w={80} h={20} />}
+            {indian.valued ? <LiveSInrC n={indianDayPl} /> : <Skel w={80} h={20} />}
           </div>
           <div className="sub">{indian.valued ? `${pctS(indianDayPct)} vs prev close` : 'intraday move'}</div>
         </div>

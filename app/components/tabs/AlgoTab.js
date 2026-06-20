@@ -1,5 +1,6 @@
 'use client';
 import { cl, pctS, InrF, SInrF, SInrC, RsText, inrFull } from '../../lib/fmt';
+import { LiveSInrF } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import SyncBadge from '../shared/SyncBadge';
@@ -36,7 +37,7 @@ export default function AlgoTab({
         </div>
         <div className="csm">
           <div className="lbl">{FY.labels.current} YTD</div>
-          <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <SInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
+          <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
           <div className="sub">
             S01 <span className={cl(FY.s01.fy2627.net)}><SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
             S02 <span className={cl(FY.s02.fy2627.net)}><SInrF n={FY.s02.fy2627.net} /></span> ·{' '}

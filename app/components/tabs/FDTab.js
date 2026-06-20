@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { InrC, InrF, Pct, fmtNavDate, fmtDateObj } from '../../lib/fmt';
+import { LiveInrF } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 
@@ -41,7 +42,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
         </div>
         <div className="csm">
           <div className="lbl">accrued interest</div>
-          <div className="vmd grn"><InrF n={fds.accrued} /></div>
+          <div className="vmd grn"><LiveInrF n={fds.accrued} /></div>
           <div className="sub">accruing live · quarterly compounding</div>
         </div>
         <div className="csm">

@@ -975,7 +975,10 @@ body { padding: 0; }
    tab accent (rule above wins on specificity). */
 /* Same line-heights as the hero (label 1.25 / number 0.85 / sub 1.35); a card
    is a small hero with a 5x : 2x gap rhythm — heading→value 5x, value→sub 2x */
-.hdr-card .lbl { font-size: var(--fs-md); line-height: 1.25; margin-bottom: 20px; color: var(--txt2); }
+/* One tier below the hero label + tighter tracking so the long labels
+   ("FIXED DEPOSITS", "INDIAN EQUITY" + live-dot) fit on one line inside the
+   gutter-narrowed cards instead of truncating to "INDIAN EQU…". */
+.hdr-card .lbl { font-size: var(--fs-sm); letter-spacing: .035em; line-height: 1.25; margin-bottom: 20px; color: var(--txt2); }
 .hdr-card .vmd { font-size: clamp(20px, 2.5vw, 36px); line-height: 0.85; letter-spacing: -.5px; }
 .hdr-card .sub { font-size: var(--fs-md); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

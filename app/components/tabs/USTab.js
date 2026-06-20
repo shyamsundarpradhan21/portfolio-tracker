@@ -1,5 +1,6 @@
 'use client';
 import { cl, pctS, pct1, InrC, SInrF, Rs, UsdF } from '../../lib/fmt';
+import { LiveUsdF } from '../shared/Live';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -29,19 +30,19 @@ export default function USTab({
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd">{usData.val ? <UsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
+          <div className="vmd">{usData.val ? <LiveUsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">{usData.val && fxRate ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
-          <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <UsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
+          <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <LiveUsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
           <div className="sub">{usData.val ? <>{pctS(usData.pct)} on cost · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
         </div>
       </div>
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
-          <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <UsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>
+          <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <LiveUsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>
           <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} vs prev close · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'vs prev close'}</div>
         </div>
         <div className="csm">

@@ -53,6 +53,7 @@ import AlgoTab      from './components/tabs/AlgoTab';
 import MacroTab     from './components/tabs/MacroTab';
 import Skel         from './components/shared/Skel';
 import AnimatedNumber from './components/shared/AnimatedNumber';
+import { LiveInrC } from './components/shared/Live';
 import FreshnessTag from './components/shared/FreshnessTag';
 
 // ─── cache keys ───────────────────────────────────────────────────────────────
@@ -884,16 +885,16 @@ export default function Page() {
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
     { label: 'Indian equity', tab: 1, live: markets.nse,
-      val: indian.valued ? <InrC n={indian.val} /> : <Skel w={58} h={18} />,
+      val: indian.valued ? <LiveInrC n={indian.val} /> : <Skel w={58} h={18} />,
       sub: indian.valued ? <span className={cl(indian.pl)}><SInrC n={indian.pl} /> · {pctS(indian.pct)}</span> : `${INDIAN.length} stocks` },
     { label: 'Mutual funds', tab: 3,
-      val: <InrC n={mf.totVal} />,
+      val: <LiveInrC n={mf.totVal} />,
       sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · live NAV</> },
     { label: 'Fixed deposits', tab: 2,
-      val: <InrC n={ov.fdValue} />,
+      val: <LiveInrC n={ov.fdValue} />,
       sub: <><span className="grn"><InrF n={fds.accrued} /></span> accrued</> },
     { label: 'US equity', tab: 4, live: markets.nyse,
-      val: usData.val ? <InrC n={ov.usInr} /> : <Skel w={58} h={18} />,
+      val: usData.val ? <LiveInrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
     { label: 'Trading', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,

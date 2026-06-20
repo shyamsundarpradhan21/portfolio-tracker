@@ -1,5 +1,6 @@
 'use client';
 import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
+import { LiveInrF } from '../shared/Live';
 import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -149,7 +150,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
             <div className="lbl" style={{ margin: 0 }}>current value</div>
             <FreshnessTag mode="nav" date={mfDate} />
           </div>
-          <div className="vmd grn" style={{ marginTop: 6 }}><InrF n={mf.totVal} /></div>
+          <div className="vmd grn" style={{ marginTop: 6 }}><LiveInrF n={mf.totVal} /></div>
           <div className="sub">live NAV × CAS units ({UNITS_AS_OF})</div>
         </div>
         <div className="csm">
