@@ -11,6 +11,7 @@ import {
 import FY_SEED from '../data/fy2526_verified.json';
 import { deriveFY } from './lib/fnoLedger';
 import VOL_PNL from '../data/vol_pnl.json';
+import MARKET_WRAP from '../data/market-wrap.json';
 import { classifyRegime } from './lib/regime';
 
 // Current-FY (fy2627) F&O blocks drive themselves from the auto-captured realised
@@ -1023,7 +1024,7 @@ export default function Page() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
+            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

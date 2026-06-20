@@ -51,9 +51,10 @@ __pycache__/
 .venv/
 .token.json
 
-# transient Kite dumps (written by /sync, merged + deleted by merge-kite.mjs)
+# transient Kite dumps (written by /sync, merged + deleted by merge-*.mjs)
 /data/.kite-holdings.json
 /data/.kite-trades.json
+/data/.kite-market.json
 
 # broker SDK logs written to repo root (may contain request data)
 fyersApi.log

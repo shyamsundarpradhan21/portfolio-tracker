@@ -1,0 +1,83 @@
+{
+  "note": "End-of-session NSE market wrap from the Kite MCP (sectoral + breadth indices + India VIX), captured during /sync. day pct = (last - prior close)/prior close. Non-personal; safe to commit. Built by scripts/merge-market.mjs.",
+  "asOf": "2026-06-19T17:35:04+05:30",
+  "capturedAt": "2026-06-20T19:56:54+05:30",
+  "source": "Kite · NSE indices",
+  "nifty": {
+    "last": 24013.1,
+    "prevClose": 24168,
+    "pct": -0.64
+  },
+  "vix": {
+    "last": 12.97,
+    "prevClose": 12.67,
+    "change": 0.3,
+    "pct": 2.37,
+    "high": 13.64,
+    "low": 12.07
+  },
+  "sectors": [
+    {
+      "name": "IT",
+      "pct": -3.65
+    },
+    {
+      "name": "Realty",
+      "pct": -1.01
+    },
+    {
+      "name": "PSU Bank",
+      "pct": -0.62
+    },
+    {
+      "name": "Auto",
+      "pct": -0.61
+    },
+    {
+      "name": "Fin Services",
+      "pct": -0.57
+    },
+    {
+      "name": "Bank",
+      "pct": -0.48
+    },
+    {
+      "name": "FMCG",
+      "pct": -0.19
+    },
+    {
+      "name": "Metal",
+      "pct": 0.08
+    },
+    {
+      "name": "Energy",
+      "pct": 0.22
+    },
+    {
+      "name": "Pharma",
+      "pct": 0.73
+    }
+  ],
+  "breadth": [
+    {
+      "name": "Nifty 50",
+      "pct": -0.64
+    },
+    {
+      "name": "Next 50",
+      "pct": -0.33
+    },
+    {
+      "name": "Nifty 500",
+      "pct": -0.27
+    },
+    {
+      "name": "Midcap 100",
+      "pct": 0.22
+    },
+    {
+      "name": "Smallcap 100",
+      "pct": 0.42
+    }
+  ]
+}

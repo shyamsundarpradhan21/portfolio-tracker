@@ -4,6 +4,10 @@ import SwotCard from '../shared/SwotCard';
 import MarketOverview, { aggregateSectors } from '../shared/MarketOverview';
 import SectorHeatmap from '../shared/SectorHeatmap';
 
+// compact ▲/▼ pct for the breadth/VIX strip (the sector tiles use SectorHeatmap's own)
+const wpct = (p) => (p == null || !isFinite(p) ? '—' : `${p > 0 ? '▲' : p < 0 ? '▼' : '·'}${Math.abs(p).toFixed(2)}%`);
+const wcls = (p) => (p == null ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
+
 // relative age of the shown analysis (kept local — small + render-cheap)
 function agoStr(ts) {
   if (!ts) return '';
@@ -15,13 +19,18 @@ function agoStr(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
 
   const sx = premarket?.sessions;
   const inSectors = aggregateSectors(nifty50?.stocks);
+  // Authoritative NSE sector + breadth + India VIX from the Kite snapshot (captured
+  // EOD during /sync). Preferred over inSectors, which only averages the 50 Nifty
+  // constituents by sector — the real sectoral indices are properly weighted & broader.
+  const wrapSectors = (marketWrap?.sectors || []).map((s) => ({ name: s.name, pct: s.pct, weight: 1 }));
+  const wrapDate = marketWrap?.asOf ? new Date(marketWrap.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
   // US sector heatmap tiles from the SPDR sector ETFs (equal-weight tiles).
   const usSectors = (premarket?.usSectors || [])
     .map((s) => ({ name: s.label, pct: s.pct, meta: s.sym, weight: 1 }))
@@ -98,11 +107,42 @@ export default function MacroTab({ premarket, nifty50, nifty50Loading, fiidiiTra
         />
       </div>
 
-      {/* Row 4 — sector performance today (Nifty 50 sectors | SPDR sector ETFs) */}
+      {/* Row 4 — sector performance today (NSE sectoral indices | SPDR sector ETFs) */}
       <div className="g2 sec pm-row">
-        <SectorHeatmap title="Nifty sector heatmap" sub="today’s average move by Nifty 50 sector" sectors={inSectors} loading={nifty50Loading} />
+        <SectorHeatmap
+          title="NSE sector heatmap"
+          sub={wrapSectors.length ? `NSE sectoral indices · close ${wrapDate}` : 'today’s average move by Nifty 50 sector'}
+          sectors={wrapSectors.length ? wrapSectors : inSectors}
+          loading={nifty50Loading} />
         <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />
       </div>
+
+      {/* Row 5 — market breadth & volatility (large-cap vs broad, India VIX) — Kite EOD */}
+      {(marketWrap?.breadth?.length || marketWrap?.vix) && (
+        <div className="card sec">
+          <div className="ctitle" style={{ marginBottom: 12 }}>
+            Breadth &amp; volatility
+            <span className="sub" style={{ textTransform: 'none' }}> — large-cap vs broad market{wrapDate ? ` · close ${wrapDate}` : ''}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {(marketWrap.breadth || []).map((b) => (
+              <div key={b.name} className="csm" style={{ flex: '1 1 90px', minWidth: 88 }}>
+                <div className="sub" style={{ margin: 0 }}>{b.name}</div>
+                <div className={'vsm mono ' + wcls(b.pct)} style={{ marginTop: 3 }}>{wpct(b.pct)}</div>
+              </div>
+            ))}
+            {marketWrap.vix && (
+              <div className="csm" style={{ flex: '1 1 90px', minWidth: 88, borderColor: 'var(--warn-brd)' }}>
+                <div className="sub" style={{ margin: 0 }}>India VIX</div>
+                <div className="vsm mono" style={{ marginTop: 3 }}>
+                  {marketWrap.vix.last != null ? marketWrap.vix.last.toFixed(2) : '—'}
+                  <span className={wcls(marketWrap.vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(marketWrap.vix.pct)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
