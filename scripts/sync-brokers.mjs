@@ -189,6 +189,68 @@ async function pullFyers() {
   return { funds: { available: +avail } };
 }
 
+// ── Market Wrap fallback (Fyers index quotes) ────────────────────────────────
+// The Macro Wrap is authoritatively built from Kite by scripts/merge-market.mjs
+// during /sync — but Kite is hosted-OAuth (a daily interactive click), so on days
+// that step isn't run the Wrap goes stale. Fyers carries the same NSE index quotes
+// (pre-computed `chp` % change) and authenticates from the laptop's daily token, so
+// it backfills the Wrap zero-touch on this sync. KITE ALWAYS WINS WHEN FRESH: this
+// only writes when the on-disk wrap is not from today, and tags itself as fallback.
+// Symbol format confirmed in mcp/fyers/server.py ('NSE:NIFTY50-INDEX'); the sector/
+// breadth strings + /data/quotes shape self-validate via the resolved-count log on
+// the first live run (anything that doesn't resolve is silently dropped, never fatal).
+const WRAP_PATH = join(ROOT, 'data', 'market-wrap.json');
+const FY_NIFTY = 'NSE:NIFTY50-INDEX';
+const FY_VIX   = 'NSE:INDIAVIX-INDEX';
+const FY_SECTORS = [
+  ['NSE:NIFTYIT-INDEX', 'IT'], ['NSE:NIFTYBANK-INDEX', 'Bank'], ['NSE:NIFTYAUTO-INDEX', 'Auto'],
+  ['NSE:NIFTYPHARMA-INDEX', 'Pharma'], ['NSE:NIFTYFMCG-INDEX', 'FMCG'], ['NSE:NIFTYMETAL-INDEX', 'Metal'],
+  ['NSE:NIFTYENERGY-INDEX', 'Energy'], ['NSE:NIFTYFINSERVICE-INDEX', 'Fin Services'],
+  ['NSE:NIFTYREALTY-INDEX', 'Realty'], ['NSE:NIFTYPSUBANK-INDEX', 'PSU Bank'],
+];
+const FY_BREADTH = [
+  [FY_NIFTY, 'Nifty 50'], ['NSE:NIFTYNEXT50-INDEX', 'Next 50'], ['NSE:NIFTY500-INDEX', 'Nifty 500'],
+  ['NSE:NIFTYMIDCAP100-INDEX', 'Midcap 100'], ['NSE:NIFTYSMLCAP100-INDEX', 'Smallcap 100'],
+];
+
+// symbol[] → { symbol: valueObject } via the Fyers v3 data-quotes API.
+async function fyersQuotes(symbols) {
+  const H = { Authorization: `${fyersAppId()}:${await fyersAccessToken()}` };
+  const qs = `symbols=${encodeURIComponent(symbols.join(','))}`;
+  let r = await getJSON(`https://api-t1.fyers.in/data/quotes?${qs}`, H);
+  if (r.json?.s !== 'ok') r = await getJSON(`https://api.fyers.in/data/quotes?${qs}`, H);
+  if (r.json?.s !== 'ok') throw new Error('quotes: ' + JSON.stringify(r.json).slice(0, 150));
+  const by = {};
+  for (const row of (r.json.d || [])) if (row.n && row.v) by[row.n] = row.v;
+  return by;
+}
+
+async function wrapFyers() {
+  const today = nowIst().slice(0, 10);
+  const existing = readJSON(WRAP_PATH);
+  if (existing?.asOf?.slice(0, 10) === today) return { skipped: 'kite wrap already fresh today' };
+
+  const all = [FY_NIFTY, FY_VIX, ...FY_SECTORS.map((s) => s[0]), ...FY_BREADTH.map((b) => b[0])];
+  const q = await fyersQuotes(all);
+  const r2 = (n) => (n == null || !isFinite(n) ? null : Math.round(n * 100) / 100);
+  const row = ([sym, name]) => { const v = q[sym]; return v && v.chp != null ? { name, pct: r2(v.chp) } : null; };
+
+  const sectors = FY_SECTORS.map(row).filter(Boolean).sort((a, b) => a.pct - b.pct); // worst first
+  const breadth = FY_BREADTH.map(row).filter(Boolean);
+  const n = q[FY_NIFTY];
+  const nifty = n ? { last: r2(n.lp), prevClose: r2(n.lp - n.ch), pct: r2(n.chp) } : null;
+  const v = q[FY_VIX];
+  const vix = v ? { last: r2(v.lp), prevClose: r2(v.lp - v.ch), change: r2(v.ch), pct: r2(v.chp), high: r2(v.high_price), low: r2(v.low_price) } : null;
+  if (!nifty && !sectors.length) throw new Error('no index quotes resolved (check symbol strings)');
+
+  writeFileSync(WRAP_PATH, JSON.stringify({
+    note: 'NSE market wrap — FALLBACK from Fyers index quotes (laptop token), written when the authoritative Kite wrap (scripts/merge-market.mjs) has not run today. day pct = Fyers chp. Non-personal; safe to commit.',
+    asOf: `${today}T${nowIst().slice(11)}`, capturedAt: nowIst(), source: 'Fyers · NSE indices (fallback)',
+    nifty, vix, sectors, breadth,
+  }, null, 2) + '\n');
+  return { resolved: Object.keys(q).length, total: all.length, sectors: sectors.length, breadth: breadth.length };
+}
+
 // Mint-on-demand — when a daily token has expired, run that broker's login.py
 // inline (same invocation as its Windows task) then retry the pull once. Makes
 // the sync self-healing regardless of when it fires or whether the login tasks
@@ -336,6 +398,16 @@ if (ledgerRows.length) {
   if (added || updated) log.push(`fno-ledger: ${added} new · ${updated} updated`);
 }
 
+// Market Wrap fallback — only on laptop runs where Fyers authed (the cloud routine
+// sets SYNC_ONLY=dhan, so want('fyers') is false there). Backfills the Macro Wrap
+// from Fyers index quotes when Kite's authoritative wrap hasn't run today.
+if (want('fyers') && state.brokers.fyers?.ok) {
+  try {
+    const w = await wrapFyers();
+    log.push(w.skipped ? `wrap: ${w.skipped}` : `wrap (Fyers fallback): ${w.sectors} sectors · ${w.breadth} breadth · ${w.resolved}/${w.total} symbols resolved`);
+  } catch (e) { log.push(`wrap (Fyers): skipped (${e.message || e})`); }
+}
+
 // Hand the Fyers refresh_token off to KV so the always-on cloud routine can mint
 // daily access tokens without a browser. Only the laptop has the browser-minted
 // .token.json with a refresh_token; the cloud reads this and tops nothing up.
@@ -356,7 +428,7 @@ log.forEach((l) => console.log('  ' + l));
 
 if (!process.env.SYNC_SKIP_GIT) {
   try {
-    const files = 'data/broker-state.json data/trades-log.json data/fno-ledger.json';
+    const files = 'data/broker-state.json data/trades-log.json data/fno-ledger.json data/market-wrap.json';
     execSync(`git add ${files}`, { cwd: ROOT });
     if (execSync(`git status --porcelain ${files}`, { cwd: ROOT }).toString().trim()) {
       const scope = ONLY.length ? ` (${ONLY.join(',')})` : '';
