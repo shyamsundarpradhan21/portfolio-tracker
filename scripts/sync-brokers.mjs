@@ -43,7 +43,7 @@ function loadEnv(p) {
   try {
     for (const line of readFileSync(p, 'utf8').split('\n')) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-      if (m && !line.trim().startsWith('#')) env[m[1]] = m[2];
+      if (m && !line.trim().startsWith('#')) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
     }
   } catch {}
   return env;
@@ -95,10 +95,18 @@ async function dhanToken() {
 }
 
 // Vercel KV / Upstash REST (optional) — the channel the laptop hands the Fyers
-// refresh_token to the cloud routine. No-op when KV creds aren't configured.
+// refresh_token to the cloud routine. Creds come from process.env (cloud Remote)
+// or the gitignored mcp/.kv.env file (laptop — paste the two keys there). No-op
+// when neither is configured.
+const KV_ENV = loadEnv(join(ROOT, 'mcp', '.kv.env'));
+function kvCreds() {
+  return {
+    url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || KV_ENV.KV_REST_API_URL || KV_ENV.UPSTASH_REDIS_REST_URL,
+    token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || KV_ENV.KV_REST_API_TOKEN || KV_ENV.UPSTASH_REDIS_REST_TOKEN,
+  };
+}
 async function kv(cmd) {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const { url, token } = kvCreds();
   if (!url || !token) return undefined;
   try {
     const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
@@ -333,7 +341,7 @@ if (ledgerRows.length) {
 // .token.json with a refresh_token; the cloud reads this and tops nothing up.
 try {
   const rt = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.refresh_token;
-  if (rt && (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL)) {
+  if (rt && kvCreds().url) {
     const prev = await kv(['GET', FYERS_RT_KEY]);
     if (prev !== rt) { await kv(['SET', FYERS_RT_KEY, rt]); log.push('fyers refresh_token → KV (cloud handoff)'); }
   }

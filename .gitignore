@@ -67,3 +67,6 @@ login-*.png
 
 # local MCP client config — machine-specific paths + broker secrets, never commit
 /.mcp.json
+
+# laptop KV credentials for the Fyers refresh-token handoff (the .example is committed)
+/mcp/.kv.env
