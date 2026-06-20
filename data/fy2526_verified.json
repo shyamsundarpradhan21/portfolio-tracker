@@ -1,5 +1,5 @@
 {
-  "_note": "Static, ITR-verified F&O figures. INR. Net = Gross - Charges. Update manually from broker statements / ITR. CF figures reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model). labels: every FY name rendered in the UI comes from here — when this file rolls to a new FY, update labels and the whole UI follows.",
+  "_note": "ITR-verified F&O figures. INR. Net = Gross - Charges. CF reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model). labels: every FY name in the UI comes from here — roll labels at year-end and the UI follows. The fy2627 (current-FY) blocks are a FROZEN seed: the YTD realised up to `seedThrough`. From there app/page.js adds daily increments from data/fno-ledger.json (auto-captured) — do NOT hand-update fy2627 mid-year or you'll double-count. The only manual ritual is annual: at ITR, replace this fy2627 with the verified prior-FY block, roll labels, reset the next fy2627 seed to 0 with a new seedThrough, and archive the ledger.",
   "labels": {
     "verified": "FY25-26",
     "verifiedLong": "FY2025-26",
@@ -15,7 +15,7 @@
       ],
       "total": { "gross": 209524, "charges": 30079, "net": 179445 }
     },
-    "fy2627": { "label": "Dhan F&O", "gross": 14586, "charges": 9086, "net": 5500 }
+    "fy2627": { "label": "Dhan F&O", "gross": 14586, "charges": 9086, "net": 5500, "seedThrough": "2026-06-21", "_seed": "YTD through 2026-06-21 — REPLACE with your uploaded YTD; ledger piles from Mon 2026-06-22" }
   },
   "s02": {
     "fy2526": {
@@ -25,7 +25,7 @@
       ],
       "total": { "gross": -128544, "charges": 63520, "net": -192064 }
     },
-    "fy2627": { "label": "Fyers F&O", "gross": 101267, "charges": 8756, "net": 92512 }
+    "fy2627": { "label": "Fyers F&O", "gross": 101267, "charges": 8756, "net": 92512, "seedThrough": "2026-06-21", "_seed": "YTD through 2026-06-21 — REPLACE with your uploaded YTD; ledger piles from Mon 2026-06-22" }
   },
   "combined2526": { "gross": 80980, "charges": 93600, "net": -12619 },
   "carryforward": [

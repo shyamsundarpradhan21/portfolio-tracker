@@ -8,9 +8,14 @@ import {
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS,
 } from './portfolio';
-import FY from '../data/fy2526_verified.json';
+import FY_SEED from '../data/fy2526_verified.json';
+import { deriveFY } from './lib/fnoLedger';
 import VOL_PNL from '../data/vol_pnl.json';
 import { classifyRegime } from './lib/regime';
+
+// Current-FY (fy2627) F&O blocks drive themselves from the auto-captured realised
+// ledger, rolled on top of the frozen ITR seed. Only the annual ritual is manual.
+const FY = deriveFY(FY_SEED);
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';

@@ -16,12 +16,27 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { appendTrades } from './lib/trades-log.mjs';
+import { appendLedger } from './lib/fno-ledger.mjs';
+import { chargesForFills, segmentOf } from './lib/fno-charges.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE_PATH = join(ROOT, 'data', 'broker-state.json');
 
 const nowIst = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace(/\.\d+Z$/, '+05:30');
 const readJSON = (p, fb = null) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return fb; } };
+
+// Fyers creds — process.env (interactive shell or cloud Remote env) else the .env
+// fallback, so both the headless laptop task and the cloud routine are
+// self-sufficient (Task Scheduler / the cloud don't inherit a shell's env).
+const fyersCfg = () => {
+  const e = loadEnv(join(ROOT, 'mcp', 'fyers', '.env'));
+  return {
+    appId: process.env.FYERS_APP_ID || e.FYERS_APP_ID,
+    secret: process.env.FYERS_SECRET_ID || e.FYERS_SECRET_ID,
+    pin: process.env.FYERS_PIN || e.FYERS_PIN,
+  };
+};
+const fyersAppId = () => fyersCfg().appId;
 
 function loadEnv(p) {
   const env = {};
@@ -64,14 +79,59 @@ async function getJSON(url, headers) {
 async function dhanToken() {
   const cache = readJSON(join(ROOT, 'mcp', 'dhan', '.token.json'));
   if (cache?.accessToken && cache.expiryTs && cache.expiryTs * 1000 > Date.now() + 60000) return cache.accessToken;
+  // process.env first (cloud Remote env) then the .env file (laptop) — so the
+  // cloud routine needs only env vars, not the gitignored .env placed in it.
   const e = loadEnv(join(ROOT, 'mcp', 'dhan', '.env'));
-  const url = `https://auth.dhan.co/app/generateAccessToken?dhanClientId=${e.DHAN_CLIENT_ID}&pin=${e.DHAN_PIN}&totp=${totp(e.DHAN_TOTP_SEED)}`;
+  const cid = process.env.DHAN_CLIENT_ID || e.DHAN_CLIENT_ID;
+  const pin = process.env.DHAN_PIN || e.DHAN_PIN;
+  const seed = process.env.DHAN_TOTP_SEED || e.DHAN_TOTP_SEED;
+  const url = `https://auth.dhan.co/app/generateAccessToken?dhanClientId=${cid}&pin=${pin}&totp=${totp(seed)}`;
   const r = await fetch(url, { method: 'POST' });
   const j = await r.json();
   if (!j.accessToken) throw new Error('mint failed: ' + JSON.stringify(j).slice(0, 200));
   writeFileSync(join(ROOT, 'mcp', 'dhan', '.token.json'),
     JSON.stringify({ accessToken: j.accessToken, expiryTs: Math.floor(Date.now() / 1000) + 23 * 3600 }));
   return j.accessToken;
+}
+
+// Vercel KV / Upstash REST (optional) — the channel the laptop hands the Fyers
+// refresh_token to the cloud routine. No-op when KV creds aren't configured.
+async function kv(cmd) {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return undefined;
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
+    return (await r.json())?.result;
+  } catch { return undefined; }
+}
+const FYERS_RT_KEY = 'fyers:refreshToken';
+
+// Fyers daily access token. Laptop = the browser-minted .token.json. Cloud (no
+// local token) = refresh-mint via /validate-refresh-token using the refresh_token
+// the laptop pushed to KV. That endpoint is NOT behind the login page's Cloudflare,
+// so it works headless for the refresh token's ~15-day life. Memoised per run.
+let _fyersAt;
+async function fyersAccessToken() {
+  if (_fyersAt) return _fyersAt;
+  const local = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.access_token;
+  if (local) return (_fyersAt = local);
+  return (_fyersAt = await fyersRefreshMint());
+}
+async function fyersRefreshMint() {
+  const { appId, secret, pin } = fyersCfg();
+  const refresh = process.env.FYERS_REFRESH_TOKEN || await kv(['GET', FYERS_RT_KEY]);
+  if (!appId || !secret || !pin || !refresh) {
+    throw new Error('fyers refresh creds missing (need FYERS_APP_ID/SECRET_ID/PIN + refresh_token in KV)');
+  }
+  const appIdHash = crypto.createHash('sha256').update(`${appId}:${secret}`).digest('hex');
+  const r = await fetch('https://api-t1.fyers.in/api/v3/validate-refresh-token', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grant_type: 'refresh_token', appIdHash, refresh_token: refresh, pin }),
+  });
+  const j = await r.json();
+  if (!j.access_token) throw new Error('fyers refresh-mint: ' + JSON.stringify(j).slice(0, 150));
+  return j.access_token;
 }
 
 async function pullUpstox() {
@@ -110,9 +170,9 @@ async function pullDhan() {
 }
 
 async function pullFyers() {
-  const tok = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.access_token;
-  const appId = process.env.FYERS_APP_ID;
-  if (!tok || !appId) throw new Error('no token/app_id (run FyersDailyLogin)');
+  const appId = fyersAppId();
+  const tok = await fyersAccessToken();
+  if (!tok || !appId) throw new Error('no token/app_id (run FyersDailyLogin or set refresh_token)');
   const H = { Authorization: `${appId}:${tok}` };
   let fund = await getJSON('https://api-t1.fyers.in/api/v3/funds', H);
   if (fund.json?.s !== 'ok') fund = await getJSON('https://api.fyers.in/api/v3/funds', H);
@@ -130,6 +190,10 @@ const MINT = {
   fyers:  { dir: 'mcp/fyers',  args: ['login.py', '--show'] }, // headed (Cloudflare)
 };
 function mint(name) {
+  // The cloud routine sets SYNC_NO_BROWSER=1 — it can't drive Playwright/Cloudflare,
+  // so a stale Upstox/Fyers token there degrades gracefully instead of hanging on a
+  // browser launch. (Dhan self-mints pure-API; Fyers refresh-mints from KV.)
+  if (process.env.SYNC_NO_BROWSER) return false;
   const m = MINT[name]; if (!m) return false;
   const py = join(ROOT, m.dir, '.venv', 'Scripts', 'python.exe');
   const cmd = [`"${py}"`, ...m.args.map((a) => (a.endsWith('.py') ? `"${a}"` : a))].join(' ');
@@ -162,8 +226,8 @@ async function tradesDhan() {
   }));
 }
 async function tradesFyers() {
-  const tok = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.access_token;
-  const appId = process.env.FYERS_APP_ID;
+  const appId = fyersAppId();
+  const tok = await fyersAccessToken().catch(() => null);
   if (!tok || !appId) return [];
   let r = await getJSON('https://api-t1.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
   if (!r.json?.tradeBook) r = await getJSON('https://api.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
@@ -181,7 +245,14 @@ const ts = nowIst();
 state.syncedAt = ts;
 const log = [];
 
-for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', pullFyers]]) {
+// SYNC_ONLY=dhan restricts the run to one broker (comma-separated for several).
+// The always-on cloud-Dhan routine sets it so the cloud run touches only the
+// Dhan sleeve + Dhan ledger row and leaves the laptop-side brokers untouched.
+// Unset (the laptop runs) = all three.
+const ONLY = (process.env.SYNC_ONLY || '').toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
+const want = (name) => !ONLY.length || ONLY.includes(name);
+
+for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', pullFyers]].filter(([n]) => want(n))) {
   try {
     let r;
     try {
@@ -205,14 +276,68 @@ for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', 
   }
 }
 
-// Capture today's fills into the durable tradebook — only for brokers that authed.
-for (const [name, label, fn] of [['upstox', 'Upstox', tradesUpstox], ['dhan', 'Dhan', tradesDhan], ['fyers', 'Fyers', tradesFyers]]) {
+// Capture today's fills into the durable tradebook AND the realised-F&O ledger —
+// only for brokers that authed. The same fills feed both: trades-log (durable
+// cashflow) and fno-ledger (daily realised P&L net of modeled charges, which
+// drives the Trading tab's current-FY blocks — no more hand-editing).
+const SLEEVE = { upstox: 'S02', dhan: 'S01', fyers: 'S02' };
+const isFno = (sym) => segmentOf(sym) != null;
+// Gross realised from same-day round-trips: only contracts that netted flat
+// (buyQty === sellQty) realise today; carried/positional legs crystallise later
+// (caught via Dhan's native realised, or trued up at the annual ITR pass).
+function closedNet(fills) {
+  const byc = {};
+  for (const f of fills) {
+    const c = (byc[f.sym] ||= { bq: 0, sq: 0, bv: 0, sv: 0 });
+    const v = f.value != null ? Math.abs(f.value) : Math.abs((f.qty || 0) * (f.price || 0));
+    if (String(f.side || '').toUpperCase().startsWith('S')) { c.sq += f.qty; c.sv += v; }
+    else { c.bq += f.qty; c.bv += v; }
+  }
+  let net = 0;
+  for (const k in byc) { const c = byc[k]; if (c.bq && c.bq === c.sq) net += c.sv - c.bv; }
+  return +net.toFixed(2);
+}
+const ledgerRows = [];
+for (const [name, label, fn] of [['upstox', 'Upstox', tradesUpstox], ['dhan', 'Dhan', tradesDhan], ['fyers', 'Fyers', tradesFyers]].filter(([n]) => want(n))) {
   try {
     if (!state.brokers[name]?.ok) continue;
-    const added = appendTrades(label, await fn());
+    const fills = await fn();
+    const added = appendTrades(label, fills);
     if (added) log.push(`${name} trades: +${added}`);
+
+    // Realised F&O for the ledger (gross − modeled charges = net).
+    const fno = (fills || []).filter((f) => isFno(f.sym));
+    let gross = null, source = 'fills';
+    if (name === 'dhan') { // native realised — includes expiry/settlement P&L
+      const native = (state.positions.DHAN_FNO?.rows || []).reduce((a, p) => a + (Number(p.realized) || 0), 0);
+      if (native) { gross = native; source = 'positions'; }
+    }
+    if (gross == null) gross = closedNet(fno);
+    if (gross || fno.length) {
+      const ch = chargesForFills(label, fno);
+      ledgerRows.push({
+        date: fno[0]?.date || ts.slice(0, 10), broker: label, sleeve: SLEEVE[name],
+        grossRealised: gross, estCharges: ch.total, turnover: ch.turnover, orders: ch.orders, source,
+      });
+      log.push(`${name} F&O: gross ₹${gross} − est ₹${ch.total} = net ₹${+(gross - ch.total).toFixed(2)}`);
+    }
   } catch (e) { log.push(`${name} trades: skipped (${e.message || e})`); }
 }
+if (ledgerRows.length) {
+  const { added, updated } = appendLedger(ledgerRows);
+  if (added || updated) log.push(`fno-ledger: ${added} new · ${updated} updated`);
+}
+
+// Hand the Fyers refresh_token off to KV so the always-on cloud routine can mint
+// daily access tokens without a browser. Only the laptop has the browser-minted
+// .token.json with a refresh_token; the cloud reads this and tops nothing up.
+try {
+  const rt = readJSON(join(ROOT, 'mcp', 'fyers', '.token.json'))?.refresh_token;
+  if (rt && (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL)) {
+    const prev = await kv(['GET', FYERS_RT_KEY]);
+    if (prev !== rt) { await kv(['SET', FYERS_RT_KEY, rt]); log.push('fyers refresh_token → KV (cloud handoff)'); }
+  }
+} catch (e) { log.push(`fyers KV handoff: skipped (${e.message || e})`); }
 
 // Kite / INDIAN is never touched here — only /sync refreshes it.
 state.brokers.kite = state.brokers.kite || { ok: false, note: 'hosted MCP — refreshed only by /sync' };
@@ -223,11 +348,24 @@ log.forEach((l) => console.log('  ' + l));
 
 if (!process.env.SYNC_SKIP_GIT) {
   try {
-    execSync('git add data/broker-state.json data/trades-log.json', { cwd: ROOT });
-    if (execSync('git status --porcelain data/broker-state.json data/trades-log.json', { cwd: ROOT }).toString().trim()) {
-      execSync(`git commit -m "chore: broker sync ${ts.slice(0, 10)}"`, { cwd: ROOT, stdio: 'inherit' });
-      execSync('git push', { cwd: ROOT, stdio: 'inherit' });
-      console.log('committed + pushed');
-    } else { console.log('no change — skip commit'); }
-  } catch (e) { console.error('git step failed:', e.message); }
+    const files = 'data/broker-state.json data/trades-log.json data/fno-ledger.json';
+    execSync(`git add ${files}`, { cwd: ROOT });
+    if (execSync(`git status --porcelain ${files}`, { cwd: ROOT }).toString().trim()) {
+      const scope = ONLY.length ? ` (${ONLY.join(',')})` : '';
+      execSync(`git commit -m "chore: broker sync ${ts.slice(0, 10)}${scope}"`, { cwd: ROOT, stdio: 'inherit' });
+    }
+    // Two committers can write these files (laptop sync + always-on cloud-Dhan
+    // routine), so rebase onto the remote before pushing instead of a bare push.
+    // On the rare append-conflict, abort cleanly — the row is idempotent (upsert
+    // by date:broker), so the next run re-applies + pushes it.
+    try {
+      execSync('git pull --rebase --autostash', { cwd: ROOT, stdio: 'inherit' });
+    } catch {
+      try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
+      throw new Error('pull --rebase conflicted — skipping push, next run retries');
+    }
+    const ahead = +execSync('git rev-list --count @{u}..HEAD', { cwd: ROOT }).toString().trim();
+    if (ahead > 0) { execSync('git push', { cwd: ROOT, stdio: 'inherit' }); console.log(`pushed ${ahead} commit(s)`); }
+    else { console.log('nothing to push'); }
+  } catch (e) { console.error('git step:', e.message); }
 }

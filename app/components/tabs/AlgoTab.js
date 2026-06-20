@@ -20,7 +20,7 @@ export default function AlgoTab({
     <div>
       <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <FreshnessTag mode="manual" date={`${FY.labels.verified} ITR-verified · swing live`} />
+        <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'} · est. charges · ${FY.labels.verified} ITR-verified · swing live`} />
       </div>
 
       <div className="g3 sec">

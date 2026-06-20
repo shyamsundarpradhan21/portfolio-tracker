@@ -244,12 +244,16 @@ def run():
     session.set_token(code)
     resp = session.generate_token()
     at = (resp or {}).get("access_token")
+    rt = (resp or {}).get("refresh_token")
     if not at:
         _log("token exchange failed:", resp)
         return 1
+    # Keep the refresh_token too: the cloud routine uses it to mint daily access
+    # tokens via /validate-refresh-token (no browser) for the ~15 days it stays
+    # valid. sync-brokers.mjs hands it off to Vercel KV on the next laptop run.
     with open(TOKEN_FILE, "w") as f:
-        json.dump({"access_token": at}, f)
-    _log("ok — daily access token minted")
+        json.dump({"access_token": at, "refresh_token": rt}, f)
+    _log("ok — daily access token minted" + (" (+refresh_token for cloud handoff)" if rt else ""))
     return 0
 
 
