@@ -35,7 +35,8 @@ const COLORS = ALLOC_COLORS;
 // qty/avg; the curated arrays supply metadata/history. Same row shape out, so the
 // derivations below are untouched — only the numbers (and a freshness badge) change.
 const SWING_R  = reconcileSleeve(SWING, 'SWING');   // Upstox — zero-touch
-const INDIAN_R = reconcileSleeve(INDIAN, 'INDIAN'); // Zerodha — stale until Kite login
+// INDIAN reconcile is corp-action-aware — computed from heldIndian (post-bonus/split)
+// inside the component, so an action the app already applies isn't flagged as drift.
 
 import OverviewTab  from './components/tabs/OverviewTab';
 import IndianTab    from './components/tabs/IndianTab';
@@ -387,6 +388,9 @@ export default function Page() {
 
   // ─── derived: Indian ────────────────────────────────────────────────────────
   const heldIndian = useMemo(() => applyCorpActions(INDIAN, now, CORPORATE_ACTIONS, isoOf), [now]);
+  // Drift-check Kite against the corp-action-adjusted book (not raw INDIAN), so a
+  // bonus/split the app already applied isn't flagged as a phantom mismatch.
+  const indianRec = useMemo(() => reconcileSleeve(heldIndian, 'INDIAN'), [heldIndian]);
   const indian = useMemo(() => {
     let inv = 0, val = 0, valued = true;
     const rows = heldIndian.map((s) => {
@@ -990,7 +994,7 @@ export default function Page() {
               inStats={inStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
               flash={flash} markets={markets} lastUpdate={lastUpdate} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
-              indianRec={INDIAN_R} />
+              indianRec={indianRec} />
           )}
           {tab === 2 && (
             <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />

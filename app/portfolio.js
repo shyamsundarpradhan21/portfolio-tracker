@@ -3,11 +3,12 @@
 // holding's native currency (INR for NSE, USD for US).
 
 // Indian equities — NSE. Yahoo symbols use the ".NS" suffix. Holdings are
-// reconciled against the Zerodha tradebook (14 positions; SUPRIYA 36 post-
+// reconciled against the Zerodha tradebook (15 positions; SUPRIYA 36 post-
 // booking; POWERGRID held; TCS/NATCOPHARM exited). GVT&D/GVTD (net-zero closed,
 // dual-spelling) and any net-negative/exited symbol (OIL, FORTIS) are
 // deliberately absent — do not reintroduce them anywhere.
 export const INDIAN = [
+  { sym: 'AURIONPRO',  name: 'Aurionpro Solutions',      qty: 35,  cost: 840.69,  sector: 'Technology',  cap: 'Small' },
   { sym: 'COFORGE',    name: 'Coforge Ltd',              qty: 21,  cost: 1398.14, sector: 'Technology',  cap: 'Large' },
   { sym: 'CUB',        name: 'City Union Bank',          qty: 141, cost: 212.12,  sector: 'Banking',     cap: 'Small' },
   { sym: 'FEDERALBNK', name: 'Federal Bank',             qty: 155, cost: 193.69,  sector: 'Banking',     cap: 'Mid'   },
@@ -26,8 +27,9 @@ export const INDIAN = [
 
 // Per-stock invested capital at each stock's buy-amount-weighted average date
 // (from the Zerodha tradebook). Drives XIRR/CAGR — one outflow per row on its
-// date, one inflow today (+current value). Σinvested ties to ~₹4.04L.
+// date, one inflow today (+current value). Σinvested ties to ~₹4.33L.
 export const TRANSACTIONS = [
+  { sym: 'AURIONPRO',  date: '2026-06-15', invested: 29424 },
   { sym: 'COFORGE',    date: '2026-05-25', invested: 29361 },
   { sym: 'CUB',        date: '2025-09-28', invested: 29909 },
   { sym: 'FEDERALBNK', date: '2025-10-01', invested: 30022 },
