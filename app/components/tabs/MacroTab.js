@@ -93,10 +93,15 @@ function FiiDiiChart({ trail }) {
 // ── Breadth: gradient needle on a bearish→bullish scale (per breadthfinal) ───
 function BreadthNeedle({ ad }) {
   if (!ad) return null;
-  const row = (label, pctUp, big) => (
+  const row = (label, pctUp, big) => big ? (
+    <div className="grbigwrap" key={label}>
+      <div className="grbighd"><span>{label}</span><b className={pctUp >= 50 ? 'grn' : 'red'}>{pctUp}%</b></div>
+      <div className="grtrack grbig"><div className="grneedle big" style={{ left: `${pctUp}%` }} /></div>
+    </div>
+  ) : (
     <div className="grrow" key={label}>
       <span className="grcl">{label}</span>
-      <div className={`grtrack${big ? ' grbig' : ''}`}><div className={`grneedle${big ? ' big' : ''}`} style={{ left: `${pctUp}%` }} /></div>
+      <div className="grtrack"><div className="grneedle" style={{ left: `${pctUp}%` }} /></div>
       <b className={pctUp >= 50 ? 'grn' : 'red'}>{pctUp}%</b>
     </div>
   );
@@ -242,7 +247,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
           <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? `live · ${asOf}` : 'today'}</span></div>
           {sectors.length
             ? <div className="heat" style={{ gridTemplateColumns: `repeat(${Math.min(5, sectors.length)}, 1fr)` }}>
-              {sectors.map((s) => <div className="hc" key={s.name} style={{ background: heat(s.pct) }}><span>{s.name}</span><b className={cls(s.pct)}>{apct(s.pct)}</b></div>)}
+              {sectors.map((s) => <div className="hc" key={s.name} style={{ background: heat(s.pct) }}><span>{s.name}</span><b>{apct(s.pct)}</b></div>)}
             </div>
             : <div className="na">Sector board unavailable.</div>}
           {showIN && <BreadthNeedle ad={ind.breadthAD} />}

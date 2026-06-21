@@ -502,8 +502,8 @@ body {
 /* sector heat tiles */
 .heat { display: grid; gap: 6px; }
 .hc { border-radius: 8px; padding: 9px 8px; min-height: 50px; display: flex; flex-direction: column; justify-content: space-between; }
-.hc span { font-size: var(--fs-xs); color: var(--txt2); font-weight: 600; }
-.hc b { font-size: var(--fs-sm); font-family: var(--mono); }
+.hc span { font-size: var(--fs-xs); color: var(--txt); opacity: .85; font-weight: 600; }
+.hc b { font-size: var(--fs-sm); font-family: var(--mono); color: var(--txt); font-weight: 700; }
 
 /* breadth needle */
 .rlabel { font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin: 14px 2px 8px; display: flex; align-items: center; }
@@ -517,6 +517,10 @@ body {
 .grneedle.big { height: 20px; width: 4px; }
 .grrow b { flex: 0 0 36px; text-align: right; font-size: var(--fs-xs); font-family: var(--mono); }
 .grsc { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt3); margin: 4px 0 12px 88px; }
+/* Nifty 500 headline gauge — full-width gradient with label/% above */
+.grbigwrap { margin-bottom: 14px; }
+.grbighd { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-xs); color: var(--txt2); margin-bottom: 6px; }
+.grbighd b { font-family: var(--mono); }
 
 /* FII/DII svg (fills via class → theme-following) — FII+DII composition + net tick */
 .fdg { width: 100%; display: block; }
