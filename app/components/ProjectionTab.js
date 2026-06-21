@@ -664,6 +664,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
 
   return (
     <div className="card sec pjx">
+      {/* live allocation strip — top of the card; the growth title + Value/Return + range
+          sit below its legends. Drifts with the scrubber; hover brightens a segment. */}
+      {footer && <div className="pjx-alloc">{footer}</div>}
       <div className="fxc" style={{ alignItems: 'baseline' }}>
         <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
           {view === 'return' ? 'Performance · returns vs market' : scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
@@ -686,10 +689,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           </div>
         </div>
       </div>
-
-      {/* live allocation strip — in the card header now (was a footer); drifts with the
-          scrubber. Hovering a segment brightens it and dims the rest (like the old sunburst). */}
-      {footer && <div className="pjx-alloc">{footer}</div>}
 
       {/* Value ↔ Return: both chart blocks render and stack in one grid cell, bottom-
           aligned and toggled by visibility — the cell always takes the taller (Return,
