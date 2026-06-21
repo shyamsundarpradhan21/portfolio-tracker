@@ -27,6 +27,7 @@
 *.xlsx
 *.xls
 *.csv
+*.pdf
 # raw broker tax/P&L report drop — any extension; PII never leaves this folder, only the
 # extracted figures get written into the committed JSONs.
 /data/reports/
