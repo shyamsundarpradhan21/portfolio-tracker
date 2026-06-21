@@ -366,6 +366,20 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     return a[i] + (a[i + 1] - a[i]) * f;
   };
 
+  // Single source of truth for all-time gain: sum of every sleeve's (value − cost
+  // basis). Counts CMPF + FD interest as gains (they're accruing assets, same as any
+  // holding), so it equals the MAX waffle and drives the MAX pill + the lifetime
+  // decomposition — no inconsistent per-calc treatment of any sleeve.
+  const totalGains = useMemo(() => {
+    if (!sleeveBasis) return null;
+    let g = 0, any = false;
+    for (const k in sleeveBasis) {
+      const e = sleeveBasis[k];
+      if (e && Number.isFinite(e.v) && Number.isFinite(e.i)) { g += e.v - e.i; any = true; }
+    }
+    return any ? Math.round(g) : null;
+  }, [sleeveBasis]);
+
   // Growth = MARKET move only: NW change minus the capital deployed in the
   // window. Without the deduction a deposit day reads as a +10% "gain".
   const growth = useMemo(() => {
@@ -383,6 +397,12 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         const base = liveNw - dayChg;
         return { key: 'D', chg: dayChg, pct: base > 0 ? (dayChg / base) * 100 : 0 };
       }
+      // MAX = all-time gain across every sleeve (= the MAX waffle); no inception
+      // snapshot needed and CMPF/FD interest is counted like any other appreciation.
+      if (r.key === 'Max' && totalGains != null) {
+        const base = liveNw - totalGains;
+        return { key: 'Max', chg: totalGains, pct: base > 0 ? (totalGains / base) * 100 : 0 };
+      }
       let ref = hist[0];
       if (r.days != null) {
         const cutoff = ms(last.d) - r.days * 864e5;
@@ -392,7 +412,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       const pct = ref.nw > 0 ? (chg / ref.nw) * 100 : 0;
       return { key: r.key, chg, pct };
     });
-  }, [hist, nw, invested0, dayGain]);
+  }, [hist, nw, invested0, dayGain, totalGains]);
 
   // Net-worth levels already crossed in the recorded history — planted as stars
   // on the growth curve so the past wins are celebrated too (the future ladder
@@ -618,7 +638,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const showRetire = scrubbing && t >= retireYr - 0.01 && retireYr > 0;
 
   const maxRow   = growth.find((g) => g.key === 'Max');
-  const histGains = liveNw - (lastH.invested ?? model.inv0);
+  // Lifetime gains = the same all-time per-sleeve sum the MAX pill uses (CMPF/FD
+  // interest included); deployed is then NW − gains so the decomposition always closes.
+  const histGains = totalGains != null ? totalGains : liveNw - (lastH.invested ?? model.inv0);
   const xirrPct   = liveXirr != null ? (liveXirr * 100).toFixed(1) : null;
   const ratePct   = (rates[sc].start * 100).toFixed(1);
   const longPct   = (rates[sc].longRun * 100).toFixed(0);
@@ -683,8 +705,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
               all-time story (distinct from the per-window pills below), so it stays
               put as you switch D/W/M/Y — the pills already carry each window's move. */}
           Net worth <b><Crs n={liveNw} /></b> since {monYr(hist[0].d)} ={' '}
-          <b><Crs n={lastH.invested ?? model.inv0} /></b> deployed {histGains >= 0 ? '+' : '−'}{' '}
-          <b className={histGains >= 0 ? 'up' : 'dn'}><Crs n={histGains} /></b> market {histGains >= 0 ? 'gains' : 'loss'}
+          <b><Crs n={liveNw - histGains} /></b> deployed {histGains >= 0 ? '+' : '−'}{' '}
+          <b className={histGains >= 0 ? 'up' : 'dn'}><Crs n={histGains} /></b> {histGains >= 0 ? 'gains' : 'loss'}
           {xirrPct != null && <> · <b className={liveXirr >= 0 ? 'up' : 'dn'}>{xirrPct}% XIRR</b></>}
         </div>
       )}
