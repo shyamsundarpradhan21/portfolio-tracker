@@ -75,12 +75,15 @@ async function fetchMomentum() {
   return { sp: price, sma125, pct, score: momentumScore(pct), asOf: new Date().toISOString(), source: 'Yahoo ^GSPC (125D MA)' };
 }
 
-// ── FRED — ICE BofA US High Yield OAS, BAMLH0A0HYM2 (%). LEADING #2 and the most
-// decision-relevant signal, so it gets two independent paths and must never silently
-// blank: (1) the official keyed JSON API, which is what works from Vercel; (2) a
-// keyless fredgraph.csv fallback, which works OFF Vercel (local dev / other hosts)
-// where the key may be absent. The keyless host is Vercel-IP-blocked, so on Vercel
-// the keyed API carries it; locally the CSV does. A "—" now means BOTH failed.
+// ── FRED — ICE BofA US High Yield OAS, BAMLH0A0HYM2 (%). LEADING #2, the most
+// decision-relevant signal, so it gets two fetch paths: (1) the official keyed JSON
+// API, which is what works from Vercel; (2) a keyless fredgraph.csv fallback, which
+// works OFF Vercel (local dev / other hosts) where the key may be absent. NOTE: this
+// is AUTH-redundancy (survives a missing key / the Vercel-IP block on the CSV host),
+// NOT source-redundancy — both hit the same FRED upstream and die together if FRED is
+// down or rate-limits. True redundancy would need a different publisher (ICE mirror).
+// Also: FRED capped this series to a rolling ~3-year window (Apr 2026; pre-2023 moved
+// to ICE) — fine for a current value, but don't compute a long percentile-rank off it.
 const HY_START = () => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10); };
 
 async function fredApiOas(key) {

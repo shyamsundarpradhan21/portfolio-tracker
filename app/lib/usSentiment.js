@@ -28,7 +28,11 @@ export function vixTermStructure(vix9d, vix, vix3m) {
   return { ratio, signal, score: normalize(ratio, 0.75, 1.10, true), vix9d, vix: isNum(vix) ? vix : null, vix3m };
 }
 
-// ICE BofA US HY OAS (%). Tight ~2.5 (risk-on / greed) → wide ~8 (stress / fear).
+// ICE BofA US HY OAS (%). Scored against FIXED ABSOLUTE bounds — ~2.5 (cycle-tight,
+// near the record low, max complacency / greed) → ~8 (stress / fear) — deliberately
+// NOT a rolling percentile-rank: FRED capped this series to a ~3-year window (Apr
+// 2026), so a percentile off it would exclude 2008/2020 and make "tight" always read
+// extreme. Absolute bounds keep the bins stable regardless of the available lookback.
 export function hyOasScore(oas) { return normalize(oas, 2.5, 8, true); }
 
 // CBOE total put/call (raw ratio). Extreme greed only sub-~0.5; ~0.7-0.85 is merely

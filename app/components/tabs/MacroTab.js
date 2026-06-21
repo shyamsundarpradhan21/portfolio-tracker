@@ -139,9 +139,11 @@ const sChip = (s) => (!isNum(s) ? 'mut' : s < 45 ? 'red' : s < 56 ? 'mut' : 'grn
 const capFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // One signal row: label · mono value · a tinted descriptor (colour = fear/greed).
-function SigRow({ label, value, valCls, tag, score }) {
+// `title` carries the per-factor source + as-of (the card blends vintages, so each
+// row times-stamps itself rather than leaning on the one header date).
+function SigRow({ label, value, valCls, tag, score, title }) {
   return (
-    <div className="lsig">
+    <div className="lsig" title={title || undefined}>
       <span className="ll">{label}</span>
       <span className={`lv ${valCls || ''}`}>{value}</span>
       {tag != null && <span className={`lt ${sChip(score)}`}>{tag}</span>}
@@ -157,20 +159,27 @@ function SigRow({ label, value, valCls, tag, score }) {
 function UsSentimentDetail({ us }) {
   const L = us.leading || {}, C = us.coincident || {};
   const v = L.vixTs, h = L.hyOas, p = L.putCall, m = C.momentum, b = C.breadth, st = C.strength52w;
-  const oasTag = (s) => (!isNum(s) ? '—' : s >= 56 ? 'tight' : s < 45 ? 'wide' : 'neutral');
-  // Group outlook = mean of the live signal scores → colours the (collapsed) label
-  // so the tilt reads at a glance without expanding.
+  // Credit tag: at the tight extreme it's complacency (paid least to underwrite
+  // default risk), not comfort — so the word flips to "complacent" past the 76 band.
+  const oasTag = (s) => !isNum(s) ? '—' : s >= 76 ? 'complacent' : s >= 56 ? 'tight' : s < 25 ? 'stressed' : s < 45 ? 'wide' : 'neutral';
   const sc = (x) => (x && !x.stale && isNum(x.score) ? x.score : null);
+  const ts = (x) => { if (!x || x.stale) return undefined; const d = x.asOf ? String(x.asOf).slice(0, 10) : ''; return [x.source, d].filter(Boolean).join(' · '); };
   const avg = (a) => { const xs = a.filter(isNum); return xs.length ? xs.reduce((s, c) => s + c, 0) / xs.length : null; };
-  const leadOutlook = avg([sc(v), sc(h), sc(p)]);
-  const coinOutlook = avg([sc(m), sc(b), sc(st)]);
-  // The signal worth surfacing: when the tape (S&P momentum) and participation
-  // (breadth) disagree hard, the index level is lying. Name it, since the composite
-  // alone hides it. Greedy price + fearful breadth = narrow tape, and vice versa.
-  const mo = sc(m), br = sc(b);
-  const divg = !isNum(mo) || !isNum(br) ? null
-    : mo >= 58 && br <= 35 ? 'Narrow tape — index held up by a few names; breadth weak underneath'
-    : br >= 58 && mo <= 35 ? 'Broad but heavy — wide participation, price lagging'
+  // Group outlook = mean of the live signal scores → colours the (collapsed) label.
+  const sv = sc(v), sh = sc(h), spc = sc(p), mo = sc(m), br = sc(b), sst = sc(st);
+  const leadOutlook = avg([sv, sh, spc]);
+  const coinOutlook = avg([mo, br, sst]);
+  // The read worth surfacing: complacent leading signals into weak participation —
+  // the index level is lying. Name WHICH leading signals are risk-on (data-driven), so
+  // it reads "not all-clear" rather than as a vague divergence note.
+  const risky = [];
+  if (isNum(sv) && sv >= 56) risky.push('cheap vol');
+  if (isNum(sh) && sh >= 76) risky.push('extreme-tight credit'); else if (isNum(sh) && sh >= 56) risky.push('tight credit');
+  if (isNum(spc) && spc >= 56) risky.push('greedy positioning');
+  const divg = (risky.length >= 2 && isNum(br) && br <= 35)
+    ? `Complacent leading — ${risky.join(' · ')} — into weak breadth (${Math.round(br)}): a narrow tape, not all-clear`
+    : (isNum(mo) && isNum(br) && mo >= 58 && br <= 35) ? 'Narrow tape — index held up by a few names; breadth weak underneath'
+    : (isNum(br) && isNum(mo) && br >= 58 && mo <= 35) ? 'Broad but heavy — wide participation, price lagging'
     : null;
   return (
     <div className="usdet">
@@ -178,25 +187,25 @@ function UsSentimentDetail({ us }) {
       <details className="uscol">
         <summary className={sChip(leadOutlook)}>Leading <span className="usdx">forward-looking</span></summary>
         {v && !v.stale && isNum(v.ratio)
-          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} />
+          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} title={ts(v)} />
           : <SigRow label="VIX term · 9D/3M" value="—" />}
         {h && !h.stale && isNum(h.value)
-          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} />
+          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} title={ts(h)} />
           : <SigRow label="HY credit spread" value="—" />}
         {p && !p.stale && isNum(p.value)
-          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} />
+          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} title={ts(p)} />
           : <SigRow label="Put / Call" value="—" />}
       </details>
       <details className="uscol">
         <summary className={sChip(coinOutlook)}>Coincident <span className="usdx">price-derived</span></summary>
         {m && !m.stale && isNum(m.pct)
-          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} valCls={cls(m.pct)} tag={scoreLabel(m.score)} score={m.score} />
+          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} valCls={cls(m.pct)} tag={scoreLabel(m.score)} score={m.score} title={ts(m)} />
           : <SigRow label="S&P vs 125D MA" value="—" />}
         {b && !b.stale && isNum(b.score)
-          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} score={b.score} />
+          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} score={b.score} title={ts(b)} />
           : <SigRow label="Breadth" value="—" />}
         {st && !st.stale && isNum(st.score)
-          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} score={st.score} />
+          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} score={st.score} title={ts(st)} />
           : <SigRow label="52-wk hi / lo" value="—" />}
       </details>
     </div>
