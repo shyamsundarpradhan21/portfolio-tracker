@@ -242,7 +242,7 @@ function Waffle({ parts, n = 10 }) {
   );
 }
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, mktClosed = false, mktAsOf = null, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -918,8 +918,12 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         <div className="pjx-gcards" style={{ visibility: scrubbing ? 'hidden' : 'visible' }} aria-hidden={scrubbing}>
           {growth.map((g) => (
             <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')} tabIndex={scrubbing ? -1 : 0}
-              onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
+              onClick={() => setRange(g.key)} aria-pressed={range === g.key}
+              title={g.key === 'D' && mktClosed && mktAsOf ? `Markets closed — equity & MF as of ${new Date(mktAsOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}; FD & CMPF accrue daily` : undefined}>
               <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
+              {g.key === 'D' && mktClosed && mktAsOf && (
+                <span className="pjx-asof">{new Date(mktAsOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
+              )}
               {/* deltas against live NW are meaningless while a sleeve is unpriced */}
               {dataReady ? (
                 /* value + % on one line — % rides adjacent in a mini font; +/- figures

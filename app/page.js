@@ -18,7 +18,7 @@ import { classifyRegime } from './lib/regime';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
-import { getSnapshots, recordSnapshot, historicalSnapshots } from './lib/snapshots';
+import { getSnapshots, recordSnapshot, historicalSnapshots, syncSnapshotsFromKv, pushSnapshotToKv } from './lib/snapshots';
 import { getFiiDiiTrail, recordFiiDii } from './lib/fiidii';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
@@ -901,7 +901,7 @@ function Dashboard() {
 
   // Daily net-worth snapshots → the historical growth curve on Overview.
   const [snapshots, setSnapshots] = useState([]);
-  useEffect(() => { setSnapshots(getSnapshots()); }, []);
+  useEffect(() => { setSnapshots(getSnapshots()); syncSnapshotsFromKv().then(setSnapshots); }, []);
 
   // FII/DII trail: prefer the cross-device server trail (Vercel KV, persisted by
   // /api/premarket + the daily cron in vercel.json) so it's gap-free and follows
@@ -953,13 +953,15 @@ function Dashboard() {
     // batch, so without usData.val the guard would pass on a US-only outage
     // and persist a net worth missing the whole US sleeve.
     if (!(indian.valued && usData.val > 0 && usdInr)) return;
-    setSnapshots(recordSnapshot({
+    const snap = {
       d: isoOf(new Date()),
       nw: Math.round(ov.nw),
       assets: Math.round(ov.totalAssets),
       invested: Math.round(projInvested0),
       sl: sleeveBasis, // per-sleeve {v,i} so past windows can attribute gains by class
-    }));
+    };
+    setSnapshots(recordSnapshot(snap));
+    pushSnapshotToKv(snap); // mirror to the cross-device KV store (owner-namespaced, fire-and-forget)
   }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis]);
 
   // NW hero: fire entrance animation once when live NW first becomes available,
@@ -1093,6 +1095,8 @@ function Dashboard() {
               projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
               payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
               dayGain={daySleeveGain} sleeveBasis={sleeveBasis}
+              mktClosed={markets.nse === false && markets.nyse === false}
+              mktAsOf={premarket?.indices?.asOf || premarket?.sessions?.nifty?.asOf || null}
               cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE}
               cmpsVested={ov.cmpsVested} cmpsVestYear={ov.cmpsVestYear} />
           )}

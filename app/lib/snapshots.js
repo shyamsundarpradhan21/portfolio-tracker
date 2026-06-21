@@ -82,3 +82,34 @@ export function recordSnapshot(snap) {
     return trimmed;
   } catch { return getSnapshots(); }
 }
+
+// ── Cross-device sync (Vercel KV, owner-namespaced server-side) ──────────────
+// localStorage stays the fast local cache; KV is the cross-device source of truth.
+// On load we merge KV → local (KV wins per date); on record we push the point up.
+// Both degrade silently when no store is wired — local behaviour is unchanged.
+
+export async function syncSnapshotsFromKv() {
+  try {
+    const res = await fetch('/api/snapshots', { cache: 'no-store' });
+    if (!res.ok) return getSnapshots();
+    const { snapshots } = await res.json();
+    if (!Array.isArray(snapshots) || !snapshots.length) return getSnapshots();
+    const byDate = new Map(getSnapshots().map((s) => [s.d, s]));
+    snapshots.forEach((s) => { if (s && s.d && Number.isFinite(s.nw)) byDate.set(s.d, s); }); // KV wins on collision
+    const merged = dropSpikes([...byDate.values()].sort((a, b) => (a.d < b.d ? -1 : 1))).slice(-CAP);
+    try { localStorage.setItem(KEY, JSON.stringify(merged)); } catch {}
+    return merged;
+  } catch { return getSnapshots(); }
+}
+
+export function pushSnapshotToKv(snap) {
+  if (!snap || !snap.d || !Number.isFinite(snap.nw)) return;
+  try {
+    fetch('/api/snapshots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ d: snap.d, nw: snap.nw, assets: snap.assets, invested: snap.invested }),
+      cache: 'no-store', keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}

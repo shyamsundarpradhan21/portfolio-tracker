@@ -946,11 +946,14 @@ body {
 .pjx-gcards { display: grid; grid-template-columns: repeat(5, minmax(0, 190px)); justify-content: space-between; gap: 10px; }
 .pjx-gcell {
   /* tall, narrow tile: label / value+% / waffle stacked top-to-bottom */
+  position: relative;
   display: flex; flex-direction: column; gap: 6px;
   min-width: 0; text-align: left; cursor: pointer;
   background: var(--sur2); border: .5px solid var(--brd2); border-radius: 12px; padding: 10px 13px;
   transition: border-color .15s, background .15s;
 }
+/* market-closed as-of marker (DAY tile): equity/MF are last-session; FD & CMPF still accrue daily */
+.pjx-asof { position: absolute; top: 7px; right: 9px; font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt3); opacity: .8; }
 .pjx-gvrow { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; } /* value left, % right — justified on one line */
 .pjx-gcell:hover { border-color: var(--brd); }
 .pjx-gcell.on { border-color: color-mix(in srgb, var(--acc) 45%, var(--brd)); background: color-mix(in srgb, var(--acc) 6%, transparent); }
