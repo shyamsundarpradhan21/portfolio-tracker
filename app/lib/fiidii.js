@@ -4,15 +4,16 @@
 // keyed by the session date NSE stamps the figures with. NSE's public endpoint
 // only returns the latest session, so (exactly like the net-worth dailies in
 // snapshots.js) the trail builds forward: each day the dashboard sees a new
-// session, it appends a point, and we keep the last ~10 to surface recurring
+// session, it appends a point, and we keep the last ~20 to surface recurring
 // buying/selling streaks.
 //
-// History is per-browser — there's no server store in this app. A cross-device
-// trail would persist to a backend (Vercel KV/Blob); recordFiiDii / getFiiDiiTrail
-// are the seam for that.
+// This is the FALLBACK path. The primary trail is the cross-device server store
+// (Vercel KV, persisted by /api/premarket + the daily cron in vercel.json), which
+// page.js prefers whenever the pre-market feed carries it. This per-browser
+// localStorage trail is used only when no store is wired — e.g. local dev.
 
 const KEY = 'nwTracker.fiidiiTrail';
-const CAP = 10; // 10-session trail
+const CAP = 20; // 20-session fallback trail (server KV trail is the primary source)
 
 export function getFiiDiiTrail() {
   try {

@@ -279,7 +279,7 @@ async function fetchFiiDii(cookie) {
 // We accept both and build the client explicitly so it works either way. The
 // import is dynamic so the route never hard-depends on the store being present.
 const KV_KEY = 'premarket:fiidiiTrail';
-const TRAIL_CAP = 10;
+const TRAIL_CAP = 20; // ~a month of sessions; gap-free since it builds server-side
 
 function kvCreds() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;

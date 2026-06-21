@@ -887,14 +887,18 @@ function Dashboard() {
   const [snapshots, setSnapshots] = useState([]);
   useEffect(() => { setSnapshots(getSnapshots()); }, []);
 
-  // Hydrate the FII/DII trail from localStorage, then append a point whenever
-  // the pre-market feed carries a live session NSE hasn't already logged — the
-  // trail builds forward, one session per trading day (see lib/fiidii.js).
+  // FII/DII trail: prefer the cross-device server trail (Vercel KV, persisted by
+  // /api/premarket + the daily cron in vercel.json) so it's gap-free and follows
+  // across devices; fall back to the per-browser localStorage trail (builds
+  // forward) when no store is wired — e.g. local dev. Hydrate from localStorage
+  // first so the chart isn't empty before pre-market resolves.
   useEffect(() => { setFiidiiTrail(getFiiDiiTrail()); }, []);
   useEffect(() => {
+    const serverTrail = premarket?.fiidii?.trail;
+    if (Array.isArray(serverTrail) && serverTrail.length) { setFiidiiTrail(serverTrail); return; }
     const latest = premarket?.fiidii && !premarket.fiidii.stale ? premarket.fiidii.latest : null;
     if (latest?.date) setFiidiiTrail(recordFiiDii(latest));
-  }, [premarket?.fiidii?.latest?.date]);
+  }, [premarket?.fiidii?.trail, premarket?.fiidii?.latest?.date]);
 
   // Ledger-reconstructed weekly history fills the curve before real dailies
   // began. Computed fresh per load (nothing synthetic is persisted); real
