@@ -112,8 +112,10 @@ function FiiDiiChart({ trail }) {
         <path className="fd-spark" d={linePath} />
         {pts.map((p, i) => <circle key={i} className={`fd-dot ${net(p) >= 0 ? 'g' : 'r'}`} cx={cxOf(i)} cy={nyOf(p)} r="2.6" />)}
       </svg>
-      <div className="tlatest">
-        {cur && <>FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b></>}
+      <div className="fdstats">
+        {cur && [['FII', cur.fii], ['DII', cur.dii], ['net', net(cur)]].map(([k, v]) => (
+          <div className="fdstat" key={k}><span className="k">{k}</span><b className={cls(v)}>{d3(v)}</b></div>
+        ))}
       </div>
     </>
   );

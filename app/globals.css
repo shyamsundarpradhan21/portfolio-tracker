@@ -539,8 +539,12 @@ body {
 .fdleg .lf { width: 9px; height: 9px; border-radius: 2px; background: var(--cyn); }
 .fdleg .ld { width: 9px; height: 9px; border-radius: 2px; background: var(--sc-base); opacity: .7; }
 .fdleg .ln { width: 11px; height: 2px; background: var(--txt); }
-.tlatest { font-size: var(--fs-sm); color: var(--txt2); margin-top: 6px; min-height: 18px; }
-.tlatest b { font-family: var(--mono); color: var(--txt); }
+/* FII/DII latest figures — the card's headline values: a spacious 3-stat footer that
+   fills the bottom section, large mono values, direction kept by colour (cls). */
+.fdstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; padding-top: 16px; border-top: .5px solid var(--brd2); }
+.fdstat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.fdstat .k { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
+.fdstat b { font-family: var(--mono); font-size: var(--fs-xl); }
 
 /* market-internals vertical stack: sentiment band · treemap square · movers split */
 .wstack { display: flex; flex-direction: column; gap: 9px; }
