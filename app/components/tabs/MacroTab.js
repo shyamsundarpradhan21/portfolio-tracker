@@ -397,7 +397,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
-  const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
+  const hasPulse = insightsOn && !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
   const usSectors = (premarket?.usSectors || []).map((s) => ({ name: s.label, pct: s.pct })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const nseSectors = (ind.sectors || []).slice().sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const sectors = showIN ? nseSectors : usSectors;
@@ -452,7 +452,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
       )}
 
       {/* SWOT — AI read; the region toggle above picks which side(s) show */}
-      {((showIN && insights?.indian_swot) || (showUS && insights?.us_swot)) && (
+      {insightsOn && ((showIN && insights?.indian_swot) || (showUS && insights?.us_swot)) && (
         <div className={`swotrow${showIN && showUS && insights?.indian_swot && insights?.us_swot ? ' two-up' : ''}`}>
           {showIN && insights?.indian_swot && <SwotCard swot={insights.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />}
           {showUS && insights?.us_swot && <SwotCard swot={insights.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />}
