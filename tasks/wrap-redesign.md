@@ -52,7 +52,12 @@ for the econ calendar (and Phase-2 estimates), graceful no-op until the key is s
 - [ ] **S4 — UI: MacroTab rebuild.** Strip to KEPT (overview+SWOT). Build ticker,
       sectors+breadth+FII/DII card (hover interaction), portfolio-news sentiment cards,
       macro percentile sliders, region toggle. Reuse `data-driven` label rules.
-- [ ] **S5 — calendar (FMP).** Wire FMP behind `FMP_API_KEY`; no-op cell until set.
+- [x] **S5 — calendar (KEYLESS, not FMP).** FMP went paid-tier + TradingEconomics killed its
+      guest account, so the plan's keyed approach was dropped for a fully keyless one: US (+ majors)
+      from ForexFactory's weekly JSON (`nfs.faireconomy.media`, carries forecast/previous), India
+      COMPUTED from the publication cadence + RBI MPC dates (no free India feed exists). New
+      `lib/econCalendar` (pure, 9 tests) + `/api/econ-calendar` + region-aware "Upcoming" block
+      below the portfolio-news row. FF confirmed reachable from Vercel. Shipped 0513711.
 - [ ] **S6 — verify.** Build + tests; Vercel preview check each feed live; `prefers-
       reduced-motion` disables ticker animation; mobile/responsive pass.
 
@@ -63,4 +68,8 @@ for the econ calendar (and Phase-2 estimates), graceful no-op until the key is s
 - Keep `market-wrap.json` fallback intact (Phase 1a).
 
 ## Review
-(fill after build)
+- S1–S4 + S6 reduced-motion shipped across the earlier wrap commits; India macro at planned depth
+  (6 series + 3 shared). S5 done keyless (above) — the only remaining optional item is Phase-2
+  consensus estimates (FF already carries forecast/previous, so the US side has them today; India
+  has none without a feed). RBI MPC dates in `lib/econCalendar` are hand-maintained — verify/extend
+  against rbi.org.in each year, like the repo-rate constant.
