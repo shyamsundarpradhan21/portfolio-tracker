@@ -81,6 +81,19 @@ export const MACRO_GROUPS = [
       { key: 'spread2s10s', label: '2s10s', src: 'T10Y2Y', unit: ' pp', d: 2, dir: 1, warn: 0.2, stress: 0 },
       { key: 'hyOas', label: 'HY OAS', src: 'BAMLH0A0HYM2', unit: '%', d: 2, dir: -1, warn: 4, stress: 5.5 },
       { key: 'fedFunds', label: 'Fed funds', src: 'DFF', unit: '%', d: 2, dir: -1, warn: 4.75, stress: 5.5 },
+      // RBI policy repo rate — no clean API exists, so it's a tracked constant
+      // (the rate at each MPC decision). Update at each MPC (~6/yr; next ~Aug 2026);
+      // the date-stamp makes a stale value visible and trips the staleness guard.
+      { key: 'repo', label: 'RBI repo', unit: '%', d: 2, dir: -1, warn: 6, stress: 6.5,
+        track: [
+          { date: '2024-12-06', v: 6.50 },
+          { date: '2025-02-07', v: 6.25 },
+          { date: '2025-04-09', v: 6.00 },
+          { date: '2025-06-06', v: 5.50 },
+          { date: '2025-10-01', v: 5.50 },
+          { date: '2025-12-05', v: 5.25 },
+          { date: '2026-06-05', v: 5.25 },
+        ] },
       { key: 'vix', label: 'US VIX', yahoo: '^VIX', unit: '', d: 1, dir: -1, warn: 18, stress: 25 },
       { key: 'indiaVix', label: 'India VIX', yahoo: '^INDIAVIX', unit: '', d: 1, dir: -1, warn: 16, stress: 22 },
       { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
@@ -91,13 +104,19 @@ export const MACRO_GROUPS = [
     series: [
       { key: 'cpi', label: 'US CPI', src: 'CPIAUCSL', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 3, stress: 4 },
       { key: 'coreCpi', label: 'Core CPI', src: 'CPILFESL', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 3, stress: 4 },
-      { key: 'indiaCpi', label: 'India CPI', src: 'INDCPIALLMINMEI', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 5, stress: 6 },
+      // India CPI inflation — MoSPI e-Sankhyiki (keyless, live). Already a YoY %
+      // (no transform); the FRED OECD mirror this replaced froze at Mar-2025.
+      { key: 'indiaCpi', label: 'India CPI', mospi: 'cpi', unit: '%', d: 1, dir: -1, warn: 5, stress: 6 },
     ],
   },
   {
     group: 'Growth',
     series: [
       { key: 'gdp', label: 'US GDP', src: 'A191RL1Q225SBEA', unit: '%', d: 1, dir: 1, warn: 1.5, stress: 0 },
+      // India real GDP growth (quarterly YoY %) — MoSPI e-Sankhyiki, already a rate.
+      { key: 'indiaGdp', label: 'India GDP', mospi: 'gdp', unit: '%', d: 1, dir: 1, warn: 5, stress: 4 },
+      // India IIP — industrial production growth (monthly YoY %), MoSPI e-Sankhyiki.
+      { key: 'iip', label: 'India IIP', mospi: 'iip', unit: '%', d: 1, dir: 1, warn: 2, stress: 0 },
       { key: 'umich', label: 'UMich', src: 'UMCSENT', unit: '', d: 1, dir: 1, warn: 70, stress: 60 },
     ],
   },
