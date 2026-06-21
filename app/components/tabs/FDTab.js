@@ -30,7 +30,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
   return (
     <div>
       <AnalysisCard data={insights?.fd} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="manual" date={`${fmtDateObj(now)} · accrued recalculated daily`} />
       </div>
 

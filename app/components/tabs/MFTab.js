@@ -130,9 +130,9 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
   const laggard = funded.length ? funded.reduce((a, b) => (b.ret < a.ret ? b : a)) : null;
   const largest = funded.length ? funded.reduce((a, b) => (b.value > a.value ? b : a)) : null;
   const minis = [
-    { label: 'Winner',  cls: 'grn', name: winner?.cat,  sub: winner  ? pctS(winner.ret)  : 'by return', subCls: winner  ? cl(winner.ret)  : '' },
-    { label: 'Drag',    cls: 'red', name: laggard?.cat, sub: laggard ? pctS(laggard.ret) : 'by return', subCls: laggard ? cl(laggard.ret) : '' },
-    { label: 'Largest', cls: '',    name: largest?.cat, sub: largest ? `${largest.share.toFixed(0)}% of book` : 'by value' },
+    { label: 'Winner',  cls: 'grn', name: winner?.name,  sub: winner  ? pctS(winner.ret)  : 'by return', subCls: winner  ? cl(winner.ret)  : '' },
+    { label: 'Drag',    cls: 'red', name: laggard?.name, sub: laggard ? pctS(laggard.ret) : 'by return', subCls: laggard ? cl(laggard.ret) : '' },
+    { label: 'Largest', cls: '',    name: largest?.name, sub: largest ? `${largest.share.toFixed(0)}% of book` : 'by value' },
   ];
 
   return (

@@ -18,7 +18,7 @@ export default function USTab({
   return (
     <div>
       <AnalysisCard data={insights?.us} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
 

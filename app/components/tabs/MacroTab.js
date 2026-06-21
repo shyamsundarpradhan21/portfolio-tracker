@@ -101,18 +101,19 @@ function BreadthNeedle({ ad }) {
       <div className="rlabel">Breadth · % advancing
         {ad.adv != null && <span className="adr">A/D <b className={cls((ad.ratio ?? 1) - 1)}>{ad.ratio?.toFixed(2)}</b> · <span className="grn">{ad.adv}▲</span> / <span className="red">{ad.dec}▼</span></span>}
       </div>
-      {ad.pctUp != null && <>
-        {row('Nifty 500', ad.pctUp, true)}
-        <div className="grsc"><span>bearish</span><span>50</span><span>bullish</span></div>
-      </>}
+      {ad.pctUp != null && row('Nifty 500', ad.pctUp, true)}
       {(ad.caps || []).map((c) => row(c.name, c.pctUp, false))}
     </>
   );
 }
 
 // ── Portfolio news feed (sentiment-shaded cards, scrollable) ─────────────────
-function NewsFeed({ news }) {
-  const items = (news?.items || []).filter((it) => it && it.title);
+function NewsFeed({ news, region }) {
+  let items = (news?.items || []).filter((it) => it && it.title);
+  // Region-aware: India hides US-holding news, Global hides India's (untagged
+  // items from a stale cache stay visible until the route's region tag lands).
+  if (region === 'india') items = items.filter((it) => it.region !== 'us');
+  else if (region === 'global') items = items.filter((it) => it.region !== 'in');
   return (
     <div className="card feedcard">
       <div className="wlabel">Portfolio news · your holdings <span className="hint">tag + sentiment · scroll</span></div>
@@ -244,7 +245,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
           {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="hint">hover a day</span></div>}
           {showIN && <FiiDiiChart trail={fiidiiTrail} />}
         </div>
-        <NewsFeed news={portfolioNews} />
+        <NewsFeed news={portfolioNews} region={region} />
       </div>
 
       {/* Macro percentile sliders */}

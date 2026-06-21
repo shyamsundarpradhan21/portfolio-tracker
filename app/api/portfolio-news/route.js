@@ -15,7 +15,7 @@ const UA =
 
 // Yahoo Finance per-symbol headline RSS → up to `take` recent items, tagged with
 // the holding's display ticker.
-async function symNews(yahooSym, label, take = 2) {
+async function symNews(yahooSym, label, region, take = 2) {
   const url = `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(yahooSym)}&region=US&lang=en-US`;
   try {
     const res = await fetch(url, {
@@ -26,7 +26,7 @@ async function symNews(yahooSym, label, take = 2) {
     if (!res.ok) return [];
     const xml = await res.text();
     return parseRss(xml, 'Yahoo').slice(0, take).map((it) => ({
-      ticker: label, title: it.title, link: it.link,
+      ticker: label, region, title: it.title, link: it.link,
       date: it.date, ago: ago(it.date), sentiment: sentiment(it.title),
     }));
   } catch { return []; }
@@ -40,11 +40,11 @@ export async function GET() {
   }
   // Indian holdings need the .NS suffix for Yahoo; US use the bare symbol.
   const syms = [
-    ...(p.INDIAN || []).map((h) => ({ y: `${h.sym}.NS`, label: h.sym })),
-    ...(p.US || []).map((h) => ({ y: h.sym, label: h.sym })),
+    ...(p.INDIAN || []).map((h) => ({ y: `${h.sym}.NS`, label: h.sym, region: 'in' })),
+    ...(p.US || []).map((h) => ({ y: h.sym, label: h.sym, region: 'us' })),
   ].filter((s) => s.label).slice(0, 18);
 
-  const lists = await Promise.all(syms.map((s) => symNews(s.y, s.label)));
+  const lists = await Promise.all(syms.map((s) => symNews(s.y, s.label, s.region)));
   const seen = new Set();
   const cut = Date.now() - 30 * 86400 * 1000; // keep only the last ~30 days (drops stale/mismatched feeds)
   const items = lists.flat()
