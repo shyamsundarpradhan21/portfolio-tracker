@@ -126,9 +126,11 @@
 :root[data-tab="algo"] {
   --acc: #E879F9; --acc2: #F2A6FF; --acc-bg: rgba(232,121,249,.13);
 }
-/* Macro — teal (distinct from the cyan US sleeve and the blue Indian one) */
+/* Macro — muted steel/slate blue. Was teal (#14B8A6), a blue-green that sat right
+   next to the gain-green +/- code; steel-blue reads as neutral chrome, clear of the
+   P&L green/red AND muted vs the vivid Indian-blue / US-cyan data sleeves. */
 :root[data-tab="macro"] {
-  --acc: #14B8A6; --acc2: #2DD4BF; --acc-bg: rgba(20,184,166,.15);
+  --acc: #6982AD; --acc2: #8AA1C6; --acc-bg: rgba(105,130,173,.15);
 }
 
 /* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
@@ -151,7 +153,7 @@
   --acc: #A21CAF; --acc2: #C026D3; --acc-bg: rgba(162,28,175,.12);
 }
 :root[data-time="day"][data-tab="macro"] {
-  --acc: #0F766E; --acc2: #0D9488; --acc-bg: rgba(15,118,110,.12);
+  --acc: #4A6491; --acc2: #5E7AAA; --acc-bg: rgba(74,100,145,.13);
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
