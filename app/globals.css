@@ -581,9 +581,8 @@ body {
 .lsig:first-of-type { border-top: 0; }
 .ll { color: var(--txt2); }
 .lv { font-family: var(--mono); font-weight: 700; color: var(--txt); text-align: right; }
-.lv.grn { color: var(--grn); } .lv.red { color: var(--red); }
-.lt { font-size: var(--fs-2xs); font-weight: 600; text-transform: capitalize; text-align: right; min-width: 62px; }
-.lt.grn { color: var(--grn); } .lt.red { color: var(--red); } .lt.mut { color: var(--txt3); }
+/* descriptor is neutral — colour is carried only by the group outlook labels + headline */
+.lt { font-size: var(--fs-2xs); font-weight: 600; text-transform: capitalize; text-align: right; min-width: 62px; color: var(--txt2); }
 .uscol { margin-top: 2px; }
 .uscol + .uscol { border-top: .5px solid var(--brd2); }
 .uscol > summary { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; cursor: pointer; list-style: none; padding: 5px 0; user-select: none; }

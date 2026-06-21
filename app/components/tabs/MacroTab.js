@@ -138,15 +138,16 @@ function fearGreed(breadthPct, vix, net, niftyPct) {
 const sChip = (s) => (!isNum(s) ? 'mut' : s < 45 ? 'red' : s < 56 ? 'mut' : 'grn');
 const capFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-// One signal row: label · mono value · a tinted descriptor (colour = fear/greed).
-// `title` carries the per-factor source + as-of (the card blends vintages, so each
-// row times-stamps itself rather than leaning on the one header date).
-function SigRow({ label, value, valCls, tag, score, title }) {
+// One signal row: label · mono value · descriptor — all rendered NEUTRAL. Colour is
+// reserved for the group outlook labels + the headline + the gauge, so the rows read
+// uniformly (no per-row tint scattered across descriptors/values). `title` carries the
+// per-factor source + as-of (the card blends vintages; each row stamps its own).
+function SigRow({ label, value, tag, title }) {
   return (
     <div className="lsig" title={title || undefined}>
       <span className="ll">{label}</span>
-      <span className={`lv ${valCls || ''}`}>{value}</span>
-      {tag != null && <span className={`lt ${sChip(score)}`}>{tag}</span>}
+      <span className="lv">{value}</span>
+      {tag != null && <span className="lt">{tag}</span>}
     </div>
   );
 }
@@ -187,25 +188,25 @@ function UsSentimentDetail({ us }) {
       <details className="uscol">
         <summary className={sChip(leadOutlook)}>Leading <span className="usdx">forward-looking</span></summary>
         {v && !v.stale && isNum(v.ratio)
-          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} title={ts(v)} />
+          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} title={ts(v)} />
           : <SigRow label="VIX term · 9D/3M" value="—" />}
         {h && !h.stale && isNum(h.value)
-          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} title={ts(h)} />
+          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} title={ts(h)} />
           : <SigRow label="HY credit spread" value="—" />}
         {p && !p.stale && isNum(p.value)
-          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} title={ts(p)} />
+          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} title={ts(p)} />
           : <SigRow label="Put / Call" value="—" />}
       </details>
       <details className="uscol">
         <summary className={sChip(coinOutlook)}>Coincident <span className="usdx">price-derived</span></summary>
         {m && !m.stale && isNum(m.pct)
-          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} valCls={cls(m.pct)} tag={scoreLabel(m.score)} score={m.score} title={ts(m)} />
+          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} tag={scoreLabel(m.score)} title={ts(m)} />
           : <SigRow label="S&P vs 125D MA" value="—" />}
         {b && !b.stale && isNum(b.score)
-          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} score={b.score} title={ts(b)} />
+          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} title={ts(b)} />
           : <SigRow label="Breadth" value="—" />}
         {st && !st.stale && isNum(st.score)
-          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} score={st.score} title={ts(st)} />
+          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} title={ts(st)} />
           : <SigRow label="52-wk hi / lo" value="—" />}
       </details>
     </div>
