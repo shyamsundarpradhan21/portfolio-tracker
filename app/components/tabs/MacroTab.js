@@ -13,6 +13,10 @@ const sheat = (p) => (p == null || !isFinite(p)) ? 'var(--sur2)'
   : `color-mix(in srgb, ${p >= 0 ? 'var(--grn)' : 'var(--red)'} ${Math.round(22 + Math.min(1, Math.abs(p) / 3) * 58)}%, var(--sur2))`;
 const shortSec = (n) => String(n || '').replace(/^Nifty\s*/i, '');
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+// Approximate NSE sectoral-index market-cap shares (relative) — sizes the treemap
+// tiles (colour still encodes the day's move). Not in the NSE feed, so maintained
+// here; the proportions are stable (refresh occasionally).
+const SECTOR_WEIGHTS = { 'Fin Services': 30, Bank: 24, IT: 14, Energy: 13, FMCG: 9, Auto: 8, Pharma: 7, Metal: 5, 'PSU Bank': 5, Realty: 2 };
 const agoStr = (ts) => {
   if (!ts) return '';
   const m = Math.max(0, (Date.now() - ts) / 60000);
@@ -232,7 +236,7 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
   const sectors = showIN ? nseSectors : usSectors;
   const sectorLabel = showIN ? 'NSE sectors' : 'US sectors (SPDR)';
   // Hot picks = the most-moved sectors; sentiment factors + day movers (India).
-  const hotSectors = [...sectors].filter((s) => s.pct != null).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 6);
+  const sectorTiles = [...sectors].filter((s) => s.pct != null).map((s) => ({ ...s, w: SECTOR_WEIGHTS[s.name] ?? 4 })).sort((a, b) => b.w - a.w).slice(0, 8);
   const niftyPct = c.nifty?.pct;
   const breadthPct = ind.breadthAD?.pctUp;
   const fdLast = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-1)[0];
@@ -280,8 +284,8 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
             <div className="wquad">
               <div className="qc">
                 <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
-                {hotSectors.length
-                  ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
+                {sectorTiles.length
+                  ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
                   : <div className="na">—</div>}
               </div>
               <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={breadthPct} vix={ivix?.last} net={fiiNet} niftyPct={niftyPct} /></div>
@@ -296,8 +300,8 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
         ) : (
           <div className="card">
             <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
-            {hotSectors.length
-              ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
+            {sectorTiles.length
+              ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
               : <div className="na">Sector board unavailable.</div>}
           </div>
         )}

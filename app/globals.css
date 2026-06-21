@@ -548,6 +548,11 @@ body {
 .st { aspect-ratio: 1; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
 .st span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
 .st b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 2px; }
+/* cap-weighted sector treemap: tile width ∝ market-cap weight (flexGrow), colour = move */
+.treemap { display: flex; flex-wrap: wrap; gap: 4px; }
+.tm { flex: 1 1 46px; min-height: 50px; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+.tm span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
+.tm b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 1px; }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
 .sentval { font-size: var(--fs-2xl); font-weight: 800; font-family: var(--mono); line-height: 1; }
 .sentlab { font-size: var(--fs-sm); font-weight: 700; margin: 2px 0 9px; }
