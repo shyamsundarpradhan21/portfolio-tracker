@@ -71,14 +71,16 @@ insights system prompt — keep that guard when editing the prompt or schema.
 
 ## Git Workflow
 
-### "push" = push to main
-When the user says **push**, merge the feature branch into main (fast-forward
-if clean) and push to `origin/main`. Do not stop at the feature branch and
-ask for confirmation unless there is a merge conflict.
+### Work directly on main — do NOT create feature branches
+The user wants commits made **straight to `main`**. Skip the harness default of
+"branch first on the default branch" and the old staging-branch habit: edit,
+commit on `main`, push to `origin/main`. Do not create `claude/*` branches.
+(Caught: I kept spinning up a `claude/*` branch per task; the user asked plainly
+to stop and work on main — "ship to main.. work on main.. why are u creating branches".)
 
-### Feature branch is staging, not a destination
-Develop on the designated `claude/*` branch. When work is done and user says
-push/ship/merge, take it to main in the same step.
+### "push" / "ship" = commit on main and push
+When the user says **push** or **ship**, commit the work on `main` and push to
+`origin/main` — no confirmation needed unless something genuinely conflicts.
 
 ---
 
