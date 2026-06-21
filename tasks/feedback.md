@@ -120,6 +120,17 @@ mirror), the AI/tech tilt. Omitting those from a "rebuild" reads as not paying
 attention. Cross-check a proposed portfolio against current holdings before
 presenting.
 
+### Build to the provided mockup/spec, not the house style
+When the user shares a mockup, design file, or explicit spec ("remodel like
+this", with an HTML/image), treat it as the source of truth: match its layout,
+structure, and components precisely. Don't substitute the app's existing
+card/design system because it's faster or familiar — that reads as ignoring the
+brief. Translate the mockup's visuals into the app's theme tokens (no hardcoded
+hex), but keep the structure faithful. If the mockup omits sections the app
+currently has, confirm drop-vs-keep before removing. (This cost a full Wrap
+rebuild: I shipped the data wiring in the house style when a detailed mockup
+had already been provided.)
+
 ### Fewer upfront questions; do the work, then let them react
 For analysis/strategy tasks, default to producing a concrete, data-grounded draft
 and iterating on it — not a questionnaire. One short round of genuinely
