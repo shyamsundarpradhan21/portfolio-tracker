@@ -1065,8 +1065,7 @@ function Dashboard() {
                 {indian.valued && usdInr ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} /> : <Skel w={150} h={36} />}
               </div>
               <div className="page-header-sub">
-                {/* line 1 — the ASSET side: on-NW assets (+ the CMPF flag, no own card)
-                    and the off-NW trading book (own capital + P&L); both are positive */}
+                {/* line 1 — assets (with the CMPF flag, since it has no own card) */}
                 <div>
                   Assets <strong>{indian.valued && usdInr ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
                   {indian.valued && usdInr && (
@@ -1075,16 +1074,20 @@ function Dashboard() {
                       {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
                     </span>
                   )}
-                  {indian.valued && usdInr ? (
-                    <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
-                      {' · '}incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
-                    </span>
-                  ) : <>{' · '}excl. trading</>}
                 </div>
-                {/* line 2 — liabilities: a colour-coded passing note (the loan reduces NW) */}
-                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)' }}>
-                  Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong>
+                {/* line 2 — liabilities DIMMED (a passing note) + the off-NW trading book
+                    kept accent-bright, so the dim/bright contrast keeps the two from reading alike */}
+                <div>
+                  <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
+                  {indian.valued && usdInr ? (
+                    <>
+                      {' · '}
+                      <span style={{ whiteSpace: 'nowrap' }}
+                        title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
+                        incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
+                      </span>
+                    </>
+                  ) : <>{' · '}excl. trading</>}
                 </div>
               </div>
             </button>
