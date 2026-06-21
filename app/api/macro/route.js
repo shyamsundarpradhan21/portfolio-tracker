@@ -1,5 +1,5 @@
-// Live macro CLOCK for the scenario engine. Two free, keyless sources:
-//   - FRED CSV (fredgraph.csv?id=…) for rates/credit/conditions series
+// Live macro CLOCK for the scenario engine. Two free sources:
+//   - FRED official API (free FRED_API_KEY) for rates/credit/conditions series
 //   - Yahoo Finance v8 chart for VIX/term-structure/DXY/USDINR/Brent
 //
 //   GET /api/macro
@@ -19,26 +19,31 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-// ── FRED (keyless CSV) ───────────────────────────────────────────────────────
-// fredgraph.csv returns: header row, then `date,value` rows; missing prints are
-// '.'. We keep the last two real observations (latest + prior) for a change.
+// ── FRED (official API, free key) ────────────────────────────────────────────
+// The keyless fredgraph.csv host is IP-blocked from Vercel (times out), so we use
+// the official JSON API with a free key (FRED_API_KEY). Graceful no-op until the
+// key is set — each series reads 'stale' meanwhile (Yahoo metrics still work). We
+// keep the last two real observations (latest + prior) for a change.
+const FRED_KEY = process.env.FRED_API_KEY;
 async function fredSeries(id) {
+  if (!FRED_KEY) return { stale: true, error: 'no FRED_API_KEY', source: `FRED ${id}` };
   const start = new Date();
-  start.setDate(start.getDate() - 60); // ~60d window is plenty for last-2 obs
-  const cosd = start.toISOString().slice(0, 10);
-  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=${cosd}`;
+  start.setDate(start.getDate() - 120); // ~120d window → ≥2 obs even for weekly series (NFCI)
+  const url =
+    `https://api.stlouisfed.org/fred/series/observations?series_id=${id}` +
+    `&api_key=${FRED_KEY}&file_type=json&sort_order=asc&observation_start=${start.toISOString().slice(0, 10)}`;
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': UA, Accept: 'text/csv' },
+      headers: { 'User-Agent': UA, Accept: 'application/json' },
       cache: 'no-store',
       signal: AbortSignal.timeout(9000),
     });
     if (!res.ok) return { stale: true, error: `FRED HTTP ${res.status}`, source: `FRED ${id}` };
-    const text = await res.text();
-    const rows = text.trim().split('\n').slice(1) // drop header
-      .map((ln) => ln.split(','))
-      .filter((c) => c.length >= 2 && c[1] !== '.' && c[1] !== '' && isFinite(+c[1]))
-      .map((c) => ({ date: c[0], v: +c[1] }));
+    const obs = (await res.json())?.observations;
+    if (!Array.isArray(obs)) return { stale: true, error: 'bad shape', source: `FRED ${id}` };
+    const rows = obs
+      .filter((o) => o && o.value !== '.' && o.value !== '' && o.value != null && isFinite(+o.value))
+      .map((o) => ({ date: o.date, v: +o.value }));
     if (!rows.length) return { stale: true, error: 'no observations', source: `FRED ${id}` };
     const last = rows[rows.length - 1];
     const prev = rows.length > 1 ? rows[rows.length - 2] : null;
