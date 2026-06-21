@@ -32,23 +32,57 @@ describe('tone — regime from per-metric thresholds', () => {
   });
 });
 
-describe('yoy / mom transforms', () => {
-  it('yoy = v[i]/v[i-12]-1 (×100)', () => {
-    const rows = Array.from({ length: 13 }, (_, i) => ({ date: `m${i}`, v: i === 12 ? 103 : 100 }));
+describe('yoy / yoyQ / mom — DATE-anchored transforms (gap-robust)', () => {
+  // contiguous monthly series from (startY, startM), n points, value = valAt(i)
+  const monthly = (startY, startM, n, valAt) =>
+    Array.from({ length: n }, (_, i) => {
+      const mo = startM - 1 + i, y = startY + Math.floor(mo / 12), m = (mo % 12) + 1;
+      return { date: `${y}-${String(m).padStart(2, '0')}-01`, v: valAt(i) };
+    });
+
+  it('yoy compares against the value exactly 12 months earlier (contiguous)', () => {
+    const rows = monthly(2025, 1, 13, (i) => (i === 12 ? 103 : 100)); // 2025-01..2026-01
+    const last = yoy(rows).at(-1);
+    expect(last.date).toBe('2026-01-01');
+    expect(last.v).toBeCloseTo(3, 9);
+  });
+
+  it('yoy stays date-correct when a month is MISSING (the CPI bug)', () => {
+    // strictly +1/month so the 12-mo-prior value is unambiguous; drop 2025-10.
+    const rows = monthly(2024, 1, 29, (i) => 100 + i).filter((r) => r.date !== '2025-10-01');
+    const last = yoy(rows).at(-1);
+    expect(last.date).toBe('2026-05-01'); // v=128
+    // 12-mo-prior BY DATE = 2025-05 (v=116) → 10.345%
+    expect(last.v).toBeCloseTo((128 / 116 - 1) * 100, 9);
+    // index-based (the bug) used 2025-04 (v=115) → 11.30%, a 13-month change
+    expect(last.v).not.toBeCloseTo((128 / 115 - 1) * 100, 2);
+  });
+
+  it('yoy skips a point whose 12-mo-prior month is itself missing (no wrong base)', () => {
+    const rows = monthly(2024, 1, 29, (i) => 100 + i).filter((r) => r.date !== '2025-05-01');
     const out = yoy(rows);
-    expect(out).toHaveLength(1);
-    expect(out[0].date).toBe('m12');
-    expect(out[0].v).toBeCloseTo(3, 9);
+    expect(out.find((r) => r.date === '2026-05-01')).toBeUndefined();
   });
-  it('yoyQ = v[i]/v[i-4]-1 (×100) for quarterly', () => {
-    const rows = Array.from({ length: 5 }, (_, i) => ({ date: `q${i}`, v: i === 4 ? 106 : 100 }));
-    const out = yoyQ(rows);
-    expect(out).toHaveLength(1);
-    expect(out[0].date).toBe('q4');
-    expect(out[0].v).toBeCloseTo(6, 9);
+
+  it('yoyQ compares against ~12 months earlier for quarterly data', () => {
+    const rows = [
+      { date: '2024-12-31', v: 100 }, { date: '2025-03-31', v: 100 },
+      { date: '2025-06-30', v: 100 }, { date: '2025-09-30', v: 100 },
+      { date: '2025-12-31', v: 106 },
+    ];
+    const last = yoyQ(rows).at(-1);
+    expect(last.date).toBe('2025-12-31');
+    expect(last.v).toBeCloseTo(6, 9);
   });
-  it('mom = consecutive difference', () => {
-    expect(mom([{ date: 'a', v: 100 }, { date: 'b', v: 175 }])).toEqual([{ date: 'b', v: 75 }]);
+
+  it('mom = change vs the prior month by date; a gap is skipped, not a 2-mo jump', () => {
+    const rows = [
+      { date: '2025-08-01', v: 100 }, { date: '2025-09-01', v: 175 },
+      { date: '2025-11-01', v: 200 }, // Oct missing
+    ];
+    const out = mom(rows);
+    expect(out).toContainEqual({ date: '2025-09-01', v: 75 });
+    expect(out.find((r) => r.date === '2025-11-01')).toBeUndefined();
   });
 });
 

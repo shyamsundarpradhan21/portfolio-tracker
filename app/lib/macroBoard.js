@@ -35,38 +35,66 @@ export function tone(v, { dir = -1, warn, stress } = {}) {
 
 const r2 = (n) => (n == null || !isFinite(n) ? null : Math.round(n * 100) / 100);
 
+const DAY_MS = 86400000;
+
+// Value at ~`months` before ISO date `iso`, matched by ACTUAL DATE (the nearest
+// observation within `tolDays`), NOT by index position. FRED vintages drop or lag
+// months — a missing Oct-2025 shifted CPI's index-offset base by a month, turning a
+// 12-mo YoY into a 13-mo change (the 4.3-vs-4.2). Date-anchoring compares against the
+// calendar period regardless of gaps, and returns null rather than a wrong-month base
+// when nothing lands in the window. `xs` must be ascending by date.
+function priorValue(xs, iso, months, tolDays) {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  if (!isFinite(y) || !isFinite(m)) return null;
+  const target = Date.UTC(y, m - 1 - months, d || 1); // month arithmetic wraps years correctly
+  const tolMs = tolDays * DAY_MS;
+  let best = null, bestGap = Infinity;
+  for (const r of xs) {
+    const [ry, rm, rd] = String(r.date).split('-').map(Number);
+    const t = Date.UTC(ry, rm - 1, rd || 1);
+    const gap = Math.abs(t - target);
+    if (gap < bestGap) { bestGap = gap; best = r; }
+    if (t > target + tolMs) break; // ascending — once past the window, gaps only grow
+  }
+  return best && bestGap <= tolMs ? best.v : null;
+}
+
 /**
- * Year-over-year % series from a monthly level/index series (ascending
- * [{date,v}]). YoY[i] = (v[i]/v[i-12] - 1) * 100. Used for CPI / Core CPI, which
- * FRED publishes as an index, not a rate.
+ * Year-over-year % from a monthly level/index series (ascending [{date,v}]). Each
+ * point compares against the observation ~12 months earlier BY DATE (priorValue) —
+ * robust to missing months. Used for CPI / Core CPI (FRED publishes an index, not a rate).
  */
-export function yoy(rows) {
+export function yoy(rows, tolDays = 20) {
   const xs = (rows || []).filter((r) => r && r.v != null && isFinite(r.v));
   const out = [];
-  for (let i = 12; i < xs.length; i++) {
-    const base = xs[i - 12].v;
-    if (base) out.push({ date: xs[i].date, v: (xs[i].v / base - 1) * 100 });
+  for (const r of xs) {
+    const base = priorValue(xs, r.date, 12, tolDays);
+    if (base) out.push({ date: r.date, v: (r.v / base - 1) * 100 });
   }
   return out;
 }
 
-/** Year-over-year % from a QUARTERLY index series (4 periods = 1 year) — e.g.
- * India real GDP, which FRED publishes as a quarterly constant-price index. */
-export function yoyQ(rows) {
+/** YoY % from a QUARTERLY index series — 12 months earlier by date (wider tolerance
+ * for the ~91-day spacing). e.g. India real GDP (quarterly constant-price index). */
+export function yoyQ(rows, tolDays = 50) {
   const xs = (rows || []).filter((r) => r && r.v != null && isFinite(r.v));
   const out = [];
-  for (let i = 4; i < xs.length; i++) {
-    const base = xs[i - 4].v;
-    if (base) out.push({ date: xs[i].date, v: (xs[i].v / base - 1) * 100 });
+  for (const r of xs) {
+    const base = priorValue(xs, r.date, 12, tolDays);
+    if (base) out.push({ date: r.date, v: (r.v / base - 1) * 100 });
   }
   return out;
 }
 
-/** Month-over-month change of a level series (ascending [{date,v}]) — e.g. payrolls. */
-export function mom(rows) {
+/** Month-over-month change of a level series — vs the observation ~1 month earlier by
+ * date, so a missing month can't turn a 1-mo change into a 2-mo one. e.g. payrolls. */
+export function mom(rows, tolDays = 20) {
   const xs = (rows || []).filter((r) => r && r.v != null && isFinite(r.v));
   const out = [];
-  for (let i = 1; i < xs.length; i++) out.push({ date: xs[i].date, v: xs[i].v - xs[i - 1].v });
+  for (const r of xs) {
+    const prev = priorValue(xs, r.date, 1, tolDays);
+    if (prev != null) out.push({ date: r.date, v: r.v - prev });
+  }
   return out;
 }
 
