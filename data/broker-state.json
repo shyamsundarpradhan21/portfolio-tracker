@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-21T06:09:24+05:30",
+  "syncedAt": "2026-06-21T06:11:26+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,12 +7,12 @@
       "note": ""
     },
     "dhan": {
-      "ok": false,
-      "note": "mint failed: {\"message\":\"Invalid TOTP\",\"status\":\"error\"}"
+      "ok": true,
+      "note": ""
     },
     "fyers": {
-      "ok": false,
-      "note": "funds: {\"s\":\"error\",\"code\":500,\"message\":\"Invalid Request, please provide valid method\"}"
+      "ok": true,
+      "note": ""
     },
     "kite": {
       "ok": true,
@@ -22,7 +22,7 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-21T06:00:27+05:30",
+      "syncedAt": "2026-06-21T06:11:27+05:30",
       "rows": [
         {
           "sym": "BANKBARODA",
@@ -196,7 +196,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-20T21:10:44+05:30",
+      "syncedAt": "2026-06-21T06:11:28+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jun2026-23600-PE",
