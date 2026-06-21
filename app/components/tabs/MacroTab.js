@@ -125,7 +125,7 @@ function NewsFeed({ news, region }) {
   else if (region === 'global') items = items.filter((it) => it.region !== 'in');
   return (
     <div className="card feedcard">
-      <div className="wlabel">Portfolio news · your holdings <span className="hint">tag + sentiment · scroll</span></div>
+      <div className="wlabel">Portfolio news · your holdings</div>
       {items.length
         ? <div className="feed">{items.map((it, i) => (
           <a className={`ncard ${it.sentiment > 0 ? 'pos' : it.sentiment < 0 ? 'neg' : 'neu'}`} key={i} href={it.link || undefined} target="_blank" rel="noopener noreferrer">
@@ -144,7 +144,7 @@ function SliderBoard({ board }) {
   if (!groups.length) return null;
   return (
     <div className="card">
-      <div className="wlabel">Macro · rates · inflation · growth · labour <span className="hint">knob = 1-yr percentile</span></div>
+      <div className="wlabel">Macro backdrop <span className="hint">knob = 1-yr percentile</span></div>
       <div className="grps">
         {groups.map((g) => (
           <div className="grp" key={g.group}>
@@ -159,7 +159,7 @@ function SliderBoard({ board }) {
                       <div className={`sld-zone ${TONE[c.tone] || 'calm'}`} />
                       <div className="sld-knob" style={{ left: `${c.pos}%` }} />
                     </div>
-                    <div className="sld-sc"><span>{c.lo != null ? c.lo.toFixed(d) : ''}</span><span className="pl">1Y %ile</span><span>{c.hi != null ? c.hi.toFixed(d) : ''}</span></div>
+                    <div className="sld-sc"><span>{c.lo != null ? c.lo.toFixed(d) : ''}</span><span className="pl">%ile</span><span>{c.hi != null ? c.hi.toFixed(d) : ''}</span></div>
                   </div>
                 );
               })}
@@ -225,7 +225,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
             <button key={k} type="button" role="tab" aria-selected={region === k} className={region === k ? 'on' : ''} onClick={() => pickRegion(k)}>{l}</button>
           ))}
         </div>
-        <span className="asof">{asOf ? `NSE · ${asOf}` : 'market wrap'} · ticker scrolls; hover the FII/DII bars</span>
+        <span className="asof">{asOf ? `NSE · ${asOf}` : 'market wrap'}</span>
       </div>
 
       {/* SWOT — straightforward AI read; the region toggle above picks which side(s) show */}
@@ -244,14 +244,14 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
       {/* Left: market internals · Right: portfolio news */}
       <div className="two">
         <div className="card">
-          <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? `live · ${asOf}` : 'today'}</span></div>
+          <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
           {sectors.length
             ? <div className="heat" style={{ gridTemplateColumns: `repeat(${Math.min(5, sectors.length)}, 1fr)` }}>
               {sectors.map((s) => <div className="hc" key={s.name} style={{ background: heat(s.pct) }}><span>{s.name}</span><b>{apct(s.pct)}</b></div>)}
             </div>
             : <div className="na">Sector board unavailable.</div>}
           {showIN && <BreadthNeedle ad={ind.breadthAD} />}
-          {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net · hover</span></div>}
+          {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span></div>}
           {showIN && <FiiDiiChart trail={fiidiiTrail} />}
         </div>
         <NewsFeed news={portfolioNews} region={region} />

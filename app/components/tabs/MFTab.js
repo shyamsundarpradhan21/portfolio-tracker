@@ -143,7 +143,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         <div className="csm">
           <div className="lbl">total invested</div>
           <div className="vmd"><InrF n={mf.totCost} /></div>
-          <div className="sub">{MF_FUNDS.length} funds · 2 platforms</div>
+          <div className="sub">{MF_FUNDS.length} funds · {new Set(MF_FUNDS.map((f) => f.platform)).size} platforms</div>
         </div>
         <div className="csm">
           <div className="fxc">
@@ -151,7 +151,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
             <FreshnessTag mode="nav" date={mfDate} casDate={UNITS_AS_OF} />
           </div>
           <div className="vmd grn" style={{ marginTop: 6 }}><LiveInrF n={mf.totVal} /></div>
-          <div className="sub">NAV × CAS units{mfDate ? ` · ${UNITS_AS_OF}` : ''}</div>
+          <div className="sub">NAV × CAS units</div>
         </div>
         <div className="csm">
           <div className="lbl">total return</div>
