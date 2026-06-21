@@ -496,10 +496,11 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Left: market internals (sentiment · treemap · movers) · Right: portfolio news */}
-      <div className="two">
+      {/* Left: market insights (sentiment · treemap · movers). Right: portfolio news
+          (3-up, scrollable) stacked over the upcoming calendar (scrollable). */}
+      <div className="wrap-mid">
         <div className="card">
-          <div className="wlabel">Market internals <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
+          <div className="wlabel">Market insights <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
           <div className="wstack">
             <SentimentCell
               detail={showIN
@@ -520,11 +521,12 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
             />
           </div>
         </div>
-        <NewsFeed news={portfolioNews} region={region} />
+        <div className="wrap-mid-r">
+          <NewsFeed news={portfolioNews} region={region} />
+          {/* Upcoming — region-aware economic calendar (keyless), under the news */}
+          <CalendarBoard cal={econCal} region={region} />
+        </div>
       </div>
-
-      {/* Upcoming — region-aware economic calendar (keyless), below the portfolio news */}
-      <CalendarBoard cal={econCal} region={region} />
 
       {/* FII/DII — its own full-width card below the internals + news row (India only) */}
       {showIN && (ind.breadthAD || fdTrail.length >= 2) && (

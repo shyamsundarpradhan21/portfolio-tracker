@@ -499,8 +499,6 @@ body {
 @media (prefers-reduced-motion: reduce) { .tkv { overflow-x: auto; } .tkrow { animation: none; } }
 
 /* two-column: market internals | news */
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
-@media (max-width: 860px) { .two { grid-template-columns: 1fr; } }
 
 /* sector heat tiles */
 .heat { display: grid; gap: 6px; }
@@ -623,6 +621,22 @@ body {
 .ncard.neg .tag { color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
 .ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard .nm { font-size: var(--fs-2xs); color: var(--txt3); margin-top: auto; }
+
+/* Wrap mid-row: left = market insights (tall), right column = portfolio news
+   (3-up, scrollable) stacked over the upcoming calendar (scrollable). */
+.wrap-mid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
+@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; } }
+.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
+.wrap-mid-r .feedcard { flex: 1 1 auto; min-height: 220px; }
+.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(3, minmax(0, 1fr)); max-height: none; }
+.wrap-mid-r .ncard { min-height: 0; padding: 9px 11px; gap: 6px; }
+.wrap-mid-r .ncard .nh { -webkit-line-clamp: 3; }
+.wrap-mid-r .ecal { max-height: 230px; overflow-y: auto; padding-right: 4px; }
+@media (max-width: 920px) {
+  .wrap-mid-r .feedcard { flex: none; }
+  .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
 
 /* macro percentile sliders — multi-column packing so the 5 groups fill the card
    (balanced columns) instead of orphaning the 5th group on its own grid row. */
