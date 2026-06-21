@@ -1161,6 +1161,8 @@ body { padding: 0; }
 .hdr-toggle:hover { color: var(--txt); border-color: color-mix(in srgb, var(--acc) 40%, var(--brd2)); }
 .hdr-toggle:active { transform: scale(.92); }
 .hdr-toggle.loading { opacity: .5; pointer-events: none; }
+.ai-toggle { width: auto; padding: 0 10px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .06em; }
+.ai-toggle.on { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 55%, var(--brd2)); background: color-mix(in srgb, var(--acc) 14%, var(--sur2)); }
 /* AI "analysing…" ticker — shown in the header only while a real insights call
    is in flight (cache hits are instant, so it never flashes for those) */
 .ai-status { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em; color: var(--acc); white-space: nowrap; animation: aiPulse 1.1s ease-in-out infinite; }

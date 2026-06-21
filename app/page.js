@@ -330,15 +330,17 @@ function Dashboard() {
   const requestInsights = useCallback(() => setInsightsReq((n) => n + 1), []);
   // Force a fresh whole-app analysis (used by the Pulse-tab refresh).
   const refreshInsights = () => requestInsights();
-  // Unified header ↻ — one control that refreshes live prices AND regenerates the
-  // whole-app AI analysis, surfacing the banners. (Merged from the old ✨ + ↻: the
-  // analyse toggle folded into the refresh.) The 15-min auto-refresh still calls
-  // doRefresh() directly, so only a deliberate click pays for the AI call.
-  const refreshAll = () => {
-    if (!insightsOn) { setInsightsOn(true); try { localStorage.setItem('nwTracker.insightsOn', 'true'); } catch {} }
-    doRefresh();
-    requestInsights();
-  };
+  // AI analysis is its own header toggle now: turning it ON generates a fresh
+  // whole-app analysis; OFF consolidates the cards. Persisted across sessions.
+  const toggleInsights = () => setInsightsOn((on) => {
+    const next = !on;
+    try { localStorage.setItem('nwTracker.insightsOn', String(next)); } catch {}
+    if (next) requestInsights();
+    return next;
+  });
+  // Header ↻ — refresh live prices; regenerate AI only if the AI toggle is on, so
+  // the analysis call is opt-in. The 15-min auto-refresh calls doRefresh() directly.
+  const refreshAll = () => { doRefresh(); if (insightsOn) requestInsights(); };
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
@@ -1035,13 +1037,11 @@ function Dashboard() {
             <div className="topbar-right">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Market Wrap — how the session closed: index moves, sector performance, FII/DII flows, and how the book fared">
-                <span className="pulse-spark">✦</span>Wrap
-                {markets.nse
-                  ? <span className="pulse-pill-state regime-watch">live</span>
-                  : regime && regime.state !== 'unavailable' && <span className={'pulse-pill-state regime-' + regime.state}>{regime.state}</span>}
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Macro Wrap — India & US market regimes: index moves, sectors, FII/DII flows, and the macro backdrop">
+                <span className="pulse-spark">✦</span>Macro Wrap
               </button>
-              <span className="status-txt">USD/INR <strong style={{ color: 'var(--txt)' }}>{usdInr ? <><Rs />{usdInr.toFixed(2)}</> : '—'}</strong></span>
+              <button className={'hdr-toggle ai-toggle' + (insightsOn ? ' on' : '')} onClick={toggleInsights} aria-pressed={insightsOn}
+                title={insightsOn ? 'AI analysis ON — click to turn off' : 'AI analysis OFF — click to enable'}>AI</button>
               {insightsLoading
                 ? <span className="ai-status">✦ analysing…</span>
                 : insights && insightsTs
