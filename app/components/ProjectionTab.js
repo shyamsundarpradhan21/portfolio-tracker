@@ -566,6 +566,12 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const baseLineY  = (H - PADB).toFixed(1);
   const histNwPath  = smoothPath(histNwXY);
   const histInvPath = smoothPath(histInvXY);
+  // Split the NW line at the first RECORDED point: the ledger-replay backfill before it
+  // draws dashed + lightened, the recorded stretch solid (they share the seam point; the
+  // area fill stays whole). MAX/Year open dashed — inception can't be retro-recorded.
+  const realStart = (() => { const i = pts.findIndex((s) => !s.synth); return i < 0 ? pts.length : i; })();
+  const histNwSynthPath = realStart >= 1 ? smoothPath(histNwXY.slice(0, realStart + 1)) : '';
+  const histNwRealPath  = realStart < pts.length ? smoothPath(histNwXY.slice(realStart)) : '';
   const histNwFill  = histNwPath  + ` L${xToday.toFixed(1)},${baseLineY} L${PADL},${baseLineY} Z`;
   const histInvFill = histInvPath + ` L${xToday.toFixed(1)},${baseLineY} L${PADL},${baseLineY} Z`;
 
@@ -733,7 +739,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         <path d={histInvFill} fill="url(#pjx-invfill)" />
         <path d={histNwFill}  fill="url(#pjx-nwfill)" />
         <path d={histInvPath} fill="none" stroke="var(--txt3)" strokeWidth="1.3" strokeDasharray="3 4" />
-        <path d={histNwPath}  fill="none" stroke="var(--acc)" strokeWidth="2.2" strokeLinejoin="round" />
+        {histNwSynthPath && <path d={histNwSynthPath} fill="none" stroke="var(--acc)" strokeWidth="2.2" strokeDasharray="3 4" strokeOpacity=".5" strokeLinejoin="round" />}
+        {histNwRealPath && <path d={histNwRealPath} fill="none" stroke="var(--acc)" strokeWidth="2.2" strokeLinejoin="round" />}
 
         {/* initial point — the first sample sits hard on the Y-axis, so ring it
             and label its starting value; otherwise you can't see where the
