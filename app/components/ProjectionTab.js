@@ -644,9 +644,15 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       </div>
 
-      {view === 'return' ? (
+      {/* Value ↔ Return: both chart blocks render and stack in one grid cell, bottom-
+          aligned and toggled by visibility — the cell always takes the taller (Return,
+          with its Compare+legend header) height and the chart stays anchored above the
+          scrubber, so toggling never jumps the card. Charts are identical size. */}
+      <div className="pjx-chartswap">
+      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
         <PerformanceCurve hist={hist} series={histSeries} range={range} />
-      ) : (
+      </div>
+      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
       <div style={{ position: 'relative', marginTop: 10 }}>
       {/* the growth story rides INSIDE the chart's empty upper-left;
           methodology lives in the small footnote below the card */}
@@ -870,7 +876,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         })()}
       </svg>
       </div>
-      )}
+      </div>
+      </div>
 
       {/* scrub rail — value-only (a returns curve has no projection). In Return it
           stays visible but DIMMED + disabled, so toggling Value↔Return doesn't shift
@@ -974,16 +981,20 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       )}
 
-      {/* methodology footnote — one compact line; every number is derived */}
-      <div className="pjx-foot">
-        {view === 'return' ? (
-          <>Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.</>
-        ) : (
-          <>{MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
-          stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
+      {/* methodology footnote — every number is derived. Both view variants stack in
+          one grid cell (toggled by visibility) so it reserves the taller text's height
+          in both views — the footnote prose differs in length, so this keeps Value↔Return
+          from jumping at the bottom of the card. */}
+      <div className="pjx-foot pjx-footswap">
+        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
+          Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.
+        </span>
+        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
+          {MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
+          {' '}stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
           {' '}{(rates.base.longRun * 100).toFixed(0)}% long-run · Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts ·
-          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice</>
-        )}
+          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice
+        </span>
       </div>
 
       {/* live allocation strip — merged in from the old sunburst card, pinned at the

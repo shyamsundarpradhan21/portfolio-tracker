@@ -745,6 +745,14 @@ body {
 .pjx-foot { margin-top: 10px; font-size: var(--fs-2xs); color: var(--txt3); line-height: 1.6; }
 
 /* at rest: D/W/M/Y/Max growth cards (click = history window) */
+/* Value ↔ Return chart blocks stacked in one cell, bottom-aligned, so the card
+   height is stable and the chart stays anchored above the scrubber on toggle. */
+.pjx-chartswap { display: grid; align-items: end; }
+.pjx-chartswap > .pjx-chartcell { grid-area: 1 / 1; min-width: 0; }
+/* footnote prose differs per view — stack both so it reserves the taller height. */
+.pjx-footswap { display: grid; }
+.pjx-footswap > span { grid-area: 1 / 1; min-width: 0; }
+
 /* growth ↔ projected rows stacked in one grid cell so the row height is stable
    (the taller period-tile row) and the scenario tabs match it at any zoom. */
 .pjx-switch { display: grid; margin-top: 10px; }
@@ -757,7 +765,7 @@ body {
   background: var(--sur2); border: .5px solid var(--brd2); border-radius: 12px; padding: 10px 13px;
   transition: border-color .15s, background .15s;
 }
-.pjx-gvrow { display: flex; align-items: baseline; gap: 6px; min-width: 0; } /* value + % on one line */
+.pjx-gvrow { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; } /* value left, % right — justified on one line */
 .pjx-gcell:hover { border-color: var(--brd); }
 .pjx-gcell.on { border-color: color-mix(in srgb, var(--acc) 45%, var(--brd)); background: color-mix(in srgb, var(--acc) 6%, transparent); }
 .pjx-gk { font-family: var(--mono); font-size: var(--fs-2xs); letter-spacing: .07em; color: var(--txt3); }
