@@ -1,7 +1,7 @@
 'use client';
 import { fmtNavDate } from '../../lib/fmt';
 
-export default function FreshnessTag({ mode, date, marketState }) {
+export default function FreshnessTag({ mode, date, marketState, casDate }) {
   let dot = 'var(--txt3)', text = '', blink = false, live = false;
   if (mode === 'live') {
     const open = marketState && marketState.open;
@@ -12,7 +12,7 @@ export default function FreshnessTag({ mode, date, marketState }) {
   } else if (mode === 'nav') {
     const f = fmtNavDate(date);
     if (f) { dot = 'var(--grn)';  text = `NAV as of ${f}`; }
-    else   { dot = 'var(--acc)'; text = 'Showing last-known NAV (CAS 05 Jun 2026)'; }
+    else   { dot = 'var(--acc)'; text = casDate ? `Last-known NAV · ${casDate}` : 'Last-known NAV'; }
   } else {
     dot = 'var(--txt3)'; text = `as of ${date || 'manual'}`;
   }

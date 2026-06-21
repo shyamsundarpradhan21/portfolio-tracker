@@ -242,7 +242,7 @@ function Waffle({ parts, n = 10 }) {
   );
 }
 
-function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true }) {
+function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
@@ -633,7 +633,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="pjx-viewtoggle" role="tablist" aria-label="Chart view">
             <button role="tab" aria-selected={view === 'value'} className={view === 'value' ? 'on' : ''} onClick={() => setView('value')}>Value</button>
-            <button role="tab" aria-selected={view === 'return'} className={view === 'return' ? 'on' : ''} onClick={() => setView('return')}>Return</button>
+            <button role="tab" aria-selected={view === 'return'} className={view === 'return' ? 'on' : ''} onClick={() => { stopPlay(); setT(0); setView('return'); }}>Return</button>
           </div>
           <div className="sub" style={{ margin: 0, fontFamily: 'var(--mono)' }}>
             {view === 'return' ? 'indexed to 100' : <>{monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
@@ -644,9 +644,15 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       </div>
 
-      {view === 'return' ? (
+      {/* Value ↔ Return: both chart blocks render and stack in one grid cell, bottom-
+          aligned and toggled by visibility — the cell always takes the taller (Return,
+          with its Compare+legend header) height and the chart stays anchored above the
+          scrubber, so toggling never jumps the card. Charts are identical size. */}
+      <div className="pjx-chartswap">
+      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
         <PerformanceCurve hist={hist} series={histSeries} range={range} />
-      ) : (
+      </div>
+      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
       <div style={{ position: 'relative', marginTop: 10 }}>
       {/* the growth story rides INSIDE the chart's empty upper-left;
           methodology lives in the small footnote below the card */}
@@ -870,21 +876,26 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         })()}
       </svg>
       </div>
-      )}
+      </div>
+      </div>
 
-      {/* scrub rail — only in Value mode (a returns curve has no projection) */}
-      {view === 'value' && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+      {/* scrub rail — value-only (a returns curve has no projection). In Return it
+          stays visible but DIMMED + disabled, so toggling Value↔Return doesn't shift
+          the layout and it reads as "projection doesn't apply to returns". */}
+      <div className={'pjx-scrubrow' + (view === 'return' ? ' off' : '')}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}
+        title={view === 'return' ? 'Returns aren’t projected — the scrubber is value-only' : undefined}
+        aria-hidden={view === 'return'}>
         {/* at rest the button wears the tab accent (the growth view's colour);
             once scrubbing it adopts the scrubber/scenario tone to match the rail */}
-        <button onClick={onPlay} className="pj-play"
+        <button onClick={onPlay} className="pj-play" disabled={view === 'return'}
           style={{ '--play-clr': scrubbing ? scTone : 'var(--acc)' }}
           aria-label={playing ? 'Pause' : 'Play projection'}>
           {playing ? '❚❚' : t >= MAXY ? '↻' : '▶'}
         </button>
         <div className="pj-year">{baseYear + yr}<small>{yr === 0 ? 'today' : `year ${yr}`}</small></div>
         <div className="pjx-rail">
-          <input type="range" min="0" max={MAXY} step="0.1" value={t} onInput={onScrub}
+          <input type="range" min="0" max={MAXY} step="0.1" value={t} onInput={onScrub} disabled={view === 'return'}
             className="pj-range" style={{ width: '100%', '--p': `${(t / MAXY) * 100}%`, '--range-clr': scrubbing ? scTone : 'var(--acc)' }}
             aria-label="Projection year" />
           <div className="pjx-notches">
@@ -898,71 +909,61 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           </div>
         </div>
       </div>
-      )}
 
-      {!scrubbing ? (
-        <>
-          <div className="pjx-gcards">
-            {growth.map((g) => (
-              <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')}
-                onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
-                <span className="pjx-gmeta">
-                  <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
-                  {/* deltas against live NW are meaningless while a sleeve is unpriced */}
-                  {dataReady ? (
-                    <>
-                      {/* +/- figures keep their semantic green/red P&L coding;
-                          the tab accent lives in the selection chrome only */}
-                      <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                        <Crs n={g.chg} />
-                      </span>
-                      <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                        {g.key === 'Max' && xirrPct != null
-                          ? `XIRR ${xirrPct}%`
-                          : `${Math.abs(g.pct).toFixed(2)}%`}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="pjx-gv mono">—</span>
-                      <span className="pjx-gp mono">loading</span>
-                    </>
-                  )}
+      {/* Growth ↔ projected: both rows render and stack in one grid cell, toggled by
+          visibility — the cell always takes the taller (period-tile) height, so the
+          scenario tabs match it EXACTLY at any zoom (no jump) while the period tiles
+          keep their natural content height. */}
+      <div className="pjx-switch">
+        <div className="pjx-gcards" style={{ visibility: scrubbing ? 'hidden' : 'visible' }} aria-hidden={scrubbing}>
+          {growth.map((g) => (
+            <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')} tabIndex={scrubbing ? -1 : 0}
+              onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
+              <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
+              {/* deltas against live NW are meaningless while a sleeve is unpriced */}
+              {dataReady ? (
+                /* value + % on one line — % rides adjacent in a mini font; +/- figures
+                   keep the semantic green/red P&L coding, the tab accent stays in chrome.
+                   MAX's % is the XIRR (label dropped — it's obvious from the Max window). */
+                <span className="pjx-gvrow">
+                  <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}><Crs n={g.chg} /></span>
+                  <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
+                    {g.key === 'Max' && xirrPct != null ? `${xirrPct}%` : `${Math.abs(g.pct).toFixed(2)}%`}
+                  </span>
                 </span>
-                {/* gain attribution by asset class, vertical on the right — DAY is
-                    live; longer windows appear as per-sleeve snapshot history accrues */}
-                {dataReady && attribution[g.key] && <Waffle parts={attribution[g.key]} />}
+              ) : (
+                <span className="pjx-gvrow"><span className="pjx-gv mono">—</span><span className="pjx-gp mono">loading</span></span>
+              )}
+              {/* gain attribution by asset class — a thin waffle strip BELOW the figure;
+                  DAY is live, longer windows fill in as per-sleeve snapshot history accrues */}
+              {dataReady && attribution[g.key] && <Waffle parts={attribution[g.key]} />}
+            </button>
+          ))}
+        </div>
+        {/* C/B/O scenario tabs — active uses the scenario color */}
+        <div className="pjx-sctabs" role="tablist" aria-label="Projection scenario"
+          style={{ visibility: scrubbing ? 'visible' : 'hidden' }} aria-hidden={!scrubbing}>
+          {['cons', 'base', 'opt'].map((k) => {
+            const c = sampleAt(model.arr[k].corpus, t);
+            return (
+              <button key={k} role="tab" aria-selected={sc === k} tabIndex={scrubbing ? 0 : -1}
+                className={'pjx-sctab' + (sc === k ? ' on' : '')}
+                style={{ '--tone': SC_META[k].tone }} onClick={() => setSc(k)}>
+                <span className="pjx-scname">
+                  <i className={sc === k ? 'pjx-solid' : 'pjx-dotted'} />
+                  {SC_META[k].name} <span className="pjx-screte">({(rates[k].start * 100).toFixed(1)}%)</span>
+                </span>
+                {/* nominal + inflation-adjusted on one line: real value sits
+                    in () at a smaller size so it fills the row instead of a
+                    second line */}
+                <span className="pjx-scval mono">
+                  <Crs n={c} /> <span className="pjx-screal"><Crs of={`(${cr(c / deflate)})`} /></span>
+                </span>
               </button>
-            ))}
-          </div>
-
-        </>
-      ) : (
-        <>
-          {/* C/B/O scenario tabs — active uses the scenario color */}
-          <div className="pjx-sctabs" role="tablist" aria-label="Projection scenario">
-            {['cons', 'base', 'opt'].map((k) => {
-              const c = sampleAt(model.arr[k].corpus, t);
-              return (
-                <button key={k} role="tab" aria-selected={sc === k}
-                  className={'pjx-sctab' + (sc === k ? ' on' : '')}
-                  style={{ '--tone': SC_META[k].tone }} onClick={() => setSc(k)}>
-                  <span className="pjx-scname">
-                    <i className={sc === k ? 'pjx-solid' : 'pjx-dotted'} />
-                    {SC_META[k].name} <span className="pjx-screte">({(rates[k].start * 100).toFixed(1)}%)</span>
-                  </span>
-                  {/* nominal + inflation-adjusted on one line: real value sits
-                      in () at a smaller size so it fills the row instead of a
-                      second line */}
-                  <span className="pjx-scval mono">
-                    <Crs n={c} /> <span className="pjx-screal"><Crs of={`(${cr(c / deflate)})`} /></span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+            );
+          })}
+        </div>
+      </div>
 
       {/* CMPS defined-benefit pension — a one-line note just above the footnote.
           The figure is the FULL-CAREER projection (pension = salary × service ÷ 70
@@ -980,17 +981,25 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       )}
 
-      {/* methodology footnote — one compact line; every number is derived */}
-      <div className="pjx-foot">
-        {view === 'return' ? (
-          <>Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.</>
-        ) : (
-          <>{MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
-          stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
+      {/* methodology footnote — every number is derived. Both view variants stack in
+          one grid cell (toggled by visibility) so it reserves the taller text's height
+          in both views — the footnote prose differs in length, so this keeps Value↔Return
+          from jumping at the bottom of the card. */}
+      <div className="pjx-foot pjx-footswap">
+        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
+          Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.
+        </span>
+        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
+          {MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
+          {' '}stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
           {' '}{(rates.base.longRun * 100).toFixed(0)}% long-run · Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts ·
-          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice</>
-        )}
+          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice
+        </span>
       </div>
+
+      {/* live allocation strip — merged in from the old sunburst card, pinned at the
+          footer; drifts with the scrubber (the `footer` carries the drifted year). */}
+      {footer && <div className="pjx-alloc">{footer}</div>}
     </div>
   );
 }

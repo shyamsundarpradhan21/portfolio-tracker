@@ -1,7 +1,7 @@
 {
   "note": "End-of-session NSE market wrap from the Kite MCP (sectoral + breadth indices + India VIX), captured during /sync. day pct = (last - prior close)/prior close. Non-personal; safe to commit. Built by scripts/merge-market.mjs.",
   "asOf": "2026-06-19T17:35:04+05:30",
-  "capturedAt": "2026-06-20T19:56:54+05:30",
+  "capturedAt": "2026-06-21T06:09:41+05:30",
   "source": "Kite · NSE indices",
   "nifty": {
     "last": 24013.1,

@@ -4,7 +4,7 @@ import { inrFull, inrC } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
-import AllocCard from '../shared/AllocCard';
+import AllocBar from '../shared/AllocBar';
 import SipCard from '../shared/SipCard';
 
 export default function OverviewTab({
@@ -22,17 +22,16 @@ export default function OverviewTab({
     <div>
       <AnalysisCard data={insights?.overview} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
 
-      {/* Live allocation sunburst + growth tracker/projection scrubber */}
-      <div className="ov-top">
-        <AllocCard sleeves={projSleeves} mfAlloc={mfAlloc} dataReady={dataReady} drift={drift} />
-        <ProjectionTab
-          nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
-          baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} histSeries={histSeries} dataReady={dataReady}
-          dayGain={dayGain} sleeveBasis={sleeveBasis}
-          cmpsRetirement={cmpsRetirement} cmpsPension={cmpsPension} cmpsService={cmpsService}
-          cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}
-        />
-      </div>
+      {/* Net worth growth/projection scrubber, with the live allocation strip merged
+          into its footer (replaces the separate sunburst card). */}
+      <ProjectionTab
+        nw={Math.round(ov.nw)} loan={ov.loan} fx={fx} sleeves={projSleeves} onDrift={setDrift}
+        baseYear={baseYear} invested0={projInvested0} snapshots={snapshots} histSeries={histSeries} dataReady={dataReady}
+        dayGain={dayGain} sleeveBasis={sleeveBasis}
+        cmpsRetirement={cmpsRetirement} cmpsPension={cmpsPension} cmpsService={cmpsService}
+        cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}
+        footer={<AllocBar sleeves={projSleeves} mfAlloc={mfAlloc} drift={drift} />}
+      />
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />

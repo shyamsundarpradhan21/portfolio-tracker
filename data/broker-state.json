@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-20T21:10:41+05:30",
+  "syncedAt": "2026-06-21T06:11:26+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -11,8 +11,8 @@
       "note": ""
     },
     "fyers": {
-      "ok": false,
-      "note": "mint failed (fyers refresh creds missing (need FYERS_APP_ID/SECRET_ID/PIN + refresh_token in KV))"
+      "ok": true,
+      "note": ""
     },
     "kite": {
       "ok": true,
@@ -22,15 +22,15 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-20T05:09:20+05:30",
+      "syncedAt": "2026-06-21T06:11:27+05:30",
       "rows": [
         {
-          "sym": "HAPPSTMNDS",
-          "qty": 20,
-          "avg": 393.5,
-          "ltp": 345.35,
-          "pnl": -963,
-          "dayPct": -1.57
+          "sym": "BANKBARODA",
+          "qty": 28,
+          "avg": 291.8,
+          "ltp": 281.05,
+          "pnl": -301,
+          "dayPct": -0.69
         },
         {
           "sym": "AVANTEL",
@@ -41,12 +41,20 @@
           "dayPct": 0.07
         },
         {
-          "sym": "BANKBARODA",
-          "qty": 28,
-          "avg": 291.8,
-          "ltp": 281.05,
-          "pnl": -301,
-          "dayPct": -0.69
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43,
+          "ltp": 1272.7,
+          "pnl": 4762.65,
+          "dayPct": 0.29
+        },
+        {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5,
+          "ltp": 345.35,
+          "pnl": -963,
+          "dayPct": -1.57
         },
         {
           "sym": "LAURUSLABS",
@@ -55,140 +63,132 @@
           "ltp": 1412.9,
           "pnl": 3408.35,
           "dayPct": 3.22
-        },
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43,
-          "ltp": 1272.7,
-          "pnl": 4762.65,
-          "dayPct": 0.29
         }
       ]
     },
     "INDIAN": {
       "source": "Zerodha",
-      "syncedAt": "2026-06-20T05:19:46+05:30",
+      "syncedAt": "2026-06-21T06:09:24+05:30",
       "rows": [
         {
           "sym": "AURIONPRO",
           "qty": 35,
           "avg": 840.69,
           "ltp": 876.4,
-          "pnl": 1249.85,
-          "dayPct": -0.0684
+          "pnl": 1249.8499999999972,
+          "dayPct": -0.06841505131129108
         },
         {
           "sym": "COFORGE",
           "qty": 21,
           "avg": 1398.138095,
-          "ltp": 1463.3,
-          "pnl": 1368.4,
-          "dayPct": -1.3284
+          "ltp": 1463.65,
+          "pnl": 1375.7500050000015,
+          "dayPct": -1.264840798704803
         },
         {
           "sym": "CUB",
           "qty": 188,
           "avg": 159.086436,
           "ltp": 196.65,
-          "pnl": 7061.95,
-          "dayPct": -0.8571
+          "pnl": 7061.9500320000025,
+          "dayPct": -0.8570708343836596
         },
         {
           "sym": "FEDERALBNK",
           "qty": 155,
           "avg": 192.28,
-          "ltp": 323.9,
-          "pnl": 20401.1,
-          "dayPct": 0.9978
+          "ltp": 323.95,
+          "pnl": 20408.85,
+          "dayPct": 1.092214073958496
         },
         {
           "sym": "GODREJCP",
           "qty": 30,
           "avg": 999,
           "ltp": 1000.6,
-          "pnl": 48,
-          "dayPct": -0.8522
+          "pnl": 48.00000000000068,
+          "dayPct": -0.8521601268331372
         },
         {
           "sym": "LT",
           "qty": 8,
           "avg": 3616.6,
-          "ltp": 4209.4,
-          "pnl": 4742.4,
-          "dayPct": 0.463
+          "ltp": 4209.6,
+          "pnl": 4744.000000000004,
+          "dayPct": 0.47737254153141107
         },
         {
           "sym": "MARKSANS",
           "qty": 135,
           "avg": 217.801333,
           "ltp": 259.67,
-          "pnl": 5652.27,
-          "dayPct": -0.6808
+          "pnl": 5652.270045000002,
+          "dayPct": -0.680818512143803
         },
         {
           "sym": "NH",
           "qty": 17,
           "avg": 1674,
           "ltp": 1878.7,
-          "pnl": 3479.9,
-          "dayPct": 0.519
+          "pnl": 3479.9000000000005,
+          "dayPct": 0.5189941144997349
         },
         {
           "sym": "PITTIENG",
           "qty": 38,
           "avg": 772.263157,
           "ltp": 1009.45,
-          "pnl": 9013.1,
-          "dayPct": 1.795
+          "pnl": 9013.100034000003,
+          "dayPct": 1.7949881510613694
         },
         {
           "sym": "POWERGRID",
           "qty": 102,
           "avg": 289.45,
-          "ltp": 292.25,
-          "pnl": 285.6,
-          "dayPct": 1.2297
+          "ltp": 292.4,
+          "pnl": 300.89999999999884,
+          "dayPct": 1.3167013167013009
         },
         {
           "sym": "PRICOLLTD",
           "qty": 56,
           "avg": 528.7625,
           "ltp": 559.15,
-          "pnl": 1701.7,
-          "dayPct": -0.0447
+          "pnl": 1701.6999999999962,
+          "dayPct": -0.04469074007865571
         },
         {
           "sym": "STYRENIX",
           "qty": 15,
           "avg": 1927,
           "ltp": 2312.9,
-          "pnl": 5788.5,
-          "dayPct": 2.7134
+          "pnl": 5788.500000000002,
+          "dayPct": 2.7133848476774096
         },
         {
           "sym": "SUPRIYA",
           "qty": 36,
           "avg": 586.976388,
           "ltp": 932.2,
-          "pnl": 12428.05,
-          "dayPct": -0.0054
+          "pnl": 12428.050032,
+          "dayPct": -0.0053633681952217245
         },
         {
           "sym": "TECHNOE",
           "qty": 33,
           "avg": 907.8,
           "ltp": 1090,
-          "pnl": 6012.6,
-          "dayPct": 1.6175
+          "pnl": 6012.600000000001,
+          "dayPct": 1.617489395422543
         },
         {
           "sym": "ZYDUSLIFE",
           "qty": 33,
           "avg": 894.25,
-          "ltp": 1070.8,
-          "pnl": 5826.15,
-          "dayPct": -0.3351
+          "ltp": 1070.6,
+          "pnl": 5819.549999999997,
+          "dayPct": -0.3444103136926413
         }
       ]
     }
@@ -196,7 +196,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-20T21:10:44+05:30",
+      "syncedAt": "2026-06-21T06:11:28+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jun2026-23600-PE",
@@ -221,8 +221,7 @@
       "utilized": 0
     },
     "upstox": {
-      "available": null,
-      "note": "The Funds service is accessible from 5:30 AM to 12:00 AM IST daily. Please try again during these service hours."
+      "available": 0
     }
   }
 }
