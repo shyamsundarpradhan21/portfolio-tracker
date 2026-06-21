@@ -76,7 +76,7 @@ function FiiDiiChart({ trail }) {
   const seg = (v) => { const h = Math.abs(v || 0) * sc; return { y: v >= 0 ? zero - h : zero, h }; };
   const cxOf = (i) => PAD_L + colW * i + colW / 2;
   const nyOf = (p) => zero - net(p) * sc;
-  const d3 = (v) => (v == null || !isFinite(v) ? '—' : Math.abs(Math.round(v)).toLocaleString('en-IN'));
+  const d3 = (v) => (v == null || !isFinite(v) ? '—' : '₹' + Math.abs(Math.round(v)).toLocaleString('en-IN') + ' Cr');
   const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
 
   // Net sparkline geometry: a dotted polyline through the net points, and a
@@ -110,11 +110,10 @@ function FiiDiiChart({ trail }) {
         <path className="fd-pos" clipPath="url(#fdAbove)" d={areaPath} />
         <path className="fd-neg" clipPath="url(#fdBelow)" d={areaPath} />
         <path className="fd-spark" d={linePath} />
-        {pts.map((p, i) => <circle key={i} className={`fd-dot ${net(p) >= 0 ? 'g' : 'r'}`} cx={cxOf(i)} cy={nyOf(p)} r="2.4" />)}
-        {hi >= 0 && <text x={cxOf(hi)} y={nyOf(pts[hi]) + (net(pts[hi]) >= 0 ? -6 : 13)} textAnchor="middle" className={`fdval ${net(pts[hi]) >= 0 ? 'grn' : 'red'}`}>{d3(net(pts[hi]))}</text>}
+        {pts.map((p, i) => <circle key={i} className={`fd-dot ${net(p) >= 0 ? 'g' : 'r'}`} cx={cxOf(i)} cy={nyOf(p)} r="2.6" />)}
       </svg>
       <div className="tlatest">
-        {cur && <>FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b> cr</>}
+        {cur && <>FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b></>}
       </div>
     </>
   );

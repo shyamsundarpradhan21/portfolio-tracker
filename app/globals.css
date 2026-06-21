@@ -532,16 +532,15 @@ body {
 .fd-pos { fill: color-mix(in srgb, var(--grn) 18%, transparent); }
 .fd-neg { fill: color-mix(in srgb, var(--red) 18%, transparent); }
 .fd-spark { fill: none; stroke: var(--txt); stroke-width: 1.5; stroke-dasharray: 2 2.5; }
+.fd-dot { stroke: var(--bg); stroke-width: 1.5; }   /* dark halo so the net dots pop off the bars/area */
 .fd-dot.g { fill: var(--grn); } .fd-dot.r { fill: var(--red); }
-.fdg .fdval { font-size: 10px; font-weight: 700; font-family: var(--mono); }
-.fdg .fdval.grn { fill: var(--grn); } .fdg .fdval.red { fill: var(--red); }
 .fdleg { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: var(--fs-2xs); color: var(--txt3); font-weight: 600; letter-spacing: 0; text-transform: none; }
 .fdleg i { display: inline-block; margin: 0 3px 0 9px; }
 .fdleg .lf { width: 9px; height: 9px; border-radius: 2px; background: var(--cyn); }
 .fdleg .ld { width: 9px; height: 9px; border-radius: 2px; background: var(--sc-base); opacity: .7; }
 .fdleg .ln { width: 11px; height: 2px; background: var(--txt); }
-.tlatest { font-size: var(--fs-xs); color: var(--txt2); margin-top: 6px; min-height: 17px; }
-.tlatest b { font-family: var(--mono); }
+.tlatest { font-size: var(--fs-sm); color: var(--txt2); margin-top: 6px; min-height: 18px; }
+.tlatest b { font-family: var(--mono); color: var(--txt); }
 
 /* market-internals vertical stack: sentiment band · treemap square · movers split */
 .wstack { display: flex; flex-direction: column; gap: 9px; }
@@ -620,10 +619,12 @@ body {
 .ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard .nm { font-size: var(--fs-2xs); color: var(--txt3); margin-top: auto; }
 
-/* macro percentile sliders */
-.grps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-@media (max-width: 860px) { .grps { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px) { .grps { grid-template-columns: 1fr; } }
+/* macro percentile sliders — multi-column packing so the 5 groups fill the card
+   (balanced columns) instead of orphaning the 5th group on its own grid row. */
+.grps { columns: 3; column-gap: 20px; }
+.grp { break-inside: avoid; margin-bottom: 20px; }
+@media (max-width: 860px) { .grps { columns: 2; } }
+@media (max-width: 480px) { .grps { columns: 1; } }
 .grp-h { font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; color: var(--acc); font-weight: 700; margin-bottom: 11px; opacity: .85; }
 .sldgrid { display: flex; flex-direction: column; gap: 15px; }
 .sld-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
