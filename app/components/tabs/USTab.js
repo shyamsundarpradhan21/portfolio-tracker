@@ -62,7 +62,7 @@ export default function USTab({
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
           <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your <UsdF n={usStats.netInvested} d={0} /> <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
-          <BenchmarkBars you={usStats.xirr} rows={usStats.benchmarks.filter((b) => ['sp500', 'nasdaq', 'germany', 'china', 'gold'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
+          <BenchmarkBars you={usStats.xirr} rows={usStats.benchmarks.filter((b) => ['sp500', 'nasdaq', 'germany', 'china', 'gold', 'bitcoin'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12 }}>
             CAGR {pct1(usStats.cagr)}
             {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
