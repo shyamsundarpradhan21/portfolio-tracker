@@ -903,7 +903,8 @@ function Dashboard() {
     return {
       indian: nseTraded  ? Math.round(indianDay.dayPl || 0)         : 0,
       us:     nyseTraded ? Math.round((usStats.dayPl || 0) * fxRate) : 0,
-      fd:     Math.round(((fds.principal + fds.accrued) * fds.blendedRate) / 365),
+      fd:     Math.round(((fds.principal + fds.accrued) * (fds.blendedRate / 100)) / 365), // blendedRate is a percent
+
       mf: 0, elss: 0,
       pf:     cmpfDailyAccrual(now),
     };
