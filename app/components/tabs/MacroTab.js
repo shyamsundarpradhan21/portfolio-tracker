@@ -315,7 +315,7 @@ function NewsFeed({ news, region }) {
   // Region-aware: India hides US-holding news, Global hides India's (untagged
   // items from a stale cache stay visible until the route's region tag lands).
   if (region === 'india') items = items.filter((it) => it.region !== 'us');
-  else if (region === 'global') items = items.filter((it) => it.region !== 'in');
+  else if (region === 'us') items = items.filter((it) => it.region !== 'in');
   return (
     <div className="card feedcard">
       <div className="wlabel">Portfolio news · your holdings</div>
@@ -332,11 +332,15 @@ function NewsFeed({ news, region }) {
 }
 
 // ── Macro percentile sliders: tone zone + white knob + 1-yr-%ile scale ───────
-function SliderBoard({ board, region = 'all' }) {
-  // Region-gate the India-specific series only: the Global view hides RBI repo / India
-  // CPI·GDP·IIP·VIX. Global macros (US VIX, DXY, etc.) stay visible everywhere — they're
-  // context an India book still cares about — so India/All show the full board.
-  const hidden = (c) => region === 'global' && c.region === 'india';
+function SliderBoard({ board, region = 'india' }) {
+  // India view shows only india-tagged + shared (cross-asset) series; US view shows
+  // everything except the india-tagged ones. `shared` = the cross-border channels
+  // (Brent / DXY / USD-INR) that both regimes care about; US series are untagged
+  // ('global'), so they fall to the US view and out of the India one.
+  const hidden = (c) =>
+    region === 'india' ? !(c.region === 'india' || c.region === 'shared')
+    : region === 'us'  ? c.region === 'india'
+    : false;
   const groups = (board?.groups || []).map((g) => ({ group: g.group, rows: (g.series || []).filter((c) => c && !c.stale && c.value != null && !hidden(c)) })).filter((g) => g.rows.length);
   if (!groups.length) return null;
   return (
@@ -370,11 +374,11 @@ function SliderBoard({ board, region = 'all' }) {
 
 export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
-  const [region, setRegion] = useState('all');
-  useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {} }, []);
+  const [region, setRegion] = useState('india');
+  useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
   const pickRegion = (r) => { setRegion(r); try { localStorage.setItem('nwTracker.wrapRegion', r); } catch {} };
-  const showIN = region !== 'global';
-  const showUS = region !== 'india';
+  const showIN = region === 'india';
+  const showUS = region === 'us';
 
   const c = premarket?.cues || {};
   const ind = premarket?.indices || {};
@@ -395,7 +399,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   let newsRaw = (marketNews?.items || []).filter((it) => it && it.title);
   // Region-tagged at source (/api/news); untagged items from a stale cache stay visible.
   if (region === 'india') { const f = newsRaw.filter((it) => it.region !== 'global'); if (f.length) newsRaw = f; }
-  else if (region === 'global') { const f = newsRaw.filter((it) => it.region !== 'india'); if (f.length) newsRaw = f; }
+  else if (region === 'us') { const f = newsRaw.filter((it) => it.region !== 'india'); if (f.length) newsRaw = f; }
   const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
@@ -435,7 +439,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
       {/* Region filter + as-of — the single toggle that drives the whole tab */}
       <div className="hdr">
         <div className="seg" role="tablist" aria-label="Region filter">
-          {[['india', 'India'], ['global', 'Global'], ['all', 'All']].map(([k, l]) => (
+          {[['india', 'India'], ['us', 'US']].map(([k, l]) => (
             <button key={k} type="button" role="tab" aria-selected={region === k} className={region === k ? 'on' : ''} onClick={() => pickRegion(k)}>{l}</button>
           ))}
         </div>

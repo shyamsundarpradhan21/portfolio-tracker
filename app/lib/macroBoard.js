@@ -140,13 +140,13 @@ export const MACRO_GROUPS = [
     group: 'Cross-asset',
     series: [
       // Higher Brent = imported-inflation / current-account drag on the India book.
-      { key: 'brent', label: 'Brent', yahoo: 'BZ=F', unit: '', d: 1, dir: -1, warn: 90, stress: 100 },
+      { key: 'brent', label: 'Brent', yahoo: 'BZ=F', unit: '', d: 1, dir: -1, warn: 90, stress: 100, region: 'shared' },
       // DXY (broad-dollar basket) sits next to the INR cross so dollar strength and the
       // rupee read side by side — it's an FX gauge, not a rate.
-      { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
+      { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110, region: 'shared' },
       // Weaker INR (higher USD/INR) = the India-book stress read (the US sleeve hedges it,
       // but for an India-centric book a depreciating rupee is the risk-off signal).
-      { key: 'usdinr', label: 'USD/INR', yahoo: 'INR=X', unit: '', d: 2, dir: -1, warn: 95, stress: 98 },
+      { key: 'usdinr', label: 'USD/INR', yahoo: 'INR=X', unit: '', d: 2, dir: -1, warn: 95, stress: 98, region: 'shared' },
       // BTC is here for the levered crypto-miner US sleeve (~22% of it), NOT as broad
       // macro — a regime read on that sleeve (range-top = euphoric/vulnerable, bottom =
       // capitulation). Percentile-only on purpose: the risk is U-shaped, which a monotonic
