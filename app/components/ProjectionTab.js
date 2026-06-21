@@ -373,7 +373,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     const last = hist[hist.length - 1];
     const liveNw = nw ?? last.nw;
     const liveInv = invested0 ?? last.invested ?? 0;
+    // DAY is the SUM of the live per-sleeve day P&L — i.e. exactly what the DAY waffle
+    // breaks down, so headline == attribution. It's a true 1-day figure, immune to
+    // snapshot-recording gaps and weekend FX revaluation that inflate a raw snapshot
+    // delta. The longer windows measure the real NW change vs a back-dated snapshot.
+    const dayChg = Object.values(dayGain || {}).reduce((s, v) => s + (v || 0), 0);
     return RANGES.map((r) => {
+      if (r.key === 'D') {
+        const base = liveNw - dayChg;
+        return { key: 'D', chg: dayChg, pct: base > 0 ? (dayChg / base) * 100 : 0 };
+      }
       let ref = hist[0];
       if (r.days != null) {
         const cutoff = ms(last.d) - r.days * 864e5;
@@ -383,7 +392,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       const pct = ref.nw > 0 ? (chg / ref.nw) * 100 : 0;
       return { key: r.key, chg, pct };
     });
-  }, [hist, nw, invested0]);
+  }, [hist, nw, invested0, dayGain]);
 
   // Net-worth levels already crossed in the recorded history — planted as stars
   // on the growth curve so the past wins are celebrated too (the future ladder
