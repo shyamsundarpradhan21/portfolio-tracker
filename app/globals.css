@@ -550,8 +550,7 @@ body {
 .wstack .qc { min-height: 0; }
 .qc { background: var(--sur2); border: .5px solid var(--brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
 .qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
-.hlg { margin-left: auto; display: inline-flex; height: 6px; width: 64px; border-radius: 3px; overflow: hidden; }
-.hlg i { flex: 1; }
+.hlg { margin-left: auto; display: inline-block; height: 6px; width: 64px; border-radius: 3px; background: linear-gradient(90deg, var(--grn), var(--sc-opt) 50%, var(--red)); }
 /* sentiment band — score in the header corner, card tinted by the reading */
 .senthd { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; text-transform: none; letter-spacing: 0; }
 .senthd b { font-size: var(--fs-xl); font-family: var(--mono); font-weight: 800; line-height: 1; }

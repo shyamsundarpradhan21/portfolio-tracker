@@ -272,7 +272,7 @@ function SentimentCell({ detail = null, fallback = {}, momLabel = 'Nifty' }) {
 function SectorTreemap({ tiles }) {
   return (
     <div className="qc tree">
-      <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
+      <div className="qh">Hot sectors<span className="hlg" /></div>
       {tiles.length
         ? <div className="treemap">{tiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
         : <div className="na">—</div>}
