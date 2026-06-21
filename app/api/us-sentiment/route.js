@@ -75,15 +75,18 @@ async function fetchMomentum() {
   return { sp: price, sma125, pct, score: momentumScore(pct), asOf: new Date().toISOString(), source: 'Yahoo ^GSPC (125D MA)' };
 }
 
-// ── FRED (official API, free key) — IP-blocked keyless host, so use the keyed API.
-// LEADING #2 — ICE BofA US High Yield OAS, BAMLH0A0HYM2 (percent).
-async function fetchHyOas() {
-  const key = process.env.FRED_API_KEY;
-  const src = 'FRED BAMLH0A0HYM2';
-  if (!key) return { stale: true, error: 'no FRED_API_KEY', source: src };
-  const start = new Date(); start.setDate(start.getDate() - 30);
+// ── FRED — ICE BofA US High Yield OAS, BAMLH0A0HYM2 (%). LEADING #2 and the most
+// decision-relevant signal, so it gets two independent paths and must never silently
+// blank: (1) the official keyed JSON API, which is what works from Vercel; (2) a
+// keyless fredgraph.csv fallback, which works OFF Vercel (local dev / other hosts)
+// where the key may be absent. The keyless host is Vercel-IP-blocked, so on Vercel
+// the keyed API carries it; locally the CSV does. A "—" now means BOTH failed.
+const HY_START = () => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10); };
+
+async function fredApiOas(key) {
+  const src = 'FRED BAMLH0A0HYM2 (api)';
   const url = `https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&api_key=${key}` +
-    `&file_type=json&sort_order=desc&limit=8&observation_start=${start.toISOString().slice(0, 10)}`;
+    `&file_type=json&sort_order=desc&limit=8&observation_start=${HY_START()}`;
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(8000) });
     if (!res.ok) return { stale: true, error: `FRED HTTP ${res.status}`, source: src };
@@ -91,11 +94,34 @@ async function fetchHyOas() {
     if (!Array.isArray(obs)) return { stale: true, error: 'no observations', source: src };
     const vals = obs.map((o) => ({ v: parseFloat(o.value), d: o.date })).filter((o) => isFinite(o.v)); // desc, latest first
     if (!vals.length) return { stale: true, error: 'unparseable', source: src };
-    const value = vals[0].v, prev = vals[1]?.v ?? null;
-    return { value, prev, chg: isNum(prev) ? value - prev : null, score: hyOasScore(value), asOf: vals[0].d, source: src };
+    return { value: vals[0].v, prev: vals[1]?.v ?? null, chg: isNum(vals[1]?.v) ? vals[0].v - vals[1].v : null, score: hyOasScore(vals[0].v), asOf: vals[0].d, source: src };
   } catch (e) {
     return { stale: true, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed'), source: src };
   }
+}
+
+async function fredCsvOas() {
+  const src = 'FRED BAMLH0A0HYM2 (fredgraph)';
+  try {
+    const res = await fetch(`https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2&cosd=${HY_START()}`,
+      { headers: { 'User-Agent': UA, Accept: 'text/csv,*/*' }, cache: 'no-store', signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return { stale: true, error: `CSV HTTP ${res.status}`, source: src };
+    const rows = (await res.text()).trim().split(/\r?\n/).slice(1) // drop header; FRED uses "." for gaps
+      .map((l) => { const [d, v] = l.split(','); return { d, v: parseFloat(v) }; }).filter((o) => isFinite(o.v)); // asc
+    if (!rows.length) return { stale: true, error: 'no rows', source: src };
+    const last = rows[rows.length - 1], prev = rows[rows.length - 2];
+    return { value: last.v, prev: prev?.v ?? null, chg: prev ? last.v - prev.v : null, score: hyOasScore(last.v), asOf: last.d, source: src };
+  } catch (e) {
+    return { stale: true, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed'), source: src };
+  }
+}
+
+async function fetchHyOas() {
+  const key = process.env.FRED_API_KEY;
+  if (key) { const r = await fredApiOas(key); if (r && !r.stale) return r; }
+  const csv = await fredCsvOas();
+  if (csv && !csv.stale) return csv;
+  return { stale: true, error: key ? 'FRED api + csv both failed' : 'no key + csv fallback failed', source: 'FRED BAMLH0A0HYM2' };
 }
 
 // ── CNN Fear & Greed graphdata (unofficial; needs browser headers) ───────────

@@ -575,6 +575,8 @@ body {
 .srcp { margin-left: 8px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .04em; color: var(--acc2); background: var(--acc-bg); padding: 1px 6px; border-radius: 5px; text-transform: none; }
 .usdet { margin-top: 9px; display: flex; flex-direction: column; }
 .usdx { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--txt3); opacity: .75; font-style: italic; }
+/* breadth-divergence callout — the "index level is lying" flag, always visible */
+.usdiv { margin: 0 0 5px; padding: 5px 9px; font-size: var(--fs-2xs); line-height: 1.35; color: var(--txt2); background: color-mix(in srgb, var(--sc-opt) 11%, transparent); border-left: 2px solid var(--sc-opt); border-radius: 4px; }
 .lsig { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 9px; padding: 4px 0; font-size: var(--fs-xs); border-top: .5px solid var(--brd2); }
 .lsig:first-of-type { border-top: 0; }
 .ll { color: var(--txt2); }

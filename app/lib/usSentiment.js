@@ -31,8 +31,10 @@ export function vixTermStructure(vix9d, vix, vix3m) {
 // ICE BofA US HY OAS (%). Tight ~2.5 (risk-on / greed) → wide ~8 (stress / fear).
 export function hyOasScore(oas) { return normalize(oas, 2.5, 8, true); }
 
-// CBOE total put/call (raw ratio). Low ~0.6 (complacent / greed) → high ~1.2 (fear).
-export function putCallScore(pc) { return normalize(pc, 0.6, 1.2, true); }
+// CBOE total put/call (raw ratio). Extreme greed only sub-~0.5; ~0.7-0.85 is merely
+// greedy/neutral; ~1.2 is fearful. Bounds 0.5–1.2 so a 0.74 reads "greed", not
+// "extreme greed" (the old 0.6 floor over-binned typical complacency).
+export function putCallScore(pc) { return normalize(pc, 0.5, 1.2, true); }
 
 // S&P 500 last price vs its 125-day SMA → % above (+) / below (-) the average.
 export function maMomentum(price, sma125) {

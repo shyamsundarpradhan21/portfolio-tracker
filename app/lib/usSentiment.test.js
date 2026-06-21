@@ -66,10 +66,15 @@ describe('hyOasScore — tight = greed, wide = fear', () => {
 
 describe('putCallScore — low ratio = greed, high = fear', () => {
   it('endpoints', () => {
-    expect(putCallScore(0.6)).toBe(100);
+    expect(putCallScore(0.5)).toBe(100);
     expect(putCallScore(1.2)).toBe(0);
   });
-  it('typical reading', () => expect(putCallScore(0.9)).toBeCloseTo(50, 1));
+  it('midpoint sits at 0.85', () => expect(putCallScore(0.85)).toBeCloseTo(50, 1));
+  it('a 0.74 reading is greed, NOT extreme greed', () => {
+    const s = putCallScore(0.74);
+    expect(s).toBeGreaterThan(56); // greed
+    expect(s).toBeLessThan(76);    // but below the extreme-greed band
+  });
 });
 
 describe('maMomentum — % vs the 125-day MA', () => {

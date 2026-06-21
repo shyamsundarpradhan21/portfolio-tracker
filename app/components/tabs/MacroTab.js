@@ -164,8 +164,17 @@ function UsSentimentDetail({ us }) {
   const avg = (a) => { const xs = a.filter(isNum); return xs.length ? xs.reduce((s, c) => s + c, 0) / xs.length : null; };
   const leadOutlook = avg([sc(v), sc(h), sc(p)]);
   const coinOutlook = avg([sc(m), sc(b), sc(st)]);
+  // The signal worth surfacing: when the tape (S&P momentum) and participation
+  // (breadth) disagree hard, the index level is lying. Name it, since the composite
+  // alone hides it. Greedy price + fearful breadth = narrow tape, and vice versa.
+  const mo = sc(m), br = sc(b);
+  const divg = !isNum(mo) || !isNum(br) ? null
+    : mo >= 58 && br <= 35 ? 'Narrow tape — index held up by a few names; breadth weak underneath'
+    : br >= 58 && mo <= 35 ? 'Broad but heavy — wide participation, price lagging'
+    : null;
   return (
     <div className="usdet">
+      {divg && <div className="usdiv">{divg}</div>}
       <details className="uscol">
         <summary className={sChip(leadOutlook)}>Leading <span className="usdx">forward-looking</span></summary>
         {v && !v.stale && isNum(v.ratio)
