@@ -94,6 +94,15 @@ export default function PerformanceCurve({ hist = [], series, range = 'Max' }) {
   const baseV = win[0].v || 100;
   const port = win.map((p) => ({ d: p.d, v: (p.v / baseV) * 100 }));
 
+  // The stretch before the first RECORDED point is the ledger-replay backfill — draw it
+  // dashed, the recorded stretch solid. The two share the seam point so the line stays
+  // continuous. (MAX/Year always open dashed: you can't retro-record a live inception
+  // point, so the deep history is forever a reconstruction — accurate, but not captured.)
+  const seam = (() => { const d = hist.find((s) => !s.synth)?.d; return d ? ms(d) : Infinity; })();
+  const synthPort = port.filter((p) => ms(p.d) <= seam);
+  const realPort  = port.filter((p) => ms(p.d) >= seam);
+  const showSeam  = synthPort.length >= 2 && realPort.length >= 2;
+
   // selected benchmarks, rebased to 100 at the same window start
   const benchLines = avail.filter((b) => compare.includes(b.key)).map((b) => {
     const at = closeLookup(series[b.sym].closes);
@@ -151,6 +160,7 @@ export default function PerformanceCurve({ hist = [], series, range = 'Max' }) {
         {benchLines.map((b) => (
           <span key={b.key}><i className="pjx-perf-key" style={{ borderColor: b.color, borderTopStyle: 'dashed' }} /> {b.label} <b className={retCls(b.ret)}>{pctTxt(b.ret)}</b></span>
         ))}
+        {showSeam && <span style={{ color: 'var(--txt3)' }}>· dashed = reconstructed from ledgers</span>}
       </div>
 
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
@@ -174,7 +184,12 @@ export default function PerformanceCurve({ hist = [], series, range = 'Max' }) {
         {benchLines.map((b) => (
           <path key={b.key} d={line(b.pts)} fill="none" stroke={b.color} strokeWidth="1.6" strokeDasharray="5 4" strokeOpacity=".85" strokeLinejoin="round" />
         ))}
-        <path d={line(port)} fill="none" stroke="var(--acc)" strokeWidth="2.6" strokeLinejoin="round" />
+        {synthPort.length >= 2 && (
+          <path d={line(synthPort)} fill="none" stroke="var(--acc)" strokeWidth="2.4" strokeDasharray="3 4" strokeOpacity=".5" strokeLinejoin="round" />
+        )}
+        {realPort.length >= 2 && (
+          <path d={line(realPort)} fill="none" stroke="var(--acc)" strokeWidth="2.6" strokeLinejoin="round" />
+        )}
         <circle cx={X(port[port.length - 1].d)} cy={Y(port[port.length - 1].v)} r="4" fill="var(--acc)" />
         {/* x-axis labels */}
         <text x={PADL} y={H - 5} fontSize="15" fill="var(--txt3)" fontFamily="var(--mono)">{monYr(win[0].d)}</text>
