@@ -130,7 +130,6 @@ export const MACRO_GROUPS = [
       { key: 'india10y', label: 'India 10Y', src: 'INDIRLTLT01STM', unit: '%', d: 2, dir: -1, warn: 7.5, stress: 8, region: 'india' },
       { key: 'vix', label: 'US VIX', yahoo: '^VIX', unit: '', d: 1, dir: -1, warn: 18, stress: 25 },
       { key: 'indiaVix', label: 'India VIX', yahoo: '^INDIAVIX', unit: '', d: 1, dir: -1, warn: 16, stress: 22, region: 'india' },
-      { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
     ],
   },
   {
@@ -142,6 +141,9 @@ export const MACRO_GROUPS = [
     series: [
       // Higher Brent = imported-inflation / current-account drag on the India book.
       { key: 'brent', label: 'Brent', yahoo: 'BZ=F', unit: '', d: 1, dir: -1, warn: 90, stress: 100 },
+      // DXY (broad-dollar basket) sits next to the INR cross so dollar strength and the
+      // rupee read side by side — it's an FX gauge, not a rate.
+      { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
       // Weaker INR (higher USD/INR) = the India-book stress read (the US sleeve hedges it,
       // but for an India-centric book a depreciating rupee is the risk-off signal).
       { key: 'usdinr', label: 'USD/INR', yahoo: 'INR=X', unit: '', d: 2, dir: -1, warn: 95, stress: 98 },
