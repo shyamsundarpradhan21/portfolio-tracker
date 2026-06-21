@@ -101,6 +101,10 @@ const SYSTEM_PROMPT =
   'FORM these reads but express it qualitatively ("crude firming", "yields still elevated", ' +
   '"INR soft", "risk-on tape"), never the figure itself. Numbers belong elsewhere — only ' +
   '"pulse", indian_swot.macro and us_swot.macro may cite the live macro figures. ' +
+  'NEVER quote the user\'s actual portfolio figures anywhere — no ₹ amounts, holding or ' +
+  'position values, cost basis, units, P&L, or net worth. The only numbers permitted in the ' +
+  'whole response are the PUBLIC live-macro market readings (index levels, FX, yields, ' +
+  'commodities); the portfolio snapshot is context for your qualitative read, not to quote back. ' +
   'Be CRISP — ONE sentence per field, ~15-20 words, high signal; give the macro READ and the ' +
   'positioning, not a recap. No filler, no hedging boilerplate. ' +
   'Return an EMPTY STRING for any field whose data is missing — never fabricate prices or ' +

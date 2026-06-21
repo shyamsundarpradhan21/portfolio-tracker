@@ -58,6 +58,15 @@ Any UI review (/council or otherwise) must also check:
 - **Model assumptions derived** — projection contribution + step-up come from
   `deriveProjInputs` (ledger deployment + payslip growth), never typed in.
 
+### AI analysis stays free of actual portfolio figures
+The AI insight surfaces (pulse, every sleeve card, both SWOT cards) must **never
+quote the user's real portfolio numbers** — no ₹ amounts, holding/position values,
+cost basis, units, P&L, or net worth. The only figures the AI may cite are PUBLIC
+live-macro market readings (index levels, FX, yields, commodities) and only in
+`pulse` and `*_swot.macro`. The portfolio snapshot passed to `/api/insights` is
+context for a qualitative read, not material to quote back. Enforced in the
+insights system prompt — keep that guard when editing the prompt or schema.
+
 ---
 
 ## Git Workflow
