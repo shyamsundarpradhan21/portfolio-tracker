@@ -60,7 +60,9 @@ export async function POST(req) {
         return Response.json({ ok: false, error: 'implausible move (partial quotes?)' }, { status: 422, ...NO_STORE });
       }
     }
-    const point = { d: snap.d, nw: snap.nw, assets: snap.assets ?? undefined, invested: snap.invested ?? undefined };
+    // Persist the per-sleeve allocation/basis (`sl`) too — the historical-allocation
+    // waffles read it when scrubbing past dates, so it has to survive the round-trip.
+    const point = { d: snap.d, nw: snap.nw, assets: snap.assets ?? undefined, invested: snap.invested ?? undefined, sl: (snap.sl && typeof snap.sl === 'object') ? snap.sl : undefined };
     const i = arr.findIndex((s) => s.d === snap.d);
     if (i >= 0) arr[i] = point; else arr.push(point);
     arr.sort((a, b) => (a.d < b.d ? -1 : 1));

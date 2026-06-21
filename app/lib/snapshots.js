@@ -108,7 +108,8 @@ export function pushSnapshotToKv(snap) {
     fetch('/api/snapshots', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ d: snap.d, nw: snap.nw, assets: snap.assets, invested: snap.invested }),
+      // `sl` = per-sleeve {v,i} allocation/basis → the historical-allocation waffles need it.
+      body: JSON.stringify({ d: snap.d, nw: snap.nw, assets: snap.assets, invested: snap.invested, sl: snap.sl }),
       cache: 'no-store', keepalive: true,
     }).catch(() => {});
   } catch {}
