@@ -32,7 +32,7 @@ function TickerLine({ label, kind, items, anim }) {
           {loop.map((it, i) => (
             <span className="tki" key={i} aria-hidden={i >= items.length}>
               {it.dot
-                ? <><i className={`tdot ${it.dot}`} />{it.text}</>
+                ? <><i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
                 : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
             </span>
           ))}
@@ -42,45 +42,49 @@ function TickerLine({ label, kind, items, anim }) {
   );
 }
 
-// ── FII/DII net-flow bars (overlapping: DII violet behind, FII cyan in front) ─
-// Per the mock: clean buy▲/sell▼ axis + dates, no legend; hover a day for detail.
+// ── FII/DII net-flow: FII + DII composition with a net tick (fiidiinetbars mock,
+// "Net composition" variant). Overlapping translucent FII (cyan) + DII (violet)
+// from the zero line, white tick = net (FII+DII); up = bought, down = sold.
+// Hover a day to spotlight it (dims the rest) and read FII/DII/net + the net label.
 function FiiDiiChart({ trail }) {
   const pts = (trail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const [hi, setHi] = useState(-1);
   if (pts.length < 2) return <div className="na">FII/DII flow trail builds forward — needs a few more sessions.</div>;
 
-  const W = 560, H = 160, PAD_L = 34, PAD_R = 8, zero = 80, half = 52, n = pts.length;
+  const W = 560, H = 158, PAD_L = 30, PAD_R = 10, zero = 78, half = 54, n = pts.length;
   const colW = (W - PAD_L - PAD_R) / n;
-  const wDii = Math.min(20, colW * 0.5);   // DII — violet, wider, behind
-  const wFii = Math.min(9, colW * 0.24);   // FII — cyan, narrower, in front
-  const maxAbs = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0)]));
+  const bw = Math.min(20, colW * 0.56);
+  const net = (p) => (p.fii || 0) + (p.dii || 0);
+  const maxAbs = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0), Math.abs(net(p))]));
   const sc = half / maxAbs;
-  const bar = (v, cx, w) => { const h = Math.abs(v || 0) * sc; return { x: cx - w / 2, y: v >= 0 ? zero - h : zero, h, w }; };
+  const seg = (v) => { const h = Math.abs(v || 0) * sc; return { y: v >= 0 ? zero - h : zero, h }; };
   const d3 = (v) => (v == null || !isFinite(v) ? '—' : (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString('en-IN'));
-  const cur = hi >= 0 ? pts[hi] : null;
+  const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
 
   return (
     <>
       <svg className="fdg" width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" onMouseLeave={() => setHi(-1)}>
         <line x1={PAD_L - 6} y1={zero} x2={W - PAD_R} y2={zero} stroke="var(--brd)" />
-        <text x="2" y="18" className="fdax">buy ▲</text>
-        <text x="2" y={H - 18} className="fdax">sell ▼</text>
+        <text x="2" y="13" className="fdax">buy ▲</text>
+        <text x="2" y={H - 15} className="fdax">sell ▼</text>
         {pts.map((p, i) => {
-          const cx = PAD_L + colW * i + colW / 2;
-          const d = bar(p.dii, cx, wDii), f = bar(p.fii, cx, wFii);
-          const dim = hi >= 0 && hi !== i ? 0.3 : 1;
+          const cx = PAD_L + colW * i + colW / 2, x = cx - bw / 2;
+          const f = seg(p.fii), d = seg(p.dii), nv = net(p), ny = zero - nv * sc;
+          const dim = hi >= 0 && hi !== i ? 0.28 : 1;
           return (
             <g key={i} opacity={dim} onMouseEnter={() => setHi(i)}>
-              <rect className="fd-dii" x={d.x} y={d.y} width={d.w} height={d.h} rx="1.5" />
-              <rect className="fd-fii" x={f.x} y={f.y} width={f.w} height={f.h} rx="1" />
-              <rect x={PAD_L + colW * i} y="12" width={colW} height={H - 24} fill="transparent" />
-              {(n <= 12 || i % 2 === 0) && <text x={cx} y={H - 4} textAnchor="middle" className="fdax">{String(p.d).replace(/-\d{4}$/, '').replace('-', '')}</text>}
+              <rect className="fd-fii" x={x} y={f.y} width={bw} height={f.h} rx="2" />
+              <rect className="fd-dii" x={x} y={d.y} width={bw} height={d.h} rx="2" />
+              <line className="fd-net" x1={x - 1} y1={ny} x2={x + bw + 1} y2={ny} />
+              <rect x={PAD_L + colW * i} y="4" width={colW} height={H - 16} fill="transparent" />
+              {hi === i && <text x={cx} y={ny + (nv >= 0 ? -5 : 12)} textAnchor="middle" className={`fdval ${nv >= 0 ? 'grn' : 'red'}`}>{d3(nv)}</text>}
+              {(n <= 12 || i % 2 === 0) && <text x={cx} y={H - 3} textAnchor="middle" className="fdax">{String(p.d).replace(/-\d{4}$/, '').replace('-', '')}</text>}
             </g>
           );
         })}
       </svg>
       <div className="tlatest">
-        {cur && <>{String(cur.d).replace(/-\d{4}$/, '')} · FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls((cur.fii || 0) + (cur.dii || 0))}>{d3((cur.fii || 0) + (cur.dii || 0))}</b> cr</>}
+        {cur && <>{String(cur.d).replace(/-\d{4}$/, '')} · FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b> cr</>}
       </div>
     </>
   );
@@ -189,7 +193,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
   let newsRaw = (marketNews?.items || []).filter((it) => it && it.title);
   if (region === 'india') { const f = newsRaw.filter((it) => /ET|Money|Mint|Business|BS\b/i.test(it.source || '')); if (f.length) newsRaw = f; }
   else if (region === 'global') { const f = newsRaw.filter((it) => /CNBC|Reuters|Bloomberg/i.test(it.source || '')); if (f.length) newsRaw = f; }
-  const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title }));
+  const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -242,7 +246,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
             </div>
             : <div className="na">Sector board unavailable.</div>}
           {showIN && <BreadthNeedle ad={ind.breadthAD} />}
-          {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="hint">hover a day</span></div>}
+          {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net · hover</span></div>}
           {showIN && <FiiDiiChart trail={fiidiiTrail} />}
         </div>
         <NewsFeed news={portfolioNews} region={region} />

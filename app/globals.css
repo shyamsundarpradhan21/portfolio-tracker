@@ -518,11 +518,19 @@ body {
 .grrow b { flex: 0 0 36px; text-align: right; font-size: var(--fs-xs); font-family: var(--mono); }
 .grsc { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt3); margin: 4px 0 12px 88px; }
 
-/* FII/DII svg (fills via class → theme-following) */
+/* FII/DII svg (fills via class → theme-following) — FII+DII composition + net tick */
 .fdg { width: 100%; display: block; }
 .fdg .fdax { font-size: 9px; fill: var(--txt3); }
-.fd-fii { fill: var(--cyn); }
-.fd-dii { fill: var(--sc-base); }
+.fd-fii { fill: var(--cyn); opacity: .9; }
+.fd-dii { fill: var(--sc-base); opacity: .64; }
+.fd-net { stroke: var(--txt); stroke-width: 1.6; }
+.fdg .fdval { font-size: 10px; font-weight: 700; font-family: var(--mono); }
+.fdg .fdval.grn { fill: var(--grn); } .fdg .fdval.red { fill: var(--red); }
+.fdleg { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: var(--fs-2xs); color: var(--txt3); font-weight: 600; letter-spacing: 0; text-transform: none; }
+.fdleg i { display: inline-block; margin: 0 3px 0 9px; }
+.fdleg .lf { width: 9px; height: 9px; border-radius: 2px; background: var(--cyn); }
+.fdleg .ld { width: 9px; height: 9px; border-radius: 2px; background: var(--sc-base); opacity: .7; }
+.fdleg .ln { width: 11px; height: 2px; background: var(--txt); }
 .tlatest { font-size: var(--fs-xs); color: var(--txt2); margin-top: 6px; min-height: 17px; }
 .tlatest b { font-family: var(--mono); }
 
