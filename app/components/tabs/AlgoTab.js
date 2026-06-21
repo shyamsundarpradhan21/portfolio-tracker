@@ -25,7 +25,7 @@ export default function AlgoTab({
   const pick = (s) => { setStrat(s); try { localStorage.setItem('nwTracker.algoStrat', s); } catch {} };
   return (
     <div>
-      <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'} · est. charges · ${FY.labels.verified} ITR-verified · swing live`} />
       </div>

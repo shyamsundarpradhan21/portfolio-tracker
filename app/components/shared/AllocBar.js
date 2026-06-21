@@ -1,11 +1,14 @@
 'use client';
+import { useState } from 'react';
 
-// Live allocation as a horizontal stacked bar + dot legend, pinned at the footer
-// of the Net worth · growth card (replaces the old sunburst donut). CMPF (the
-// pension `pf` sleeve) always sits LAST / right-most in its grey/black hatch — it's
-// the pension pool, segregated from the investable book. Drifts with the projection
-// scrubber via `drift`. Everything is computed from props; nothing is typed in.
+// Live allocation as a horizontal stacked bar + dot legend, in the header of the
+// Net worth · growth card (replaces the old sunburst donut). CMPF (the pension `pf`
+// sleeve) always sits LAST / right-most in its grey/black hatch — it's the pension
+// pool, segregated from the investable book. Hovering a segment brightens it and
+// dims the rest (like the old sunburst). Drifts with the projection scrubber via
+// `drift`. Everything is computed from props; nothing is typed in.
 export default function AllocBar({ sleeves, mfAlloc, drift = null }) {
+  const [hov, setHov] = useState(null);
   const live = sleeves;
   const view = drift ? sleeves.map((s) => ({ ...s, value: drift.out[s.key] || 0 })) : sleeves;
   const total = view.reduce((s, x) => s + (x.value || 0), 0);
@@ -32,14 +35,14 @@ export default function AllocBar({ sleeves, mfAlloc, drift = null }) {
   return (
     <div className="alloc-bar">
       <div className="alloc-bar-lbl">{drift ? `Allocation → ${drift.year}` : 'Allocation · live'}</div>
-      <div className="alloc-bar-track">
+      <div className="alloc-bar-track" onMouseLeave={() => setHov(null)}>
         {sectors.map((s) => (
-          <div key={s.key} style={{ flex: s.pct, background: s.color }} title={`${s.label} ${s.pct.toFixed(0)}%`} />
+          <div key={s.key} style={{ flex: s.pct, background: s.color, opacity: hov && hov !== s.key ? 0.35 : 1, transition: 'opacity .15s', cursor: 'pointer' }} title={`${s.label} ${s.pct.toFixed(0)}%`} onMouseEnter={() => setHov(s.key)} />
         ))}
       </div>
-      <div className="alloc-bar-leg">
+      <div className="alloc-bar-leg" onMouseLeave={() => setHov(null)}>
         {sectors.map((s) => (
-          <span key={s.key}><i style={{ background: s.color }} />{s.label} {s.pct.toFixed(0)}%</span>
+          <span key={s.key} style={{ opacity: hov && hov !== s.key ? 0.35 : 1, transition: 'opacity .15s', cursor: 'pointer' }} onMouseEnter={() => setHov(s.key)}><i style={{ background: s.color }} />{s.label} {s.pct.toFixed(0)}%</span>
         ))}
       </div>
       {cls.length > 0 && <div className="alloc-bar-cls">Class · {cls.join(' · ')}</div>}

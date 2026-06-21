@@ -20,7 +20,7 @@ export default function OverviewTab({
 
   return (
     <div>
-      <AnalysisCard data={insights?.overview} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.overview} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--acc)" />
 
       {/* Net worth growth/projection scrubber, with the live allocation strip merged
           into its footer (replaces the separate sunburst card). */}

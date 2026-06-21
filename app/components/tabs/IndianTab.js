@@ -32,7 +32,7 @@ export default function IndianTab({
 }) {
   return (
     <div>
-      <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--blu)" />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <SyncBadge rec={indianRec} />
         <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />

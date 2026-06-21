@@ -102,7 +102,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
 
   return (
     <div>
-      <AnalysisCard data={insights?.mf} on={insightsOn} loading={insightsOn && insightsFirstLoad} />
+      <AnalysisCard data={insights?.mf} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pur)" />
 
       <div className="g3 sec">
         <div className="csm">

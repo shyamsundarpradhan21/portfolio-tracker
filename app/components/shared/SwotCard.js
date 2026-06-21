@@ -1,9 +1,13 @@
 'use client';
+import { useContext } from 'react';
+import { agoShort } from '../../lib/fmt';
+import { AiContext } from './AiContext';
 
 // Reusable macro-aware SWOT card — a MACRO READ line + Strengths / Weaknesses /
 // Opportunities / Threats for one sleeve. Driven by /api/insights `*_swot`. Drop it
 // on any tab and pass the sleeve's `swot` object + a `title`; `loading` shows
-// skeletons during the first AI run. Scales to any sleeve — add one <SwotCard/>.
+// skeletons during the first AI run. The AI tag doubles as the refresh button, with
+// the last-update countdown beside it (from AiContext).
 
 function Q({ k, label, text }) {
   return (
@@ -15,11 +19,15 @@ function Q({ k, label, text }) {
 }
 
 export default function SwotCard({ swot, title = 'SWOT', loading, accent }) {
+  const { ts, refresh } = useContext(AiContext);
   return (
     <div className={'card' + (accent ? ' card-accent' : '')} style={accent ? { borderLeftColor: accent } : undefined}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div className="ctitle" style={{ margin: 0 }}>{title}</div>
-        <span className="ins-ai">AI · macro-aware</span>
+        <span className="ai-meta">
+          {ts && <span className="ai-ago" title="Last AI refresh">{agoShort(ts)}</span>}
+          <button className="ins-ai" style={accent ? { '--ai-tag': accent } : undefined} onClick={refresh || undefined} disabled={!refresh} title="Click to regenerate this analysis" aria-label="Regenerate AI analysis">AI · macro-aware</button>
+        </span>
       </div>
 
       {swot ? (

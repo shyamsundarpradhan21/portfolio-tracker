@@ -687,6 +687,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
       </div>
 
+      {/* live allocation strip — in the card header now (was a footer); drifts with the
+          scrubber. Hovering a segment brightens it and dims the rest (like the old sunburst). */}
+      {footer && <div className="pjx-alloc">{footer}</div>}
+
       {/* Value ↔ Return: both chart blocks render and stack in one grid cell, bottom-
           aligned and toggled by visibility — the cell always takes the taller (Return,
           with its Compare+legend header) height and the chart stays anchored above the
@@ -1041,9 +1045,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </span>
       </div>
 
-      {/* live allocation strip — merged in from the old sunburst card, pinned at the
-          footer; drifts with the scrubber (the `footer` carries the drifted year). */}
-      {footer && <div className="pjx-alloc">{footer}</div>}
     </div>
   );
 }
