@@ -16,19 +16,24 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-// FRED data via DBnomics (open, keyless JSON mirror) → ascending [{date,v}].
-// FRED's own fredgraph.csv is IP-blocked from Vercel (times out); DBnomics is a
-// different host that serves the identical FRED series without a key.
-async function fredObs(id) {
-  const url = `https://api.db.nomics.world/v22/series/FRED/${id}?observations=1`;
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(12000) });
+// FRED data via the official FRED API (windowed JSON) → ascending [{date,v}].
+// FRED's keyless fredgraph.csv is IP-blocked from Vercel (times out), so we use
+// the official API with a free key (FRED_API_KEY). Graceful no-op until the key
+// is set — the sliders just read 'unavailable' meanwhile (Yahoo cells still work).
+const FRED_KEY = process.env.FRED_API_KEY;
+async function fredObs(id, days) {
+  if (!FRED_KEY) throw new Error('no FRED_API_KEY');
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  const url =
+    `https://api.stlouisfed.org/fred/series/observations?series_id=${id}` +
+    `&api_key=${FRED_KEY}&file_type=json&sort_order=asc&observation_start=${start.toISOString().slice(0, 10)}`;
+  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(9000) });
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  const doc = (await res.json())?.series?.docs?.[0];
-  const per = doc?.period, val = doc?.value;
-  if (!Array.isArray(per) || !Array.isArray(val)) throw new Error('bad shape');
-  const out = [];
-  for (let i = 0; i < per.length; i++) { const v = val[i]; if (typeof v === 'number' && isFinite(v)) out.push({ date: per[i], v }); }
-  if (!out.length) throw new Error('no numeric obs');
+  const obs = (await res.json())?.observations;
+  if (!Array.isArray(obs)) throw new Error('bad shape');
+  const out = obs.filter((o) => o && o.value !== '.' && o.value != null && isFinite(+o.value)).map((o) => ({ date: o.date, v: +o.value }));
+  if (!out.length) throw new Error('no obs');
   return out;
 }
 
@@ -62,10 +67,15 @@ function lastYear(series) {
 }
 
 async function cellFor(cfg) {
-  const source = cfg.yahoo ? `Yahoo ${cfg.yahoo}` : `FRED ${cfg.src} · DBnomics`;
+  const source = cfg.yahoo ? `Yahoo ${cfg.yahoo}` : `FRED ${cfg.src}`;
   let raw;
-  try { raw = cfg.yahoo ? await yhHist(cfg.yahoo) : await fredObs(cfg.src); }
-  catch (e) { return { stale: true, source, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed') }; }
+  try {
+    raw = cfg.yahoo
+      ? await yhHist(cfg.yahoo)
+      : await fredObs(cfg.src, cfg.kind === 'yoy' ? 1100 : cfg.src === 'A191RL1Q225SBEA' ? 2200 : 550);
+  } catch (e) {
+    return { stale: true, source, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed') };
+  }
   if (!raw || !raw.length) return { stale: true, source, error: 'no data' };
   if (cfg.scale) raw = raw.map((r) => ({ date: r.date, v: r.v * cfg.scale }));
   let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'mom' ? mom(raw) : raw;

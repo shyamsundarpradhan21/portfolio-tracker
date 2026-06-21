@@ -37,7 +37,7 @@ for the econ calendar (and Phase-2 estimates), graceful no-op until the key is s
 | Sectors / breadth (A/D) / India VIX / Nifty | NSE `allIndices` (extend existing call — it carries `advances`/`declines`/`unchanged`) | keyless |
 | Benchmarks / commodities / FX rail | Yahoo v8 (existing `/api/premarket` cues+sessions) | keyless |
 | FII/DII trend | NSE fiidii + existing trail (localStorage/KV) | keyless |
-| Macro sliders + 1-yr percentile | FRED `fredgraph.csv` (series + 1-yr window for percentile): DGS10, T10Y2Y, BAMLH0A0HYM2, DFF, CPIAUCSL, CPILFESL, PCEPILFE, GDPC1, UNRATE, PAYEMS, ICSA, UMCSENT; India: FRED India CPI/repo where available | keyless |
+| Macro sliders + 1-yr percentile | **FRED official API** (`FRED_API_KEY`, free) — windowed series + 1-yr percentile; the keyless `fredgraph.csv` AND DBnomics both fail from Vercel (IP-block / 404). Yahoo keyless for VIX/DXY. Also repairs the existing `/api/macro`. | **key** (graceful no-op until set) |
 | Market news + portfolio-holding news (+ sentiment) | RSS (Yahoo per-symbol, Moneycontrol/ET, CNBC); simple lexicon sentiment | keyless |
 | Econ calendar (+ Phase-2 estimates) | **FMP** free tier | **key** (env `FMP_API_KEY`, graceful no-op until set) |
 
