@@ -16,19 +16,23 @@ const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-// FRED CSV → ascending [{date,v}] over the last `days`.
-async function fredObs(id, days) {
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  const url = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${id}&cosd=${start.toISOString().slice(0, 10)}`;
+// FRED data via DBnomics (open, keyless JSON mirror) → ascending [{date,v}].
+// FRED's own fredgraph.csv is IP-blocked from Vercel (times out); DBnomics is a
+// different host that serves the identical FRED series without a key.
+async function fredObs(id) {
+  const url = `https://api.db.nomics.world/v22/series/FRED/${id}?observations=1`;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'text/csv' }, cache: 'no-store', signal: AbortSignal.timeout(9000) });
+    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(12000) });
     if (!res.ok) return null;
-    const text = await res.text();
-    return text.trim().split('\n').slice(1)
-      .map((ln) => ln.split(','))
-      .filter((c) => c.length >= 2 && c[1] !== '.' && c[1] !== '' && isFinite(+c[1]))
-      .map((c) => ({ date: c[0], v: +c[1] }));
+    const doc = (await res.json())?.series?.docs?.[0];
+    const per = doc?.period, val = doc?.value;
+    if (!Array.isArray(per) || !Array.isArray(val)) return null;
+    const out = [];
+    for (let i = 0; i < per.length; i++) {
+      const v = val[i];
+      if (typeof v === 'number' && isFinite(v)) out.push({ date: per[i], v });
+    }
+    return out.length ? out : null;
   } catch { return null; }
 }
 
@@ -58,14 +62,12 @@ function lastYear(series) {
   const cut = new Date(series[series.length - 1].date);
   cut.setFullYear(cut.getFullYear() - 1);
   const w = series.filter((r) => new Date(r.date) >= cut);
-  return w.length >= 6 ? w : series;
+  return w.length >= 6 ? w : series.slice(-12);
 }
 
 async function cellFor(cfg) {
-  const source = cfg.yahoo ? `Yahoo ${cfg.yahoo}` : `FRED ${cfg.src}`;
-  let raw = cfg.yahoo
-    ? await yhHist(cfg.yahoo)
-    : await fredObs(cfg.src, cfg.kind === 'yoy' ? 1500 : cfg.src === 'A191RL1Q225SBEA' ? 2200 : 500);
+  const source = cfg.yahoo ? `Yahoo ${cfg.yahoo}` : `FRED ${cfg.src} · DBnomics`;
+  let raw = cfg.yahoo ? await yhHist(cfg.yahoo) : await fredObs(cfg.src);
   if (!raw || !raw.length) return { stale: true, source };
   if (cfg.scale) raw = raw.map((r) => ({ date: r.date, v: r.v * cfg.scale }));
   let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'mom' ? mom(raw) : raw;
