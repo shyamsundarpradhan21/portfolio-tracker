@@ -194,6 +194,17 @@ screenshots is NOT the same as giving them a mock to choose from (they can't see
 screenshots). Caught: I rebalanced the Overview two-card layout by editing `.ov-top`
 directly instead of mocking the proportion options first. (Pairs with Plan-Mode-Default.)
 
+### "Don't take stale values" ≠ "drop the data point" — fix per-component freshness
+When the user flags staleness, correct the stale COMPONENT, don't skip/delete the whole
+record. Caught: asked to keep net-worth snapshots free of stale values, I added a guard
+that skipped recording on non-trading days (plus a DELETE route to purge points) — the
+heaviest mechanism. They meant the opposite: keep the daily snapshot (the NW is correct —
+equity holds at last close while FD + CMPF accrue daily, both date-based), and fix the
+DAY *attribution* so closed-market equity reads 0 (no carried-forward session move) while
+FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a skip/drop.
+(Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
+the elegant answer.)
+
 ## Communication Style
 
 ### No narration, no preamble
