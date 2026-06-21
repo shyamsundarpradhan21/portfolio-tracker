@@ -452,6 +452,27 @@ body {
 .bar-trk { flex: 1; background: var(--sur2); border-radius: 3px; height: 8px; overflow: hidden; }
 .bar-fil { display: block; height: 8px; border-radius: 3px; min-width: 2px; }
 
+/* ── Macro board: percentile sliders (Wrap / MacroTab) ───────────────────────
+   One row per metric: label | lo | neutral rail w/ tone-coloured knob | hi |
+   value | rank-percentile. The knob position is the linear spot in the 1-yr
+   range; its colour is the regime tone (calm/warn/stress). */
+.mb-grp { margin-top: 13px; }
+.mb-grp:first-of-type { margin-top: 2px; }
+.mb-glbl { margin: 0 0 6px; font-weight: 600; }
+.mb-row { display: grid; grid-template-columns: 84px 48px 1fr 48px 66px 34px; align-items: center; column-gap: 9px; padding: 6px 0; }
+.mb-lbl { font-size: var(--fs-xs); color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb-end { font-size: var(--fs-2xs); color: var(--txt3); }
+.mb-lo { text-align: right; }
+.mb-hi { text-align: left; }
+.mb-rail { position: relative; height: 5px; border-radius: 3px; background: var(--sur2); }
+.mb-knob { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid var(--sur); box-shadow: 0 0 0 1px color-mix(in srgb, var(--txt) 18%, transparent); }
+.mb-val { font-size: var(--fs-sm); font-weight: 600; text-align: right; }
+.mb-pct { font-size: var(--fs-2xs); color: var(--txt3); text-align: right; }
+@media (max-width: 560px) {
+  .mb-row { grid-template-columns: 76px 1fr 58px 30px; column-gap: 8px; }
+  .mb-end { display: none; }
+}
+
 /* amber alert banner */
 .alert {
   background: var(--acc-bg); border: .5px solid rgba(232, 160, 48, .35);

@@ -59,6 +59,7 @@ const MFNAV_KEY     = 'nwTracker.mfnav';
 const HIST_KEY      = 'nwTracker.hist';
 const MACRO_KEY     = 'nwTracker.macro';
 const PREMKT_KEY    = 'nwTracker.premarket';
+const MBOARD_KEY    = 'nwTracker.macroBoard';
 const NIFTY50_KEY   = 'nwTracker.nifty50';
 const REFRESH_MS    = 15 * 60 * 1000;
 
@@ -216,6 +217,7 @@ function Dashboard() {
   const [hist, setHist]             = useState(null);
   const [macro, setMacro]           = useState(null); // live macro clock (FRED + Yahoo)
   const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
+  const [macroBoard, setMacroBoard] = useState(null); // macro percentile sliders (FRED + Yahoo, /api/macro-board)
   const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Wrap tab)
   const [nifty50Loading, setN50Loading] = useState(false);
   const [fiidiiTrail, setFiidiiTrail] = useState([]); // 10-session FII/DII flow trail (localStorage, builds forward)
@@ -367,12 +369,13 @@ function Dashboard() {
   };
   const fetchMacro = async () => { try { const res = await fetch('/api/macro', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
   const fetchPremarket = async () => { try { const res = await fetch('/api/premarket', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
+  const fetchMacroBoard = async () => { try { const res = await fetch('/api/macro-board', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
 
   const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true); setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
       const inSyms = INDIAN.map((s) => s.ns).concat(SWING.map((s) => s.ns)).concat(['INR=X']);
-      const [inData, usData, mfData, histData, macroData, premarketData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro(), fetchPremarket()]);
+      const [inData, usData, mfData, histData, macroData, premarketData, mboardData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro(), fetchPremarket(), fetchMacroBoard()]);
       const merged = { ...inData, ...usData };
       const tick = {};
       Object.keys(merged).forEach((k) => {
@@ -385,6 +388,7 @@ function Dashboard() {
       if (histData) { setHist(histData); try { sessionStorage.setItem(HIST_KEY, JSON.stringify({ ts: Date.now(), hist: histData })); } catch {} }
       if (macroData) { setMacro(macroData); try { sessionStorage.setItem(MACRO_KEY, JSON.stringify({ ts: Date.now(), macro: macroData })); } catch {} }
       if (premarketData) { setPremarket(premarketData); try { sessionStorage.setItem(PREMKT_KEY, JSON.stringify({ ts: Date.now(), premarket: premarketData })); } catch {} }
+      if (mboardData) { setMacroBoard(mboardData); try { sessionStorage.setItem(MBOARD_KEY, JSON.stringify({ ts: Date.now(), macroBoard: mboardData })); } catch {} }
       if (mfData)   { setMfNav(mfData);  try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {} }
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
@@ -404,6 +408,7 @@ function Dashboard() {
     try { const hc = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null'); if (hc?.hist) setHist(hc.hist); } catch {}
     try { const mac = JSON.parse(sessionStorage.getItem(MACRO_KEY) || 'null'); if (mac?.macro) setMacro(mac.macro); } catch {}
     try { const pm = JSON.parse(sessionStorage.getItem(PREMKT_KEY) || 'null'); if (pm?.premarket) setPremarket(pm.premarket); } catch {}
+    try { const mb = JSON.parse(sessionStorage.getItem(MBOARD_KEY) || 'null'); if (mb?.macroBoard) setMacroBoard(mb.macroBoard); } catch {}
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -1055,7 +1060,7 @@ function Dashboard() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
+            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

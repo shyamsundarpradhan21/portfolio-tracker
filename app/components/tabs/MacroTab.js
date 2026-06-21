@@ -19,7 +19,62 @@ function agoStr(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MacroTab({ premarket, macro, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+// Regime tone → theme token (knob colour). Respects per-metric direction already
+// resolved server-side (boardCell), so a high reading is red for VIX but green for
+// the yield curve.
+const TONE_VAR = { calm: 'var(--grn)', warn: 'var(--sc-opt)', stress: 'var(--red)' };
+
+// Percentile-slider board (/api/macro-board): one neutral rail per metric with a
+// tone-coloured knob at its position in the trailing ~1-yr range, lo/hi endpoints,
+// the live value, and the rank percentile (p##). Renders only live series; returns
+// null when none are live so the caller can fall back to the plain cells.
+function MacroSliderBoard({ board }) {
+  const cells = (board?.groups || []).flatMap((g) => g.series || []);
+  const live = cells.filter((c) => c && !c.stale && c.value != null);
+  if (!live.length) return null;
+  const asOf = live.map((c) => c.asOf).filter(Boolean).sort().pop();
+  const asOfStr = asOf ? new Date(asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
+  const staleN = cells.length - live.length;
+  return (
+    <div className="card sec">
+      <div className="ctitle" style={{ marginBottom: 12 }}>
+        Global macro backdrop
+        <span className="sub" style={{ textTransform: 'none' }}> — where each gauge sits in its 1-yr range{asOfStr ? ` · as of ${asOfStr}` : ''}</span>
+      </div>
+      {board.groups.map((g) => {
+        const rows = (g.series || []).filter((c) => c && !c.stale && c.value != null);
+        if (!rows.length) return null;
+        return (
+          <div key={g.group} className="mb-grp">
+            <div className="mb-glbl sub">{g.group}</div>
+            {rows.map((c) => {
+              const d = c.d ?? 2;
+              return (
+                <div key={c.key} className="mb-row">
+                  <span className="mb-lbl">{c.label}</span>
+                  <span className="mb-end mb-lo mono">{c.lo != null ? c.lo.toFixed(d) : ''}</span>
+                  <span className="mb-rail">
+                    <span className="mb-knob" style={{ left: `${c.pos}%`, background: TONE_VAR[c.tone] || 'var(--grn)' }} />
+                  </span>
+                  <span className="mb-end mb-hi mono">{c.hi != null ? c.hi.toFixed(d) : ''}</span>
+                  <span className="mb-val mono">{c.value.toFixed(d)}{c.unit}</span>
+                  <span className="mb-pct mono">{c.pctile != null ? `p${c.pctile}` : ''}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+      {staleN > 0 && (
+        <div className="sub" style={{ marginTop: 10 }}>
+          {live.length}/{cells.length} series live — the rest populate once a FRED API key is set.
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MacroTab({ premarket, macro, macroBoard, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -69,6 +124,10 @@ export default function MacroTab({ premarket, macro, nifty50, nifty50Loading, ma
   const usSectors = (premarket?.usSectors || [])
     .map((s) => ({ name: s.label, pct: s.pct, meta: s.sym, weight: 1 }))
     .sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
+
+  // Prefer the percentile-slider board when it has at least one live series;
+  // otherwise the plain level+delta cells below stand in.
+  const boardHasLive = (macroBoard?.groups || []).some((g) => (g.series || []).some((c) => c && !c.stale && c.value != null));
 
   // Each row is an India | US pair so every card sits adjacent to its replica and
   // the rows can't drift out of sync (a stretched g2 row matches the pair's height).
@@ -178,8 +237,14 @@ export default function MacroTab({ premarket, macro, nifty50, nifty50Loading, ma
         </div>
       )}
 
-      {/* Row 6 — global macro backdrop (rates · curve · credit · the dollar) — FRED + Yahoo */}
-      {macroCells.some((c) => c.live) && (
+      {/* Row 6 — global macro backdrop. Prefer the percentile-slider board
+          (/api/macro-board: where each gauge sits in its trailing 1-yr range, knob
+          coloured by regime tone); fall back to the plain level+delta cells
+          (/api/macro) when the board has no live series yet (e.g. before
+          FRED_API_KEY is set and Yahoo is unreachable). */}
+      {boardHasLive ? (
+        <MacroSliderBoard board={macroBoard} />
+      ) : (macroCells.some((c) => c.live) && (
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 12 }}>
             Global macro backdrop
@@ -199,7 +264,7 @@ export default function MacroTab({ premarket, macro, nifty50, nifty50Loading, ma
             ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
