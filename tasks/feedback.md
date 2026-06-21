@@ -31,6 +31,15 @@ as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
 
+### CMPF (pension) always renders LAST / to the right in any allocation visual
+In every allocation view — donut, the horizontal bar, the legend, the deployment
+strip — the **CMPF / pension (`pf`) sleeve sits last (right-most)**, after the
+investable sleeves (FD · Indian · US · MF · ELSS · then CMPF), and always in its
+grey/black diagonal **hatch** (`CMPF_HATCH`), never a solid colour. It's the
+pension pool — conceptually separate from the investable book — so it's segregated
+to the right; never lead with it. Match the app's existing order. Caught: mocked
+the allocation bar with CMPF first (left) in solid grey.
+
 ### Deep cleanse = exhaustive sweep
 "Fix all" means scan every file in `app/` for every variant of the pattern,
 not just the ones flagged. When one instance of a hardcoded string is found,
@@ -138,6 +147,30 @@ method, capability, or limit, **verify it** — inspect the live page, dispatch 
 research agent, or ask the user (who knows their own account) — or explicitly mark it
 "unconfirmed." Repeated confident-but-wrong claims erode trust and cause churn.
 (Pairs with "Check for the easy/official path".)
+
+### /sync drift check: apply corp actions before flagging INDIAN qty drift
+The INDIAN ledger (`data/portfolio.private.json`) stores **pre-corp-action**
+quantities by design; the app reconstructs the live broker position at render
+time via `applyCorpActions()` in `app/lib/calc.js` (e.g. a 1:3 bonus on raw 141
+→ `141 + floor(141/3)` = 188). So the broker (Kite) showing 188 while the ledger
+shows 141 is **NOT drift** when a matching `CORPORATE_ACTIONS` bonus exists — the
+app already renders 188. Before flagging an INDIAN qty/avg mismatch in the sync's
+step-4 drift check, apply pending bonuses/splits (or just check `CORPORATE_ACTIONS`
+for that sym). Caught: I "reconciled" CUB to raw 188, which double-applied the
+bonus → app rendered 250. Reverted to 141. **Verifying in the live app (not just
+the API payload) is what caught it** — the raw API returns pre-action qty; only
+the rendered holding shows the post-action number. Always render-verify a
+data-ledger edit.
+
+### Render mocks BEFORE editing — for any visual/layout redesign
+When the user asks for a design or layout change (card proportions, restructuring,
+a redesign), build a **render mock first** — a served HTML page (e.g. via
+`public/`, opened at `localhost:3000/...`) or rendered options — and share it so
+they can visualize and pick **before** touching the real code. Do NOT jump straight
+to editing `globals.css` / components. Live-editing the app and describing my own
+screenshots is NOT the same as giving them a mock to choose from (they can't see my
+screenshots). Caught: I rebalanced the Overview two-card layout by editing `.ov-top`
+directly instead of mocking the proportion options first. (Pairs with Plan-Mode-Default.)
 
 ## Communication Style
 
