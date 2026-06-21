@@ -457,16 +457,17 @@ body {
 .wlabel .hint { margin-left: auto; font-size: var(--fs-2xs); color: var(--txt3); font-weight: 600; letter-spacing: 0; text-transform: none; font-style: italic; }
 .na { color: var(--txt3); font-size: var(--fs-xs); font-style: italic; padding: 10px 0; }
 
-/* overview banner + SWOT chips */
+/* overview banner */
 .kept { display: flex; align-items: center; gap: 14px; background: linear-gradient(90deg, var(--acc-bg), transparent); border: .5px solid var(--brd); border-radius: 12px; padding: 11px 15px; margin-bottom: 12px; flex-wrap: wrap; }
 .kept .ktag { color: var(--acc); font-weight: 700; font-size: var(--fs-sm); white-space: nowrap; }
 .kept .ktxt { color: var(--txt2); font-size: var(--fs-sm); flex: 1; min-width: 220px; }
 .kept-r { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.swc { font-size: var(--fs-xs); font-weight: 700; padding: 4px 11px; border-radius: 20px; border: .5px solid var(--brd); background: transparent; color: var(--txt2); cursor: pointer; transition: background .12s, color .12s; }
-.swc.blu { color: var(--blu); border-color: color-mix(in srgb, var(--blu) 40%, transparent); }
-.swc.cyn { color: var(--cyn); border-color: color-mix(in srgb, var(--cyn) 40%, transparent); }
-.swc.on { background: var(--acc-bg); }
 .kdiv { color: var(--txt3); font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; }
+
+/* SWOT — region-driven, straightforward (single card, or two side-by-side for All) */
+.swotrow { display: grid; gap: 12px; margin-bottom: 12px; }
+.swotrow.two-up { grid-template-columns: 1fr 1fr; }
+@media (max-width: 860px) { .swotrow.two-up { grid-template-columns: 1fr; } }
 
 /* header: region toggle + as-of */
 .hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }

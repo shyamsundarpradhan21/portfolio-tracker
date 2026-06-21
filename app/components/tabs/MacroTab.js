@@ -42,48 +42,45 @@ function TickerLine({ label, kind, items, anim }) {
   );
 }
 
-// ── FII/DII net-flow bars (15-session, hover a day) ──────────────────────────
+// ── FII/DII net-flow bars (overlapping: DII violet behind, FII cyan in front) ─
+// Per the mock: clean buy▲/sell▼ axis + dates, no legend; hover a day for detail.
 function FiiDiiChart({ trail }) {
   const pts = (trail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const [hi, setHi] = useState(-1);
   if (pts.length < 2) return <div className="na">FII/DII flow trail builds forward — needs a few more sessions.</div>;
 
-  const W = 560, H = 150, zero = 80, half = 52, n = pts.length;
-  const colW = (W - 16) / n;
-  const bw = Math.min(13, colW * 0.3);
+  const W = 560, H = 160, PAD_L = 34, PAD_R = 8, zero = 80, half = 52, n = pts.length;
+  const colW = (W - PAD_L - PAD_R) / n;
+  const wDii = Math.min(20, colW * 0.5);   // DII — violet, wider, behind
+  const wFii = Math.min(9, colW * 0.24);   // FII — cyan, narrower, in front
   const maxAbs = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0)]));
   const sc = half / maxAbs;
-  const bar = (v, x) => { const h = Math.abs(v || 0) * sc; return { x, y: v >= 0 ? zero - h : zero, h }; };
+  const bar = (v, cx, w) => { const h = Math.abs(v || 0) * sc; return { x: cx - w / 2, y: v >= 0 ? zero - h : zero, h, w }; };
   const d3 = (v) => (v == null || !isFinite(v) ? '—' : (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString('en-IN'));
-
-  const tot = pts.reduce((a, p) => ({ fii: a.fii + (p.fii || 0), dii: a.dii + (p.dii || 0) }), { fii: 0, dii: 0 });
-  const up = pts.filter((p) => (p.fii || 0) + (p.dii || 0) >= 0).length;
   const cur = hi >= 0 ? pts[hi] : null;
 
   return (
     <>
       <svg className="fdg" width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" onMouseLeave={() => setHi(-1)}>
-        <line x1="8" y1={zero} x2={W - 8} y2={zero} stroke="var(--brd)" />
-        <text x="10" y="26" className="fdax">buy ▲</text>
-        <text x="10" y={H - 6} className="fdax">sell ▼</text>
+        <line x1={PAD_L - 6} y1={zero} x2={W - PAD_R} y2={zero} stroke="var(--brd)" />
+        <text x="2" y="18" className="fdax">buy ▲</text>
+        <text x="2" y={H - 18} className="fdax">sell ▼</text>
         {pts.map((p, i) => {
-          const cx = 8 + colW * i + colW / 2;
-          const f = bar(p.fii, cx - bw - 1), d = bar(p.dii, cx + 1);
-          const dim = hi >= 0 && hi !== i ? 0.26 : 1;
+          const cx = PAD_L + colW * i + colW / 2;
+          const d = bar(p.dii, cx, wDii), f = bar(p.fii, cx, wFii);
+          const dim = hi >= 0 && hi !== i ? 0.3 : 1;
           return (
             <g key={i} opacity={dim} onMouseEnter={() => setHi(i)}>
-              <rect className="fd-fii" x={f.x} y={f.y} width={bw} height={f.h} />
-              <rect className="fd-dii" x={d.x} y={d.y} width={bw} height={d.h} />
-              <rect x={8 + colW * i} y="18" width={colW} height={H - 30} fill="transparent" />
-              {(n <= 11 || i % 2 === 0) && <text x={cx} y={H - 4} textAnchor="middle" className="fdax">{String(p.d).replace(/-\d{4}$/, '').replace('-', '')}</text>}
+              <rect className="fd-dii" x={d.x} y={d.y} width={d.w} height={d.h} rx="1.5" />
+              <rect className="fd-fii" x={f.x} y={f.y} width={f.w} height={f.h} rx="1" />
+              <rect x={PAD_L + colW * i} y="12" width={colW} height={H - 24} fill="transparent" />
+              {(n <= 12 || i % 2 === 0) && <text x={cx} y={H - 4} textAnchor="middle" className="fdax">{String(p.d).replace(/-\d{4}$/, '').replace('-', '')}</text>}
             </g>
           );
         })}
       </svg>
       <div className="tlatest">
-        {cur
-          ? <>{String(cur.d).replace(/-\d{4}$/, '')} · FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls((cur.fii || 0) + (cur.dii || 0))}>{d3((cur.fii || 0) + (cur.dii || 0))}</b> cr</>
-          : <>Last {n} sessions · FII <b className={cls(tot.fii)}>{d3(tot.fii)}</b> · DII <b className={cls(tot.dii)}>{d3(tot.dii)}</b> · net <b className={cls(tot.fii + tot.dii)}>{d3(tot.fii + tot.dii)}</b> cr · {up} up / {n - up} down</>}
+        {cur && <>{String(cur.d).replace(/-\d{4}$/, '')} · FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls((cur.fii || 0) + (cur.dii || 0))}>{d3((cur.fii || 0) + (cur.dii || 0))}</b> cr</>}
       </div>
     </>
   );
@@ -167,7 +164,6 @@ function SliderBoard({ board }) {
 export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('all');
-  const [openSwot, setOpenSwot] = useState(null);
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {} }, []);
   const pickRegion = (r) => { setRegion(r); try { localStorage.setItem('nwTracker.wrapRegion', r); } catch {} };
   const showIN = region !== 'global';
@@ -203,22 +199,16 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
 
   return (
     <div className="wrapx">
-      {/* Overview banner — one-line whole-book read; SWOT chips expand the cards */}
+      {/* Overview banner — one-line whole-book read of today's macro */}
       {hasPulse && (
         <div className="kept">
           <span className="ktag">✦ Portfolio overview</span>
           <span className="ktxt">{pulse.read || 'Whole-book read across today’s macro.'}</span>
-          <div className="kept-r">
-            {insights?.indian_swot && <button type="button" className={`swc blu ${openSwot === 'india' ? 'on' : ''}`} onClick={() => setOpenSwot(openSwot === 'india' ? null : 'india')}>India SWOT</button>}
-            {insights?.us_swot && <button type="button" className={`swc cyn ${openSwot === 'us' ? 'on' : ''}`} onClick={() => setOpenSwot(openSwot === 'us' ? null : 'us')}>US SWOT</button>}
-            {insightsTs && <span className="kdiv">AI · {agoStr(insightsTs)}</span>}
-          </div>
+          {insightsTs && <span className="kept-r"><span className="kdiv">AI · {agoStr(insightsTs)}</span></span>}
         </div>
       )}
-      {openSwot === 'india' && insights?.indian_swot && <div className="sec"><SwotCard swot={insights.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" /></div>}
-      {openSwot === 'us' && insights?.us_swot && <div className="sec"><SwotCard swot={insights.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" /></div>}
 
-      {/* Region filter + as-of */}
+      {/* Region filter + as-of — the single toggle that drives the whole tab */}
       <div className="hdr">
         <div className="seg" role="tablist" aria-label="Region filter">
           {[['india', 'India'], ['global', 'Global'], ['all', 'All']].map(([k, l]) => (
@@ -227,6 +217,14 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
         </div>
         <span className="asof">{asOf ? `NSE · ${asOf}` : 'market wrap'} · ticker scrolls; hover the FII/DII bars</span>
       </div>
+
+      {/* SWOT — straightforward AI read; the region toggle above picks which side(s) show */}
+      {((showIN && insights?.indian_swot) || (showUS && insights?.us_swot)) && (
+        <div className={`swotrow${showIN && showUS && insights?.indian_swot && insights?.us_swot ? ' two-up' : ''}`}>
+          {showIN && insights?.indian_swot && <SwotCard swot={insights.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />}
+          {showUS && insights?.us_swot && <SwotCard swot={insights.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />}
+        </div>
+      )}
 
       {/* 3-line ticker */}
       <TickerLine label="Indices" items={idx} anim="run" />
