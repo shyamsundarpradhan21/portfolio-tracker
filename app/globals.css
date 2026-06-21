@@ -624,13 +624,17 @@ body {
 
 /* Wrap mid-row: left = market insights (tall), right column = portfolio news
    (3-up, scrollable) stacked over the upcoming calendar (scrollable). */
-.wrap-mid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
-@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; } }
+.wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; min-height: 440px; }
+@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; min-height: 0; } }
 .wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
-.wrap-mid-r .feedcard { flex: 1 1 auto; min-height: 220px; }
+.wrap-mid-r .feedcard { flex: 2 1 0; min-height: 0; }              /* news : calendar = 2 : 1 */
 .wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
-.wrap-mid-r .ecal { max-height: 230px; overflow-y: auto; padding-right: 4px; }
-@media (max-width: 920px) { .wrap-mid-r .feedcard { flex: none; } }
+.wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.wrap-mid-r .calcard .ecal { flex: 1; max-height: none; min-height: 0; overflow-y: auto; padding-right: 4px; }
+@media (max-width: 920px) {
+  .wrap-mid-r .feedcard, .wrap-mid-r .calcard { flex: none; }
+  .wrap-mid-r .calcard .ecal { max-height: 230px; }
+}
 @media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
 
 /* macro percentile sliders — multi-column packing so the 5 groups fill the card

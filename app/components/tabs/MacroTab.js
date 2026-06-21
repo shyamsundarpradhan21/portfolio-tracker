@@ -376,7 +376,7 @@ function CalendarBoard({ cal, region = 'india' }) {
   const rows = region === 'us' ? (cal.us || []) : (cal.india || []);
   if (!rows.length) {
     if (region === 'us' && cal.usSource === 'unavailable') return (
-      <div className="card">
+      <div className="card calcard">
         <div className="wlabel">Upcoming <span className="hint">economic calendar</span></div>
         <div className="sub" style={{ padding: '4px 2px 0' }}>US calendar feed momentarily unavailable.</div>
       </div>
@@ -384,7 +384,7 @@ function CalendarBoard({ cal, region = 'india' }) {
     return null;
   }
   return (
-    <div className="card">
+    <div className="card calcard">
       <div className="wlabel">Upcoming <span className="hint">{region === 'us' ? 'US · ForexFactory' : 'India · scheduled'}</span></div>
       <div className="ecal">
         {rows.map((e, i) => {
