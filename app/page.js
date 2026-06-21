@@ -61,6 +61,7 @@ const MACRO_KEY     = 'nwTracker.macro';
 const PREMKT_KEY    = 'nwTracker.premarket';
 const MBOARD_KEY    = 'nwTracker.macroBoard';
 const PNEWS_KEY     = 'nwTracker.portfolioNews';
+const NEWS_KEY      = 'nwTracker.marketNews';
 const NIFTY50_KEY   = 'nwTracker.nifty50';
 const REFRESH_MS    = 15 * 60 * 1000;
 
@@ -220,6 +221,7 @@ function Dashboard() {
   const [premarket, setPremarket]   = useState(null); // pre-open companion: overnight cues + FII/DII trail
   const [macroBoard, setMacroBoard] = useState(null); // macro percentile sliders (FRED + Yahoo, /api/macro-board)
   const [portfolioNews, setPortfolioNews] = useState(null); // per-holding sentiment headlines (/api/portfolio-news)
+  const [marketNews, setMarketNews] = useState(null); // market-headline ticker (/api/news)
   const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Wrap tab)
   const [nifty50Loading, setN50Loading] = useState(false);
   const [fiidiiTrail, setFiidiiTrail] = useState([]); // 10-session FII/DII flow trail (localStorage, builds forward)
@@ -729,6 +731,26 @@ function Dashboard() {
     return () => { dead = true; };
   }, [tab]);
 
+  // Market headlines for the ticker — lazy, only on the Wrap tab. Cached 10 min.
+  useEffect(() => {
+    if (tab !== 6) return;
+    try {
+      const c = JSON.parse(sessionStorage.getItem(NEWS_KEY) || 'null');
+      if (c?.news) setMarketNews(c.news);
+      if (c?.ts && Date.now() - c.ts < 10 * 60 * 1000) return; // fresh enough
+    } catch {}
+    let dead = false;
+    fetch('/api/news', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (dead || !j) return;
+        setMarketNews(j);
+        try { sessionStorage.setItem(NEWS_KEY, JSON.stringify({ ts: Date.now(), news: j })); } catch {}
+      })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, [tab]);
+
   // Deterministic market-regime read (no LLM) from the live macro clock — drives
   // the Pulse headline + the topbar pill. States current conditions, never predicts.
   const regime = useMemo(() => classifyRegime(macro?.live), [macro]);
@@ -1083,7 +1105,7 @@ function Dashboard() {
               ALGO={ALGO} FY={FY} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} portfolioNews={portfolioNews} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
+            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

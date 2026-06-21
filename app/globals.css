@@ -486,6 +486,24 @@ body {
 .nw-ago { font-size: var(--fs-2xs); color: var(--txt3); flex-shrink: 0; }
 .nw-hl { font-size: var(--fs-sm); line-height: 1.34; color: var(--txt); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
+/* ── Market ticker: scrolling headline marquee (Wrap / MacroTab) ──────────── */
+.tk { overflow: hidden; border-radius: 12px; border: .5px solid var(--brd); background: var(--sur2); padding: 9px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+.tk-track { display: inline-flex; align-items: center; white-space: nowrap; animation: tk-scroll 90s linear infinite; will-change: transform; }
+.tk:hover .tk-track { animation-play-state: paused; }
+.tk-item { display: inline-flex; align-items: center; gap: 7px; padding: 0 18px; text-decoration: none; color: inherit; border-right: 1px solid color-mix(in srgb, var(--brd) 70%, transparent); }
+.tk-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--txt3); flex-shrink: 0; }
+.tk-dot.pos { background: var(--grn); }
+.tk-dot.neg { background: var(--red); }
+.tk-src { font-size: var(--fs-2xs); font-weight: 700; color: var(--txt2); text-transform: uppercase; letter-spacing: .04em; }
+.tk-ttl { font-size: var(--fs-sm); color: var(--txt); }
+@keyframes tk-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .tk { overflow-x: auto; }
+  .tk-track { animation: none; }
+}
+
 /* amber alert banner */
 .alert {
   background: var(--acc-bg); border: .5px solid rgba(232, 160, 48, .35);

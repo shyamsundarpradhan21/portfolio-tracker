@@ -24,6 +24,29 @@ function agoStr(ts) {
 // the yield curve.
 const TONE_VAR = { calm: 'var(--grn)', warn: 'var(--sc-opt)', stress: 'var(--red)' };
 
+// Market-headline ticker (/api/news) — a slow, pause-on-hover marquee; the
+// leading dot carries sentiment (green/red/neutral). The list is duplicated once
+// for a seamless −50% loop (the copy is aria-hidden). Static + scrollable under
+// prefers-reduced-motion. Renders nothing until headlines are available.
+function NewsTicker({ news }) {
+  const items = (news?.items || []).filter((it) => it && it.title);
+  if (!items.length) return null;
+  const loop = items.concat(items);
+  return (
+    <div className="tk sec" aria-label="Market headlines">
+      <div className="tk-track">
+        {loop.map((it, i) => (
+          <a key={i} className="tk-item" href={it.link || undefined} target="_blank" rel="noopener noreferrer" aria-hidden={i >= items.length}>
+            <span className={`tk-dot ${it.sentiment > 0 ? 'pos' : it.sentiment < 0 ? 'neg' : ''}`} />
+            {it.source && <span className="tk-src">{it.source}</span>}
+            <span className="tk-ttl">{it.title}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Percentile-slider board (/api/macro-board): one neutral rail per metric with a
 // tone-coloured knob at its position in the trailing ~1-yr range, lo/hi endpoints,
 // the live value, and the rank percentile (p##). Renders only live series; returns
@@ -107,7 +130,7 @@ function PortfolioNews({ news }) {
   );
 }
 
-export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, marketNews, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -166,6 +189,9 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
   // the rows can't drift out of sync (a stretched g2 row matches the pair's height).
   return (
     <div>
+      {/* Market-headline ticker — top of the Wrap (/api/news). */}
+      <NewsTicker news={marketNews} />
+
       {/* ── PORTFOLIO OVERVIEW — ONE whole-book AI read (full width) ───────── */}
       {hasPulse && (
         <div className="card sec ai-card">
