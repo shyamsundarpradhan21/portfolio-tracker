@@ -624,10 +624,12 @@ body {
 
 /* Wrap mid-row: left = market insights (tall), right column = portfolio news
    (3-up, scrollable) stacked over the upcoming calendar (scrollable). */
-.wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; min-height: 440px; }
-@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; min-height: 0; } }
+/* Insights (left) drives the row height; the right column stretches to match it,
+   so news + calendar together never exceed the insights card. */
+.wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; } }
 .wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
-.wrap-mid-r .feedcard { flex: 2 1 0; min-height: 0; }              /* news : calendar = 2 : 1 */
+.wrap-mid-r .feedcard { flex: 1 1 0; min-height: 0; }              /* news : calendar = 1 : 1 */
 .wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
 .wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .wrap-mid-r .calcard .ecal { flex: 1; max-height: none; min-height: 0; overflow-y: auto; padding-right: 4px; }
