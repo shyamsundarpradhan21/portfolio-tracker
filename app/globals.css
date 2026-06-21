@@ -628,14 +628,9 @@ body {
 @media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; } }
 .wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
 .wrap-mid-r .feedcard { flex: 1 1 auto; min-height: 220px; }
-.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(3, minmax(0, 1fr)); max-height: none; }
-.wrap-mid-r .ncard { min-height: 0; padding: 9px 11px; gap: 6px; }
-.wrap-mid-r .ncard .nh { -webkit-line-clamp: 3; }
+.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
 .wrap-mid-r .ecal { max-height: 230px; overflow-y: auto; padding-right: 4px; }
-@media (max-width: 920px) {
-  .wrap-mid-r .feedcard { flex: none; }
-  .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr 1fr; }
-}
+@media (max-width: 920px) { .wrap-mid-r .feedcard { flex: none; } }
 @media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
 
 /* macro percentile sliders — multi-column packing so the 5 groups fill the card
