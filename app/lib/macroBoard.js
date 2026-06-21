@@ -122,6 +122,12 @@ export const MACRO_GROUPS = [
           { date: '2025-12-05', v: 5.25 },
           { date: '2026-06-05', v: 5.25 },
         ] },
+      // India 10Y benchmark G-sec yield — FRED INDIRLTLT01STM (keyless CSV / keyed API,
+      // same plumbing as the US series). MONTHLY by design: a percentile gauge wants a
+      // consistent distribution, and ranking a daily spot against a monthly-average range
+      // would read 0/100% on intraday noise — for a slow yield the ~4-week lag barely
+      // moves the percentile. The India-rate analogue to US 10Y, beside the RBI repo.
+      { key: 'india10y', label: 'India 10Y', src: 'INDIRLTLT01STM', unit: '%', d: 2, dir: -1, warn: 7.5, stress: 8, region: 'india' },
       { key: 'vix', label: 'US VIX', yahoo: '^VIX', unit: '', d: 1, dir: -1, warn: 18, stress: 25 },
       { key: 'indiaVix', label: 'India VIX', yahoo: '^INDIAVIX', unit: '', d: 1, dir: -1, warn: 16, stress: 22, region: 'india' },
       { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
