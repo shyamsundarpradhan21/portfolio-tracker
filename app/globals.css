@@ -538,18 +538,41 @@ body {
 .tlatest { font-size: var(--fs-xs); color: var(--txt2); margin-top: 6px; min-height: 17px; }
 .tlatest b { font-family: var(--mono); }
 
+/* market-internals 2x2 quad: hot sectors · sentiment · gainers · draggers */
+.wquad { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.qc { background: var(--sur2); border: .5px solid var(--brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
+.qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
+.hlg { margin-left: auto; display: inline-flex; height: 6px; width: 64px; border-radius: 3px; overflow: hidden; }
+.hlg i { flex: 1; }
+.sgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+.st { aspect-ratio: 1; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+.st span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
+.st b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 2px; }
+.sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
+.sentval { font-size: var(--fs-2xl); font-weight: 800; font-family: var(--mono); line-height: 1; }
+.sentlab { font-size: var(--fs-sm); font-weight: 700; margin: 2px 0 9px; }
+.gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); }
+.gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }
+.gsc { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt3); margin-top: 4px; }
+.sfac { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 8px; line-height: 1.5; }
+.mvlist { display: flex; flex-direction: column; gap: 1px; }
+.mv { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs); padding: 2px 0; }
+.mv .s { color: var(--txt2); font-weight: 600; }
+.mv .p { font-family: var(--mono); font-weight: 700; }
+.fdr { margin-top: 13px; }
+
 /* portfolio news feed */
 .feedcard { display: flex; flex-direction: column; }
 .feed { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; overflow-y: auto; max-height: 520px; padding-right: 4px; align-content: start; }
 @media (max-width: 520px) { .feed { grid-template-columns: 1fr; } }
-.ncard { background: var(--sur2); border: .5px solid var(--brd); border-left: 3px solid var(--brd); border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 90px; text-decoration: none; color: inherit; transition: border-color .12s; }
+.ncard { background: var(--sur2); border: .5px solid var(--brd); border-left: 3px solid var(--brd); border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 138px; text-decoration: none; color: inherit; transition: border-color .12s; }
 .ncard:hover { border-color: color-mix(in srgb, var(--acc) 40%, var(--brd)); }
 .ncard.pos { background: var(--grn-bg); border-left-color: var(--grn); }
 .ncard.neg { background: var(--red-bg); border-left-color: var(--red); }
 .ncard .tag { align-self: flex-start; font-size: var(--fs-2xs); font-weight: 700; color: var(--txt2); background: color-mix(in srgb, var(--txt) 7%, transparent); border: .5px solid var(--brd); border-radius: 5px; padding: 2px 7px; font-family: var(--mono); }
 .ncard.pos .tag { color: var(--grn); border-color: color-mix(in srgb, var(--grn) 40%, transparent); }
 .ncard.neg .tag { color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
-.ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard .nm { font-size: var(--fs-2xs); color: var(--txt3); margin-top: auto; }
 
 /* macro percentile sliders */

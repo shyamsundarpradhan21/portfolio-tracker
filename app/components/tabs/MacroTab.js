@@ -8,11 +8,11 @@ const apct = (p) => (p == null || !isFinite(p) ? '·—' : `${p > 0 ? '▲' : p 
 const fmt = (n) => (n == null || !isFinite(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 }));
 const sdot = (s) => (s > 0 ? 'g' : s < 0 ? 'r' : 'n');
 const TONE = { calm: 'calm', warn: 'warn', stress: 'stress' };
-const heat = (p) => {
-  if (p == null || !isFinite(p)) return 'var(--sur2)';
-  const o = Math.min(58, Math.round(Math.abs(p) * 13 + 10));
-  return `color-mix(in srgb, ${p >= 0 ? 'var(--grn)' : 'var(--red)'} ${o}%, transparent)`;
-};
+// Solid-ish diverging tile colour for the sector squares (theme text on top).
+const sheat = (p) => (p == null || !isFinite(p)) ? 'var(--sur2)'
+  : `color-mix(in srgb, ${p >= 0 ? 'var(--grn)' : 'var(--red)'} ${Math.round(22 + Math.min(1, Math.abs(p) / 3) * 58)}%, var(--sur2))`;
+const shortSec = (n) => String(n || '').replace(/^Nifty\s*/i, '');
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const agoStr = (ts) => {
   if (!ts) return '';
   const m = Math.max(0, (Date.now() - ts) / 60000);
@@ -90,29 +90,52 @@ function FiiDiiChart({ trail }) {
   );
 }
 
-// ── Breadth: gradient needle on a bearish→bullish scale (per breadthfinal) ───
-function BreadthNeedle({ ad }) {
-  if (!ad) return null;
-  const row = (label, pctUp, big) => big ? (
-    <div className="grbigwrap" key={label}>
-      <div className="grbighd"><span>{label}</span><b className={pctUp >= 50 ? 'grn' : 'red'}>{pctUp}%</b></div>
-      <div className="grtrack grbig"><div className="grneedle big" style={{ left: `${pctUp}%` }} /></div>
-    </div>
-  ) : (
-    <div className="grrow" key={label}>
-      <span className="grcl">{label}</span>
-      <div className="grtrack"><div className="grneedle" style={{ left: `${pctUp}%` }} /></div>
-      <b className={pctUp >= 50 ? 'grn' : 'red'}>{pctUp}%</b>
+// ── Market sentiment: a fear/greed score (0-100) from breadth + India VIX +
+// FII/DII net flow + Nifty momentum, with a red→amber→green gauge (à la the
+// Stratzy sentiment meter). Each factor degrades gracefully if absent.
+function fearGreed(breadthPct, vix, net, niftyPct) {
+  const parts = [];
+  if (breadthPct != null && isFinite(breadthPct)) parts.push([0.35, clampN(breadthPct, 0, 100)]);
+  if (vix != null && isFinite(vix)) parts.push([0.25, clampN((22 - vix) / 11 * 100, 0, 100)]);
+  if (net != null && isFinite(net)) parts.push([0.20, clampN(50 + net / 200, 0, 100)]);
+  if (niftyPct != null && isFinite(niftyPct)) parts.push([0.20, clampN(50 + niftyPct * 15, 0, 100)]);
+  if (!parts.length) return null;
+  const w = parts.reduce((a, [x]) => a + x, 0);
+  const score = Math.round(parts.reduce((a, [x, v]) => a + x * v, 0) / w);
+  return { score, label: score < 25 ? 'Extreme fear' : score < 45 ? 'Fear' : score < 56 ? 'Neutral' : score < 76 ? 'Greed' : 'Extreme greed' };
+}
+function SentimentGauge({ breadthPct, vix, net, niftyPct }) {
+  const fg = fearGreed(breadthPct, vix, net, niftyPct);
+  if (!fg) return <div className="na">—</div>;
+  const col = fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
+  const snet = (v) => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString('en-IN');
+  const facts = [
+    breadthPct != null && isFinite(breadthPct) ? `breadth ${Math.round(breadthPct)}%` : null,
+    vix != null && isFinite(vix) ? `VIX ${vix.toFixed(1)}` : null,
+    net != null && isFinite(net) ? `FII/DII ${snet(net)}` : null,
+    niftyPct != null && isFinite(niftyPct) ? `Nifty ${apct(niftyPct)}` : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="sentwrap">
+      <div className="sentval" style={{ color: col }}>{fg.score}</div>
+      <div className="sentlab" style={{ color: col }}>{fg.label}</div>
+      <div className="gbar"><div className="gneedle" style={{ left: `${fg.score}%` }} /></div>
+      <div className="gsc"><span>fear</span><span>greed</span></div>
+      <div className="sfac">{facts}</div>
     </div>
   );
+}
+
+// ── Day movers: top-5 gainers / draggers from the Nifty 50 constituent feed. ──
+function Movers({ list }) {
+  const rows = (list || []).filter((m) => m && m.sym && m.pct != null).slice(0, 5);
+  if (!rows.length) return <div className="na">—</div>;
   return (
-    <>
-      <div className="rlabel">Breadth · % advancing
-        {ad.adv != null && <span className="adr">A/D <b className={cls((ad.ratio ?? 1) - 1)}>{ad.ratio?.toFixed(2)}</b> · <span className="grn">{ad.adv}▲</span> / <span className="red">{ad.dec}▼</span></span>}
-      </div>
-      {ad.pctUp != null && row('Nifty 500', ad.pctUp, true)}
-      {(ad.caps || []).map((c) => row(c.name, c.pctUp, false))}
-    </>
+    <div className="mvlist">
+      {rows.map((m) => (
+        <div className="mv" key={m.sym}><span className="s">{m.sym}</span><span className={`p ${cls(m.pct)}`}>{apct(m.pct)}</span></div>
+      ))}
+    </div>
   );
 }
 
@@ -171,7 +194,7 @@ function SliderBoard({ board }) {
   );
 }
 
-export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('all');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {} }, []);
@@ -206,6 +229,12 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
   const nseSectors = (ind.sectors || []).slice().sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const sectors = showIN ? nseSectors : usSectors;
   const sectorLabel = showIN ? 'NSE sectors' : 'US sectors (SPDR)';
+  // Hot picks = the most-moved sectors; sentiment factors + day movers (India).
+  const hotSectors = [...sectors].filter((s) => s.pct != null).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 6);
+  const niftyPct = c.nifty?.pct;
+  const breadthPct = ind.breadthAD?.pctUp;
+  const fdLast = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-1)[0];
+  const fiiNet = fdLast ? (fdLast.fii || 0) + (fdLast.dii || 0) : null;
 
   return (
     <div className="wrapx">
@@ -243,17 +272,33 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
 
       {/* Left: market internals · Right: portfolio news */}
       <div className="two">
-        <div className="card">
-          <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
-          {sectors.length
-            ? <div className="heat" style={{ gridTemplateColumns: `repeat(${Math.min(5, sectors.length)}, 1fr)` }}>
-              {sectors.map((s) => <div className="hc" key={s.name} style={{ background: heat(s.pct) }}><span>{s.name}</span><b>{apct(s.pct)}</b></div>)}
+        {showIN ? (
+          <div className="card">
+            <div className="wlabel">Market internals <span className="hint">{asOf ? `NSE · ${asOf}` : 'today'}</span></div>
+            <div className="wquad">
+              <div className="qc">
+                <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
+                {hotSectors.length
+                  ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{s.pct.toFixed(2)}</b></div>)}</div>
+                  : <div className="na">—</div>}
+              </div>
+              <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={breadthPct} vix={ivix?.last} net={fiiNet} niftyPct={niftyPct} /></div>
+              <div className="qc"><div className="qh">Top gainers · day</div><Movers list={nifty50?.movers?.gainers} /></div>
+              <div className="qc"><div className="qh">Top draggers · day</div><Movers list={nifty50?.movers?.losers} /></div>
             </div>
-            : <div className="na">Sector board unavailable.</div>}
-          {showIN && <BreadthNeedle ad={ind.breadthAD} />}
-          {showIN && (ind.breadthAD || (fiidiiTrail || []).length >= 2) && <div className="rlabel">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span></div>}
-          {showIN && <FiiDiiChart trail={fiidiiTrail} />}
-        </div>
+            {(ind.breadthAD || (fiidiiTrail || []).length >= 2) && <>
+              <div className="rlabel fdr">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span></div>
+              <FiiDiiChart trail={fiidiiTrail} />
+            </>}
+          </div>
+        ) : (
+          <div className="card">
+            <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
+            {hotSectors.length
+              ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{s.pct.toFixed(2)}</b></div>)}</div>
+              : <div className="na">Sector board unavailable.</div>}
+          </div>
+        )}
         <NewsFeed news={portfolioNews} region={region} />
       </div>
 
