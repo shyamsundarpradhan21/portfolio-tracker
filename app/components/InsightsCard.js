@@ -44,12 +44,9 @@ export default function InsightsCard({
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-        <div>
-          <div className="ctitle">{title}</div>
-          <div className="sub" style={{ margin: 0 }}>{subtitle}</div>
-        </div>
-        <span className="ins-ai">AI</span>
+      <div>
+        <div className="ctitle">{title}</div>
+        <div className="sub" style={{ margin: 0 }}>{subtitle}</div>
       </div>
 
       {/* Beta · Alpha · Sharpe · Volatility · R² · Correlation */}
