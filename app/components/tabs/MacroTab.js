@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
+import { Rs } from '../../lib/fmt';
 
 // ── tiny formatters (mockup style: ▲/▼ glyph + grn/red/mut colour) ───────────
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
@@ -76,7 +77,7 @@ function FiiDiiChart({ trail }) {
   const seg = (v) => { const h = Math.abs(v || 0) * sc; return { y: v >= 0 ? zero - h : zero, h }; };
   const cxOf = (i) => PAD_L + colW * i + colW / 2;
   const nyOf = (p) => zero - net(p) * sc;
-  const d3 = (v) => (v == null || !isFinite(v) ? '—' : '₹' + Math.abs(Math.round(v)).toLocaleString('en-IN') + ' Cr');
+  const d3 = (v) => (v == null || !isFinite(v) ? '—' : <><Rs />{Math.abs(Math.round(v)).toLocaleString('en-IN')} Cr</>);
   const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
 
   // Net sparkline geometry: a dotted polyline through the net points, and a
