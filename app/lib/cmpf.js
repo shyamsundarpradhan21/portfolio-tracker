@@ -48,6 +48,16 @@ export function cmpfCorpus(atDate) {
   return Math.round(corpus);
 }
 
+// Interest accruing per day at the current corpus and FY rate — the smooth daily view
+// of CMPF growth. cmpfCorpus is month-stepped (and only credits interest at FY-end), so a
+// day-over-day corpus diff is 0 between steps; this gives the genuine per-day accrual,
+// the CMPF analogue of an FD's daily interest.
+export function cmpfDailyAccrual(atDate) {
+  const ym = (typeof atDate === 'string' ? atDate : atDate.toISOString()).slice(0, 7);
+  const rate = CMPF_RATES[monthFy(ym)] ?? 0.076;
+  return Math.round((cmpfCorpus(atDate) * rate) / 365);
+}
+
 // Total contributions paid in (employee + employer match) up to atDate — the
 // CMPF "invested" basis, so corpus − paid = accrued interest. Used to attribute
 // the sleeve's market gain (interest) separately from fresh contributions.

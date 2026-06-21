@@ -18,10 +18,10 @@ import { classifyRegime } from './lib/regime';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
-import { getSnapshots, recordSnapshot, historicalSnapshots, syncSnapshotsFromKv, pushSnapshotToKv, removeSnapshot, deleteSnapshotFromKv } from './lib/snapshots';
+import { getSnapshots, recordSnapshot, historicalSnapshots, syncSnapshotsFromKv, pushSnapshotToKv } from './lib/snapshots';
 import { getFiiDiiTrail, recordFiiDii } from './lib/fiidii';
 import { buildBackfill } from './lib/backfill';
-import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
+import { cmpfCorpus, cmpfPaid, cmpfDailyAccrual } from './lib/cmpf';
 import { cmpsTotalPaid, cmpsMonthlyPension, cmpsServiceYears, CMPS_RETIREMENT_DATE, CMPS_MIN_QUALIFYING_YEARS, CMPS_VEST_DATE } from './lib/cmps';
 import {
   xirr, weightedCagr, benchCounterfactual, computeBetaVol,
@@ -889,11 +889,25 @@ function Dashboard() {
 
   // Live single-day P&L per sleeve (INR). Only the equity sleeves move intraday
   // (live quotes carry day-change); FD/MF/CMPF accrue smoothly, so ~0 for today.
-  const daySleeveGain = useMemo(() => ({
-    indian: Math.round(indianDay.dayPl || 0),
-    us:     Math.round((usStats.dayPl || 0) * fxRate),
-    fd: 0, mf: 0, elss: 0, pf: 0,
-  }), [indianDay.dayPl, usStats.dayPl, fxRate]);
+  // Per-sleeve attribution of TODAY's net-worth change. Equity contributes its day P&L
+  // only when its own market actually traded today — on a weekend/holiday the quote's
+  // day-change is the prior session's (stale), so it's 0, not carried forward. FD + CMPF
+  // accrue every calendar day regardless, each as value × rate/365 (a smooth per-day
+  // figure that doesn't spike when an FD is deployed or matures). MF/ELSS only move on
+  // NAV days; left at 0 here.
+  const daySleeveGain = useMemo(() => {
+    const today = isoOf(now);
+    const sess = premarket?.sessions || {};
+    const nseTraded  = (sess.nifty?.asOf || null) === today;
+    const nyseTraded = (sess.sp500?.asOf || null) === today;
+    return {
+      indian: nseTraded  ? Math.round(indianDay.dayPl || 0)         : 0,
+      us:     nyseTraded ? Math.round((usStats.dayPl || 0) * fxRate) : 0,
+      fd:     Math.round(((fds.principal + fds.accrued) * fds.blendedRate) / 365),
+      mf: 0, elss: 0,
+      pf:     cmpfDailyAccrual(now),
+    };
+  }, [indianDay.dayPl, usStats.dayPl, fxRate, now, fds.principal, fds.accrued, fds.blendedRate, premarket?.sessions?.nifty?.asOf, premarket?.sessions?.sp500?.asOf]);
 
   const pulseCls = 'pulse' + (status.type ? ' ' + status.type : '');
   const mktPill = (open, st) => (st === 'PRE' || st === 'POST') ? 'mkt-pre' : open ? 'mkt-open' : 'mkt-closed';
@@ -953,19 +967,11 @@ function Dashboard() {
     // batch, so without usData.val the guard would pass on a US-only outage
     // and persist a net worth missing the whole US sleeve.
     if (!(indian.valued && usData.val > 0 && usdInr)) return;
-    const today = isoOf(new Date());
-    // Freshness guard: only snapshot a real TRADING session. On a weekend/holiday the
-    // equity quotes are last-session (stale) — recording then would persist Friday's
-    // equity dated Sunday. The NSE session date (Yahoo-backed, always resolves) tells
-    // us whether the market traded today. If a stale today-point slipped in earlier,
-    // purge it (local + KV) instead of keeping it.
-    const nseSession = premarket?.sessions?.nifty?.asOf || (premarket?.indices?.asOf ? String(premarket.indices.asOf).slice(0, 10) : null);
-    if (nseSession !== today) {
-      if (getSnapshots().some((s) => s.d === today)) { setSnapshots(removeSnapshot(today)); deleteSnapshotFromKv(today); }
-      return;
-    }
+    // Daily snapshot — the NW is correct every calendar day: equity holds at its last
+    // close while FD + CMPF accrue (both are date-based in `ov`), so a weekend point is
+    // accurate, not stale. (Stale-vs-fresh is handled in the DAY attribution, not here.)
     const snap = {
-      d: today,
+      d: isoOf(new Date()),
       nw: Math.round(ov.nw),
       assets: Math.round(ov.totalAssets),
       invested: Math.round(projInvested0),
@@ -973,7 +979,7 @@ function Dashboard() {
     };
     setSnapshots(recordSnapshot(snap));
     pushSnapshotToKv(snap); // mirror to the cross-device KV store (owner-namespaced, fire-and-forget)
-  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis, premarket?.sessions?.nifty?.asOf, premarket?.indices?.asOf]);
+  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis]);
 
   // NW hero: fire entrance animation once when live NW first becomes available,
   // and detect all-time-high (NW > every prior snapshot) for the celebration.

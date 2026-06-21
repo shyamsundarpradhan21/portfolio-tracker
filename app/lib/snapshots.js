@@ -102,21 +102,6 @@ export async function syncSnapshotsFromKv() {
   } catch { return getSnapshots(); }
 }
 
-// Remove a snapshot by date (local + KV) — used to purge a stale point that slipped in
-// on a non-trading day before the freshness guard caught it.
-export function removeSnapshot(d) {
-  try {
-    const arr = getSnapshots().filter((s) => s.d !== d);
-    localStorage.setItem(KEY, JSON.stringify(arr));
-    return arr;
-  } catch { return getSnapshots(); }
-}
-
-export function deleteSnapshotFromKv(d) {
-  if (!d) return;
-  try { fetch(`/api/snapshots?d=${encodeURIComponent(d)}`, { method: 'DELETE', cache: 'no-store', keepalive: true }).catch(() => {}); } catch {}
-}
-
 export function pushSnapshotToKv(snap) {
   if (!snap || !snap.d || !Number.isFinite(snap.nw)) return;
   try {
