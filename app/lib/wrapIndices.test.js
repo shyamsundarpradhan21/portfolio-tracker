@@ -9,11 +9,11 @@ import { mapAllIndices, mapYahooIndices } from './wrapIndices.js';
 const NSE_SAMPLE = {
   timestamp: '19-Jun-2026 17:35:04',
   data: [
-    { index: 'NIFTY 50', last: 24013.1, previousClose: 24168, variation: -154.9, percentChange: -0.64 },
+    { index: 'NIFTY 50', last: 24013.1, previousClose: 24168, variation: -154.9, percentChange: -0.64, advances: 19, declines: 31, unchanged: 0 },
     { index: 'NIFTY NEXT 50', last: 100, previousClose: 100.33, percentChange: -0.33 },
-    { index: 'NIFTY 500', last: 100, previousClose: 100.27, percentChange: -0.27 },
-    { index: 'NIFTY MIDCAP 100', last: 100, previousClose: 99.78, percentChange: 0.22 },
-    { index: 'NIFTY SMALLCAP 100', last: 100, previousClose: 99.58, percentChange: 0.42 },
+    { index: 'NIFTY 500', last: 100, previousClose: 100.27, percentChange: -0.27, advances: '290', declines: '195', unchanged: 15 },
+    { index: 'NIFTY MIDCAP 100', last: 100, previousClose: 99.78, percentChange: 0.22, advances: 61, declines: 39 },
+    { index: 'NIFTY SMALLCAP 100', last: 100, previousClose: 99.58, percentChange: 0.42, advances: 67, declines: 33 },
     { index: 'NIFTY 100', last: 100, previousClose: 100.5, percentChange: -0.5 }, // not in our maps -> ignored
     { index: 'NIFTY IT', last: 100, previousClose: 103.65, percentChange: -3.65 },
     { index: 'NIFTY BANK', last: 100, previousClose: 100.48, percentChange: -0.48 },
@@ -60,6 +60,23 @@ describe('mapAllIndices — NSE allIndices -> wrap shape', () => {
     expect(partial.sectors).toEqual([{ name: 'IT', pct: -1.2 }]);
     expect(partial.breadth).toEqual([]);
     expect(partial.vix).toBeNull();
+  });
+
+  it('builds real breadth from advances/declines (A/D ratio + % advancing by tier)', () => {
+    expect(out.breadthAD).toEqual({
+      caps: [
+        { name: 'Nifty 50', pctUp: 38 },     // 19 / (19+31)
+        { name: 'Midcap 100', pctUp: 61 },   // 61 / 100
+        { name: 'Smallcap 100', pctUp: 67 }, // 67 / 100
+      ],
+      adv: 290, dec: 195, unch: 15,
+      ratio: 1.49,   // 290/195
+      pctUp: 60,     // 290 / (290+195)
+    });
+  });
+
+  it('breadthAD is null when NSE omits advances/declines', () => {
+    expect(mapAllIndices({ data: [{ index: 'NIFTY 50', percentChange: -0.64 }] }).breadthAD).toBeNull();
   });
 
   it('returns null when nothing usable is present', () => {

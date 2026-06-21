@@ -41,6 +41,12 @@ const rowLast = (row) => r2(row?.last ?? row?.lastPrice ?? row?.ltp);
 const rowPrev = (row) => r2(row?.previousClose ?? row?.prevClose ?? row?.previousclose);
 const rowHigh = (row) => r2(row?.high ?? row?.dayHigh ?? row?.intraDayHighLow?.max);
 const rowLow = (row) => r2(row?.low ?? row?.dayLow ?? row?.intraDayHighLow?.min);
+// NSE rows carry constituent advances/declines/unchanged (real breadth, vs the
+// index's own % move). Values can be numeric or comma-strings.
+const toInt = (v) => { if (v == null) return null; const n = parseInt(String(v).replace(/,/g, ''), 10); return isFinite(n) ? n : null; };
+const rowAdv = (row) => toInt(row?.advances ?? row?.advance);
+const rowDec = (row) => toInt(row?.declines ?? row?.decline);
+const rowUnch = (row) => toInt(row?.unchanged ?? row?.unchange);
 
 // NSE timestamp ("19-Jun-2026 17:35:04") -> ISO when parseable, else the raw string.
 function nseAsOf(ts) {
@@ -58,6 +64,33 @@ function indexByName(data) {
     if (name) by[name] = row;
   }
   return by;
+}
+
+// Real market breadth from constituent advances/declines (NOT index % move, which
+// the ticker already shows). A/D ratio + % advancing for Nifty 500, plus % advancing
+// per cap tier (large/mid/small) to show where participation sits. Null when NSE
+// doesn't carry the A/D fields (then the UI shows breadth as unavailable).
+export function buildBreadthAD(by) {
+  const ad = (name) => {
+    const r = by[name];
+    if (!r) return null;
+    const a = rowAdv(r), d = rowDec(r);
+    return a == null || d == null ? null : { a, d, u: rowUnch(r) };
+  };
+  const pctUp = (x) => (x && x.a + x.d > 0 ? Math.round((x.a / (x.a + x.d)) * 100) : null);
+  const tiers = [['Nifty 50', 'NIFTY 50'], ['Midcap 100', 'NIFTY MIDCAP 100'], ['Smallcap 100', 'NIFTY SMALLCAP 100']];
+  const caps = tiers
+    .map(([name, key]) => { const x = ad(key); const p = pctUp(x); return p == null ? null : { name, pctUp: p }; })
+    .filter(Boolean);
+  const n500 = ad('NIFTY 500');
+  if (!n500 && !caps.length) return null;
+  const out = { caps };
+  if (n500) {
+    out.adv = n500.a; out.dec = n500.d; out.unch = n500.u;
+    out.ratio = n500.d ? Math.round((n500.a / n500.d) * 100) / 100 : null;
+    out.pctUp = pctUp(n500);
+  }
+  return out;
 }
 
 /**
@@ -101,7 +134,7 @@ export function mapAllIndices(json) {
   // Nothing meaningful resolved -> let the caller fall back.
   if (!sectors.length && !breadth.length && !vix && !nifty) return null;
 
-  return { nifty, vix, sectors, breadth, asOf: nseAsOf(json?.timestamp), source: 'NSE allIndices (live)' };
+  return { nifty, vix, sectors, breadth, breadthAD: buildBreadthAD(by), asOf: nseAsOf(json?.timestamp), source: 'NSE allIndices (live)' };
 }
 
 // Yahoo symbols for the NSE indices Yahoo actually carries — the fallback when NSE
