@@ -511,6 +511,22 @@ body {
 .rgn-seg button:hover { color: var(--txt); }
 .rgn-seg button.on { background: var(--acc-bg); color: var(--acc); }
 
+/* ── Breadth gauge: red→green A/D needle (Wrap / MacroTab) ─────────────────── */
+.bg-head { display: grid; grid-template-columns: 72px 1fr 80px; align-items: center; gap: 12px; }
+.bg-lbl { font-size: var(--fs-xs); color: var(--txt2); }
+.bg-rail { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt), var(--grn)); }
+.bg-rail-sm { height: 6px; border-radius: 3px; }
+.bg-needle { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 18px; background: var(--txt); border-radius: 2px; box-shadow: 0 0 0 2px var(--sur); }
+.bg-rail-sm .bg-needle { height: 12px; }
+.bg-val { font-size: var(--fs-lg); font-weight: 600; text-align: right; white-space: nowrap; }
+.bg-u { font-size: var(--fs-2xs); color: var(--txt2); font-family: var(--body); margin-left: 2px; font-weight: 500; }
+.bg-meta { font-size: var(--fs-xs); color: var(--txt2); margin-top: 9px; }
+.bg-tiers { display: flex; gap: 18px; margin-top: 14px; flex-wrap: wrap; }
+.bg-tier { display: grid; grid-template-columns: 64px 1fr 34px; align-items: center; gap: 9px; flex: 1 1 220px; }
+.bg-tlbl { margin: 0; }
+.bg-tval { font-size: var(--fs-sm); text-align: right; }
+.bg-vix { display: flex; align-items: baseline; justify-content: space-between; margin-top: 14px; padding-top: 11px; border-top: .5px solid var(--brd); }
+
 /* amber alert banner */
 .alert {
   background: var(--acc-bg); border: .5px solid rgba(232, 160, 48, .35);

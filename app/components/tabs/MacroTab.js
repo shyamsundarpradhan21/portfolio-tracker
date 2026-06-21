@@ -131,6 +131,76 @@ function PortfolioNews({ news }) {
   );
 }
 
+// Market breadth (India) as a red→green needle gauge from constituent
+// advances/declines — true participation, not the index's own % move. Headline is
+// Nifty 500 % advancing; per-cap tiers below; India VIX. Here a red→green gradient
+// IS meaningful (more advancing = broader = healthier). Falls back to the index-%
+// breadth cells when NSE omits A/D (e.g. the Yahoo-fallback path / EOD snapshot).
+function BreadthBoard({ wrap, wrapWhen }) {
+  const ad = wrap?.breadthAD;
+  const vix = wrap?.vix;
+  const when = wrapWhen ? ` · ${wrapWhen}` : '';
+  if (!ad && !wrap?.breadth?.length && !vix) return null;
+  return (
+    <div className="card sec">
+      <div className="ctitle" style={{ marginBottom: 12 }}>
+        Breadth &amp; volatility
+        <span className="sub" style={{ textTransform: 'none' }}> — {ad ? 'constituent advances vs declines' : 'large-cap vs broad market'}{when}</span>
+      </div>
+      {ad ? (
+        <>
+          {ad.pctUp != null && (
+            <>
+              <div className="bg-head">
+                <span className="bg-lbl">Nifty 500</span>
+                <span className="bg-rail"><span className="bg-needle" style={{ left: `${ad.pctUp}%` }} /></span>
+                <span className="bg-val mono">{ad.pctUp}<span className="bg-u">% adv</span></span>
+              </div>
+              <div className="bg-meta">
+                {ad.ratio != null && <>A/D <span className="mono">{ad.ratio.toFixed(2)}</span> · </>}
+                <span className="grn mono">{ad.adv?.toLocaleString('en-IN')}</span> adv · <span className="red mono">{ad.dec?.toLocaleString('en-IN')}</span> dec
+                {ad.unch ? <> · <span className="mono">{ad.unch.toLocaleString('en-IN')}</span> flat</> : null}
+              </div>
+            </>
+          )}
+          {ad.caps?.length > 0 && (
+            <div className="bg-tiers">
+              {ad.caps.map((c) => (
+                <div key={c.name} className="bg-tier">
+                  <span className="bg-tlbl sub">{c.name}</span>
+                  <span className="bg-rail bg-rail-sm"><span className="bg-needle" style={{ left: `${c.pctUp}%` }} /></span>
+                  <span className="bg-tval mono">{c.pctUp}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {vix && (
+            <div className="bg-vix">
+              <span className="sub" style={{ margin: 0 }}>India VIX</span>
+              <span className="vsm mono">{vix.last != null ? vix.last.toFixed(2) : '—'}<span className={wcls(vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(vix.pct)}</span></span>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {(wrap.breadth || []).map((b) => (
+            <div key={b.name} className="csm" style={{ flex: '1 1 90px', minWidth: 88 }}>
+              <div className="sub" style={{ margin: 0 }}>{b.name}</div>
+              <div className={'vsm mono ' + wcls(b.pct)} style={{ marginTop: 3 }}>{wpct(b.pct)}</div>
+            </div>
+          ))}
+          {vix && (
+            <div className="csm" style={{ flex: '1 1 90px', minWidth: 88, borderColor: 'var(--warn-brd)' }}>
+              <div className="sub" style={{ margin: 0 }}>India VIX</div>
+              <div className="vsm mono" style={{ marginTop: 3 }}>{vix.last != null ? vix.last.toFixed(2) : '—'}<span className={wcls(vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(vix.pct)}</span></div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, marketNews, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
@@ -288,32 +358,10 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
         {showUS && <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />}
       </div>
 
-      {/* Row 5 — market breadth & volatility (India: large-cap vs broad, India VIX) */}
-      {showIN && (wrap?.breadth?.length || wrap?.vix) && (
-        <div className="card sec">
-          <div className="ctitle" style={{ marginBottom: 12 }}>
-            Breadth &amp; volatility
-            <span className="sub" style={{ textTransform: 'none' }}> — large-cap vs broad market{wrapDate ? ` · ${wrapWhen}` : ''}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(wrap.breadth || []).map((b) => (
-              <div key={b.name} className="csm" style={{ flex: '1 1 90px', minWidth: 88 }}>
-                <div className="sub" style={{ margin: 0 }}>{b.name}</div>
-                <div className={'vsm mono ' + wcls(b.pct)} style={{ marginTop: 3 }}>{wpct(b.pct)}</div>
-              </div>
-            ))}
-            {wrap.vix && (
-              <div className="csm" style={{ flex: '1 1 90px', minWidth: 88, borderColor: 'var(--warn-brd)' }}>
-                <div className="sub" style={{ margin: 0 }}>India VIX</div>
-                <div className="vsm mono" style={{ marginTop: 3 }}>
-                  {wrap.vix.last != null ? wrap.vix.last.toFixed(2) : '—'}
-                  <span className={wcls(wrap.vix.change)} style={{ fontSize: 'var(--fs-2xs)', marginLeft: 6 }}>{wpct(wrap.vix.pct)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Row 5 — market breadth & volatility (India): red→green A/D needle from
+          constituent advances/declines, per-cap participation, India VIX. Falls
+          back to index-% breadth cells when NSE omits A/D (Yahoo / snapshot). */}
+      {showIN && <BreadthBoard wrap={wrap} wrapWhen={wrapWhen} />}
 
       {/* Row 6 — global macro backdrop. Prefer the percentile-slider board
           (/api/macro-board: where each gauge sits in its trailing 1-yr range, knob
