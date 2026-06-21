@@ -9,8 +9,10 @@ for the econ calendar (and Phase-2 estimates), graceful no-op until the key is s
 2. **Animated 3-line ticker** — (a) benchmark indices, (b) commodities·FX, (c) market
    news. Marquee scroll (opposite directions), hover-to-pause. Region-aware content.
 3. **Row: [Sectors card] | [Portfolio news]**
-   - Sectors card = sector heatmap + **breadth (% advancing by cap tier + A/D ratio
-     header)** + **FII/DII net-composition chart** (below).
+   - Sectors card = sector heatmap + **breadth = gradient-needle** (thick Nifty 500
+     A/D needle on a bearish→bullish scale + A/D ratio/counts header, then 3 thinner
+     cap-tier needles: Nifty 50 / Midcap 100 / Smallcap 100) + **FII/DII net-composition
+     chart** (below).
    - Portfolio news = sentiment cards: company **tag** + headline + source·time, card
      tinted **green/red** by news sentiment; 2-col, scrollable.
 4. **Macro card** — sliders grouped Rates · Inflation · Growth · Labour; knob =
