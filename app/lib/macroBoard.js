@@ -128,6 +128,26 @@ export const MACRO_GROUPS = [
     ],
   },
   {
+    // The cross-border channels into this book as PERCENTILE gauges — same instruments
+    // the railine's Commod·FX ticker shows as bare quotes, but here answering "where in
+    // the trailing-1yr range" (the regime read), not "what's the tick". Two different
+    // questions, two artifacts; the railine keeps its quotes. Yahoo weekly closes.
+    group: 'Cross-asset',
+    series: [
+      // Higher Brent = imported-inflation / current-account drag on the India book.
+      { key: 'brent', label: 'Brent', yahoo: 'BZ=F', unit: '', d: 1, dir: -1, warn: 90, stress: 100 },
+      // Weaker INR (higher USD/INR) = the India-book stress read (the US sleeve hedges it,
+      // but for an India-centric book a depreciating rupee is the risk-off signal).
+      { key: 'usdinr', label: 'USD/INR', yahoo: 'INR=X', unit: '', d: 2, dir: -1, warn: 95, stress: 98 },
+      // BTC is here for the levered crypto-miner US sleeve (~22% of it), NOT as broad
+      // macro — a regime read on that sleeve (range-top = euphoric/vulnerable, bottom =
+      // capitulation). Percentile-only on purpose: the risk is U-shaped, which a monotonic
+      // calm/warn/stress tone can't encode, and fixed $ thresholds stale fast on a 2x-range
+      // asset — the range-relative knob doesn't. Weekly closes so a 24/7 asset stays clean.
+      { key: 'btc', label: 'BTC (miners)', yahoo: 'BTC-USD', scale: 0.001, unit: 'k', d: 1 },
+    ],
+  },
+  {
     group: 'Inflation',
     series: [
       { key: 'cpi', label: 'US CPI', src: 'CPIAUCSL', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 3, stress: 4 },
