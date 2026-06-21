@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import PreMarketBriefing from '../shared/PreMarketBriefing';
 import SwotCard from '../shared/SwotCard';
 import MarketOverview, { aggregateSectors } from '../shared/MarketOverview';
@@ -185,10 +186,28 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
   // otherwise the plain level+delta cells below stand in.
   const boardHasLive = (macroBoard?.groups || []).some((g) => (g.series || []).some((c) => c && !c.stale && c.value != null));
 
-  // Each row is an India | US pair so every card sits adjacent to its replica and
-  // the rows can't drift out of sync (a stretched g2 row matches the pair's height).
+  // India / Global / All view filter (persisted). Each market-data row below is an
+  // India | US pair; the toggle shows one side full-width or both as a g2 pair.
+  const [region, setRegion] = useState('all');
+  useEffect(() => {
+    try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {}
+  }, []);
+  const pickRegion = (r) => { setRegion(r); try { localStorage.setItem('nwTracker.wrapRegion', r); } catch {} };
+  const showIN = region !== 'global';
+  const showUS = region !== 'india';
+  const pairCls = showIN && showUS ? 'g2 sec pm-row' : 'sec pm-row';
+
   return (
     <div>
+      {/* Region filter — India / Global / All (filters the market-data rows below). */}
+      <div className="rgn-bar">
+        <div className="rgn-seg" role="tablist" aria-label="Region filter">
+          {[['all', 'All'], ['india', 'India'], ['global', 'Global']].map(([k, lbl]) => (
+            <button key={k} type="button" role="tab" aria-selected={region === k} className={region === k ? 'on' : ''} onClick={() => pickRegion(k)}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+
       {/* Market-headline ticker — top of the Wrap (/api/news). */}
       <NewsTicker news={marketNews} />
 
@@ -221,56 +240,56 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
       )}
 
       {/* Row 1 — SWOT (India | US) */}
-      <div className="g2 sec pm-row">
-        <SwotCard swot={insights?.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />
-        <SwotCard swot={insights?.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />
+      <div className={pairCls}>
+        {showIN && <SwotCard swot={insights?.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />}
+        {showUS && <SwotCard swot={insights?.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />}
       </div>
 
       {/* Row 2 — today's close cues (India: indices + bullion + FII/DII | US & global) */}
-      <div className="g2 sec pm-row">
-        <PreMarketBriefing
+      <div className={pairCls}>
+        {showIN && <PreMarketBriefing
           premarket={premarket} fiidiiTrail={fiidiiTrail} regime={regime}
           nseOpen={markets?.nse} nseState={markets?.nseState}
           insightsLoading={insightsLoading} onRefresh={onRefresh} aiReady={aiReady}
           aiAgo={insightsTs ? agoStr(insightsTs) : null}
           groups={['india', 'commodity']} showFlows showHeader
-        />
-        <PreMarketBriefing
+        />}
+        {showUS && <PreMarketBriefing
           premarket={premarket} regime={regime}
-          groups={['world', 'fx']} showFlows={false} showHeader={false}
+          groups={['world', 'fx']} showFlows={false} showHeader={!showIN}
           title="US & global · at the close"
-        />
+        />}
       </div>
 
       {/* Row 3 — how the session went (Nifty/Sensex | S&P/Nasdaq): close, day change, range */}
-      <div className="g2 sec pm-row">
-        <MarketOverview
+      <div className={pairCls}>
+        {showIN && <MarketOverview
           title="Nifty & Sensex"
           sub="— today’s close & the day’s movers"
           sessions={[{ s: sx?.nifty, label: 'Nifty 50' }, { s: sx?.sensex, label: 'Sensex' }]}
           movers={nifty50?.movers}
           note={<>Close, day change and range from the session’s candles. F&amp;O insights (OI, PCR, max-pain) aren’t wired — no reliable free options-chain feed.</>}
-        />
-        <MarketOverview
+        />}
+        {showUS && <MarketOverview
           title="S&P 500 & Nasdaq"
           sub="— today’s close"
           sessions={[{ s: sx?.sp500, label: 'S&P 500' }, { s: sx?.nasdaq, label: 'Nasdaq' }]}
           note={<>Close, day change and range from the session’s candles. Constituent movers aren’t shown — no free US constituent feed.</>}
-        />
+        />}
       </div>
 
       {/* Row 4 — sector performance today (NSE sectoral indices | SPDR sector ETFs) */}
-      <div className="g2 sec pm-row">
-        <SectorHeatmap
+      <div className={pairCls}>
+        {showIN && <SectorHeatmap
           title="NSE sector heatmap"
           sub={wrapSectors.length ? `NSE sectoral indices · ${wrapWhen}` : 'today’s average move by Nifty 50 sector'}
           sectors={wrapSectors.length ? wrapSectors : inSectors}
-          loading={nifty50Loading} />
-        <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />
+          loading={nifty50Loading} />}
+        {showUS && <SectorHeatmap title="US sector heatmap" sub="SPDR sector ETFs — today’s move" sectors={usSectors} />}
       </div>
 
-      {/* Row 5 — market breadth & volatility (large-cap vs broad, India VIX) */}
-      {(wrap?.breadth?.length || wrap?.vix) && (
+      {/* Row 5 — market breadth & volatility (India: large-cap vs broad, India VIX) */}
+      {showIN && (wrap?.breadth?.length || wrap?.vix) && (
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 12 }}>
             Breadth &amp; volatility
@@ -301,7 +320,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
           coloured by regime tone); fall back to the plain level+delta cells
           (/api/macro) when the board has no live series yet (e.g. before
           FRED_API_KEY is set and Yahoo is unreachable). */}
-      {boardHasLive ? (
+      {showUS && (boardHasLive ? (
         <MacroSliderBoard board={macroBoard} />
       ) : (macroCells.some((c) => c.live) && (
         <div className="card sec">
@@ -323,7 +342,7 @@ export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, 
             ))}
           </div>
         </div>
-      ))}
+      )))}
 
       {/* Row 7 — portfolio in the news: recent per-holding headlines, shaded by
           sentiment (/api/portfolio-news, keyless RSS). */}
