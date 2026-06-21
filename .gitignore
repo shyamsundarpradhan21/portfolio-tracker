@@ -26,6 +26,10 @@
 # personal financial documents — never commit (real name + tax/holdings data)
 *.xlsx
 *.xls
+*.csv
+# raw broker tax/P&L report drop — any extension; PII never leaves this folder, only the
+# extracted figures get written into the committed JSONs.
+/data/reports/
 
 # private portfolio data — holdings/salary/loans, pulled out of the bundle into KV.
 # Local dev + the KV seed read this; the deployed app reads KV. .example is committed.
