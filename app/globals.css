@@ -522,12 +522,15 @@ body {
 .grbighd { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-xs); color: var(--txt2); margin-bottom: 6px; }
 .grbighd b { font-family: var(--mono); }
 
-/* FII/DII svg (fills via class → theme-following) — FII+DII composition + net tick */
+/* FII/DII svg (fills via class → theme-following): composition bars + net sparkline overlay */
 .fdg { width: 100%; display: block; }
-.fdg .fdax { font-size: 9px; fill: var(--txt3); }
 .fd-fii { fill: var(--cyn); opacity: .9; }
 .fd-dii { fill: var(--sc-base); opacity: .64; }
-.fd-net { stroke: var(--txt); stroke-width: 1.6; }
+.fd-zero { stroke: var(--brd); }
+.fd-pos { fill: color-mix(in srgb, var(--grn) 18%, transparent); }
+.fd-neg { fill: color-mix(in srgb, var(--red) 18%, transparent); }
+.fd-spark { fill: none; stroke: var(--txt); stroke-width: 1.5; stroke-dasharray: 2 2.5; }
+.fd-dot.g { fill: var(--grn); } .fd-dot.r { fill: var(--red); }
 .fdg .fdval { font-size: 10px; font-weight: 700; font-family: var(--mono); }
 .fdg .fdval.grn { fill: var(--grn); } .fdg .fdval.red { fill: var(--red); }
 .fdleg { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: var(--fs-2xs); color: var(--txt3); font-weight: 600; letter-spacing: 0; text-transform: none; }
@@ -538,12 +541,22 @@ body {
 .tlatest { font-size: var(--fs-xs); color: var(--txt2); margin-top: 6px; min-height: 17px; }
 .tlatest b { font-family: var(--mono); }
 
-/* market-internals 2x2 quad: hot sectors · sentiment · gainers · draggers */
-.wquad { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+/* market-internals vertical stack: sentiment band · treemap square · movers split */
+.wstack { display: flex; flex-direction: column; gap: 9px; }
+.wstack .qc { min-height: 0; }
 .qc { background: var(--sur2); border: .5px solid var(--brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
 .qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
 .hlg { margin-left: auto; display: inline-flex; height: 6px; width: 64px; border-radius: 3px; overflow: hidden; }
 .hlg i { flex: 1; }
+/* sentiment band — score in the header corner, card tinted by the reading */
+.senthd { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; text-transform: none; letter-spacing: 0; }
+.senthd b { font-size: var(--fs-xl); font-family: var(--mono); font-weight: 800; line-height: 1; }
+.senthd em { font-size: var(--fs-xs); font-weight: 700; font-style: normal; }
+.qc.sent.greed { background: color-mix(in srgb, var(--grn) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--grn) 22%, var(--brd)); }
+.qc.sent.fear { background: color-mix(in srgb, var(--red) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--red) 22%, var(--brd)); }
+/* treemap square — fills the tall cell, bigger tiles */
+.tree .treemap { flex: 1; align-content: stretch; }
+.tree .tm { min-height: 74px; flex: 1 1 92px; }
 .sgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
 .st { aspect-ratio: 1; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
 .st span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
@@ -554,9 +567,7 @@ body {
 .tm span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
 .tm b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 1px; }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
-.sentval { font-size: var(--fs-2xl); font-weight: 800; font-family: var(--mono); line-height: 1; }
-.sentlab { font-size: var(--fs-sm); font-weight: 700; margin: 2px 0 9px; }
-.gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); }
+.gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); margin-top: 4px; }
 .gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }
 .gsc { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt3); margin-top: 4px; }
 .sfac { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 8px; line-height: 1.5; }
@@ -564,7 +575,13 @@ body {
 .mv { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs); padding: 2px 0; }
 .mv .s { color: var(--txt2); font-weight: 600; }
 .mv .p { font-family: var(--mono); font-weight: 700; }
-.fdr { margin-top: 13px; }
+/* movers split: gainers (green tint) | draggers (red tint), centre divider */
+.mvcols { display: grid; grid-template-columns: 1fr 1fr; }
+.mvcols > div { padding: 8px 12px; }
+.mvcols > div:first-child { background: color-mix(in srgb, var(--grn) 8%, transparent); border-right: .5px solid var(--brd); border-radius: 8px 0 0 8px; }
+.mvcols > div:last-child { background: color-mix(in srgb, var(--red) 8%, transparent); border-radius: 0 8px 8px 0; }
+/* FII/DII — its own full-width card below the internals + news row */
+.fdcard { margin-bottom: 12px; }
 
 /* portfolio news feed */
 .feedcard { display: flex; flex-direction: column; }

@@ -55,49 +55,64 @@ function TickerLine({ label, kind, items, anim }) {
   );
 }
 
-// ── FII/DII net-flow: FII + DII composition with a net tick (fiidiinetbars mock,
-// "Net composition" variant). Overlapping translucent FII (cyan) + DII (violet)
-// from the zero line, white tick = net (FII+DII); up = bought, down = sold.
-// Hover a day to spotlight it (dims the rest) and read FII/DII/net + the net label.
+// ── FII/DII net-flow: composition bars + net sparkline OVERLAY. Overlapping
+// translucent FII (cyan) + DII (violet) columns from the zero line show who
+// bought/sold; a dotted net line (net = FII+DII) with a green-above / red-below
+// shaded area rides on top to read the net inflow/outflow trend at a glance. No
+// buy/sell or date axis labels. Hover a session to spotlight it + read the net.
 function FiiDiiChart({ trail }) {
   const pts = (trail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const [hi, setHi] = useState(-1);
   if (pts.length < 2) return <div className="na">FII/DII flow trail builds forward — needs a few more sessions.</div>;
 
-  const W = 560, H = 158, PAD_L = 30, PAD_R = 10, zero = 78, half = 54, n = pts.length;
+  const W = 560, H = 120, PAD_L = 12, PAD_R = 12, zero = 62, half = 46, n = pts.length;
   const colW = (W - PAD_L - PAD_R) / n;
-  const bw = Math.min(20, colW * 0.56);
+  const bw = Math.min(22, colW * 0.5);
   const net = (p) => (p.fii || 0) + (p.dii || 0);
   const maxAbs = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0), Math.abs(net(p))]));
   const sc = half / maxAbs;
   const seg = (v) => { const h = Math.abs(v || 0) * sc; return { y: v >= 0 ? zero - h : zero, h }; };
+  const cxOf = (i) => PAD_L + colW * i + colW / 2;
+  const nyOf = (p) => zero - net(p) * sc;
   const d3 = (v) => (v == null || !isFinite(v) ? '—' : Math.abs(Math.round(v)).toLocaleString('en-IN'));
   const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
+
+  // Net sparkline geometry: a dotted polyline through the net points, and a
+  // closed area down to the zero line, clipped into a green (above) and red
+  // (below) half so the fill reads inflow vs outflow.
+  const linePath = pts.map((p, i) => `${i ? 'L' : 'M'} ${cxOf(i).toFixed(1)} ${nyOf(p).toFixed(1)}`).join(' ');
+  const areaPath = `M ${cxOf(0).toFixed(1)} ${zero} ${pts.map((p, i) => `L ${cxOf(i).toFixed(1)} ${nyOf(p).toFixed(1)}`).join(' ')} L ${cxOf(n - 1).toFixed(1)} ${zero} Z`;
 
   return (
     <>
       <svg className="fdg" width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" onMouseLeave={() => setHi(-1)}>
-        <line x1={PAD_L - 6} y1={zero} x2={W - PAD_R} y2={zero} stroke="var(--brd)" />
-        <text x="2" y="13" className="fdax">buy ▲</text>
-        <text x="2" y={H - 15} className="fdax">sell ▼</text>
+        <defs>
+          <clipPath id="fdAbove"><rect x="0" y="0" width={W} height={zero} /></clipPath>
+          <clipPath id="fdBelow"><rect x="0" y={zero} width={W} height={H - zero} /></clipPath>
+        </defs>
+        <line className="fd-zero" x1={PAD_L - 4} y1={zero} x2={W - PAD_R + 4} y2={zero} />
+        {/* composition bars (FII + DII from zero) */}
         {pts.map((p, i) => {
-          const cx = PAD_L + colW * i + colW / 2, x = cx - bw / 2;
-          const f = seg(p.fii), d = seg(p.dii), nv = net(p), ny = zero - nv * sc;
-          const dim = hi >= 0 && hi !== i ? 0.28 : 1;
+          const cx = cxOf(i), x = cx - bw / 2;
+          const f = seg(p.fii), d = seg(p.dii);
+          const dim = hi >= 0 && hi !== i ? 0.3 : 1;
           return (
             <g key={i} opacity={dim} onMouseEnter={() => setHi(i)}>
               <rect className="fd-fii" x={x} y={f.y} width={bw} height={f.h} rx="2" />
               <rect className="fd-dii" x={x} y={d.y} width={bw} height={d.h} rx="2" />
-              <line className="fd-net" x1={x - 1} y1={ny} x2={x + bw + 1} y2={ny} />
-              <rect x={PAD_L + colW * i} y="4" width={colW} height={H - 16} fill="transparent" />
-              {hi === i && <text x={cx} y={ny + (nv >= 0 ? -5 : 12)} textAnchor="middle" className={`fdval ${nv >= 0 ? 'grn' : 'red'}`}>{d3(nv)}</text>}
-              {(n <= 12 || i % 2 === 0) && <text x={cx} y={H - 3} textAnchor="middle" className="fdax">{String(p.d).replace(/-\d{4}$/, '').replace('-', '')}</text>}
+              <rect x={PAD_L + colW * i} y="0" width={colW} height={H} fill="transparent" />
             </g>
           );
         })}
+        {/* net sparkline overlay: shaded area + dotted line + per-session dots */}
+        <path className="fd-pos" clipPath="url(#fdAbove)" d={areaPath} />
+        <path className="fd-neg" clipPath="url(#fdBelow)" d={areaPath} />
+        <path className="fd-spark" d={linePath} />
+        {pts.map((p, i) => <circle key={i} className={`fd-dot ${net(p) >= 0 ? 'g' : 'r'}`} cx={cxOf(i)} cy={nyOf(p)} r="2.4" />)}
+        {hi >= 0 && <text x={cxOf(hi)} y={nyOf(pts[hi]) + (net(pts[hi]) >= 0 ? -6 : 13)} textAnchor="middle" className={`fdval ${net(pts[hi]) >= 0 ? 'grn' : 'red'}`}>{d3(net(pts[hi]))}</text>}
       </svg>
       <div className="tlatest">
-        {cur && <>{String(cur.d).replace(/-\d{4}$/, '')} · FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b> cr</>}
+        {cur && <>FII <b className={cls(cur.fii)}>{d3(cur.fii)}</b> · DII <b className={cls(cur.dii)}>{d3(cur.dii)}</b> · net <b className={cls(net(cur))}>{d3(net(cur))}</b> cr</>}
       </div>
     </>
   );
@@ -117,27 +132,56 @@ function fearGreed(breadthPct, vix, net, niftyPct) {
   const score = Math.round(parts.reduce((a, [x, v]) => a + x * v, 0) / w);
   return { score, label: score < 25 ? 'Extreme fear' : score < 45 ? 'Fear' : score < 56 ? 'Neutral' : score < 76 ? 'Greed' : 'Extreme greed' };
 }
-function SentimentGauge({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty' }) {
+// Full sentiment cell: score + label in the header's top-right corner, the card
+// tinted green/red by the reading (greed/fear), gauge bar + factors below.
+function SentimentCell({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty' }) {
   const fg = fearGreed(breadthPct, vix, net, niftyPct);
-  if (!fg) return <div className="na">—</div>;
-  const col = fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
+  const tone = !fg ? '' : fg.score < 45 ? 'fear' : fg.score < 56 ? '' : 'greed';
+  const col = !fg ? '' : fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
   const f = [];
   if (breadthPct != null && isFinite(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
   if (vix != null && isFinite(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
   if (net != null && isFinite(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
   if (niftyPct != null && isFinite(niftyPct)) f.push(<>{momLabel} <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
   return (
-    <div className="sentwrap">
-      <div className="sentval" style={{ color: col }}>{fg.score}</div>
-      <div className="sentlab" style={{ color: col }}>{fg.label}</div>
-      <div className="gbar"><div className="gneedle" style={{ left: `${fg.score}%` }} /></div>
-      <div className="gsc"><span>fear</span><span>greed</span></div>
-      <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>
+    <div className={`qc sent ${tone}`}>
+      <div className="qh">Market sentiment
+        {fg && <span className="senthd"><b style={{ color: col }}>{fg.score}</b><em style={{ color: col }}>{fg.label}</em></span>}
+      </div>
+      {fg ? (
+        <div className="sentwrap">
+          <div className="gbar"><div className="gneedle" style={{ left: `${fg.score}%` }} /></div>
+          <div className="gsc"><span>fear</span><span>greed</span></div>
+          <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>
+        </div>
+      ) : <div className="na">—</div>}
     </div>
   );
 }
 
-// ── Day movers: top-5 gainers / draggers from the Nifty 50 constituent feed. ──
+// ── Hot-sectors treemap cell: tile size = sector-cap weight, shade = the move. ─
+function SectorTreemap({ tiles }) {
+  return (
+    <div className="qc tree">
+      <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
+      {tiles.length
+        ? <div className="treemap">{tiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
+        : <div className="na">—</div>}
+    </div>
+  );
+}
+
+// ── Day movers: top-5 gainers (green tint) | draggers (red tint), one cell. ────
+function MoversSplit({ gainers, losers }) {
+  return (
+    <div className="qc movers">
+      <div className="mvcols">
+        <div><div className="qh">Top gainers · day</div><Movers list={gainers} /></div>
+        <div><div className="qh">Top draggers · day</div><Movers list={losers} /></div>
+      </div>
+    </div>
+  );
+}
 function Movers({ list }) {
   const rows = (list || []).filter((m) => m && m.sym && m.pct != null).slice(0, 5);
   if (!rows.length) return <div className="na">—</div>;
@@ -245,8 +289,8 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
   const sectorTiles = [...sectors].filter((s) => s.pct != null).map((s) => ({ ...s, w: sectorWeights[s.name] ?? 4 })).sort((a, b) => b.w - a.w).slice(0, 8);
   const niftyPct = c.nifty?.pct;
   const breadthPct = ind.breadthAD?.pctUp;
-  const fdLast = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-1)[0];
-  const fiiNet = fdLast ? (fdLast.fii || 0) + (fdLast.dii || 0) : null;
+  const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
+  const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // US-side sentiment inputs (Global view mirrors India minus FII/DII): sector
   // breadth (% of SPDR sectors green), US VIX, S&P 500 day move + day movers.
   const usSecLive = usSectors.filter((s) => s.pct != null);
@@ -291,45 +335,38 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
       <TickerLine label="Commod · FX" kind="cmd" items={fx} anim="run rev" />
       <TickerLine label="News" kind="nw" items={news} anim="run slow" />
 
-      {/* Left: market internals · Right: portfolio news */}
+      {/* Left: market internals (sentiment · treemap · movers) · Right: portfolio news */}
       <div className="two">
-        {showIN ? (
-          <div className="card">
-            <div className="wlabel">Market internals <span className="hint">{asOf ? `NSE · ${asOf}` : 'today'}</span></div>
-            <div className="wquad">
-              <div className="qc">
-                <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
-                {sectorTiles.length
-                  ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
-                  : <div className="na">—</div>}
-              </div>
-              <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={breadthPct} vix={ivix?.last} net={fiiNet} niftyPct={niftyPct} /></div>
-              <div className="qc"><div className="qh">Top gainers · day</div><Movers list={nifty50?.movers?.gainers} /></div>
-              <div className="qc"><div className="qh">Top draggers · day</div><Movers list={nifty50?.movers?.losers} /></div>
-            </div>
-            {(ind.breadthAD || (fiidiiTrail || []).length >= 2) && <>
-              <div className="rlabel fdr">FII / DII · net flow <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span></div>
-              <FiiDiiChart trail={fiidiiTrail} />
-            </>}
+        <div className="card">
+          <div className="wlabel">Market internals <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
+          <div className="wstack">
+            <SentimentCell
+              breadthPct={showIN ? breadthPct : usBreadthPct}
+              vix={showIN ? ivix?.last : usVix}
+              net={showIN ? fiiNet : null}
+              niftyPct={showIN ? niftyPct : spxPct}
+              momLabel={showIN ? 'Nifty' : 'S&P'}
+            />
+            <SectorTreemap tiles={sectorTiles} />
+            <MoversSplit
+              gainers={showIN ? nifty50?.movers?.gainers : usMovers?.gainers}
+              losers={showIN ? nifty50?.movers?.losers : usMovers?.losers}
+            />
           </div>
-        ) : (
-          <div className="card">
-            <div className="wlabel">Market internals <span className="hint">{usAsOf ? `US · ${usAsOf}` : 'US'}</span></div>
-            <div className="wquad">
-              <div className="qc">
-                <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
-                {sectorTiles.length
-                  ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
-                  : <div className="na">—</div>}
-              </div>
-              <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={usBreadthPct} vix={usVix} net={null} niftyPct={spxPct} momLabel="S&P" /></div>
-              <div className="qc"><div className="qh">Top gainers · day</div><Movers list={usMovers?.gainers} /></div>
-              <div className="qc"><div className="qh">Top draggers · day</div><Movers list={usMovers?.losers} /></div>
-            </div>
-          </div>
-        )}
+        </div>
         <NewsFeed news={portfolioNews} region={region} />
       </div>
+
+      {/* FII/DII — its own full-width card below the internals + news row (India only) */}
+      {showIN && (ind.breadthAD || fdTrail.length >= 2) && (
+        <div className="card fdcard">
+          <div className="wlabel">FII / DII · net flow
+            <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
+            <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
+          </div>
+          <FiiDiiChart trail={fiidiiTrail} />
+        </div>
+      )}
 
       {/* Macro percentile sliders */}
       <SliderBoard board={macroBoard} />
