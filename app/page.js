@@ -1075,19 +1075,18 @@ function Dashboard() {
                     </span>
                   )}
                 </div>
-                {/* line 2 — liabilities DIMMED (a passing note) + the off-NW trading book
-                    kept accent-bright, so the dim/bright contrast keeps the two from reading alike */}
+                {/* line 2 — the off-NW trading book leads (accent-bright); liabilities
+                    trail DIMMED as a passing note, so the dim/bright contrast keeps the
+                    two from reading alike */}
                 <div>
-                  <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
                   {indian.valued && usdInr ? (
-                    <>
-                      {' · '}
-                      <span style={{ whiteSpace: 'nowrap' }}
-                        title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
-                        incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
-                      </span>
-                    </>
-                  ) : <>{' · '}excl. trading</>}
+                    <span style={{ whiteSpace: 'nowrap' }}
+                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
+                      incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
+                    </span>
+                  ) : 'excl. trading'}
+                  {' · '}
+                  <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
                 </div>
               </div>
             </button>
