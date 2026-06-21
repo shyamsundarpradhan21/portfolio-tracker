@@ -15,7 +15,7 @@ const UA =
 const FEEDS = [
   { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', source: 'CNBC' },
   { url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms', source: 'ET Markets' },
-  { url: 'https://www.moneycontrol.com/rss/MCtopnews.xml', source: 'Moneycontrol' },
+  { url: 'https://www.moneycontrol.com/rss/latestnews.xml', source: 'Moneycontrol' },
 ];
 
 async function feed(f) {
@@ -37,8 +37,9 @@ async function feed(f) {
 export async function GET() {
   const lists = await Promise.all(FEEDS.map(feed));
   const seen = new Set();
+  const cut = Date.now() - 14 * 86400 * 1000; // ticker = current headlines only (drops dead/stale feeds like MCtopnews)
   const items = lists.flat()
-    .filter((i) => i.title && !seen.has(i.title) && seen.add(i.title))
+    .filter((i) => { const t = Date.parse(i.date); return isFinite(t) && t >= cut && i.title && !seen.has(i.title) && seen.add(i.title); })
     .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0))
     .slice(0, 18);
   return Response.json(
