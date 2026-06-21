@@ -23,14 +23,18 @@ const agoStr = (ts) => {
 // ── 3-line ticker ────────────────────────────────────────────────────────────
 function TickerLine({ label, kind, items, anim }) {
   if (!items || !items.length) return null;
-  const loop = items.concat(items); // 2× for a seamless −50% loop
+  // Pad each half past the rail width, then duplicate, so the −50% scroll is a
+  // seamless continuous loop no matter how few items there are.
+  const half = [];
+  while (half.length < Math.max(items.length, 14)) half.push(...items);
+  const loop = half.concat(half);
   return (
     <div className="tkw">
       <span className={`tklab ${kind || ''}`}>{label}</span>
       <div className="tkv">
         <div className={`tkrow ${anim}`}>
           {loop.map((it, i) => (
-            <span className="tki" key={i} aria-hidden={i >= items.length}>
+            <span className="tki" key={i} aria-hidden={i >= half.length}>
               {it.dot
                 ? <><i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
                 : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
@@ -58,7 +62,7 @@ function FiiDiiChart({ trail }) {
   const maxAbs = Math.max(1, ...pts.flatMap((p) => [Math.abs(p.fii || 0), Math.abs(p.dii || 0), Math.abs(net(p))]));
   const sc = half / maxAbs;
   const seg = (v) => { const h = Math.abs(v || 0) * sc; return { y: v >= 0 ? zero - h : zero, h }; };
-  const d3 = (v) => (v == null || !isFinite(v) ? '—' : (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString('en-IN'));
+  const d3 = (v) => (v == null || !isFinite(v) ? '—' : Math.abs(Math.round(v)).toLocaleString('en-IN'));
   const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
 
   return (
@@ -108,20 +112,18 @@ function SentimentGauge({ breadthPct, vix, net, niftyPct }) {
   const fg = fearGreed(breadthPct, vix, net, niftyPct);
   if (!fg) return <div className="na">—</div>;
   const col = fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
-  const snet = (v) => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString('en-IN');
-  const facts = [
-    breadthPct != null && isFinite(breadthPct) ? `breadth ${Math.round(breadthPct)}%` : null,
-    vix != null && isFinite(vix) ? `VIX ${vix.toFixed(1)}` : null,
-    net != null && isFinite(net) ? `FII/DII ${snet(net)}` : null,
-    niftyPct != null && isFinite(niftyPct) ? `Nifty ${apct(niftyPct)}` : null,
-  ].filter(Boolean).join(' · ');
+  const f = [];
+  if (breadthPct != null && isFinite(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
+  if (vix != null && isFinite(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
+  if (net != null && isFinite(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
+  if (niftyPct != null && isFinite(niftyPct)) f.push(<>Nifty <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
   return (
     <div className="sentwrap">
       <div className="sentval" style={{ color: col }}>{fg.score}</div>
       <div className="sentlab" style={{ color: col }}>{fg.label}</div>
       <div className="gbar"><div className="gneedle" style={{ left: `${fg.score}%` }} /></div>
       <div className="gsc"><span>fear</span><span>greed</span></div>
-      <div className="sfac">{facts}</div>
+      <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>
     </div>
   );
 }
@@ -133,7 +135,7 @@ function Movers({ list }) {
   return (
     <div className="mvlist">
       {rows.map((m) => (
-        <div className="mv" key={m.sym}><span className="s">{m.sym}</span><span className={`p ${cls(m.pct)}`}>{apct(m.pct)}</span></div>
+        <div className="mv" key={m.sym}><span className="s">{m.sym}</span><span className={`p ${cls(m.pct)}`}>{Math.abs(m.pct).toFixed(2)}%</span></div>
       ))}
     </div>
   );
@@ -279,7 +281,7 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
               <div className="qc">
                 <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
                 {hotSectors.length
-                  ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{s.pct.toFixed(2)}</b></div>)}</div>
+                  ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
                   : <div className="na">—</div>}
               </div>
               <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={breadthPct} vix={ivix?.last} net={fiiNet} niftyPct={niftyPct} /></div>
@@ -295,7 +297,7 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
           <div className="card">
             <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
             {hotSectors.length
-              ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{s.pct.toFixed(2)}</b></div>)}</div>
+              ? <div className="sgrid">{hotSectors.map((s) => <div className="st" key={s.name} style={{ background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
               : <div className="na">Sector board unavailable.</div>}
           </div>
         )}
