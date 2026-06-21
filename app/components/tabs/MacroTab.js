@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
-import { Rs } from '../../lib/fmt';
+import { Rs, agoShort } from '../../lib/fmt';
 
 // ── tiny formatters (mockup style: ▲/▼ glyph + grn/red/mut colour) ───────────
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
@@ -25,12 +25,6 @@ const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 // S&P 500 GICS weights for the US.
 const SECTOR_WEIGHTS = { 'Fin Services': 30, Bank: 24, IT: 14, Energy: 13, FMCG: 9, Auto: 8, Pharma: 7, Metal: 5, 'PSU Bank': 5, Realty: 2 };
 const US_SECTOR_WEIGHTS = { Technology: 32, Financials: 13, 'Health Care': 11, 'Cons. Discretionary': 10, Communication: 9, Industrials: 8, 'Cons. Staples': 6, Energy: 3.5, Utilities: 2.5, Materials: 2, 'Real Estate': 2 };
-const agoStr = (ts) => {
-  if (!ts) return '';
-  const m = Math.max(0, (Date.now() - ts) / 60000);
-  if (m < 60) return `${Math.round(m)}m`;
-  const h = m / 60; return h < 24 ? `${Math.round(h)}h` : `${Math.round(h / 24)}d`;
-};
 
 // ── 3-line ticker ────────────────────────────────────────────────────────────
 function TickerLine({ label, kind, items, anim }) {
@@ -427,16 +421,12 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
 
   return (
     <div className="wrapx">
-      {/* Overview banner — one-line whole-book read of today's macro */}
-      {hasPulse && (
-        <div className="kept">
-          <span className="ktag">✦ Portfolio overview</span>
-          <span className="ktxt">{pulse.read || 'Whole-book read across today’s macro.'}</span>
-          {insightsTs && <span className="kept-r"><span className="kdiv">AI · {agoStr(insightsTs)}</span></span>}
-        </div>
-      )}
+      {/* 3-line ticker railines — pinned to the top of the tab */}
+      <TickerLine label="Indices" items={idx} anim="run" />
+      <TickerLine label="Commod · FX" kind="cmd" items={fx} anim="run rev" />
+      <TickerLine label="News" kind="nw" items={news} anim="run slow" />
 
-      {/* Region filter + as-of — the single toggle that drives the whole tab */}
+      {/* Region filter + as-of — the India/US toggle that drives the whole tab */}
       <div className="hdr">
         <div className="seg" role="tablist" aria-label="Region filter">
           {[['india', 'India'], ['us', 'US']].map(([k, l]) => (
@@ -446,18 +436,28 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         <span className="asof">{asOf ? `NSE · ${asOf}` : 'market wrap'}</span>
       </div>
 
-      {/* SWOT — straightforward AI read; the region toggle above picks which side(s) show */}
+      {/* Persistent portfolio review — whole-book AI read, shown for both India and US.
+          AI tag doubles as the refresh control with the countdown beside it. */}
+      {hasPulse && (
+        <div className="kept">
+          <span className="ktag">✦ Portfolio overview</span>
+          <span className="ktxt">{pulse.read || 'Whole-book read across today’s macro.'}</span>
+          {insightsTs && (
+            <span className="kept-r" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <span className="ai-ago">{agoShort(insightsTs)}</span>
+              <button className="ins-ai" style={{ '--ai-tag': 'var(--acc)' }} onClick={onRefresh || undefined} disabled={!onRefresh} title="Click to regenerate this analysis" aria-label="Regenerate AI analysis">AI</button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* SWOT — AI read; the region toggle above picks which side(s) show */}
       {((showIN && insights?.indian_swot) || (showUS && insights?.us_swot)) && (
         <div className={`swotrow${showIN && showUS && insights?.indian_swot && insights?.us_swot ? ' two-up' : ''}`}>
           {showIN && insights?.indian_swot && <SwotCard swot={insights.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />}
           {showUS && insights?.us_swot && <SwotCard swot={insights.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />}
         </div>
       )}
-
-      {/* 3-line ticker */}
-      <TickerLine label="Indices" items={idx} anim="run" />
-      <TickerLine label="Commod · FX" kind="cmd" items={fx} anim="run rev" />
-      <TickerLine label="News" kind="nw" items={news} anim="run slow" />
 
       {/* Left: market internals (sentiment · treemap · movers) · Right: portfolio news */}
       <div className="two">
