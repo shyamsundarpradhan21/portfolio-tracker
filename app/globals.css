@@ -221,13 +221,14 @@ body {
 }
 
 .topbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;   /* status | centered NSE/NYSE/Macro | right toggles */
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
 }
-.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; justify-self: start; min-width: 0; }
+.topbar-center { display: flex; align-items: center; gap: 9px; justify-self: center; }
+@media (max-width: 720px) { .topbar { grid-template-columns: 1fr; row-gap: 8px; } .topbar-center, .topbar-right { justify-self: start; flex-wrap: wrap; } }
 .pulse {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--grn); flex-shrink: 0;
@@ -1097,7 +1098,12 @@ body {
 .ai-card { border-left: 2px solid color-mix(in srgb, var(--acc) 55%, transparent); }
 .ai-head { display: flex; align-items: center; gap: 8px; font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--txt3); margin-bottom: 12px; }
 .ai-spark { color: var(--acc); font-size: 1.1em; }
-.ai-head .ins-ai { margin-left: auto; }
+.ai-meta { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.ai-ago { font-family: var(--mono); font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--txt3); }
+.ai-refresh { background: none; border: 0; color: var(--txt3); cursor: pointer; font-size: var(--fs-sm); line-height: 1; padding: 0 1px; transition: color .15s, transform .12s; }
+.ai-refresh:hover { color: var(--acc); }
+.ai-refresh:active { transform: rotate(90deg); }
+.ai-refresh:disabled { opacity: .4; cursor: default; }
 .ai-body { display: flex; flex-direction: column; gap: 13px; }
 .ai-body .ins-skel { height: 34px; }
 .ai-lbl { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; color: var(--acc); margin-bottom: 4px; }
@@ -1133,7 +1139,7 @@ body { padding: 0; }
 @media (min-width: 3200px) { .main { max-width: 2560px; } }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
-.topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; }
+.topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; justify-self: end; }
 
 /* Live NW hero (left) + 5 asset cards (right). The hero is the Overview link. */
 .hdr-grid {

@@ -40,6 +40,7 @@ const COLORS = ALLOC_COLORS;
 // INDIAN reconcile is corp-action-aware — computed from heldIndian (post-bonus/
 // split) inside the component, so an action the app already applies isn't flagged.
 
+import { AiContext } from './components/shared/AiContext';
 import OverviewTab  from './components/tabs/OverviewTab';
 import IndianTab    from './components/tabs/IndianTab';
 import FDTab        from './components/tabs/FDTab';
@@ -67,18 +68,6 @@ const NEWS_KEY      = 'nwTracker.marketNews';
 const NIFTY50_KEY   = 'nwTracker.nifty50';
 const REFRESH_MS    = 15 * 60 * 1000;
 
-// Relative age of the shown AI analysis → tells fresh ("just now") from cached
-// ("5h ago" / a date). Recomputed each render; the price interval re-renders
-// keep it roughly current.
-const aiAgo = (ts) => {
-  if (!ts) return '';
-  const s = Math.max(0, (Date.now() - ts) / 1000);
-  if (s < 90) return 'just now';
-  const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`;
-  const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`;
-  const d = h / 24; if (d < 7) return `${Math.round(d)}d ago`;
-  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-};
 
 // True only if at least one sleeve carries real text. The route degrades to an
 // all-empty object when the key/schema is misconfigured; never cache or surface
@@ -341,6 +330,12 @@ function Dashboard() {
   // Header ↻ — refresh live prices; regenerate AI only if the AI toggle is on, so
   // the analysis call is opt-in. The 15-min auto-refresh calls doRefresh() directly.
   const refreshAll = () => { doRefresh(); if (insightsOn) requestInsights(); };
+  // After a refresh the status line flashes for a few minutes, then clears (errors stay).
+  useEffect(() => {
+    if (!status.msg || status.type === 'err') return undefined;
+    const t = setTimeout(() => setStatus((s) => (s.type === 'err' ? s : { ...s, msg: '' })), 180000);
+    return () => clearTimeout(t);
+  }, [status.msg, status.type]);
   const insightsFirstLoad = insightsLoading && insights == null;
   const timer = useRef(null);
 
@@ -1034,20 +1029,16 @@ function Dashboard() {
               <div className={pulseCls} />
               <span className="status-txt">{status.msg}</span>
             </div>
-            <div className="topbar-right">
+            <div className="topbar-center">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
-              <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
-              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Macro Wrap — India & US market regimes: index moves, sectors, FII/DII flows, and the macro backdrop">
-                <span className="pulse-spark">✦</span>Macro Wrap
+              <button className={'pulse-pill' + (tab === 6 ? ' active' : '')} onClick={() => selectTab(6)} title="Market Wrap — India & US market regimes: index moves, sectors, FII/DII flows, and the macro backdrop">
+                <span className="pulse-spark">✦</span>Market Wrap
               </button>
+              <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
+            </div>
+            <div className="topbar-right">
               <button className={'hdr-toggle ai-toggle' + (insightsOn ? ' on' : '')} onClick={toggleInsights} aria-pressed={insightsOn}
-                title={insightsOn ? 'AI analysis ON — click to turn off' : 'AI analysis OFF — click to enable'}>AI</button>
-              {insightsLoading
-                ? <span className="ai-status">✦ analysing…</span>
-                : insights && insightsTs
-                  ? <span className="ai-status ai-fresh" title="When this analysis was last refreshed — click ↻ to regenerate">✦ analysed {aiAgo(insightsTs)}</span>
-                  : null}
-              <button className={'hdr-toggle' + (loading || insightsLoading ? ' loading' : '')} onClick={refreshAll} title="Refresh — live prices + AI analysis" aria-label="Refresh prices and AI analysis">↻</button>
+                title={insightsOn ? 'AI analysis ON — click to hide the cards' : 'AI analysis OFF — click to show the cards'}>AI</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
             </div>
           </div>
@@ -1105,6 +1096,7 @@ function Dashboard() {
         </div>
 
         {/* TAB CONTENT — key forces a remount on tab switch so tabEnter plays */}
+        <AiContext.Provider value={{ ts: insightsTs, refresh: refreshAll }}>
         <div className="tab-content" key={tab}>
           {tab === 0 && (
             <OverviewTab ov={ov} fx={fxRate}
@@ -1152,6 +1144,7 @@ function Dashboard() {
               onRefresh={refreshInsights} aiReady={!!(indian.valued && usData.val && usdInr)} />
           )}
         </div>
+        </AiContext.Provider>
 
         <div style={{ textAlign: 'center', color: 'var(--txt3)', fontSize: 'var(--fs-2xs)', marginTop: 32, paddingBottom: 16 }}>
           Live prices via Yahoo Finance · auto-refresh every 15 min · personal use only

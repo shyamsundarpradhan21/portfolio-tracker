@@ -47,6 +47,18 @@ export function fmtDateObj(d) {
 
 export const isoOf = (d) => d.toISOString().slice(0, 10);
 
+// Compact "time since" for the AI-card countdown: now / 3m / 4h / 4d / 5w / 2mo.
+export const agoShort = (ts) => {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return 'now';
+  const m = s / 60; if (m < 60) return `${Math.round(m)}m`;
+  const h = m / 60; if (h < 24) return `${Math.round(h)}h`;
+  const d = h / 24; if (d < 7) return `${Math.round(d)}d`;
+  const w = d / 7; if (w < 4.5) return `${Math.round(w)}w`;
+  return `${Math.round(d / 30)}mo`;
+};
+
 // JSX helpers — need 'use client' context
 export const Rs  = () => <span className="rs">₹</span>;
 export const Usd = () => <span className="rs">$</span>;
