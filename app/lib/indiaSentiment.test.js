@@ -82,6 +82,15 @@ describe('absorptionGap — foreign flight soaked up by domestic buying', () => 
     const g = absorptionGap(-1.6 * sf, 1.1 * sd, fh, dh);
     expect(g).toEqual({ fii: -1.6 * sf, dii: 1.1 * sd });
   });
+  it('a synthetic foreign-flight day (FII -2σ, DII +1.5σ) fires with correctly-SIGNED values', () => {
+    const g = absorptionGap(-2 * sf, 1.5 * sd, fh, dh);
+    expect(g).not.toBeNull();
+    expect(g.fii).toBeLessThan(0);    // outflow — the copy reads "Foreign outflow ₹X ..."
+    expect(g.dii).toBeGreaterThan(0); // domestic buying — "... absorbed by ₹Y"
+  });
+  it('near-miss (FII -1.4σ, just shy of the -1.5σ trigger) stays silent', () => {
+    expect(absorptionGap(-1.4 * sf, 1.5 * sd, fh, dh)).toBeNull();
+  });
   it('silent when DII is not absorbing', () => {
     expect(absorptionGap(-1.6 * sf, -0.5 * sd, fh, dh)).toBeNull();
   });

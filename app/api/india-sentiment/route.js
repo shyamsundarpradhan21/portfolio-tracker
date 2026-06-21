@@ -63,6 +63,9 @@ async function yhLast(symbol) {
 // SHORT rolling window by contrast — see lib/indiaSentiment.js for why the windows differ.)
 let VIX_BAND = { day: null, median: null, sigma: null, closes: null };
 async function vixSignal() {
+  // NOTE: the band "day" rolls over on UTC midnight (~05:30 IST), not an NSE boundary —
+  // benign because we re-pull the year on rollover anyway, but if anything ever compares
+  // band freshness to NSE session time, this UTC/IST seam is where it would bite.
   const day = new Date().toISOString().slice(0, 10);
   let last, asOf;
   if (VIX_BAND.day !== day || !isNum(VIX_BAND.median)) {
