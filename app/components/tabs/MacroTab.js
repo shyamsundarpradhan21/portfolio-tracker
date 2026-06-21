@@ -11,12 +11,17 @@ const TONE = { calm: 'calm', warn: 'warn', stress: 'stress' };
 // Solid-ish diverging tile colour for the sector squares (theme text on top).
 const sheat = (p) => (p == null || !isFinite(p)) ? 'var(--sur2)'
   : `color-mix(in srgb, ${p >= 0 ? 'var(--grn)' : 'var(--red)'} ${Math.round(22 + Math.min(1, Math.abs(p) / 3) * 58)}%, var(--sur2))`;
-const shortSec = (n) => String(n || '').replace(/^Nifty\s*/i, '');
+// Tile-friendly short names — strip the "Nifty " prefix (India) or map the long
+// SPDR sector labels to something that fits a square (US).
+const US_SHORT = { Technology: 'Tech', Communication: 'Comm', 'Cons. Discretionary': 'Cons Disc', Financials: 'Financials', 'Health Care': 'Health', Industrials: 'Industrials', 'Cons. Staples': 'Staples', Energy: 'Energy', Utilities: 'Utilities', Materials: 'Materials', 'Real Estate': 'Real Est' };
+const shortSec = (n) => US_SHORT[n] || String(n || '').replace(/^Nifty\s*/i, '');
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-// Approximate NSE sectoral-index market-cap shares (relative) — sizes the treemap
-// tiles (colour still encodes the day's move). Not in the NSE feed, so maintained
-// here; the proportions are stable (refresh occasionally).
+// Approximate sectoral market-cap shares (relative) — size the treemap tiles
+// (colour still encodes the day's move). Not in the live feeds, so maintained
+// here; the proportions are stable (refresh occasionally). NSE indices for India,
+// S&P 500 GICS weights for the US.
 const SECTOR_WEIGHTS = { 'Fin Services': 30, Bank: 24, IT: 14, Energy: 13, FMCG: 9, Auto: 8, Pharma: 7, Metal: 5, 'PSU Bank': 5, Realty: 2 };
+const US_SECTOR_WEIGHTS = { Technology: 32, Financials: 13, 'Health Care': 11, 'Cons. Discretionary': 10, Communication: 9, Industrials: 8, 'Cons. Staples': 6, Energy: 3.5, Utilities: 2.5, Materials: 2, 'Real Estate': 2 };
 const agoStr = (ts) => {
   if (!ts) return '';
   const m = Math.max(0, (Date.now() - ts) / 60000);
@@ -112,7 +117,7 @@ function fearGreed(breadthPct, vix, net, niftyPct) {
   const score = Math.round(parts.reduce((a, [x, v]) => a + x * v, 0) / w);
   return { score, label: score < 25 ? 'Extreme fear' : score < 45 ? 'Fear' : score < 56 ? 'Neutral' : score < 76 ? 'Greed' : 'Extreme greed' };
 }
-function SentimentGauge({ breadthPct, vix, net, niftyPct }) {
+function SentimentGauge({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty' }) {
   const fg = fearGreed(breadthPct, vix, net, niftyPct);
   if (!fg) return <div className="na">—</div>;
   const col = fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
@@ -120,7 +125,7 @@ function SentimentGauge({ breadthPct, vix, net, niftyPct }) {
   if (breadthPct != null && isFinite(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
   if (vix != null && isFinite(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
   if (net != null && isFinite(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
-  if (niftyPct != null && isFinite(niftyPct)) f.push(<>Nifty <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
+  if (niftyPct != null && isFinite(niftyPct)) f.push(<>{momLabel} <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
   return (
     <div className="sentwrap">
       <div className="sentval" style={{ color: col }}>{fg.score}</div>
@@ -234,13 +239,23 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
   const usSectors = (premarket?.usSectors || []).map((s) => ({ name: s.label, pct: s.pct })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const nseSectors = (ind.sectors || []).slice().sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const sectors = showIN ? nseSectors : usSectors;
-  const sectorLabel = showIN ? 'NSE sectors' : 'US sectors (SPDR)';
-  // Hot picks = the most-moved sectors; sentiment factors + day movers (India).
-  const sectorTiles = [...sectors].filter((s) => s.pct != null).map((s) => ({ ...s, w: SECTOR_WEIGHTS[s.name] ?? 4 })).sort((a, b) => b.w - a.w).slice(0, 8);
+  // Treemap tiles: size by maintained sector-cap weight (region-aware), shade by
+  // today's move; show the 8 largest sleeves.
+  const sectorWeights = showIN ? SECTOR_WEIGHTS : US_SECTOR_WEIGHTS;
+  const sectorTiles = [...sectors].filter((s) => s.pct != null).map((s) => ({ ...s, w: sectorWeights[s.name] ?? 4 })).sort((a, b) => b.w - a.w).slice(0, 8);
   const niftyPct = c.nifty?.pct;
   const breadthPct = ind.breadthAD?.pctUp;
   const fdLast = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-1)[0];
   const fiiNet = fdLast ? (fdLast.fii || 0) + (fdLast.dii || 0) : null;
+  // US-side sentiment inputs (Global view mirrors India minus FII/DII): sector
+  // breadth (% of SPDR sectors green), US VIX, S&P 500 day move + day movers.
+  const usSecLive = usSectors.filter((s) => s.pct != null);
+  const usBreadthPct = usSecLive.length ? (usSecLive.filter((s) => s.pct > 0).length / usSecLive.length) * 100 : null;
+  const usVix = premarket?.usVix;
+  const spxPct = c.sp500?.pct;
+  const usMovers = premarket?.usMovers;
+  const usAsOf = premarket?.sessions?.sp500?.asOf
+    ? new Date(premarket.sessions.sp500.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
 
   return (
     <div className="wrapx">
@@ -299,10 +314,18 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
           </div>
         ) : (
           <div className="card">
-            <div className="wlabel">{sectorLabel} <span className="hint">{asOf ? 'live' : 'today'}</span></div>
-            {sectorTiles.length
-              ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
-              : <div className="na">Sector board unavailable.</div>}
+            <div className="wlabel">Market internals <span className="hint">{usAsOf ? `US · ${usAsOf}` : 'US'}</span></div>
+            <div className="wquad">
+              <div className="qc">
+                <div className="qh">Hot sectors<span className="hlg">{[5, 3, 1.5, -1.5, -3, -5].map((x, i) => <i key={i} style={{ background: sheat(x) }} />)}</span></div>
+                {sectorTiles.length
+                  ? <div className="treemap">{sectorTiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
+                  : <div className="na">—</div>}
+              </div>
+              <div className="qc"><div className="qh">Market sentiment</div><SentimentGauge breadthPct={usBreadthPct} vix={usVix} net={null} niftyPct={spxPct} momLabel="S&P" /></div>
+              <div className="qc"><div className="qh">Top gainers · day</div><Movers list={usMovers?.gainers} /></div>
+              <div className="qc"><div className="qh">Top draggers · day</div><Movers list={usMovers?.losers} /></div>
+            </div>
           </div>
         )}
         <NewsFeed news={portfolioNews} region={region} />

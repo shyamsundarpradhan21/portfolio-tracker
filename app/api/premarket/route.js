@@ -168,6 +168,38 @@ async function fetchUsSectors() {
   return rows;
 }
 
+// ── US market movers (Yahoo predefined screeners) ────────────────────────────
+// day_gainers / day_losers are keyless "saved" screeners. Unfiltered they're
+// micro-cap-heavy (penny biotech, SPACs), so we keep only large caps (≥ $10B) —
+// the names that actually move the index and that this book tracks — then surface
+// the 5 biggest moves each way. The US mirror of the Nifty day-movers.
+async function fetchUsMovers() {
+  const CAP_FLOOR = 10e9;
+  const one = async (scrId) => {
+    const path = `/v1/finance/screener/predefined/saved?scrIds=${scrId}&count=50`;
+    for (const host of YH_HOSTS) {
+      try {
+        const res = await fetch(host + path, {
+          headers: { 'User-Agent': UA, Accept: 'application/json' },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(7000),
+        });
+        if (!res.ok) continue;
+        const quotes = (await res.json())?.finance?.result?.[0]?.quotes;
+        if (!Array.isArray(quotes)) continue;
+        return quotes
+          .filter((x) => x && x.symbol && (x.marketCap || 0) >= CAP_FLOOR && typeof x.regularMarketChangePercent === 'number')
+          .map((x) => ({ sym: x.symbol, name: x.shortName || x.longName || x.symbol, pct: x.regularMarketChangePercent }))
+          .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
+          .slice(0, 5);
+      } catch { /* try next host */ }
+    }
+    return [];
+  };
+  const [gainers, losers] = await Promise.all([one('day_gainers'), one('day_losers')]);
+  return { gainers, losers };
+}
+
 // ── NSE session cookie (shared) ──────────────────────────────────────────────
 // NSE gates its JSON behind a cookie set on the home page. We bootstrap it ONCE
 // per request (browser UA) and reuse it for every NSE endpoint below (indices +
@@ -321,8 +353,8 @@ async function persistTrail(latest) {
 export async function GET() {
   // One NSE cookie bootstrap, reused by both NSE endpoints (indices + FII/DII).
   const cookie = await nseCookie();
-  const [cues, sessions, usSectors, fiidii, indices] = await Promise.all([
-    fetchCues(), fetchSessions(), fetchUsSectors(), fetchFiiDii(cookie), fetchIndices(cookie),
+  const [cues, sessions, usSectors, usMovers, usVix, fiidii, indices] = await Promise.all([
+    fetchCues(), fetchSessions(), fetchUsSectors(), fetchUsMovers(), yhQuote('^VIX', 'Yahoo ^VIX'), fetchFiiDii(cookie), fetchIndices(cookie),
   ]);
   // Persist + attach the server trail when KV is configured; null otherwise.
   const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
@@ -333,6 +365,8 @@ export async function GET() {
       cues,
       sessions,
       usSectors,
+      usMovers,
+      usVix: usVix && !usVix.stale ? usVix.price : null,
       fiidii,
       indices,
     },
