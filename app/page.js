@@ -116,7 +116,13 @@ function deriveMf(mfNav) {
     if (!r.mcap) { cap.multi += r.value; return; }
     ['large','mid','small','multi','hedged'].forEach((k) => { if (r.mcap[k]) cap[k] += r.value * r.mcap[k]; });
   });
-  return { rows, totVal, totCost, totRet: totCost ? ((totVal - totCost) / totCost) * 100 : 0, jio: sub((r) => r.platform === 'JioBLK'), elss: sub((r) => r.platform === 'Zerodha'), alloc, cap, v };
+  // NAV-freshness: `fresh` only means "resolved from AMFI", not "current" — over a
+  // weekend/holiday the latest NAV is days old. Treat it as live only when every fund
+  // resolved AND the newest NAV date is within ~2 days; else surface the date so the
+  // card never claims "live" on stale data.
+  const navDate = rows.map((r) => r.navDate).filter(Boolean).sort().slice(-1)[0] || null;
+  const navLive = rows.length > 0 && rows.every((r) => r.fresh) && navDate != null && (Date.now() - Date.parse(navDate)) < 2 * 86400 * 1000;
+  return { rows, totVal, totCost, totRet: totCost ? ((totVal - totCost) / totCost) * 100 : 0, jio: sub((r) => r.platform === 'JioBLK'), elss: sub((r) => r.platform === 'Zerodha'), alloc, cap, v, navDate, navLive };
 }
 
 function deriveFds(now) {
@@ -982,7 +988,7 @@ function Dashboard() {
       sub: indian.valued ? <span className={cl(indian.pl)}><SInrC n={indian.pl} /> · {pctS(indian.pct)}</span> : `${INDIAN.length} stocks` },
     { label: 'Mutual funds', tab: 3,
       val: <LiveInrC n={mf.totVal} />,
-      sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · live NAV</> },
+      sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · {mf.navLive ? 'live NAV' : mf.navDate ? `NAV ${new Date(mf.navDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : 'NAV n/a'}</> },
     { label: 'Fixed deposits', tab: 2,
       val: <LiveInrC n={ov.fdValue} />,
       sub: <><span className="grn"><InrF n={fds.accrued} /></span> accrued</> },

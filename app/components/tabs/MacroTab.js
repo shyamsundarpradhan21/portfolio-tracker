@@ -330,8 +330,12 @@ function NewsFeed({ news, region }) {
 }
 
 // ── Macro percentile sliders: tone zone + white knob + 1-yr-%ile scale ───────
-function SliderBoard({ board }) {
-  const groups = (board?.groups || []).map((g) => ({ group: g.group, rows: (g.series || []).filter((c) => c && !c.stale && c.value != null) })).filter((g) => g.rows.length);
+function SliderBoard({ board, region = 'all' }) {
+  // Region-gate the India-specific series only: the Global view hides RBI repo / India
+  // CPI·GDP·IIP·VIX. Global macros (US VIX, DXY, etc.) stay visible everywhere — they're
+  // context an India book still cares about — so India/All show the full board.
+  const hidden = (c) => region === 'global' && c.region === 'india';
+  const groups = (board?.groups || []).map((g) => ({ group: g.group, rows: (g.series || []).filter((c) => c && !c.stale && c.value != null && !hidden(c)) })).filter((g) => g.rows.length);
   if (!groups.length) return null;
   return (
     <div className="card">
@@ -387,8 +391,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
     dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
   ].filter(Boolean);
   let newsRaw = (marketNews?.items || []).filter((it) => it && it.title);
-  if (region === 'india') { const f = newsRaw.filter((it) => /ET|Money|Mint|Business|BS\b/i.test(it.source || '')); if (f.length) newsRaw = f; }
-  else if (region === 'global') { const f = newsRaw.filter((it) => /CNBC|Reuters|Bloomberg/i.test(it.source || '')); if (f.length) newsRaw = f; }
+  // Region-tagged at source (/api/news); untagged items from a stale cache stay visible.
+  if (region === 'india') { const f = newsRaw.filter((it) => it.region !== 'global'); if (f.length) newsRaw = f; }
+  else if (region === 'global') { const f = newsRaw.filter((it) => it.region !== 'india'); if (f.length) newsRaw = f; }
   const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
@@ -487,7 +492,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
       )}
 
       {/* Macro percentile sliders */}
-      <SliderBoard board={macroBoard} />
+      <SliderBoard board={macroBoard} region={region} />
     </div>
   );
 }

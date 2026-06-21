@@ -191,7 +191,7 @@ export async function GET() {
   const byKey = Object.fromEntries(entries);
   const groups = MACRO_GROUPS.map((g) => ({
     group: g.group,
-    series: g.series.map((s) => ({ key: s.key, label: s.label, d: s.d, ...byKey[s.key] })),
+    series: g.series.map((s) => ({ key: s.key, label: s.label, d: s.d, region: s.region || 'global', ...byKey[s.key] })),
   }));
   return Response.json(
     { fetchedAt: new Date().toISOString(), groups },
