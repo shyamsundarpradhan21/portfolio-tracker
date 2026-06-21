@@ -74,7 +74,40 @@ function MacroSliderBoard({ board }) {
   );
 }
 
-export default function MacroTab({ premarket, macro, macroBoard, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+// Sentiment-shaded headline cards for the held names (/api/portfolio-news). The
+// tint (green/red/neutral) carries tone — no +/- glyphs. Each card links to the
+// source article. Renders nothing until at least one headline is available.
+function PortfolioNews({ news }) {
+  const items = (news?.items || []).filter((it) => it && it.title);
+  if (!items.length) return null;
+  return (
+    <div className="card sec">
+      <div className="ctitle" style={{ marginBottom: 12 }}>
+        Portfolio in the news
+        <span className="sub" style={{ textTransform: 'none' }}> — recent headlines on your holdings, shaded by tone</span>
+      </div>
+      <div className="nw-grid">
+        {items.map((it, i) => (
+          <a
+            key={`${it.ticker}-${i}`}
+            className={`nw-item ${it.sentiment > 0 ? 'nw-pos' : it.sentiment < 0 ? 'nw-neg' : 'nw-neu'}`}
+            href={it.link || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div className="nw-top">
+              <span className="nw-tkr">{it.ticker}</span>
+              {it.ago && <span className="nw-ago mono">{it.ago}</span>}
+            </div>
+            <div className="nw-hl">{it.title}</div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function MacroTab({ premarket, macro, macroBoard, portfolioNews, nifty50, nifty50Loading, marketWrap, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // Whole-book macro synthesis (NOT the per-sleeve reads each tab already shows).
   const pulse = insights?.pulse;
   const hasPulse = !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -265,6 +298,10 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, nifty5
           </div>
         </div>
       ))}
+
+      {/* Row 7 — portfolio in the news: recent per-holding headlines, shaded by
+          sentiment (/api/portfolio-news, keyless RSS). */}
+      <PortfolioNews news={portfolioNews} />
     </div>
   );
 }

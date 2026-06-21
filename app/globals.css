@@ -473,6 +473,19 @@ body {
   .mb-end { display: none; }
 }
 
+/* ── Portfolio news: sentiment-shaded headline cards (Wrap / MacroTab) ─────── */
+.nw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 9px; }
+.nw-item { display: block; padding: 11px 13px; border-radius: 12px; border: .5px solid var(--brd); background: var(--sur2); text-decoration: none; color: inherit; transition: transform .12s ease, border-color .12s ease; }
+.nw-item:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--acc) 40%, var(--brd)); }
+.nw-pos { border-color: color-mix(in srgb, var(--grn) 32%, var(--brd)); background: var(--grn-bg); }
+.nw-neg { border-color: color-mix(in srgb, var(--red) 30%, var(--brd)); background: var(--red-bg); }
+.nw-pos:hover { border-color: color-mix(in srgb, var(--grn) 55%, transparent); }
+.nw-neg:hover { border-color: color-mix(in srgb, var(--red) 50%, transparent); }
+.nw-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 5px; }
+.nw-tkr { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .03em; color: var(--txt2); }
+.nw-ago { font-size: var(--fs-2xs); color: var(--txt3); flex-shrink: 0; }
+.nw-hl { font-size: var(--fs-sm); line-height: 1.34; color: var(--txt); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
 /* amber alert banner */
 .alert {
   background: var(--acc-bg); border: .5px solid rgba(232, 160, 48, .35);
