@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
+import AnimatedNumber from '../shared/AnimatedNumber';
+import { isNum, scoreLabel } from '../../lib/usSentiment';
 
 // ── tiny formatters (mockup style: ▲/▼ glyph + grn/red/mut colour) ───────────
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
@@ -132,29 +134,85 @@ function fearGreed(breadthPct, vix, net, niftyPct) {
   const score = Math.round(parts.reduce((a, [x, v]) => a + x * v, 0) / w);
   return { score, label: score < 25 ? 'Extreme fear' : score < 45 ? 'Fear' : score < 56 ? 'Neutral' : score < 76 ? 'Greed' : 'Extreme greed' };
 }
+// Tint class for a 0-100 fear/greed score (red = fear, grey = neutral, grn = greed).
+const sChip = (s) => (!isNum(s) ? 'mut' : s < 45 ? 'red' : s < 56 ? 'mut' : 'grn');
+const capFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+// One signal row: label · mono value · a tinted descriptor (colour = fear/greed).
+function SigRow({ label, value, valCls, tag, score }) {
+  return (
+    <div className="lsig">
+      <span className="ll">{label}</span>
+      <span className={`lv ${valCls || ''}`}>{value}</span>
+      {tag != null && <span className={`lt ${sChip(score)}`}>{tag}</span>}
+    </div>
+  );
+}
+
+// US sentiment broken into LEADING (differentiated — VIX term structure, HY credit
+// spread, put/call positioning) vs COINCIDENT (price-derived — momentum, breadth,
+// 52w strength), the latter collapsed since it carries little forward information.
+// Each row degrades to "—" independently when its source is stale (never a fake 0).
+function UsSentimentDetail({ us }) {
+  const L = us.leading || {}, C = us.coincident || {};
+  const v = L.vixTs, h = L.hyOas, p = L.putCall, m = C.momentum, b = C.breadth, st = C.strength52w;
+  const oasTag = (s) => (!isNum(s) ? '—' : s >= 56 ? 'tight' : s < 45 ? 'wide' : 'neutral');
+  return (
+    <div className="usdet">
+      <div className="usdh">Leading <span className="usdx">forward-looking</span></div>
+      {v && !v.stale && isNum(v.ratio)
+        ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} />
+        : <SigRow label="VIX term · 9D/3M" value="—" />}
+      {h && !h.stale && isNum(h.value)
+        ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} />
+        : <SigRow label="HY credit spread" value="—" />}
+      {p && !p.stale && isNum(p.value)
+        ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} />
+        : <SigRow label="Put / Call" value="—" />}
+      <details className="uscol">
+        <summary>Coincident · price-derived</summary>
+        {m && !m.stale && isNum(m.pct)
+          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} valCls={cls(m.pct)} tag={scoreLabel(m.score)} score={m.score} />
+          : <SigRow label="S&P vs 125D MA" value="—" />}
+        {b && !b.stale && isNum(b.score)
+          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} score={b.score} />
+          : <SigRow label="Breadth" value="—" />}
+        {st && !st.stale && isNum(st.score)
+          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} score={st.score} />
+          : <SigRow label="52-wk hi / lo" value="—" />}
+      </details>
+    </div>
+  );
+}
+
 // Full sentiment cell: score + label in the header's top-right corner, the card
-// tinted green/red by the reading (greed/fear), gauge bar + factors below.
-function SentimentCell({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty' }) {
+// tinted green/red by the reading. India uses the blended fear/greed; the US/Global
+// view anchors the headline on CNN's composite and shows the leading/coincident split.
+function SentimentCell({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty', us = null }) {
   const fg = fearGreed(breadthPct, vix, net, niftyPct);
-  const tone = !fg ? '' : fg.score < 45 ? 'fear' : fg.score < 56 ? '' : 'greed';
-  const col = !fg ? '' : fg.score < 45 ? 'var(--red)' : fg.score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
+  const comp = isNum(us?.composite?.score) ? Math.round(us.composite.score) : null;
+  const score = comp != null ? comp : (fg ? fg.score : null);
+  if (score == null) return <div className="qc sent"><div className="qh">Market sentiment</div><div className="na">—</div></div>;
+  const label = comp != null ? capFirst(scoreLabel(score)) : fg.label;
+  const tone = score < 45 ? 'fear' : score < 56 ? '' : 'greed';
+  const col = score < 45 ? 'var(--red)' : score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
   const f = [];
-  if (breadthPct != null && isFinite(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
-  if (vix != null && isFinite(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
-  if (net != null && isFinite(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
-  if (niftyPct != null && isFinite(niftyPct)) f.push(<>{momLabel} <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
+  if (!us) {
+    if (isNum(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
+    if (isNum(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
+    if (isNum(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
+    if (isNum(niftyPct)) f.push(<>{momLabel} <span className={cls(niftyPct)}>{Math.abs(niftyPct).toFixed(2)}%</span></>);
+  }
   return (
     <div className={`qc sent ${tone}`}>
-      <div className="qh">Market sentiment
-        {fg && <span className="senthd"><b style={{ color: col }}>{fg.score}</b><em style={{ color: col }}>{fg.label}</em></span>}
+      <div className="qh">Market sentiment{us && <span className="srcp">{comp != null ? 'US · CNN' : 'US'}</span>}
+        <span className="senthd"><b style={{ color: col }}><AnimatedNumber value={score} from={0} render={(n) => Math.round(n)} /></b><em style={{ color: col }}>{label}</em></span>
       </div>
-      {fg ? (
-        <div className="sentwrap">
-          <div className="gbar"><div className="gneedle" style={{ left: `${fg.score}%` }} /></div>
-          <div className="gsc"><span>fear</span><span>greed</span></div>
-          <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>
-        </div>
-      ) : <div className="na">—</div>}
+      <div className="sentwrap">
+        <div className="gbar"><div className="gneedle" style={{ left: `${score}%` }} /></div>
+        <div className="gsc"><span>fear</span><span>greed</span></div>
+        {us ? <UsSentimentDetail us={us} /> : <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>}
+      </div>
     </div>
   );
 }
@@ -249,7 +307,7 @@ function SliderBoard({ board }) {
   );
 }
 
-export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('all');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {} }, []);
@@ -346,6 +404,7 @@ export default function MacroTab({ premarket, macro, macroBoard, nifty50, portfo
               net={showIN ? fiiNet : null}
               niftyPct={showIN ? niftyPct : spxPct}
               momLabel={showIN ? 'Nifty' : 'S&P'}
+              us={!showIN ? usSentiment : null}
             />
             <SectorTreemap tiles={sectorTiles} />
             <MoversSplit

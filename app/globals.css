@@ -571,6 +571,23 @@ body {
 .gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }
 .gsc { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt3); margin-top: 4px; }
 .sfac { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 8px; line-height: 1.5; }
+/* US sentiment: leading (differentiated) vs coincident (collapsed) signal rows */
+.srcp { margin-left: 8px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .04em; color: var(--acc2); background: var(--acc-bg); padding: 1px 6px; border-radius: 5px; text-transform: none; }
+.usdet { margin-top: 9px; display: flex; flex-direction: column; }
+.usdh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+.usdx { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--txt3); opacity: .75; font-style: italic; }
+.lsig { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 9px; padding: 4px 0; font-size: var(--fs-xs); border-top: .5px solid var(--brd2); }
+.lsig:first-of-type { border-top: 0; }
+.ll { color: var(--txt2); }
+.lv { font-family: var(--mono); font-weight: 700; color: var(--txt); text-align: right; }
+.lv.grn { color: var(--grn); } .lv.red { color: var(--red); }
+.lt { font-size: var(--fs-2xs); font-weight: 600; text-transform: capitalize; text-align: right; min-width: 62px; }
+.lt.grn { color: var(--grn); } .lt.red { color: var(--red); } .lt.mut { color: var(--txt3); }
+.uscol { margin-top: 5px; }
+.uscol > summary { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; cursor: pointer; list-style: none; padding: 4px 0; user-select: none; }
+.uscol > summary::-webkit-details-marker { display: none; }
+.uscol > summary::before { content: '\25B8'; margin-right: 5px; }
+.uscol[open] > summary::before { content: '\25BE'; }
 .mvlist { display: flex; flex-direction: column; gap: 1px; }
 .mv { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs); padding: 2px 0; }
 .mv .s { color: var(--txt2); font-weight: 600; }
