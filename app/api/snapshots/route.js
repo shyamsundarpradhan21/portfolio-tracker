@@ -73,3 +73,19 @@ export async function POST(req) {
     return Response.json({ ok: false, error: e?.message || 'kv error' }, { status: 500, ...NO_STORE });
   }
 }
+
+// Remove one snapshot by date (?d=YYYY-MM-DD) — purges a stale non-trading-day point.
+export async function DELETE(req) {
+  const k = await kv();
+  if (!k) return Response.json({ ok: false, error: 'no store' }, { status: 503, ...NO_STORE });
+  const d = new URL(req.url).searchParams.get('d');
+  if (!d) return Response.json({ ok: false, error: 'missing d' }, { status: 400, ...NO_STORE });
+  try {
+    const arr = (await k.get(KEY)) || [];
+    const next = arr.filter((s) => s && s.d !== d);
+    if (next.length !== arr.length) await k.set(KEY, next);
+    return Response.json({ ok: true, count: next.length }, NO_STORE);
+  } catch (e) {
+    return Response.json({ ok: false, error: e?.message || 'kv error' }, { status: 500, ...NO_STORE });
+  }
+}

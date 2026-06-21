@@ -18,7 +18,7 @@ import { classifyRegime } from './lib/regime';
 
 import { nseOpenNow, nyseOpenNow, marketStateFromQuotes } from './lib/market';
 import { dayOrNight } from './lib/suntimes';
-import { getSnapshots, recordSnapshot, historicalSnapshots, syncSnapshotsFromKv, pushSnapshotToKv } from './lib/snapshots';
+import { getSnapshots, recordSnapshot, historicalSnapshots, syncSnapshotsFromKv, pushSnapshotToKv, removeSnapshot, deleteSnapshotFromKv } from './lib/snapshots';
 import { getFiiDiiTrail, recordFiiDii } from './lib/fiidii';
 import { buildBackfill } from './lib/backfill';
 import { cmpfCorpus, cmpfPaid } from './lib/cmpf';
@@ -953,8 +953,19 @@ function Dashboard() {
     // batch, so without usData.val the guard would pass on a US-only outage
     // and persist a net worth missing the whole US sleeve.
     if (!(indian.valued && usData.val > 0 && usdInr)) return;
+    const today = isoOf(new Date());
+    // Freshness guard: only snapshot a real TRADING session. On a weekend/holiday the
+    // equity quotes are last-session (stale) — recording then would persist Friday's
+    // equity dated Sunday. The NSE session date (Yahoo-backed, always resolves) tells
+    // us whether the market traded today. If a stale today-point slipped in earlier,
+    // purge it (local + KV) instead of keeping it.
+    const nseSession = premarket?.sessions?.nifty?.asOf || (premarket?.indices?.asOf ? String(premarket.indices.asOf).slice(0, 10) : null);
+    if (nseSession !== today) {
+      if (getSnapshots().some((s) => s.d === today)) { setSnapshots(removeSnapshot(today)); deleteSnapshotFromKv(today); }
+      return;
+    }
     const snap = {
-      d: isoOf(new Date()),
+      d: today,
       nw: Math.round(ov.nw),
       assets: Math.round(ov.totalAssets),
       invested: Math.round(projInvested0),
@@ -962,7 +973,7 @@ function Dashboard() {
     };
     setSnapshots(recordSnapshot(snap));
     pushSnapshotToKv(snap); // mirror to the cross-device KV store (owner-namespaced, fire-and-forget)
-  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis]);
+  }, [indian.valued, usData.val, usdInr, ov.nw, ov.totalAssets, projInvested0, sleeveBasis, premarket?.sessions?.nifty?.asOf, premarket?.indices?.asOf]);
 
   // NW hero: fire entrance animation once when live NW first becomes available,
   // and detect all-time-high (NW > every prior snapshot) for the celebration.
@@ -1095,8 +1106,6 @@ function Dashboard() {
               projSleeves={projSleeves} projInvested0={projInvested0} baseYear={now.getFullYear()}
               payslips={PAYSLIPS} dataReady={!!(indian.valued && usData.val > 0 && usdInr)} mfAlloc={mf.alloc}
               dayGain={daySleeveGain} sleeveBasis={sleeveBasis}
-              mktClosed={markets.nse === false && markets.nyse === false}
-              mktAsOf={premarket?.indices?.asOf || premarket?.sessions?.nifty?.asOf || null}
               cmpsPension={ov.cmpsPension} cmpsService={ov.cmpsService} cmpsRetirement={CMPS_RETIREMENT_DATE}
               cmpsVested={ov.cmpsVested} cmpsVestYear={ov.cmpsVestYear} />
           )}
