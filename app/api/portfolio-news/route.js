@@ -46,8 +46,9 @@ export async function GET() {
 
   const lists = await Promise.all(syms.map((s) => symNews(s.y, s.label)));
   const seen = new Set();
+  const cut = Date.now() - 30 * 86400 * 1000; // keep only the last ~30 days (drops stale/mismatched feeds)
   const items = lists.flat()
-    .filter((i) => i.title && !seen.has(i.title) && seen.add(i.title))
+    .filter((i) => { const t = Date.parse(i.date); return isFinite(t) && t >= cut && i.title && !seen.has(i.title) && seen.add(i.title); })
     .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0))
     .slice(0, 14);
 
