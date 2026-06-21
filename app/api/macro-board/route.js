@@ -21,19 +21,15 @@ const UA =
 // different host that serves the identical FRED series without a key.
 async function fredObs(id) {
   const url = `https://api.db.nomics.world/v22/series/FRED/${id}?observations=1`;
-  try {
-    const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(12000) });
-    if (!res.ok) return null;
-    const doc = (await res.json())?.series?.docs?.[0];
-    const per = doc?.period, val = doc?.value;
-    if (!Array.isArray(per) || !Array.isArray(val)) return null;
-    const out = [];
-    for (let i = 0; i < per.length; i++) {
-      const v = val[i];
-      if (typeof v === 'number' && isFinite(v)) out.push({ date: per[i], v });
-    }
-    return out.length ? out : null;
-  } catch { return null; }
+  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(12000) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const doc = (await res.json())?.series?.docs?.[0];
+  const per = doc?.period, val = doc?.value;
+  if (!Array.isArray(per) || !Array.isArray(val)) throw new Error('bad shape');
+  const out = [];
+  for (let i = 0; i < per.length; i++) { const v = val[i]; if (typeof v === 'number' && isFinite(v)) out.push({ date: per[i], v }); }
+  if (!out.length) throw new Error('no numeric obs');
+  return out;
 }
 
 // Yahoo weekly closes over ~1y → ascending [{date,v}].
@@ -67,8 +63,10 @@ function lastYear(series) {
 
 async function cellFor(cfg) {
   const source = cfg.yahoo ? `Yahoo ${cfg.yahoo}` : `FRED ${cfg.src} · DBnomics`;
-  let raw = cfg.yahoo ? await yhHist(cfg.yahoo) : await fredObs(cfg.src);
-  if (!raw || !raw.length) return { stale: true, source };
+  let raw;
+  try { raw = cfg.yahoo ? await yhHist(cfg.yahoo) : await fredObs(cfg.src); }
+  catch (e) { return { stale: true, source, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed') }; }
+  if (!raw || !raw.length) return { stale: true, source, error: 'no data' };
   if (cfg.scale) raw = raw.map((r) => ({ date: r.date, v: r.v * cfg.scale }));
   let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'mom' ? mom(raw) : raw;
   return { ...boardCell(cfg, lastYear(series)), source };
