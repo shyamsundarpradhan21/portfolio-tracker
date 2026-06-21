@@ -151,26 +151,35 @@ function SigRow({ label, value, valCls, tag, score }) {
 
 // US sentiment broken into LEADING (differentiated — VIX term structure, HY credit
 // spread, put/call positioning) vs COINCIDENT (price-derived — momentum, breadth,
-// 52w strength), the latter collapsed since it carries little forward information.
-// Each row degrades to "—" independently when its source is stale (never a fake 0).
+// 52w strength). Both groups are collapsible so the card rests on just the fear/greed
+// gradient; expand either for the rows. Each row degrades to "—" independently when
+// its source is stale (never a fake 0).
 function UsSentimentDetail({ us }) {
   const L = us.leading || {}, C = us.coincident || {};
   const v = L.vixTs, h = L.hyOas, p = L.putCall, m = C.momentum, b = C.breadth, st = C.strength52w;
   const oasTag = (s) => (!isNum(s) ? '—' : s >= 56 ? 'tight' : s < 45 ? 'wide' : 'neutral');
+  // Group outlook = mean of the live signal scores → colours the (collapsed) label
+  // so the tilt reads at a glance without expanding.
+  const sc = (x) => (x && !x.stale && isNum(x.score) ? x.score : null);
+  const avg = (a) => { const xs = a.filter(isNum); return xs.length ? xs.reduce((s, c) => s + c, 0) / xs.length : null; };
+  const leadOutlook = avg([sc(v), sc(h), sc(p)]);
+  const coinOutlook = avg([sc(m), sc(b), sc(st)]);
   return (
     <div className="usdet">
-      <div className="usdh">Leading <span className="usdx">forward-looking</span></div>
-      {v && !v.stale && isNum(v.ratio)
-        ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} />
-        : <SigRow label="VIX term · 9D/3M" value="—" />}
-      {h && !h.stale && isNum(h.value)
-        ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} />
-        : <SigRow label="HY credit spread" value="—" />}
-      {p && !p.stale && isNum(p.value)
-        ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} />
-        : <SigRow label="Put / Call" value="—" />}
       <details className="uscol">
-        <summary>Coincident · price-derived</summary>
+        <summary className={sChip(leadOutlook)}>Leading <span className="usdx">forward-looking</span></summary>
+        {v && !v.stale && isNum(v.ratio)
+          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} score={v.score} />
+          : <SigRow label="VIX term · 9D/3M" value="—" />}
+        {h && !h.stale && isNum(h.value)
+          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} score={h.score} />
+          : <SigRow label="HY credit spread" value="—" />}
+        {p && !p.stale && isNum(p.value)
+          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} score={p.score} />
+          : <SigRow label="Put / Call" value="—" />}
+      </details>
+      <details className="uscol">
+        <summary className={sChip(coinOutlook)}>Coincident <span className="usdx">price-derived</span></summary>
         {m && !m.stale && isNum(m.pct)
           ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} valCls={cls(m.pct)} tag={scoreLabel(m.score)} score={m.score} />
           : <SigRow label="S&P vs 125D MA" value="—" />}
