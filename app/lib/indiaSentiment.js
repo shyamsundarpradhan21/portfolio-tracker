@@ -35,17 +35,39 @@ export function percentileRank(v, history) {
 
 // India VIX score — log-z anchored at the rolling median of ln(VIX). z = (ln(vix) −
 // median(ln history)) / σ(ln history); high VIX → high z → fear → low score; ±3σ spans
-// the gauge. Magnitude-preserving at the tail (the percentile-rank failure). `history`
-// is the trailing-year daily VIX; needs ~a month (minN) for a stable log-σ.
-// (`percentileRank` above is retained for the row's human context — "Nth pct, yr".)
+// the gauge. Magnitude-preserving at the tail (the percentile-rank failure).
+//
+// TWO DELIBERATE ASYMMETRIES — recorded so they're not "harmonized" away:
+//  1. GREED CEILING IS INTENTIONAL. VIX's realized distribution is one-sided: the year
+//     floor sits ~1σ below median but the panic high ~3σ above (9.15 vs 27.89 here). So
+//     the calmest tape scores only ~65-70, never ~100 — the top of the greed scale is
+//     physically unreachable. That is HONEST: low VIX is the absence of fear, not the
+//     presence of euphoria. The FOMO/greed signal lives in FLOW, not vol. This is only
+//     safe because FII carries greed at a high weight (a calm-VIX ~69 @0.45 + an FII +3σ
+//     inflow 100 @0.55 still reaches ~86). >>> If FII is ever down-weighted (PCR dilution
+//     in v2), RE-CHECK this or the gauge becomes structurally fear-biased. Do NOT rescale
+//     to force symmetry — that lets a merely-calm VIX manufacture fake euphoria.
+//  2. WINDOW = 1 YEAR (vs FII's rolling 15). VIX anchors on a STABLE notion of "normal"
+//     so a sustained calm stretch can't quietly redefine 13 as "high"; FII flows regime-
+//     shift fast and WANT the jumpy short window. Different windows, both justified —
+//     same reasoning as the different anchors (FII: zero; VIX: median).
+//
+// `percentileRank` above is retained for the row's human context ("Nth pct, yr").
+
+// Core scorer against a PRECOMPUTED log-band {median, σ of ln VIX} — split out so the
+// route can cache the band daily (it only moves once a day) instead of re-fetching and
+// re-sorting the year every request.
+export function vixLogZ(vix, median, sigma) {
+  if (!isNum(vix) || vix <= 0 || !isNum(median) || !isNum(sigma) || sigma <= 0) return null;
+  return clampScore(50 - ((Math.log(vix) - median) / sigma / 3) * 50);
+}
+
+// Convenience: compute the band from history, then score (used in tests + cold paths).
 export function vixLogZScore(vix, history, { minN = 30 } = {}) {
   const a = (history || []).filter((x) => isNum(x) && x > 0);
-  if (!isNum(vix) || vix <= 0 || a.length < minN) return null;
+  if (a.length < minN) return null;
   const logs = a.map(Math.log).sort((x, y) => x - y);
-  const med = logs[Math.floor(logs.length / 2)];
-  const s = stdev(logs);
-  if (s == null || s === 0) return null;
-  return clampScore(50 - ((Math.log(vix) - med) / s / 3) * 50);
+  return vixLogZ(vix, logs[Math.floor(logs.length / 2)], stdev(logs));
 }
 
 // FII net-flow score — the lead canary. Zero-anchored, scaled by the rolling stdev of

@@ -140,11 +140,11 @@ const capFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // One signal row: label · mono value · descriptor — all rendered NEUTRAL. Colour is
 // reserved for the group outlook labels + the headline + the gauge, so the rows read
-// uniformly (no per-row tint scattered across descriptors/values). `title` carries the
-// per-factor source + as-of (the card blends vintages; each row stamps its own).
-function SigRow({ label, value, tag, title }) {
+// uniformly. `context` rows (e.g. DII alongside FII) render dimmer and don't count
+// toward the group outlook. `title` carries the per-factor source + as-of.
+function SigRow({ label, value, tag, title, context }) {
   return (
-    <div className="lsig" title={title || undefined}>
+    <div className={`lsig${context ? ' context' : ''}`} title={title || undefined}>
       <span className="ll">{label}</span>
       <span className="lv">{value}</span>
       {tag != null && <span className="lt">{tag}</span>}
@@ -152,80 +152,107 @@ function SigRow({ label, value, tag, title }) {
   );
 }
 
-// US sentiment broken into LEADING (differentiated — VIX term structure, HY credit
-// spread, put/call positioning) vs COINCIDENT (price-derived — momentum, breadth,
-// 52w strength). Both groups are collapsible so the card rests on just the fear/greed
-// gradient; expand either for the rows. Each row degrades to "—" independently when
-// its source is stale (never a fake 0).
-function UsSentimentDetail({ us }) {
-  const L = us.leading || {}, C = us.coincident || {};
-  const v = L.vixTs, h = L.hyOas, p = L.putCall, m = C.momentum, b = C.breadth, st = C.strength52w;
-  // Credit tag: at the tight extreme it's complacency (paid least to underwrite
-  // default risk), not comfort — so the word flips to "complacent" past the 76 band.
-  const oasTag = (s) => !isNum(s) ? '—' : s >= 76 ? 'complacent' : s >= 56 ? 'tight' : s < 25 ? 'stressed' : s < 45 ? 'wide' : 'neutral';
-  const sc = (x) => (x && !x.stale && isNum(x.score) ? x.score : null);
-  const ts = (x) => { if (!x || x.stale) return undefined; const d = x.asOf ? String(x.asOf).slice(0, 10) : ''; return [x.source, d].filter(Boolean).join(' · '); };
-  const avg = (a) => { const xs = a.filter(isNum); return xs.length ? xs.reduce((s, c) => s + c, 0) / xs.length : null; };
-  // Group outlook = mean of the live signal scores → colours the (collapsed) label.
-  const sv = sc(v), sh = sc(h), spc = sc(p), mo = sc(m), br = sc(b), sst = sc(st);
-  const leadOutlook = avg([sv, sh, spc]);
-  const coinOutlook = avg([mo, br, sst]);
-  // The read worth surfacing: complacent leading signals into weak participation —
-  // the index level is lying. Name WHICH leading signals are risk-on (data-driven), so
-  // it reads "not all-clear" rather than as a vague divergence note.
-  const risky = [];
-  if (isNum(sv) && sv >= 56) risky.push('cheap vol');
-  if (isNum(sh) && sh >= 76) risky.push('extreme-tight credit'); else if (isNum(sh) && sh >= 56) risky.push('tight credit');
-  if (isNum(spc) && spc >= 56) risky.push('greedy positioning');
-  const divg = (risky.length >= 2 && isNum(br) && br <= 35)
-    ? `Complacent leading — ${risky.join(' · ')} — into weak breadth (${Math.round(br)}): a narrow tape, not all-clear`
-    : (isNum(mo) && isNum(br) && mo >= 58 && br <= 35) ? 'Narrow tape — index held up by a few names; breadth weak underneath'
-    : (isNum(br) && isNum(mo) && br >= 58 && mo <= 35) ? 'Broad but heavy — wide participation, price lagging'
-    : null;
+// Generic LEADING vs COINCIDENT detail: two collapsibles fed by row arrays, each group
+// label tinted by the mean of its (non-context) scores, with an optional divergence
+// callout on top. The per-market row + divergence wiring lives in the build* helpers
+// below, so US and India share this shell without if(market) branches.
+function SentimentDetail({ leading, coincident, divergence }) {
+  const outlook = (rows) => { const xs = (rows || []).filter((r) => !r.context && isNum(r.score)).map((r) => r.score); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
+  const Group = ({ title, sub, rows }) => (
+    <details className="uscol">
+      <summary className={sChip(outlook(rows))}>{title} <span className="usdx">{sub}</span></summary>
+      {(rows || []).map((r, i) => <SigRow key={i} {...r} />)}
+    </details>
+  );
   return (
     <div className="usdet">
-      {divg && <div className="usdiv">{divg}</div>}
-      <details className="uscol">
-        <summary className={sChip(leadOutlook)}>Leading <span className="usdx">forward-looking</span></summary>
-        {v && !v.stale && isNum(v.ratio)
-          ? <SigRow label="VIX term · 9D/3M" value={v.ratio.toFixed(2)} tag={v.signal} title={ts(v)} />
-          : <SigRow label="VIX term · 9D/3M" value="—" />}
-        {h && !h.stale && isNum(h.value)
-          ? <SigRow label="HY credit spread" value={`${h.value.toFixed(2)}%`} tag={oasTag(h.score)} title={ts(h)} />
-          : <SigRow label="HY credit spread" value="—" />}
-        {p && !p.stale && isNum(p.value)
-          ? <SigRow label="Put / Call" value={p.value.toFixed(2)} tag={scoreLabel(p.score)} title={ts(p)} />
-          : <SigRow label="Put / Call" value="—" />}
-      </details>
-      <details className="uscol">
-        <summary className={sChip(coinOutlook)}>Coincident <span className="usdx">price-derived</span></summary>
-        {m && !m.stale && isNum(m.pct)
-          ? <SigRow label="S&P vs 125D MA" value={`${Math.abs(m.pct).toFixed(1)}%`} tag={scoreLabel(m.score)} title={ts(m)} />
-          : <SigRow label="S&P vs 125D MA" value="—" />}
-        {b && !b.stale && isNum(b.score)
-          ? <SigRow label="Breadth" value={Math.round(b.score)} tag={b.rating} title={ts(b)} />
-          : <SigRow label="Breadth" value="—" />}
-        {st && !st.stale && isNum(st.score)
-          ? <SigRow label="52-wk hi / lo" value={Math.round(st.score)} tag={st.rating} title={ts(st)} />
-          : <SigRow label="52-wk hi / lo" value="—" />}
-      </details>
+      {divergence && <div className="usdiv">{divergence}</div>}
+      <Group title="Leading" sub="forward-looking" rows={leading} />
+      <Group title="Coincident" sub="price-derived" rows={coincident} />
     </div>
   );
 }
 
-// Full sentiment cell: score + label in the header's top-right corner, the card
-// tinted green/red by the reading. India uses the blended fear/greed; the US/Global
-// view anchors the headline on CNN's composite and shows the leading/coincident split.
-function SentimentCell({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty', us = null }) {
+// Per-factor source + as-of for a row's tooltip (the card blends vintages).
+const sigTitle = (x) => { if (!x || x.stale) return undefined; const d = x.asOf ? String(x.asOf).slice(0, 10) : ''; return [x.source, d].filter(Boolean).join(' · '); };
+const sc = (x) => (x && !x.stale && isNum(x.score) ? x.score : null);
+const orDash = (ok, cfg) => (ok ? cfg : { label: cfg.label, value: '—' });
+
+// US row + divergence config from /api/us-sentiment.
+function buildUsDetail(us) {
+  const L = us?.leading || {}, C = us?.coincident || {};
+  const v = L.vixTs, h = L.hyOas, p = L.putCall, m = C.momentum, b = C.breadth, st = C.strength52w;
+  // Credit tag: at the tight extreme it's complacency (paid least to underwrite default
+  // risk), not comfort — so the word flips to "complacent" past the 76 band.
+  const oasTag = (s) => !isNum(s) ? '—' : s >= 76 ? 'complacent' : s >= 56 ? 'tight' : s < 25 ? 'stressed' : s < 45 ? 'wide' : 'neutral';
+  const sv = sc(v), sh = sc(h), spc = sc(p), mo = sc(m), br = sc(b), sst = sc(st);
+  // Name WHICH leading signals are risk-on (data-driven) so the callout reads
+  // "not all-clear" rather than as a vague divergence note.
+  const risky = [];
+  if (isNum(sv) && sv >= 56) risky.push('cheap vol');
+  if (isNum(sh) && sh >= 76) risky.push('extreme-tight credit'); else if (isNum(sh) && sh >= 56) risky.push('tight credit');
+  if (isNum(spc) && spc >= 56) risky.push('greedy positioning');
+  const divergence = (risky.length >= 2 && isNum(br) && br <= 35)
+    ? `Complacent leading — ${risky.join(' · ')} — into weak breadth (${Math.round(br)}): a narrow tape, not all-clear`
+    : (isNum(mo) && isNum(br) && mo >= 58 && br <= 35) ? 'Narrow tape — index held up by a few names; breadth weak underneath'
+    : (isNum(br) && isNum(mo) && br >= 58 && mo <= 35) ? 'Broad but heavy — wide participation, price lagging'
+    : null;
+  return {
+    leading: [
+      orDash(v && !v.stale && isNum(v.ratio), { label: 'VIX term · 9D/3M', value: isNum(v?.ratio) ? v.ratio.toFixed(2) : '—', tag: v?.signal, score: sv, title: sigTitle(v) }),
+      orDash(h && !h.stale && isNum(h.value), { label: 'HY credit spread', value: isNum(h?.value) ? `${h.value.toFixed(2)}%` : '—', tag: oasTag(sh), score: sh, title: sigTitle(h) }),
+      orDash(p && !p.stale && isNum(p.value), { label: 'Put / Call', value: isNum(p?.value) ? p.value.toFixed(2) : '—', tag: scoreLabel(spc), score: spc, title: sigTitle(p) }),
+    ],
+    coincident: [
+      orDash(m && !m.stale && isNum(m.pct), { label: 'S&P vs 125D MA', value: isNum(m?.pct) ? `${Math.abs(m.pct).toFixed(1)}%` : '—', tag: scoreLabel(mo), score: mo, title: sigTitle(m) }),
+      orDash(b && !b.stale && isNum(b.score), { label: 'Breadth', value: isNum(b?.score) ? Math.round(b.score) : '—', tag: b?.rating, score: br, title: sigTitle(b) }),
+      orDash(st && !st.stale && isNum(st.score), { label: '52-wk hi / lo', value: isNum(st?.score) ? Math.round(st.score) : '—', tag: st?.rating, score: sst, title: sigTitle(st) }),
+    ],
+    divergence,
+  };
+}
+
+// India row + divergence config from /api/india-sentiment (+ breadth from premarket).
+// LEADING = India VIX · FII net (the canary, scored ALONE) · DII (context). COINCIDENT
+// = Nifty-vs-125D-MA · breadth. The divergence is the FII/DII absorption the combined
+// sum would hide — silent unless foreign flight is being soaked up by domestic buying.
+function buildIndiaDetail(india, breadthPct) {
+  const L = india?.leading || {}, C = india?.coincident || {};
+  const vix = L.vix, fii = L.fii, mom = C.momentum;
+  const cr = (n) => `${Math.round(Math.abs(n)).toLocaleString('en-IN')} cr`;
+  const leading = [
+    orDash(vix && !vix.stale && isNum(vix.value), { label: 'India VIX', value: isNum(vix?.value) ? vix.value.toFixed(2) : '—', tag: scoreLabel(sc(vix)), score: sc(vix), title: sigTitle(vix) }),
+    (fii && !fii.stale && isNum(fii.net))
+      ? { label: 'FII net flow', value: cr(fii.net), tag: fii.building ? 'building' : (fii.net >= 0 ? 'inflow' : 'outflow'), score: fii.building ? null : sc(fii), title: sigTitle(fii) }
+      : { label: 'FII net flow', value: '—' },
+  ];
+  if (fii && !fii.stale && isNum(fii.dii)) leading.push({ label: 'DII net · context', value: cr(fii.dii), tag: fii.dii >= 0 ? 'inflow' : 'outflow', context: true });
+  const coincident = [
+    orDash(mom && !mom.stale && isNum(mom.pct), { label: 'Nifty vs 125D MA', value: isNum(mom?.pct) ? `${Math.abs(mom.pct).toFixed(1)}%` : '—', tag: mom?.pct >= 0 ? 'above' : 'below', score: mom?.score, title: sigTitle(mom) }),
+    orDash(isNum(breadthPct), { label: 'Breadth', value: isNum(breadthPct) ? `${Math.round(breadthPct)}%` : '—', tag: scoreLabel(breadthPct), score: breadthPct, title: 'NSE advances / declines' }),
+  ];
+  const divergence = india?.absorption
+    ? `Foreign outflow ${cr(india.absorption.fii)} absorbed by domestic buying ${cr(india.absorption.dii)} — the combined flow masks it`
+    : null;
+  return { leading, coincident, divergence };
+}
+
+// Full sentiment cell: score + label in the header's top-right corner, the card tinted
+// by the reading, gauge + the leading/coincident split below. `detail` (composite +
+// tag + leading/coincident rows + divergence) is built per-market by build{Us,India}Detail;
+// `fallback` feeds the gauge from the local fear/greed blend if the composite is absent.
+function SentimentCell({ detail = null, fallback = {}, momLabel = 'Nifty' }) {
+  const { breadthPct, vix, net, niftyPct } = fallback;
   const fg = fearGreed(breadthPct, vix, net, niftyPct);
-  const comp = isNum(us?.composite?.score) ? Math.round(us.composite.score) : null;
+  const comp = isNum(detail?.composite?.score) ? Math.round(detail.composite.score) : null;
   const score = comp != null ? comp : (fg ? fg.score : null);
   if (score == null) return <div className="qc sent"><div className="qh">Market sentiment</div><div className="na">—</div></div>;
   const label = comp != null ? capFirst(scoreLabel(score)) : fg.label;
   const tone = score < 45 ? 'fear' : score < 56 ? '' : 'greed';
   const col = score < 45 ? 'var(--red)' : score < 56 ? 'var(--sc-opt)' : 'var(--grn)';
+  const hasDetail = !!(detail && (detail.leading || detail.coincident));
   const f = [];
-  if (!us) {
+  if (!hasDetail) {
     if (isNum(breadthPct)) f.push(<>breadth {Math.round(breadthPct)}%</>);
     if (isNum(vix)) f.push(<>VIX {vix.toFixed(1)}</>);
     if (isNum(net)) f.push(<>FII/DII <span className={cls(net)}>{Math.abs(Math.round(net)).toLocaleString('en-IN')}</span></>);
@@ -233,13 +260,13 @@ function SentimentCell({ breadthPct, vix, net, niftyPct, momLabel = 'Nifty', us 
   }
   return (
     <div className={`qc sent ${tone}`}>
-      <div className="qh">Market sentiment{us && <span className="srcp">{comp != null ? 'US · CNN' : 'US'}</span>}
+      <div className="qh">Market sentiment{detail?.tag && <span className="srcp">{detail.tag}</span>}
         <span className="senthd"><b style={{ color: col }}><AnimatedNumber value={score} from={0} render={(n) => Math.round(n)} /></b><em style={{ color: col }}>{label}</em></span>
       </div>
       <div className="sentwrap">
         <div className="gbar"><div className="gneedle" style={{ left: `${score}%` }} /></div>
         <div className="gsc"><span>fear</span><span>greed</span></div>
-        {us ? <UsSentimentDetail us={us} /> : <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>}
+        {hasDetail ? <SentimentDetail leading={detail.leading} coincident={detail.coincident} divergence={detail.divergence} /> : <div className="sfac">{f.map((x, i) => <span key={i}>{i ? ' · ' : ''}{x}</span>)}</div>}
       </div>
     </div>
   );
@@ -335,7 +362,7 @@ function SliderBoard({ board }) {
   );
 }
 
-export default function MacroTab({ premarket, usSentiment, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('all');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); if (r === 'india' || r === 'global' || r === 'all') setRegion(r); } catch {} }, []);
@@ -427,12 +454,16 @@ export default function MacroTab({ premarket, usSentiment, macro, macroBoard, ni
           <div className="wlabel">Market internals <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
           <div className="wstack">
             <SentimentCell
-              breadthPct={showIN ? breadthPct : usBreadthPct}
-              vix={showIN ? ivix?.last : usVix}
-              net={showIN ? fiiNet : null}
-              niftyPct={showIN ? niftyPct : spxPct}
+              detail={showIN
+                ? { composite: indiaSentiment?.composite, tag: isNum(indiaSentiment?.composite?.score) ? 'India · blend' : null, ...buildIndiaDetail(indiaSentiment, breadthPct) }
+                : { composite: usSentiment?.composite, tag: isNum(usSentiment?.composite?.score) ? 'US · CNN' : null, ...buildUsDetail(usSentiment) }}
+              fallback={{
+                breadthPct: showIN ? breadthPct : usBreadthPct,
+                vix: showIN ? ivix?.last : usVix,
+                net: showIN ? fiiNet : null,
+                niftyPct: showIN ? niftyPct : spxPct,
+              }}
               momLabel={showIN ? 'Nifty' : 'S&P'}
-              us={!showIN ? usSentiment : null}
             />
             <SectorTreemap tiles={sectorTiles} />
             <MoversSplit

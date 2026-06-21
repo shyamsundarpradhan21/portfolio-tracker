@@ -43,6 +43,14 @@ describe('vixLogZScore — log-z at the rolling median, magnitude-preserving', (
     const s18 = vixLogZScore(18, yr, { minN }), s28 = vixLogZScore(28, yr, { minN });
     expect(s18 - s28).toBeGreaterThan(10);
   });
+  it('GREED CEILING is deliberate: the year-floor VIX is greed-leaning but CANNOT reach extreme greed', () => {
+    // low VIX = absence of fear, not euphoria — the upside is physically soft (downside
+    // ~1σ vs panic ~3σ). Pin it so nobody "fixes" the asymmetry into false-greed.
+    const floor = Math.min(...yr);
+    const s = vixLogZScore(floor, yr, { minN });
+    expect(s).toBeGreaterThan(55); // it IS calm/greed-leaning
+    expect(s).toBeLessThan(80);    // but can't manufacture extreme greed from vol alone
+  });
   it('cold-start: null below minN', () => expect(vixLogZScore(15, [12, 13, 14], { minN: 30 })).toBeNull());
 });
 

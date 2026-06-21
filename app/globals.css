@@ -579,6 +579,8 @@ body {
 .usdiv { margin: 0 0 5px; padding: 5px 9px; font-size: var(--fs-2xs); line-height: 1.35; color: var(--txt2); background: color-mix(in srgb, var(--sc-opt) 11%, transparent); border-left: 2px solid var(--sc-opt); border-radius: 4px; }
 .lsig { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 9px; padding: 4px 0; font-size: var(--fs-xs); border-top: .5px solid var(--brd2); }
 .lsig:first-of-type { border-top: 0; }
+.lsig.context { opacity: .68; } /* DII alongside FII — context, not a scored signal */
+.lsig.context .ll, .lsig.context .lv, .lsig.context .lt { color: var(--txt3); }
 .ll { color: var(--txt2); }
 .lv { font-family: var(--mono); font-weight: 700; color: var(--txt); text-align: right; }
 /* descriptor is neutral — colour is carried only by the group outlook labels + headline */
