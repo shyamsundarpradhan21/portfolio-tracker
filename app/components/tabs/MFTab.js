@@ -5,6 +5,7 @@ import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
+import BenchmarkBars from '../shared/BenchmarkBars';
 import SunburstMix from '../SunburstMix';
 
 // '2026-01-13' → '13-Jan-26' (footer prose); pass fullYear for '26-Feb-2027'.
@@ -23,12 +24,6 @@ const platStyle = (p) => p === 'JioBLK'
 // printed beside the axis on the side opposite the bar. Your bar takes the tab
 // accent; benchmarks share a neutral fill so colour encodes "you vs market".
 function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
-  const rows = [
-    { label: 'You',      val: port, you: true },
-    { label: 'Nifty 50', val: bench },
-    ...extra.map((b) => ({ label: b.label, val: b.xirr })),
-  ];
-  const max = Math.max(...rows.map((r) => Math.abs(r.val ?? 0)), 8) * 1.15;
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="fxc" style={{ marginBottom: 2, flexWrap: 'wrap', gap: 8 }}>
@@ -41,38 +36,8 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
       </div>
       <div className="sub" style={{ marginBottom: 16 }}>Your MF cashflows replayed into each index · annualised</div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
-        {rows.map(({ label, val, you }) => {
-          const pos = (val ?? 0) >= 0;
-          const w = val == null ? '0%' : Math.min(Math.abs(val) / max * 100, 100) + '%';
-          const fill = you ? 'var(--acc)' : 'color-mix(in srgb, var(--txt3) 55%, transparent)';
-          const pctTxt = val == null ? '—' : Math.abs(val).toFixed(1) + '%';
-          const pctEl = (
-            <span className="mono" style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 600, padding: '0 10px', whiteSpace: 'nowrap', color: val == null ? 'var(--txt3)' : val >= 0 ? 'var(--grn)' : 'var(--red)' }}>
-              {pctTxt}
-            </span>
-          );
-          return (
-            <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(118px, 9.5em) 1fr', gap: 12, alignItems: 'center' }}>
-              <span style={{ fontSize: 'var(--fs-md)', fontWeight: you ? 700 : 500, color: you ? 'var(--acc)' : 'var(--txt2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-              <div style={{ display: 'flex', height: you ? '3.2em' : '2.6em', alignItems: 'center' }}>
-                {/* left half: negative bar grows from the axis; % sits here for positive rows */}
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', alignSelf: 'stretch' }}>
-                  {val != null && !pos
-                    ? <div style={{ width: w, background: fill, borderRadius: '4px 0 0 4px', alignSelf: 'stretch' }} />
-                    : pctEl}
-                </div>
-                <div style={{ width: 1, background: 'var(--brd2)', flexShrink: 0, alignSelf: 'stretch' }} />
-                {/* right half: positive bar grows from the axis; % sits here for negative rows */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', alignSelf: 'stretch' }}>
-                  {val != null && pos
-                    ? <div style={{ width: w, background: fill, borderRadius: '0 4px 4px 0', alignSelf: 'stretch' }} />
-                    : val != null ? pctEl : null}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <BenchmarkBars you={port} rows={[{ label: 'Nifty 50', val: bench }, ...extra.map((b) => ({ label: b.label, val: b.xirr }))]} />
       </div>
 
       {minis.length > 0 && (

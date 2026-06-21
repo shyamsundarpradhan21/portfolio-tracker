@@ -1,6 +1,7 @@
 'use client';
 import { cl, pctS, pct1, InrC, SInrF, Rs, UsdF } from '../../lib/fmt';
 import { LiveUsdF } from '../shared/Live';
+import BenchmarkBars from '../shared/BenchmarkBars';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -61,25 +62,7 @@ export default function USTab({
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
           <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your <UsdF n={usStats.netInvested} d={0} /> <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
-          <table className="tbl">
-            <thead>
-              <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
-                <td className={'ra mono ' + (usStats.xirr != null ? cl(usStats.xirr) : 'mut')}>{pct1(usStats.xirr)}</td>
-                <td className="ra mono">{usData.val ? <UsdF n={usData.val} d={0} /> : '—'}</td>
-              </tr>
-              {usStats.benchmarks.filter((b) => ['sp500', 'nasdaq', 'germany', 'china', 'gold'].includes(b.key)).map((b) => (
-                <tr key={b.key}>
-                  <td className="mut">{b.label}</td>
-                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
-                  <td className="ra mono mut">{b.value != null ? <UsdF n={b.value} d={0} /> : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <BenchmarkBars you={usStats.xirr} rows={usStats.benchmarks.filter((b) => ['sp500', 'nasdaq', 'germany', 'china', 'gold'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12 }}>
             CAGR {pct1(usStats.cagr)}
             {usStats.years != null ? ` over a ${usStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.

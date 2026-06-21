@@ -5,6 +5,7 @@ import { SECTOR_PALETTE } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import SyncBadge from '../shared/SyncBadge';
+import BenchmarkBars from '../shared/BenchmarkBars';
 import CFMemo from '../shared/CFMemo';
 import Skel from '../shared/Skel';
 import SunburstMix from '../SunburstMix';
@@ -82,25 +83,7 @@ export default function IndianTab({
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
           <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your <Rs />{inrCd(inStats.totalInvested)} deployed into each instead.</div>
-          <table className="tbl">
-            <thead>
-              <tr><th>Instrument</th><th className="ra">XIRR</th><th className="ra">Value</th></tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ color: 'var(--txt)', fontWeight: 600 }}>Your portfolio</td>
-                <td className={'ra mono ' + (inStats.portXirr != null ? cl(inStats.portXirr) : 'mut')}>{pct1(inStats.portXirr)}</td>
-                <td className="ra mono">{indian.valued ? <InrC n={indian.val} /> : '—'}</td>
-              </tr>
-              {inStats.benchmarks.map((b) => (
-                <tr key={b.key}>
-                  <td className="mut">{b.label}</td>
-                  <td className={'ra mono ' + (b.xirr != null ? cl(b.xirr) : 'mut')}>{pct1(b.xirr)}</td>
-                  <td className="ra mono mut">{b.value != null ? <InrC n={b.value} /> : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <BenchmarkBars you={inStats.portXirr} rows={inStats.benchmarks.map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12 }}>
             CAGR {pct1(inStats.cagr)}
             {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
