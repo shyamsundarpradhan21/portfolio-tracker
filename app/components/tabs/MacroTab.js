@@ -366,7 +366,44 @@ function SliderBoard({ board, region = 'india' }) {
   );
 }
 
-export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+// "Upcoming" — region-aware economic calendar. India = computed publication
+// cadence (CPI/IIP/WPI/GDP/RBI MPC); US = ForexFactory keyless feed (carries
+// forecast/previous). Importance via dot-glyph + intensity, NOT gain/loss colour.
+const IMP_DOTS = { high: '●●●', medium: '●●○', low: '●○○' };
+const fmtCalDate = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+function CalendarBoard({ cal, region = 'india' }) {
+  if (!cal) return null;
+  const rows = region === 'us' ? (cal.us || []) : (cal.india || []);
+  if (!rows.length) {
+    if (region === 'us' && cal.usSource === 'unavailable') return (
+      <div className="card">
+        <div className="wlabel">Upcoming <span className="hint">economic calendar</span></div>
+        <div className="sub" style={{ padding: '4px 2px 0' }}>US calendar feed momentarily unavailable.</div>
+      </div>
+    );
+    return null;
+  }
+  return (
+    <div className="card">
+      <div className="wlabel">Upcoming <span className="hint">{region === 'us' ? 'US · ForexFactory' : 'India · scheduled'}</span></div>
+      <div className="ecal">
+        {rows.map((e, i) => {
+          const showDate = i === 0 || rows[i - 1].date !== e.date;
+          return (
+            <div className="ecal-row" key={e.date + e.title + i}>
+              <span className="ecal-d">{showDate ? fmtCalDate(e.date) : ''}</span>
+              <span className="ecal-t">{e.title}</span>
+              <span className="ecal-v">{e.forecast ? <>est <b>{e.forecast}</b></> : ''}{e.previous ? <span className="ecal-p"> · prev {e.previous}</span> : ''}</span>
+              <span className={`ecal-i ${e.impact}`} title={e.impact} aria-label={`${e.impact} impact`}>{IMP_DOTS[e.impact] || ''}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
@@ -485,6 +522,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
         <NewsFeed news={portfolioNews} region={region} />
       </div>
+
+      {/* Upcoming — region-aware economic calendar (keyless), below the portfolio news */}
+      <CalendarBoard cal={econCal} region={region} />
 
       {/* FII/DII — its own full-width card below the internals + news row (India only) */}
       {showIN && (ind.breadthAD || fdTrail.length >= 2) && (

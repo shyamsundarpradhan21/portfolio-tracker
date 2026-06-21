@@ -644,6 +644,20 @@ body {
 .sld-sc { display: flex; justify-content: space-between; margin-top: 5px; font-size: var(--fs-2xs); color: var(--txt3); font-family: var(--mono); }
 .sld-sc .pl { opacity: .7; font-family: var(--body); }
 
+/* Upcoming — economic calendar (Wrap). Importance via dot intensity, not gain/loss colour. */
+.ecal { display: flex; flex-direction: column; margin-top: 8px; }
+.ecal-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; align-items: baseline; gap: 12px; padding: 6px 0; border-bottom: .5px solid var(--brd); font-size: var(--fs-sm); }
+.ecal-row:last-child { border-bottom: 0; }
+.ecal-d { color: var(--txt3); font-family: var(--mono); font-size: var(--fs-xs); white-space: nowrap; }
+.ecal-t { color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ecal-v { color: var(--txt3); font-size: var(--fs-xs); white-space: nowrap; text-align: right; }
+.ecal-v b { color: var(--txt2); font-family: var(--mono); font-weight: 600; }
+.ecal-p { opacity: .75; }
+.ecal-i { font-size: 7px; letter-spacing: 1.5px; white-space: nowrap; }
+.ecal-i.high { color: var(--acc); }
+.ecal-i.medium { color: var(--txt3); }
+.ecal-i.low { color: var(--brd); }
+
 /* amber alert banner */
 .alert {
   background: var(--acc-bg); border: .5px solid rgba(232, 160, 48, .35);
