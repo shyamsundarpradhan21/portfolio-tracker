@@ -421,11 +421,12 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   }, [hist]);
 
   // Per-window market-gain attribution by asset class, for the growth pills'
-  // waffles. DAY uses live per-sleeve day P&L (accurate today). The longer
-  // windows need a per-sleeve snapshot at the window start — recording of that
-  // began recently, so they light up on their own as history accrues (a window
-  // with no per-sleeve ref simply gets no waffle). Per-sleeve gain over a window
-  // = value change minus capital deployed into that sleeve.
+  // waffles. DAY uses live per-sleeve day P&L (accurate today). MAX uses the
+  // all-time basis gain (value − cost) per sleeve — no inception snapshot needed.
+  // The intermediate windows (W/M/Y) diff the live basis against a per-sleeve
+  // snapshot at the window start — recording of that began recently, so they
+  // light up on their own as history accrues (a window with no per-sleeve ref
+  // simply gets no waffle). Per-sleeve gain = value change minus capital deployed.
   const attribution = useMemo(() => {
     const byKey = {}; sleeves.forEach((s) => { byKey[s.key] = s; });
     const order = sleeves.map((s) => s.key);
@@ -438,17 +439,22 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       const last = hist[hist.length - 1];
       for (const r of RANGES) {
         if (r.key === 'D') continue;
-        let ref;
-        if (r.key === 'Max') ref = hist.find((s) => s.sl);      // since per-sleeve tracking began
-        else {
-          const cutoff = ms(last.d) - r.days * 864e5;
-          for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff && hist[i].sl) { ref = hist[i]; break; }
-        }
-        if (!ref || !ref.sl) continue;
         const gains = {};
-        for (const k of order) {
-          const cur = sleeveBasis[k], st = ref.sl[k];
-          if (cur && st) gains[k] = (cur.v - st.v) - (cur.i - st.i);
+        if (r.key === 'Max') {
+          // ALL-TIME gain per sleeve = current value − current cost basis. The basis
+          // already encodes the whole-history market gain, so MAX needs no inception
+          // snapshot (per-sleeve `sl` doesn't reach back that far) and the parts sum to
+          // the MAX headline. The shorter windows still diff against a window-start sl.
+          for (const k of order) { const cur = sleeveBasis[k]; if (cur) gains[k] = (cur.v || 0) - (cur.i || 0); }
+        } else {
+          const cutoff = ms(last.d) - r.days * 864e5;
+          let ref;
+          for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff && hist[i].sl) { ref = hist[i]; break; }
+          if (!ref || !ref.sl) continue;
+          for (const k of order) {
+            const cur = sleeveBasis[k], st = ref.sl[k];
+            if (cur && st) gains[k] = (cur.v - st.v) - (cur.i - st.i);
+          }
         }
         const arr = mk(gains);
         if (arr.length) out[r.key] = arr;
