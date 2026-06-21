@@ -50,6 +50,18 @@ export function yoy(rows) {
   return out;
 }
 
+/** Year-over-year % from a QUARTERLY index series (4 periods = 1 year) — e.g.
+ * India real GDP, which FRED publishes as a quarterly constant-price index. */
+export function yoyQ(rows) {
+  const xs = (rows || []).filter((r) => r && r.v != null && isFinite(r.v));
+  const out = [];
+  for (let i = 4; i < xs.length; i++) {
+    const base = xs[i - 4].v;
+    if (base) out.push({ date: xs[i].date, v: (xs[i].v / base - 1) * 100 });
+  }
+  return out;
+}
+
 /** Month-over-month change of a level series (ascending [{date,v}]) — e.g. payrolls. */
 export function mom(rows) {
   const xs = (rows || []).filter((r) => r && r.v != null && isFinite(r.v));
@@ -66,10 +78,12 @@ export const MACRO_GROUPS = [
     group: 'Rates & market',
     series: [
       { key: 'us10y', label: 'US 10Y', src: 'DGS10', unit: '%', d: 2, dir: -1, warn: 4.5, stress: 5 },
+      { key: 'india10y', label: 'India 10Y', src: 'IRLTLT01INM156N', unit: '%', d: 2, dir: -1, warn: 7.25, stress: 7.6 },
       { key: 'spread2s10s', label: '2s10s', src: 'T10Y2Y', unit: ' pp', d: 2, dir: 1, warn: 0.2, stress: 0 },
       { key: 'hyOas', label: 'HY OAS', src: 'BAMLH0A0HYM2', unit: '%', d: 2, dir: -1, warn: 4, stress: 5.5 },
       { key: 'fedFunds', label: 'Fed funds', src: 'DFF', unit: '%', d: 2, dir: -1, warn: 4.75, stress: 5.5 },
       { key: 'vix', label: 'US VIX', yahoo: '^VIX', unit: '', d: 1, dir: -1, warn: 18, stress: 25 },
+      { key: 'indiaVix', label: 'India VIX', yahoo: '^INDIAVIX', unit: '', d: 1, dir: -1, warn: 16, stress: 22 },
       { key: 'dxy', label: 'DXY', yahoo: 'DX-Y.NYB', unit: '', d: 1, dir: -1, warn: 105, stress: 110 },
     ],
   },
@@ -78,12 +92,14 @@ export const MACRO_GROUPS = [
     series: [
       { key: 'cpi', label: 'US CPI', src: 'CPIAUCSL', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 3, stress: 4 },
       { key: 'coreCpi', label: 'Core CPI', src: 'CPILFESL', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 3, stress: 4 },
+      { key: 'indiaCpi', label: 'India CPI', src: 'INDCPIALLMINMEI', unit: '%', d: 1, kind: 'yoy', dir: -1, warn: 5, stress: 6 },
     ],
   },
   {
     group: 'Growth',
     series: [
       { key: 'gdp', label: 'US GDP', src: 'A191RL1Q225SBEA', unit: '%', d: 1, dir: 1, warn: 1.5, stress: 0 },
+      { key: 'indiaGdp', label: 'India GDP', src: 'INDGDPRQPSMEI', unit: '%', d: 1, kind: 'yoyq', dir: 1, warn: 6, stress: 5 },
       { key: 'umich', label: 'UMich', src: 'UMCSENT', unit: '', d: 1, dir: 1, warn: 70, stress: 60 },
     ],
   },

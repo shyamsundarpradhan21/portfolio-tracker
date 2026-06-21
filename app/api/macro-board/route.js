@@ -6,7 +6,7 @@
 // Every cell is { value, pos, pctile, lo, hi, tone, asOf, unit, source } or
 // { stale, source } — a failed series renders as an unavailable slider, never a
 // fabricated reading.
-import { MACRO_GROUPS, boardCell, yoy, mom } from '../../lib/macroBoard';
+import { MACRO_GROUPS, boardCell, yoy, yoyQ, mom } from '../../lib/macroBoard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,13 +72,13 @@ async function cellFor(cfg) {
   try {
     raw = cfg.yahoo
       ? await yhHist(cfg.yahoo)
-      : await fredObs(cfg.src, cfg.kind === 'yoy' ? 1100 : cfg.src === 'A191RL1Q225SBEA' ? 2200 : 550);
+      : await fredObs(cfg.src, cfg.kind === 'yoy' ? 1100 : (cfg.kind === 'yoyq' || cfg.src === 'A191RL1Q225SBEA') ? 2200 : 550);
   } catch (e) {
     return { stale: true, source, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed') };
   }
   if (!raw || !raw.length) return { stale: true, source, error: 'no data' };
   if (cfg.scale) raw = raw.map((r) => ({ date: r.date, v: r.v * cfg.scale }));
-  let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'mom' ? mom(raw) : raw;
+  let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'yoyq' ? yoyQ(raw) : cfg.kind === 'mom' ? mom(raw) : raw;
   return { ...boardCell(cfg, lastYear(series)), source };
 }
 

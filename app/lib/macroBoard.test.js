@@ -1,7 +1,7 @@
 // Tests for the macro-board pure helpers — percentile-in-range, regime tone, and
 // the YoY/MoM transforms. Expected values worked out by hand.
 import { describe, it, expect } from 'vitest';
-import { rangeStat, tone, yoy, mom, boardCell } from './macroBoard.js';
+import { rangeStat, tone, yoy, yoyQ, mom, boardCell } from './macroBoard.js';
 
 describe('rangeStat — knob position + rank percentile + range', () => {
   it('places v linearly between the 1-yr low/high and ranks it', () => {
@@ -39,6 +39,13 @@ describe('yoy / mom transforms', () => {
     expect(out).toHaveLength(1);
     expect(out[0].date).toBe('m12');
     expect(out[0].v).toBeCloseTo(3, 9);
+  });
+  it('yoyQ = v[i]/v[i-4]-1 (×100) for quarterly', () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({ date: `q${i}`, v: i === 4 ? 106 : 100 }));
+    const out = yoyQ(rows);
+    expect(out).toHaveLength(1);
+    expect(out[0].date).toBe('q4');
+    expect(out[0].v).toBeCloseTo(6, 9);
   });
   it('mom = consecutive difference', () => {
     expect(mom([{ date: 'a', v: 100 }, { date: 'b', v: 175 }])).toEqual([{ date: 'b', v: 75 }]);
