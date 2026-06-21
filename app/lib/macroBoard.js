@@ -78,7 +78,6 @@ export const MACRO_GROUPS = [
     group: 'Rates & market',
     series: [
       { key: 'us10y', label: 'US 10Y', src: 'DGS10', unit: '%', d: 2, dir: -1, warn: 4.5, stress: 5 },
-      { key: 'india10y', label: 'India 10Y', src: 'IRLTLT01INM156N', unit: '%', d: 2, dir: -1, warn: 7.25, stress: 7.6 },
       { key: 'spread2s10s', label: '2s10s', src: 'T10Y2Y', unit: ' pp', d: 2, dir: 1, warn: 0.2, stress: 0 },
       { key: 'hyOas', label: 'HY OAS', src: 'BAMLH0A0HYM2', unit: '%', d: 2, dir: -1, warn: 4, stress: 5.5 },
       { key: 'fedFunds', label: 'Fed funds', src: 'DFF', unit: '%', d: 2, dir: -1, warn: 4.75, stress: 5.5 },
@@ -99,7 +98,6 @@ export const MACRO_GROUPS = [
     group: 'Growth',
     series: [
       { key: 'gdp', label: 'US GDP', src: 'A191RL1Q225SBEA', unit: '%', d: 1, dir: 1, warn: 1.5, stress: 0 },
-      { key: 'indiaGdp', label: 'India GDP', src: 'INDGDPRQPSMEI', unit: '%', d: 1, kind: 'yoyq', dir: 1, warn: 6, stress: 5 },
       { key: 'umich', label: 'UMich', src: 'UMCSENT', unit: '', d: 1, dir: 1, warn: 70, stress: 60 },
     ],
   },

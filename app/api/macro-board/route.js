@@ -79,7 +79,13 @@ async function cellFor(cfg) {
   if (!raw || !raw.length) return { stale: true, source, error: 'no data' };
   if (cfg.scale) raw = raw.map((r) => ({ date: r.date, v: r.v * cfg.scale }));
   let series = cfg.kind === 'yoy' ? yoy(raw) : cfg.kind === 'yoyq' ? yoyQ(raw) : cfg.kind === 'mom' ? mom(raw) : raw;
-  return { ...boardCell(cfg, lastYear(series)), source };
+  const cell = boardCell(cfg, lastYear(series));
+  // Guard: a discontinued/lagged feed (e.g. FRED's OECD India mirror, stuck >1yr)
+  // must not show stale data as current — render it unavailable instead.
+  if (cell.asOf && Date.now() - Date.parse(cell.asOf) > 366 * 86400 * 1000) {
+    return { stale: true, source, error: `stale (last obs ${cell.asOf})` };
+  }
+  return { ...cell, source };
 }
 
 export async function GET() {
