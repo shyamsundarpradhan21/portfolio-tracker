@@ -627,14 +627,19 @@ body {
 /* Insights (left) drives the row height; the right column stretches to match it,
    so news + calendar together never exceed the insights card. */
 .wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
-@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; } }
-.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
-.wrap-mid-r .feedcard { flex: 1 1 0; min-height: 0; }              /* news : calendar = 1 : 1 */
-.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; min-height: 0; }
-.wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.wrap-mid-r .calcard .ecal { flex: 1; max-height: none; min-height: 0; overflow-y: auto; padding-right: 4px; }
+@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; align-items: start; } }
+/* overflow:hidden zeroes the flex auto-min so the cards bound to their share and
+   SCROLL inside, instead of a long news list inflating the whole row. Insights
+   (left) stays the height authority; news : calendar = 1 : 1. */
+.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
+.wrap-mid-r .feedcard { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 290px; min-height: 0; }
+.wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.wrap-mid-r .calcard .ecal { flex: 1; max-height: 290px; min-height: 0; overflow-y: auto; padding-right: 4px; }
 @media (max-width: 920px) {
-  .wrap-mid-r .feedcard, .wrap-mid-r .calcard { flex: none; }
+  .wrap-mid-r { overflow: visible; }
+  .wrap-mid-r .feedcard, .wrap-mid-r .calcard { flex: none; overflow: visible; }
+  .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr 1fr; max-height: 520px; }
   .wrap-mid-r .calcard .ecal { max-height: 230px; }
 }
 @media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
