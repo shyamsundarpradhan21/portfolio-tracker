@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
   ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
-  TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_BENCHMARKS,
+  TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS, hydratePortfolio, isPortfolioHydrated,
 } from './portfolio';
@@ -507,28 +507,6 @@ function Dashboard() {
     return { dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0 };
   }, [indian]);
 
-  // Realized equity P&L derived LIVE from the Zerodha exits ledger (gross sell−buy),
-  // grouped by FY of the sell — the curated INDIAN_REALIZED figure had gone stale.
-  // Upstox swing booked nothing (all held, verified from its tradebook), so this is
-  // the combined equity realised. The ledger carries no symbols → no per-name movers.
-  const indianRealized = useMemo(() => {
-    const trades = APP.indianExits?.trades || [];
-    const fyOf = (iso) => { const [y, m] = String(iso).split('-').map(Number); const s = m >= 4 ? y : y - 1; return `FY${s % 100}-${(s + 1) % 100}`; };
-    const byFy = {};
-    for (const [, x, buy, sell] of trades) { const k = fyOf(x); byFy[k] = (byFy[k] || 0) + (sell - buy); }
-    const fy = Object.keys(byFy).sort().map((label) => ({
-      label, amt: Math.round(byFy[label]), winners: [], losers: [],
-      n: trades.filter(([, x]) => fyOf(x) === label).length,
-    }));
-    const cur = fyOf(isoOf(now));
-    const ytdEntry = fy.find((f) => f.label === cur);
-    return {
-      fy, total: Math.round(fy.reduce((s, f) => s + f.amt, 0)),
-      ytd: ytdEntry ? ytdEntry.amt : 0, ytdLabel: cur,
-      source: 'Zerodha tradebook', asOf: APP.indianExits?.asOf || isoOf(now),
-      winners: [], losers: [],
-    };
-  }, [now]);
 
   // ─── derived: US ────────────────────────────────────────────────────────────
   const usData = useMemo(() => {
@@ -597,11 +575,11 @@ function Dashboard() {
     // tagged here (all bought 2026-02-09, confirmed from the Upstox tradebook) — this
     // folds swing into the combined sector/cap mix and the money-weighted CAGR.
     const META = {
-      BANKBARODA: { sector: 'Banking',     cap: 'Large', bought: '2026-02-09' },
-      AVANTEL:    { sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
-      TDPOWERSYS: { sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
-      HAPPSTMNDS: { sector: 'Technology',  cap: 'Small', bought: '2026-02-09' },
-      LAURUSLABS: { sector: 'Pharma',      cap: 'Mid',   bought: '2026-02-09' },
+      BANKBARODA: { name: 'Bank of Baroda',   sector: 'Banking',     cap: 'Large', bought: '2026-02-09' },
+      AVANTEL:    { name: 'Avantel',          sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
+      TDPOWERSYS: { name: 'TD Power Systems', sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
+      HAPPSTMNDS: { name: 'Happiest Minds',   sector: 'Technology',  cap: 'Small', bought: '2026-02-09' },
+      LAURUSLABS: { name: 'Laurus Labs',      sector: 'Pharma',      cap: 'Mid',   bought: '2026-02-09' },
     };
     let inv = 0, val = 0, valued = true;
     const rows = SWING_R.rows.map((s) => {
@@ -609,7 +587,7 @@ function Dashboard() {
       const v = ltp != null ? s.qty * ltp : null; const pl = v != null ? v - s.inv : null;
       const m = META[s.sym] || {};
       inv += s.inv; if (v != null) val += v; else valued = false;
-      return { ...s, ltp, val: v, pl, pct: pl != null ? (pl / s.inv) * 100 : null, day: q && !q.error ? q.pct : null, sector: m.sector, cap: m.cap, bought: m.bought };
+      return { ...s, ltp, val: v, pl, pct: pl != null ? (pl / s.inv) * 100 : null, day: q && !q.error ? q.pct : null, name: s.name ?? m.name, sector: m.sector, cap: m.cap, bought: m.bought };
     });
     return { rows, inv, val, pl: val - inv, pct: inv ? ((val - inv) / inv) * 100 : 0, valued };
   }, [prices]);
@@ -1176,7 +1154,7 @@ function Dashboard() {
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}
               inStats={eqStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
               flash={flash} markets={markets} lastUpdate={lastUpdate} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              INDIAN={INDIAN} INDIAN_REALIZED={indianRealized} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
+              INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
               indianRec={indianRec}
               swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw} swingRec={SWING_R} />
           )}

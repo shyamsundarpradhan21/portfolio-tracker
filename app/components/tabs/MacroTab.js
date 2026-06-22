@@ -227,8 +227,13 @@ function buildIndiaDetail(india, breadthPct) {
     orDash(mom && !mom.stale && isNum(mom.pct), { label: 'Nifty vs 125D MA', value: isNum(mom?.pct) ? `${Math.abs(mom.pct).toFixed(1)}%` : '—', tag: mom?.pct >= 0 ? 'above' : 'below', score: mom?.score, title: sigTitle(mom) }),
     orDash(isNum(breadthPct), { label: 'Breadth', value: isNum(breadthPct) ? `${Math.round(breadthPct)}%` : '—', tag: scoreLabel(breadthPct), score: breadthPct, title: 'NSE advances / declines' }),
   ];
+  // Banner parity with the US card: FII/DII absorption is India-specific; the
+  // narrow-tape / broad-but-heavy split (momentum vs breadth) mirrors buildUsDetail.
+  const mo = sc(mom), br = breadthPct;
   const divergence = india?.absorption
     ? `Foreign outflow ${cr(india.absorption.fii)} absorbed by domestic buying ${cr(india.absorption.dii)} — the combined flow masks it`
+    : (isNum(mo) && isNum(br) && mo >= 58 && br <= 35) ? 'Narrow tape — Nifty held up by a few names; breadth weak underneath'
+    : (isNum(br) && isNum(mo) && br >= 58 && mo <= 35) ? 'Broad but heavy — wide participation, Nifty lagging'
     : null;
   return { leading, coincident, divergence };
 }

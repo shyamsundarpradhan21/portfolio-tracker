@@ -189,7 +189,12 @@ export default function IndianTab({
               <tr><td colSpan={9} style={DIV_STYLE}>{(swingRec?.source || 'Upstox')} · me · swing · {swing.rows.length}</td></tr>
               {swingSorted.map((s) => (
                 <tr key={'sw-' + s.sym}>
-                  <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">{s.sym}</td>
+                  <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
+                    {s.sym}
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontWeight: 400, marginTop: 2, fontFamily: 'var(--body)' }}>
+                      {[s.name, s.sector, s.cap].filter(Boolean).join(' · ')}
+                    </div>
+                  </td>
                   <td className="ra mut mono">{s.qty}</td>
                   <td className="ra mut mono"><InrF n={s.cost} /></td>
                   <td className="ra mono">
