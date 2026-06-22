@@ -38,9 +38,24 @@
   --acc2:   #D8C4BC;
   --acc-bg: rgba(194,169,160,.14);
   --hdr-bg-base: 12,12,18;   /* used as rgb(...) inside calc */
-  /* Sticky table-header fill — opaque so scrolling rows don't bleed through,
-     but subtle so the header doesn't read as a hard bar. */
-  --thead-bg: #15151d;
+  /* Sticky table-header fill — translucent frosted bar; the backdrop blur on
+     .ovx thead th keeps scrolling rows from bleeding through legibly. */
+  --thead-bg: rgba(21,21,29,.72);
+
+  /* ── Glassmorphism surface system ──────────────────────────────────────────
+     Cards become frosted panels: a translucent fill (--glass-bg) + a backdrop
+     blur over the ambient mesh (body::before), a 1px top highlight (--glass-hi)
+     and a soft drop shadow (--glass-shadow). The blur is the dominant cue, so
+     the accent-tint model is kept — cards mix the tab accent INTO --glass-bg.
+     Night is neutral frost; the day layer below deepens the highlight/shadow. */
+  --glass-bg:   rgba(255,255,255,.05);   /* card-level fill */
+  --glass-bg2:  rgba(255,255,255,.032);  /* nested mini/chip fill */
+  --glass-brd:  rgba(255,255,255,.10);
+  --glass-hi:   rgba(255,255,255,.12);   /* inset top highlight */
+  --glass-shadow: 0 10px 34px rgba(0,0,0,.30);
+  --glass-blur: 22px;
+  --glass-sat:  140%;
+  --mesh-op:    .9;                       /* ambient mesh strength */
   /* Scenario accents (projection outlook); the day layer deepens them */
   --sc-cons: #3B82F6;
   --sc-base: #A78BFA;  /* violet — was #34D399, identical to the gain-green --grn */
@@ -92,7 +107,15 @@
   --red-bg: rgba(225,69,59,.09);
   --blu-bg: rgba(37,99,235,.1);
   --hdr-bg-base: 244,246,250;
-  --thead-bg: #EDF1F7;
+  --thead-bg: rgba(237,241,247,.7);
+  /* Day glass: surfaces go translucent white so the ambient mesh reads through;
+     highlight + shadow deepen for the lighter backdrop. */
+  --glass-bg:   rgba(255,255,255,.58);
+  --glass-bg2:  rgba(255,255,255,.42);
+  --glass-brd:  rgba(255,255,255,.72);
+  --glass-hi:   rgba(255,255,255,.9);
+  --glass-shadow: 0 10px 30px rgba(40,60,90,.12);
+  --mesh-op:    .85;
   --sc-cons: #2563EB;
   --sc-base: #7C3AED;  /* violet — was #059669, too close to the gain-green --grn */
   --sc-opt:  #B45309;
@@ -210,15 +233,35 @@ body {
   color: var(--txt);
   font-family: var(--body);
   font-size: var(--fs-md);
+  position: relative;
   /* Reserve scrollbar gutter so layout doesn't shift when the scrollbar
      appears/disappears, and prevent the vertical scrollbar from triggering
      a spurious horizontal scroll. */
   scrollbar-gutter: stable;
   line-height: 1.55;
   padding: 0;
-  /* Smooth sunrise/sunset flip when data-time changes */
-  transition: background 1.2s ease, color 1.2s ease;
+  /* Smooth sunrise/sunset flip when data-time changes (base colour only — the
+     mesh hues on body::before swap instantly so the gradient doesn't tween). */
+  transition: background-color 1.2s ease, color 1.2s ease;
 }
+
+/* ── Ambient mesh — soft blobs in the sleeve hues, fixed behind everything.
+   This is what the frosted cards refract; without it, blur over a flat --bg
+   reads as nothing. Lives on a fixed ::before (z-index 0); .layout sits above
+   it (z-index 1) so cards' backdrop-filter blurs the mesh through the gutters. */
+body::before {
+  content: ''; position: fixed; inset: -10%; z-index: 0;
+  pointer-events: none; opacity: var(--mesh-op);
+  transition: opacity .6s ease;
+  background:
+    radial-gradient(38% 42% at 12% 8%,  color-mix(in srgb, var(--blu) 60%, transparent) 0%, transparent 70%),
+    radial-gradient(36% 40% at 88% 12%, color-mix(in srgb, var(--cyn) 55%, transparent) 0%, transparent 70%),
+    radial-gradient(46% 50% at 80% 90%, color-mix(in srgb, var(--pur) 55%, transparent) 0%, transparent 72%),
+    radial-gradient(42% 46% at 8% 92%,  color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 72%),
+    radial-gradient(34% 36% at 50% 50%, color-mix(in srgb, var(--pnk) 30%, transparent) 0%, transparent 70%);
+}
+:root[data-time="day"] body::before { filter: saturate(.85) brightness(1.08); }
+@media (prefers-reduced-motion: reduce) { body::before { transition: none; } }
 
 .topbar {
   display: grid;
@@ -284,9 +327,21 @@ body {
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 16px; padding: 17px 20px; }
+.card { background: color-mix(in srgb, var(--acc) 7%, var(--glass-bg)); border: .5px solid color-mix(in srgb, var(--acc) 18%, var(--glass-brd)); border-radius: 16px; padding: 17px 20px;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi); }
 /* Summary card (Section 0a): radius 14px. */
-.csm { background: color-mix(in srgb, var(--acc) 6%, var(--sur)); border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd)); border-radius: 14px; padding: 12px 15px; overflow: hidden; }
+.csm { background: color-mix(in srgb, var(--acc) 7%, var(--glass-bg)); border: .5px solid color-mix(in srgb, var(--acc) 18%, var(--glass-brd)); border-radius: 14px; padding: 12px 15px; overflow: hidden;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi); }
+
+/* No-backdrop-filter fallback (older browsers): swap the glass fills for opaque
+   surfaces via the tokens, so every frosted surface stays readable over the mesh
+   instead of going see-through. One override point — all surfaces follow. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --glass-bg: #16161e; --glass-bg2: #1b1b24; --glass-brd: var(--brd); --thead-bg: #15151d; }
+  :root[data-time="day"] { --glass-bg: #ffffff; --glass-bg2: #f1f4f9; --glass-brd: var(--brd); --thead-bg: #edf1f7; }
+}
 /* Values inside summary cards must not push the card wider */
 .csm .vlg, .csm .vmd, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
@@ -408,7 +463,7 @@ body {
 /* chips (swing positions, sub-allocations) */
 .chip {
   display: inline-block; padding: 3px 9px; margin: 2px;
-  background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2));
+  background: color-mix(in srgb, var(--acc) 3.5%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--glass-brd));
   border-radius: 12px; font-size: 12px; color: var(--txt2);
   font-family: var(--mono); white-space: nowrap;
 }
@@ -428,7 +483,7 @@ body {
 .mf-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
 .mf-stack { display: flex; width: 100%; height: 14px; border-radius: 4px; overflow: hidden; background: var(--sur2); }
 .mf-stack > span { height: 100%; }
-.mf-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 8px; font-size: var(--fs-xs); color: var(--txt2); }
+.mf-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; background: color-mix(in srgb, var(--acc) 3.5%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--glass-brd)); border-radius: 8px; font-size: var(--fs-xs); color: var(--txt2); }
 .mf-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 /* Table scroll wrapper — every holdings table on every tab. Scrolls both axes
    with a row-count limit (~440px) and a sticky header, so long tables (US, etc.)
@@ -438,26 +493,28 @@ body {
 }
 .ovx thead th {
   position: sticky; top: 0; z-index: 1;
-  background: var(--thead-bg); /* opaque so scrolling rows don't bleed through */
+  background: var(--thead-bg); /* translucent frosted bar */
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
 }
 
 /* mini info card inside another card */
 .mini {
-  background: color-mix(in srgb, var(--acc) 4.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd2));
+  background: color-mix(in srgb, var(--acc) 4.5%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--glass-brd));
   border-radius: 6px; padding: 9px 12px;
 }
 .mini.danger { border-color: rgba(232, 64, 64, .35); background: rgba(232, 64, 64, .06); }
 
-/* Night theme: strip acc tint from all surfaces — tints only look good on the
-   light day theme where the coloured wash is legible against a white base. */
+/* Night theme: strip acc tint from the frosted surfaces — neutral glass reads
+   best on the dark mesh; tints only look good on the light day theme. */
 :root:not([data-time="day"]) .card,
-:root:not([data-time="day"]) .csm { background: var(--sur); border-color: var(--brd); }
-:root:not([data-time="day"]) .mini { background: var(--sur2); border-color: var(--brd2); }
+:root:not([data-time="day"]) .csm { background: var(--glass-bg); border-color: var(--glass-brd); }
+:root:not([data-time="day"]) .mini { background: var(--glass-bg2); border-color: var(--glass-brd); }
 :root:not([data-time="day"]) .ins-stat,
 :root:not([data-time="day"]) .ins-q,
 :root:not([data-time="day"]) .ins-macro,
 :root:not([data-time="day"]) .mf-chip,
-:root:not([data-time="day"]) .chip { background: var(--sur2); border-color: var(--brd2); }
+:root:not([data-time="day"]) .chip { background: var(--glass-bg2); border-color: var(--glass-brd); }
 :root:not([data-time="day"]) .rz-tab.on { background: var(--sur2); border-color: var(--brd2); }
 
 .bar-trk { flex: 1; background: var(--sur2); border-radius: 3px; height: 8px; overflow: hidden; }
@@ -556,7 +613,7 @@ body {
 /* market-internals vertical stack: sentiment band · treemap square · movers split */
 .wstack { display: flex; flex-direction: column; gap: 9px; }
 .wstack .qc { min-height: 0; }
-.qc { background: var(--sur2); border: .5px solid var(--brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
+.qc { background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
 .qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
 /* Legend mirrors the treemap's sheat(): mix toward --sur2 (the panel surface) so
    it tracks the tiles in BOTH themes — vivid green → surface-neutral → vivid red. */
@@ -997,7 +1054,7 @@ body {
   /* tall, narrow tile: label / value+% / waffle stacked top-to-bottom */
   display: flex; flex-direction: column; gap: 6px;
   min-width: 0; text-align: left; cursor: pointer;
-  background: var(--sur2); border: .5px solid var(--brd2); border-radius: 12px; padding: 10px 13px;
+  background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 12px; padding: 10px 13px;
   transition: border-color .15s, background .15s;
 }
 .pjx-gvrow { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; } /* value left, % right — justified on one line */
@@ -1031,7 +1088,7 @@ body {
    balance the mono face's larger x-height. */
 .pjx-sentence {
   margin-top: 10px; padding: 10px 14px; border-radius: 12px; line-height: 1.6;
-  background: var(--sur2); border: .5px solid var(--brd2); color: var(--txt2); font-size: var(--fs-md);
+  background: var(--glass-bg2); border: .5px solid var(--glass-brd); color: var(--txt2); font-size: var(--fs-md);
 }
 .pjx-sentence b { color: var(--txt); font-family: var(--mono); font-weight: 600; font-size: .95em; }
 
@@ -1114,7 +1171,7 @@ body {
 /* ── Portfolio Insights card (Indian) — Section I ─────────────────────────── */
 .ins-ai { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .6px; color: var(--ai-tag, var(--pur)); background: color-mix(in srgb, var(--ai-tag, var(--pur)) 14%, transparent); border: .5px solid color-mix(in srgb, var(--ai-tag, var(--pur)) 30%, transparent); border-radius: 5px; padding: 2px 6px; }
 .ins-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-.ins-stat { background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 11px; padding: 12px 13px; }
+.ins-stat { background: color-mix(in srgb, var(--acc) 3.5%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--glass-brd)); border-radius: 11px; padding: 12px 13px; }
 .ins-stat .v { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); letter-spacing: -.5px; margin-top: 3px; }
 .ins-stat .v small { font-size: var(--fs-xs); font-weight: 600; color: var(--txt2); }
 .ins-badge { display: inline-block; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .5px; border-radius: 5px; padding: 2px 7px; margin-top: 7px; }
@@ -1122,10 +1179,10 @@ body {
 .ins-badge.med  { color: var(--acc); background: rgba(232,168,87,.12);  border: .5px solid rgba(232,168,87,.3); }
 .ins-badge.high { color: var(--red); background: rgba(248,113,113,.12); border: .5px solid rgba(248,113,113,.3); }
 .ins-badge.flat { color: var(--txt2); background: var(--sur2); border: .5px solid var(--brd2); }
-.ins-macro { margin-top: 12px; font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55; background: color-mix(in srgb, var(--acc) 4%, var(--sur2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd2)); border-radius: 10px; padding: 9px 11px; }
+.ins-macro { margin-top: 12px; font-size: var(--fs-xs); color: var(--txt2); line-height: 1.55; background: color-mix(in srgb, var(--acc) 4%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--glass-brd)); border-radius: 10px; padding: 9px 11px; }
 .ins-macro .mh { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .6px; color: var(--acc); margin-right: 7px; }
 .ins-swot { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
-.ins-q { border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--brd2)); border-radius: 10px; padding: 10px 11px; background: color-mix(in srgb, var(--acc) 3.5%, var(--sur2)); }
+.ins-q { border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--glass-brd)); border-radius: 10px; padding: 10px 11px; background: color-mix(in srgb, var(--acc) 3.5%, var(--glass-bg2)); }
 .ins-q .qh { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
 .ins-q .qt { font-size: var(--fs-xs); color: var(--txt2); margin-top: 5px; line-height: 1.5; }
 .ins-q.s .qh { color: var(--grn); } .ins-q.w .qh { color: var(--red); }
@@ -1158,7 +1215,9 @@ body { padding: 0; }
 .layout {
   display: block;
   min-height: 100vh;
-  background: var(--bg);
+  position: relative;
+  z-index: 1;            /* above the fixed ambient mesh (body::before, z-index 0) */
+  background: transparent; /* let the mesh show through the gutters */
 }
 
 
@@ -1193,11 +1252,16 @@ body { padding: 0; }
 }
 .hdr-hero {
   display: flex; flex-direction: column; justify-content: center;
-  text-align: left; background: transparent; border: none; cursor: pointer;
-  padding: 4px 6px; border-radius: 12px; transition: background .15s;
-  min-width: 0;
+  text-align: left; cursor: pointer; min-width: 0;
+  background: color-mix(in srgb, var(--acc) 6%, var(--glass-bg));
+  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--glass-brd));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  padding: 12px 20px; border-radius: 14px;
+  transition: border-color .15s var(--ease), box-shadow .2s var(--ease), background .6s ease;
 }
-.hdr-hero:hover { background: color-mix(in srgb, var(--acc) 5%, transparent); }
+.hdr-hero:hover { border-color: color-mix(in srgb, var(--acc) 34%, var(--glass-brd)); }
 .hdr-hero.active .page-header-lbl { color: var(--acc); }
 
 /* Compact icon toggles (AI / theme / refresh) — small, not tab-sized */
@@ -1232,25 +1296,28 @@ body { padding: 0; }
 .hdr-card {
   display: flex; flex-direction: column; justify-content: center; /* centre content in the taller, hero-matched height */
   text-align: left; cursor: pointer; min-width: 0;
-  background: color-mix(in srgb, var(--acc) 6%, var(--sur));
-  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
+  background: color-mix(in srgb, var(--acc) 6%, var(--glass-bg));
+  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--glass-brd));
   border-radius: 12px; padding: 12px 14px;
-  transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  transition: transform .18s var(--ease), border-color .18s var(--ease), box-shadow .2s var(--ease), background .6s ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .hdr-card:hover {
     transform: scale(1.008);
-    border-color: color-mix(in srgb, var(--acc) 30%, var(--brd2));
+    border-color: color-mix(in srgb, var(--acc) 30%, var(--glass-brd));
     /* tight, mostly-downward drop — a wide soft shadow bled left across the gap
        onto the net-worth card; keep the blur/spread small so it stays on the card */
-    box-shadow: 0 5px 12px -8px rgba(0,0,0,.45);
+    box-shadow: 0 9px 22px -10px rgba(0,0,0,.5), inset 0 1px 0 var(--glass-hi);
   }
 }
 .hdr-card:active { transform: scale(0.97); }
 .hdr-card.active {
-  border-color: color-mix(in srgb, var(--acc) 75%, var(--brd));
-  background: color-mix(in srgb, var(--acc) 10%, var(--sur));
-  box-shadow: inset 0 -2px 0 -.5px var(--acc);
+  border-color: color-mix(in srgb, var(--acc) 75%, var(--glass-brd));
+  background: color-mix(in srgb, var(--acc) 12%, var(--glass-bg));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi), inset 0 -2px 0 -.5px var(--acc);
 }
 .hdr-card.active .lbl { color: var(--acc); }
 /* Inactive header cards keep muted labels — only the active one takes the
@@ -1347,11 +1414,14 @@ body { padding: 0; }
   flex-wrap: wrap;
 }
 .hkpi {
-  background: color-mix(in srgb, var(--acc) 4%, var(--sur));
-  border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--brd));
+  background: color-mix(in srgb, var(--acc) 4%, var(--glass-bg));
+  border: .5px solid color-mix(in srgb, var(--acc) 10%, var(--glass-brd));
   border-radius: 10px;
   padding: 10px 16px;
   min-width: 140px;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
   transition: background .6s ease, border-color .6s ease;
 }
 .hkpi-lbl {
@@ -1464,9 +1534,12 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 /* What's at stake — three headline tiles, foregrounded above the mechanics */
 .stake-tile {
   display: flex; flex-direction: column; gap: 2px;
-  background: color-mix(in srgb, var(--acc) 6%, var(--sur));
-  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--brd));
+  background: color-mix(in srgb, var(--acc) 6%, var(--glass-bg));
+  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--glass-brd));
   border-radius: 14px; padding: 14px 16px;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
 }
 .stake-tile.down { border-left: 2px solid var(--red); }
 .stake-tile.up   { border-left: 2px solid var(--grn); }

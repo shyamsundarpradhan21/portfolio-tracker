@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en" data-time="night" data-glass="frosted" data-tab="overview">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Glassmorphism mock — portfolio tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ── Tokens (mirrors app/globals.css; fake numbers only) ────────────────── */
+:root{
+  --mono:'JetBrains Mono','Courier New',monospace;
+  --body:'Source Sans 3',system-ui,sans-serif;
+  --title:'Playfair Display',Georgia,serif;
+  /* night */
+  --bg:#0C0C12; --txt:#E8E8EC; --txt2:#868693; --txt3:#79798B;
+  --grn:#34D399; --red:#F87171;
+  --blu:#3B82F6; --pur:#A974FF; --pnk:#FF5CA8; --cyn:#2DD4EC; --gld:#E6C04A;
+  --acc:#C2A9A0; --acc2:#D8C4BC;
+  --fs-2xs:.72rem; --fs-xs:.8125rem; --fs-sm:.875rem; --fs-md:.97rem;
+  --fs-lg:1.12rem; --fs-xl:1.36rem; --fs-2xl:1.62rem; --fs-h0:2.95rem;
+  --ease:cubic-bezier(.23,1,.32,1);
+
+  /* glass surface vars — overridden per data-glass + per theme */
+  --glass-bg:rgba(255,255,255,.045);
+  --glass-bg2:rgba(255,255,255,.03);
+  --glass-brd:rgba(255,255,255,.10);
+  --glass-hi:rgba(255,255,255,.14);
+  --glass-blur:22px; --glass-sat:140%;
+  --glass-shadow:0 10px 34px rgba(0,0,0,.30);
+  --mesh-op:1;
+}
+:root[data-time="day"]{
+  --bg:#F4F6FA; --txt:#1C2533; --txt2:#5E6B80; --txt3:#636E84;
+  --grn:#13A871; --red:#E1453B;
+  --blu:#2563EB; --pur:#7C3AED; --pnk:#D81B7E; --cyn:#0BA5C0; --gld:#A16207;
+  --acc:#8A6F66; --acc2:#9E847A;
+  --glass-bg:rgba(255,255,255,.55);
+  --glass-bg2:rgba(255,255,255,.42);
+  --glass-brd:rgba(255,255,255,.75);
+  --glass-hi:rgba(255,255,255,.9);
+  --glass-shadow:0 10px 30px rgba(40,60,90,.12);
+}
+
+/* intensity — subtle */
+:root[data-glass="subtle"]{
+  --glass-bg:rgba(255,255,255,.028); --glass-bg2:rgba(255,255,255,.02);
+  --glass-brd:rgba(255,255,255,.07); --glass-hi:rgba(255,255,255,.08);
+  --glass-blur:10px; --glass-sat:120%;
+  --glass-shadow:0 6px 18px rgba(0,0,0,.22); --mesh-op:.5;
+}
+:root[data-time="day"][data-glass="subtle"]{
+  --glass-bg:rgba(255,255,255,.62); --glass-bg2:rgba(255,255,255,.5);
+  --glass-brd:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.8);
+  --glass-blur:10px; --glass-shadow:0 6px 16px rgba(40,60,90,.08); --mesh-op:.55;
+}
+/* intensity — vivid */
+:root[data-glass="vivid"]{
+  --glass-bg:rgba(255,255,255,.06); --glass-bg2:rgba(255,255,255,.04);
+  --glass-brd:rgba(255,255,255,.16); --glass-hi:rgba(255,255,255,.22);
+  --glass-blur:30px; --glass-sat:170%;
+  --glass-shadow:0 16px 50px rgba(0,0,0,.40); --mesh-op:1.25;
+}
+:root[data-time="day"][data-glass="vivid"]{
+  --glass-bg:rgba(255,255,255,.5); --glass-bg2:rgba(255,255,255,.38);
+  --glass-brd:rgba(255,255,255,.85); --glass-hi:rgba(255,255,255,1);
+  --glass-blur:30px; --glass-shadow:0 18px 44px rgba(40,60,90,.16); --mesh-op:1.2;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:clamp(15px,8px + .7vw,21px)}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--body);
+  font-size:var(--fs-md); line-height:1.55; min-height:100vh;
+  transition:background .6s ease,color .6s ease;
+  position:relative; overflow-x:hidden;
+}
+/* ── Ambient mesh — the NEW layer that makes the frost read ──────────────── */
+body::before{
+  content:''; position:fixed; inset:-10% -10% -10% -10%; z-index:0;
+  pointer-events:none; opacity:var(--mesh-op);
+  transition:opacity .5s ease;
+  background:
+    radial-gradient(38% 42% at 12% 8%,  color-mix(in srgb,var(--blu) 60%,transparent) 0%, transparent 70%),
+    radial-gradient(36% 40% at 88% 12%, color-mix(in srgb,var(--cyn) 55%,transparent) 0%, transparent 70%),
+    radial-gradient(46% 50% at 78% 88%, color-mix(in srgb,var(--pur) 55%,transparent) 0%, transparent 72%),
+    radial-gradient(40% 44% at 8% 92%,  color-mix(in srgb,var(--acc) 55%,transparent) 0%, transparent 72%),
+    radial-gradient(34% 36% at 50% 50%, color-mix(in srgb,var(--pnk) 32%,transparent) 0%, transparent 70%);
+  filter:saturate(1.05);
+}
+:root[data-time="day"] body::before{ filter:saturate(.85) brightness(1.1); }
+/* faint moving grain so flat areas aren't dead — optional flavour */
+.wrap{position:relative; z-index:1; max-width:1560px; margin:0 auto; padding:22px 32px 60px}
+
+.rs{font-family:var(--body); font-size:1.1em; font-variant-numeric:normal; margin-right:.02em}
+.mono{font-family:var(--mono)}
+.grn{color:var(--grn)!important;font-weight:600}
+.red{color:var(--red)!important;font-weight:600}
+
+/* ── Glass surface primitive ────────────────────────────────────────────── */
+.glass{
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border:1px solid var(--glass-brd);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  border-radius:16px;
+  transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .22s var(--ease),background .5s ease;
+}
+.glass.soft{ background:var(--glass-bg2); border-radius:12px; }
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+.topbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse 2s ease-in-out infinite;box-shadow:0 0 0 0 rgba(52,211,153,.5)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.status-txt{font-size:var(--fs-xs);color:var(--txt2)}
+.spacer{flex:1}
+.mkt-pill{font-size:var(--fs-xs);font-weight:600;padding:3px 9px;border-radius:10px;letter-spacing:.3px}
+.mkt-open{background:color-mix(in srgb,var(--grn) 16%,transparent);color:var(--grn)}
+.mkt-closed{background:rgba(90,90,114,.2);color:var(--txt3)}
+.tog{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;font-size:var(--fs-sm);
+  background:var(--glass-bg2);border:1px solid var(--glass-brd);color:var(--txt2);cursor:pointer;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+
+/* ── Header: NW hero + 5 asset cards ────────────────────────────────────── */
+.hdr-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:stretch;margin:14px 0 16px}
+.hdr-hero{display:flex;flex-direction:column;justify-content:center;padding:14px 22px;min-width:0}
+.page-header-lbl{font-size:var(--fs-2xs);letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.live-word{color:var(--grn);font-weight:800;letter-spacing:.06em}
+.hdr-val{
+  font-family:var(--mono);font-weight:800;font-size:clamp(52px,5.2vw,64px);letter-spacing:-.047em;line-height:.9;
+  background:linear-gradient(105deg,var(--acc) 0%,color-mix(in srgb,var(--acc) 50%,#fff) 38%,#fff 50%,color-mix(in srgb,var(--acc) 50%,#fff) 62%,var(--acc2) 100%);
+  background-size:320% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shine 11s ease-in-out infinite}
+:root[data-time="day"] .hdr-val{background:linear-gradient(105deg,var(--acc) 0%,color-mix(in srgb,var(--acc) 75%,#000) 50%,var(--acc2) 100%);background-size:280% 100%;-webkit-background-clip:text;background-clip:text}
+@keyframes shine{0%{background-position:0 0}50%{background-position:100% 0}100%{background-position:0 0}}
+.hdr-sub{font-size:var(--fs-xs);color:var(--txt2);margin-top:8px}
+
+.hdr-cards{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:14px}
+.hdr-card{display:flex;flex-direction:column;justify-content:center;padding:13px 15px;cursor:pointer;min-width:0}
+.hdr-card.active{border-color:color-mix(in srgb,var(--acc) 60%,var(--glass-brd));box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-hi),inset 0 -2px 0 -.5px var(--acc)}
+.hdr-card:hover{transform:translateY(-2px)}
+.lbl{font-size:var(--fs-2xs);color:var(--acc);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.lbl i{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.vmd{font-size:var(--fs-2xl);font-weight:700;font-family:var(--mono);letter-spacing:-.5px}
+.vsm{font-size:var(--fs-lg);font-weight:600;font-family:var(--mono)}
+.sub{font-size:var(--fs-xs);color:var(--txt2);margin-top:4px}
+
+/* ── Grid + cards ───────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:15px;align-items:stretch;margin-bottom:15px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;align-items:stretch;margin-bottom:15px}
+.card{padding:18px 20px}
+.ctitle{font-family:var(--title);font-size:var(--fs-xl);font-weight:600;letter-spacing:-.2px;color:var(--txt);margin-bottom:4px}
+.csub{font-size:var(--fs-xs);color:var(--txt2);margin-bottom:14px}
+
+/* allocation bar */
+.alloc-bar-track{display:flex;height:24px;border-radius:9px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
+.alloc-bar-track>div{min-width:0}
+.alloc-leg{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:var(--fs-xs);color:var(--txt2);margin-top:14px}
+.alloc-leg span{display:inline-flex;align-items:center;gap:7px}
+.alloc-leg i{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.hatch{background-image:repeating-linear-gradient(45deg,#5a5a66 0 3px,#2b2b33 3px 6px)}
+
+/* stat minis */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mini{padding:13px 14px}
+.mini .k{font-size:var(--fs-2xs);letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.mini .v{font-family:var(--mono);font-weight:800;font-size:var(--fs-xl);letter-spacing:-.5px;margin-top:6px}
+.mini .vsub{font-size:var(--fs-2xs);color:var(--txt2);margin-top:4px}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:var(--fs-xs);color:var(--txt3);text-transform:uppercase;letter-spacing:.7px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--glass-brd);font-weight:500}
+.tbl th.ra,.tbl td.ra{text-align:right}
+.tbl td{padding:12px 14px;border-bottom:1px solid color-mix(in srgb,var(--glass-brd) 60%,transparent);color:var(--txt2);font-size:var(--fs-sm)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--glass-bg2)}
+.tbl td.sym{color:var(--txt);font-weight:600;font-family:var(--mono)}
+.tbl td.num{font-family:var(--mono);color:var(--txt)}
+
+/* ── Control panel ──────────────────────────────────────────────────────── */
+.controls{position:fixed;top:16px;right:16px;z-index:50;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;
+  background:var(--glass-bg);border:1px solid var(--glass-brd);box-shadow:var(--glass-shadow);
+  -webkit-backdrop-filter:blur(24px) saturate(150%);backdrop-filter:blur(24px) saturate(150%)}
+.controls .ctl-h{font-size:var(--fs-2xs);letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.seg{display:inline-flex;background:var(--glass-bg2);border:1px solid var(--glass-brd);border-radius:10px;padding:3px;gap:2px}
+.seg button{font:inherit;font-size:var(--fs-2xs);font-weight:700;color:var(--txt2);background:none;border:none;padding:5px 11px;border-radius:7px;cursor:pointer;text-transform:capitalize}
+.seg button.on{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}
+.note{font-size:var(--fs-2xs);color:var(--txt3);max-width:190px;line-height:1.45}
+
+@media (max-width:760px){.hdr-grid{grid-template-columns:1fr}.g2,.g3{grid-template-columns:1fr}.hdr-cards{grid-template-columns:repeat(2,1fr)}.controls{position:static;margin:0 auto 16px;max-width:340px}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <div class="ctl-h">Theme</div>
+  <div class="seg" id="seg-theme">
+    <button data-v="night" class="on">night</button>
+    <button data-v="day">day</button>
+  </div>
+  <div class="ctl-h">Glass intensity</div>
+  <div class="seg" id="seg-glass">
+    <button data-v="subtle">subtle</button>
+    <button data-v="frosted" class="on">frosted</button>
+    <button data-v="vivid">vivid</button>
+  </div>
+  <div class="note">Mock with placeholder numbers. Pick a theme + intensity — the real app gets this treatment across every card, table and chart, both themes.</div>
+</div>
+
+<div class="wrap">
+  <!-- topbar -->
+  <div class="topbar">
+    <span class="pulse"></span>
+    <span class="status-txt">Updated at 14:32:07</span>
+    <span class="spacer"></span>
+    <span class="mkt-pill mkt-closed">NSE · CLOSED</span>
+    <span class="mkt-pill mkt-open">NYSE · OPEN</span>
+    <span class="tog">✨</span>
+    <span class="tog">☾</span>
+    <span class="tog">↻</span>
+  </div>
+
+  <!-- header: hero + 5 asset cards -->
+  <div class="hdr-grid">
+    <div class="hdr-hero glass">
+      <div class="page-header-lbl">Net Worth <span class="live-word">LIVE</span></div>
+      <div class="hdr-val"><span class="rs">₹</span>3,21,84,500</div>
+      <div class="hdr-sub">Today <span class="grn">₹84,210</span> · Total gain <span class="grn">₹61,40,200</span></div>
+    </div>
+    <div class="hdr-cards">
+      <div class="hdr-card glass active"><div class="lbl"><i style="background:var(--blu)"></i>Indian</div><div class="vmd"><span class="rs">₹</span>92.4L</div><div class="sub grn">+18.2%</div></div>
+      <div class="hdr-card glass"><div class="lbl"><i style="background:var(--cyn)"></i>US</div><div class="vmd"><span class="rs">$</span>78.3k</div><div class="sub grn">+24.1%</div></div>
+      <div class="hdr-card glass"><div class="lbl"><i style="background:var(--gld)"></i>FD</div><div class="vmd"><span class="rs">₹</span>41.0L</div><div class="sub">7.1% blended</div></div>
+      <div class="hdr-card glass"><div class="lbl"><i style="background:var(--pur)"></i>Mutual</div><div class="vmd"><span class="rs">₹</span>55.8L</div><div class="sub grn">+13.4%</div></div>
+      <div class="hdr-card glass"><div class="lbl"><i style="background:var(--pnk)"></i>Algo</div><div class="vmd"><span class="rs">₹</span>22.6L</div><div class="sub grn">+₹1.47L YTD</div></div>
+    </div>
+  </div>
+
+  <!-- allocation + stats -->
+  <div class="g2">
+    <div class="card glass">
+      <div class="ctitle">Allocation</div>
+      <div class="csub">Live mix across sleeves — pension segregated right, in hatch</div>
+      <div class="alloc-bar-track">
+        <div style="flex:6.2;background:var(--gld)"></div>
+        <div style="flex:9.2;background:var(--blu)"></div>
+        <div style="flex:6.8;background:var(--cyn)"></div>
+        <div style="flex:5.6;background:var(--pur)"></div>
+        <div style="flex:2.3;background:var(--pnk)"></div>
+        <div style="flex:3.1" class="hatch"></div>
+      </div>
+      <div class="alloc-leg">
+        <span><i style="background:var(--gld)"></i>FD 23%</span>
+        <span><i style="background:var(--blu)"></i>Indian 28%</span>
+        <span><i style="background:var(--cyn)"></i>US 21%</span>
+        <span><i style="background:var(--pur)"></i>MF 17%</span>
+        <span><i style="background:var(--pnk)"></i>ELSS 7%</span>
+        <span><i class="hatch" style="border-radius:2px"></i>CMPF 9%</span>
+      </div>
+    </div>
+    <div class="card glass">
+      <div class="ctitle">Performance</div>
+      <div class="csub">Money-weighted, since inception</div>
+      <div class="stat-row">
+        <div class="mini glass soft"><div class="k">XIRR</div><div class="v grn">21.4%</div><div class="vsub">vs Nifty 14.8%</div></div>
+        <div class="mini glass soft"><div class="k">CAGR</div><div class="v grn">18.9%</div><div class="vsub">3.2 yrs</div></div>
+        <div class="mini glass soft"><div class="k">Unrealised</div><div class="v grn"><span class="rs">₹</span>61.4L</div><div class="vsub">+23.6%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- holdings table -->
+  <div class="card glass">
+    <div class="ctitle">Indian holdings</div>
+    <div class="csub">Live NSE prices · sample rows</div>
+    <table class="tbl">
+      <thead><tr><th>Symbol</th><th class="ra">Qty</th><th class="ra">LTP</th><th class="ra">Value</th><th class="ra">P&amp;L</th><th class="ra">Day</th></tr></thead>
+      <tbody>
+        <tr><td class="sym">RELIANCE</td><td class="num ra">120</td><td class="num ra">2,940</td><td class="num ra">3,52,800</td><td class="num ra grn">+18.4%</td><td class="num ra grn">+1.2%</td></tr>
+        <tr><td class="sym">HDFCBANK</td><td class="num ra">85</td><td class="num ra">1,712</td><td class="num ra">1,45,520</td><td class="num ra grn">+9.1%</td><td class="num ra red">-0.4%</td></tr>
+        <tr><td class="sym">INFY</td><td class="num ra">60</td><td class="num ra">1,498</td><td class="num ra">89,880</td><td class="num ra red">-3.2%</td><td class="num ra grn">+0.7%</td></tr>
+        <tr><td class="sym">TATAMOTORS</td><td class="num ra">200</td><td class="num ra">988</td><td class="num ra">1,97,600</td><td class="num ra grn">+42.7%</td><td class="num ra grn">+2.1%</td></tr>
+        <tr><td class="sym">POWERGRID</td><td class="num ra">300</td><td class="num ra">312</td><td class="num ra">93,600</td><td class="num ra grn">+11.0%</td><td class="num ra red">-0.9%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+  function bind(id, attr){
+    const seg = document.getElementById(id);
+    seg.addEventListener('click', e=>{
+      const b = e.target.closest('button'); if(!b) return;
+      root.setAttribute(attr, b.dataset.v);
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+    });
+  }
+  bind('seg-theme','data-time');
+  bind('seg-glass','data-glass');
+</script>
+</body>
+</html>
