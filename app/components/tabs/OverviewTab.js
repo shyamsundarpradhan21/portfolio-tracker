@@ -41,8 +41,8 @@ export default function OverviewTab({
         rows={[
           { label: 'Non-spec F&O',           val: sFull(-FY.cf.nonSpec),            sub: FY.cf.nonSpecSub },
           { label: 'Speculative (intraday)', val: sFull(-FY.cf.speculative),        sub: FY.cf.speculativeSub },
-          { label: `Pool entering ${FY.labels.current}`, val: sFull(-FY.cf.poolEnteringFY2627), accent: true,
-            sub: `${inrFull(FY.cf.fy2627Realised)} realised absorbed → ${inrC(FY.cf.poolEnteringFY2627 - FY.cf.fy2627Realised)} remaining` },
+          { label: `Pool entering ${FY.labels.current}`, val: sFull(-FY.cf.poolEntering), accent: true,
+            sub: `${inrFull(FY.cf.currentRealised)} realised absorbed → ${inrC(FY.cf.poolEntering - FY.cf.currentRealised)} remaining` },
         ]}
         foot="Past F&O losses filed in the ITR offset future F&O profits rupee-for-rupee — every profit the pool absorbs is tax-free until it runs out."
       />

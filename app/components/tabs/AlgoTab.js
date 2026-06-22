@@ -36,15 +36,15 @@ export default function AlgoTab({
         </div>
         <div className="csm">
           <div className="lbl">{FY.labels.verifiedLong}</div>
-          <div className={'vmd ' + cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></div>
+          <div className={'vmd ' + cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></div>
           <div className="sub">net realised · ITR-verified</div>
         </div>
         <div className="csm">
           <div className="lbl">{FY.labels.current} YTD</div>
           <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
           <div className="sub">
-            S01 <span className={cl(FY.s01.fy2627.net)}><SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
-            S02 <span className={cl(FY.s02.fy2627.net)}><SInrF n={FY.s02.fy2627.net} /></span>
+            S01 <span className={cl(FY.s01.current.net)}><SInrF n={FY.s01.current.net} /></span> ·{' '}
+            S02 <span className={cl(FY.s02.current.net)}><SInrF n={FY.s02.current.net} /></span>
           </div>
         </div>
       </div>
@@ -82,9 +82,9 @@ export default function AlgoTab({
                 <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                   {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
                 </div>
-                <BrokerTable data={FY.s01.fy2526} />
+                <BrokerTable data={FY.s01.verified} />
               </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.fy2627.label}`} data={FY.s01.fy2627} />
+              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.current.label}`} data={FY.s01.current} />
               <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                   CF absorption — {FY.labels.current} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
@@ -123,9 +123,9 @@ export default function AlgoTab({
                 <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                   {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
                 </div>
-                <BrokerTable data={FY.s02.fy2526} />
+                <BrokerTable data={FY.s02.verified} />
               </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.fy2627.label}`} data={FY.s02.fy2627} />
+              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.current.label}`} data={FY.s02.current} />
             </div>
           </div>
         )}
@@ -133,10 +133,10 @@ export default function AlgoTab({
 
       <div className="csm sec">
         <span style={{ color: 'var(--txt2)' }}>
-          {FY.labels.verified} combined — Gross: <span className="grn"><SInrF n={FY.combined2526.gross} /></span> ·
-          Charges: <span className="red"><RsText>{inrFull(FY.combined2526.charges)}</RsText></span> ·
-          Net F&amp;O (Sch BP): <span className={cl(FY.combined2526.net)}><SInrF n={FY.combined2526.net} /></span>
-          {'  '}<span className="mut">(S01 <SInrF n={FY.s01.fy2526.total.net} /> · S02 <SInrF n={FY.s02.fy2526.total.net} />)</span>
+          {FY.labels.verified} combined — Gross: <span className="grn"><SInrF n={FY.combinedVerified.gross} /></span> ·
+          Charges: <span className="red"><RsText>{inrFull(FY.combinedVerified.charges)}</RsText></span> ·
+          Net F&amp;O (Sch BP): <span className={cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></span>
+          {'  '}<span className="mut">(S01 <SInrF n={FY.s01.verified.total.net} /> · S02 <SInrF n={FY.s02.verified.total.net} />)</span>
         </span>
       </div>
 

@@ -94,6 +94,7 @@
         "stcg": 190,
         "ltcg": 0,
         "intraday": 0,
+        "nonequity": 0,
         "realized": 190
       },
       "fno": {
@@ -113,7 +114,8 @@
         "stcg": -116,
         "ltcg": 0,
         "intraday": 31,
-        "realized": -86
+        "nonequity": 4,
+        "realized": -81
       },
       "fno": {
         "options": 0,
@@ -132,14 +134,15 @@
         "stcg": -1083,
         "ltcg": 2789,
         "intraday": 0,
-        "realized": 1706
+        "nonequity": 1531,
+        "realized": 3237
       },
       "fno": {
         "options": 0,
         "futures": 0,
         "realized": 0
       },
-      "n": 108
+      "n": 106
     },
     {
       "label": "zerodha_mom",
@@ -151,14 +154,15 @@
         "stcg": -30752,
         "ltcg": 0,
         "intraday": -4895,
-        "realized": -35647
+        "nonequity": 5841,
+        "realized": -29806
       },
       "fno": {
         "options": 0,
         "futures": 0,
         "realized": 0
       },
-      "n": 119
+      "n": 113
     },
     {
       "label": "zerodha_mom",
@@ -170,6 +174,7 @@
         "stcg": 5975,
         "ltcg": 0,
         "intraday": 0,
+        "nonequity": 0,
         "realized": 5975
       },
       "fno": {
@@ -189,14 +194,15 @@
         "stcg": 397,
         "ltcg": 0,
         "intraday": -143,
-        "realized": 253
+        "nonequity": -20,
+        "realized": 233
       },
       "fno": {
         "options": -8137,
         "futures": 0,
         "realized": -8137
       },
-      "n": 61
+      "n": 35
     },
     {
       "label": "zerodha_self",
@@ -208,6 +214,7 @@
         "stcg": 0,
         "ltcg": 0,
         "intraday": 0,
+        "nonequity": 0,
         "realized": 0
       },
       "fno": {
@@ -227,6 +234,7 @@
         "stcg": 0,
         "ltcg": 0,
         "intraday": 0,
+        "nonequity": 0,
         "realized": 0
       },
       "fno": {
@@ -234,7 +242,7 @@
         "futures": 0,
         "realized": 23029
       },
-      "n": 7
+      "n": 0
     },
     {
       "label": "zerodha_self",
@@ -246,6 +254,7 @@
         "stcg": 0,
         "ltcg": 0,
         "intraday": 0,
+        "nonequity": 0,
         "realized": 0
       },
       "fno": {
@@ -297,8 +306,8 @@
   ],
   "indian_realized": {
     "asOf": "17 Jun 2026",
-    "source": "Zerodha tax P&L · realized (FIFO)",
-    "total": -27862,
+    "source": "Zerodha (mom + self) + Groww · equity realized",
+    "total": -17218,
     "ytdLabel": "FY26-27",
     "fy": [
       {
@@ -323,37 +332,41 @@
       },
       {
         "label": "FY23-24",
-        "amt": -86,
-        "n": 9,
+        "amt": 3186,
+        "n": 73,
         "winners": [
           {
-            "sym": "JAMNAAUTO",
-            "amt": 56
+            "sym": "POWER FIN CORP LTD.",
+            "amt": 1559
           },
           {
-            "sym": "TATASTEEL",
-            "amt": 38
+            "sym": "ZYDUS LIFESCIENCES LTD",
+            "amt": 591
           },
           {
-            "sym": "KPRMILL",
-            "amt": 38
+            "sym": "NCC LIMITED",
+            "amt": 529
           }
         ],
         "losers": [
           {
-            "sym": "NTPC",
-            "amt": -249
+            "sym": "MANKIND",
+            "amt": -470
           },
           {
-            "sym": "HINDALCO",
-            "amt": -7
+            "sym": "CHALET",
+            "amt": -330
+          },
+          {
+            "sym": "RECLTD",
+            "amt": -329
           }
         ]
       },
       {
         "label": "FY24-25",
-        "amt": 1706,
-        "n": 108,
+        "amt": 3237,
+        "n": 106,
         "winners": [
           {
             "sym": "OIL",
@@ -385,8 +398,8 @@
       },
       {
         "label": "FY25-26",
-        "amt": -35647,
-        "n": 119,
+        "amt": -29806,
+        "n": 113,
         "winners": [
           {
             "sym": "GOLDBEES",
@@ -453,11 +466,11 @@
     "winners": [
       {
         "sym": "GOLDBEES",
-        "amt": 7259
+        "amt": 7234
       },
       {
         "sym": "NATCOPHARM",
-        "amt": 4099
+        "amt": 4180
       },
       {
         "sym": "SUPRIYA",
@@ -474,8 +487,8 @@
         "amt": -6228
       },
       {
-        "sym": "TECHNOE",
-        "amt": -2820
+        "sym": "ZYDUSLIFE",
+        "amt": -2963
       }
     ],
     "ytd": 5975
@@ -606,65 +619,76 @@
     ],
     "ytdUsd": 14.24
   },
-  "fno": {
-    "astha": {
-      "FY23-24": -13102,
-      "FY22-23": 26228
+  "fno_realized": {
+    "asOf": "17 Jun 2026",
+    "source": "Broker F&O realized · gross (FIFO), by sell-date FY",
+    "total": -198964,
+    "brokers": [
+      "astha",
+      "dhan",
+      "fyers",
+      "upstox",
+      "zerodha_self"
+    ],
+    "byBroker": {
+      "astha": 13126,
+      "dhan": 103585,
+      "fyers": -437604,
+      "upstox": 107037,
+      "zerodha_self": 14892
     },
-    "fyers": {
-      "FY24-25": -15689,
-      "FY25-26": -405615,
-      "FY26-27": -16300
-    },
-    "zerodha_self": {
-      "FY23-24": -8137,
-      "FY24-25": 0,
-      "FY25-26": 23029,
-      "FY26-27": 0
-    },
-    "upstox": {
-      "FY23-24": -18160,
-      "FY24-25": -155255,
-      "FY25-26": 254339
-    }
+    "fy": [
+      {
+        "label": "FY22-23",
+        "amt": 26228,
+        "byBroker": {
+          "astha": 26228
+        }
+      },
+      {
+        "label": "FY23-24",
+        "amt": -123989,
+        "byBroker": {
+          "astha": -13102,
+          "dhan": -85094,
+          "upstox": -17656,
+          "zerodha_self": -8137
+        }
+      },
+      {
+        "label": "FY24-25",
+        "amt": -351421,
+        "byBroker": {
+          "dhan": -183353,
+          "fyers": -15689,
+          "upstox": -152379,
+          "zerodha_self": 0
+        }
+      },
+      {
+        "label": "FY25-26",
+        "amt": 80982,
+        "byBroker": {
+          "dhan": 186496,
+          "fyers": -405615,
+          "upstox": 277072,
+          "zerodha_self": 23029
+        }
+      },
+      {
+        "label": "FY26-27",
+        "amt": 169236,
+        "byBroker": {
+          "dhan": 185536,
+          "fyers": -16300,
+          "zerodha_self": 0
+        }
+      }
+    ]
   },
   "dhan_allTime": {
     "equity": -44456,
     "fno": 103584
   },
-  "groww_equity_self": {
-    "label": "groww",
-    "owner": "self",
-    "sleeve": "equity_self",
-    "allTime": 3034,
-    "winners": [
-      {
-        "sym": "POWER FIN CORP LTD.",
-        "amt": 1559
-      },
-      {
-        "sym": "ZYDUS LIFESCIENCES LTD",
-        "amt": 591
-      },
-      {
-        "sym": "NCC LIMITED",
-        "amt": 529
-      }
-    ],
-    "losers": [
-      {
-        "sym": "CHOLAMANDALAM IN & FIN CO",
-        "amt": -312
-      },
-      {
-        "sym": "CIE AUTOMOTIVE INDIA LTD",
-        "amt": -189
-      },
-      {
-        "sym": "FINOLEX CABLES LTD",
-        "amt": -96
-      }
-    ],
-    "n": 20
-  }
+  "groww_alltime": 3034
 }

@@ -624,8 +624,8 @@ function Dashboard() {
   //   ytdOwn      — the USER'S share only (S01 is pooled with client capital;
   //                 algoOwnFactor strips the client's profit share). This is
   //                 the only figure allowed near net worth.
-  const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
-  const ytdOwn      = Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01)) + FY.s02.fy2627.net;
+  const ytdRealised = FY.s01.current.net + FY.s02.current.net;
+  const ytdOwn      = Math.round(FY.s01.current.net * algoOwnFactor(ALGO.s01)) + FY.s02.current.net;
   // Swing P&L is no longer trading — it lives in the Indian-equity sleeve (net
   // worth) now, so the Trading figures are pure F&O.
   const ytdTotal    = ytdOwn;       // own F&O share — the only trading figure shown near NW
@@ -869,8 +869,8 @@ function Dashboard() {
         `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
-        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.fy2627.net} (own share ₹${Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01))}; S01 pools client capital) S02 +₹${FY.s02.fy2627.net}` +
-        `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEnteringFY2627 / 1e5).toFixed(2)}L (tax asset)`,
+        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.current.net} (own share ₹${Math.round(FY.s01.current.net * algoOwnFactor(ALGO.s01))}; S01 pools client capital) S02 +₹${FY.s02.current.net}` +
+        `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEntering / 1e5).toFixed(2)}L (tax asset)`,
       macroClock: macroClockStr, // live FRED+Yahoo backdrop for the pulse read
     };
 

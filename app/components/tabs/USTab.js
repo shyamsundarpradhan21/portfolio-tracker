@@ -201,7 +201,7 @@ export default function USTab({
       <CFMemo
         title={`Foreign Equity Tax — ${FY.labels.verified} Capital Gains`}
         rows={[
-          { label: `${FY.labels.verified} foreign STCG`, val: '+₹' + FY.cf.cg2526.foreignStcg.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.cg2526.foreignStcgNote },
+          { label: `${FY.labels.verified} foreign STCG`, val: '+₹' + FY.cf.cgVerified.foreignStcg.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.cgVerified.foreignStcgNote },
           { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
         foot="Foreign equity gains are taxed at slab (STCG <24m) or 12.5% (LTCG ≥24m) — no Sec 112A exemption; US withholding on dividends is creditable via DTAA."

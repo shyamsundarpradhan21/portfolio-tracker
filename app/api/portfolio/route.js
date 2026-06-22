@@ -8,7 +8,7 @@ import { loadPortfolio } from '../../lib/serverPortfolio';
 // the client, so they no longer ship in the client JS bundle. They stay committed
 // (the sync pipeline writes broker-state/fno-ledger); freshness tracks redeploys
 // exactly as before. Non-personal market-wrap.json stays a normal client import.
-import fySeed from '../../../data/fy2526_verified.json';
+import fySeed from '../../../data/fno-verified.json';
 import fnoLedger from '../../../data/fno-ledger.json';
 import volPnl from '../../../data/vol_pnl.json';
 import brokerState from '../../../data/broker-state.json';

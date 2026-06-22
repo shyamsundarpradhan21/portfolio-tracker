@@ -1,6 +1,6 @@
 // Roll the auto-captured realised-F&O ledger on top of the frozen FY seed so the
-// Trading tab's current-FY (fy2627) blocks drive themselves — no mid-year hand-
-// edits. The seed (data/fy2526_verified.json → s0X.fy2627) is the YTD realised
+// Trading tab's current-FY (`current`) blocks drive themselves — no mid-year hand-
+// edits. The seed (data/fno-verified.json → s0X.current) is the YTD realised
 // through its `seedThrough` date; this adds every captured ledger day AFTER that,
 // per sleeve. Pure: never mutates the seed. Both the seed and the ledger are
 // passed in (hydrated at runtime, out of the bundle). Mirrors brokerState.js.
@@ -41,16 +41,16 @@ function mergeBlock(seed, inc) {
 // passed through untouched.
 export function deriveFY(seedFY, ledger) {
   const rows = ledger?.rows || [];
-  const s01seed = seedFY.s01.fy2627, s02seed = seedFY.s02.fy2627;
+  const s01seed = seedFY.s01.current, s02seed = seedFY.s02.current;
   const s01 = mergeBlock(s01seed, increment(rows, 'S01', s01seed.seedThrough));
   const s02 = mergeBlock(s02seed, increment(rows, 'S02', s02seed.seedThrough));
-  const fy2627Realised = r2(s01.net + s02.net);
+  const currentRealised = r2(s01.net + s02.net);
   const lastCapture = [s01.lastCapture, s02.lastCapture].filter(Boolean).sort().pop() || null;
   return {
     ...seedFY,
-    s01: { ...seedFY.s01, fy2627: s01 },
-    s02: { ...seedFY.s02, fy2627: s02 },
-    cf: { ...seedFY.cf, fy2627Realised },
+    s01: { ...seedFY.s01, current: s01 },
+    s02: { ...seedFY.s02, current: s02 },
+    cf: { ...seedFY.cf, currentRealised },
     _autoDriven: s01.auto || s02.auto,
     _lastCapture: lastCapture,
   };

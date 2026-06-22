@@ -123,25 +123,32 @@ def parse_zerodha(path):
     stcg = find_value_after(eq, "Short Term profit") or 0.0
     ltcg = find_value_after(eq, "Long Term profit") or 0.0
     intra = find_value_after(eq, "Intraday/Speculative profit") or 0.0
+    noneq = find_value_after(eq, "Non Equity profit") or 0.0   # ETFs (e.g. GOLDBEES), SGBs
     fno_rows = sheet_rows("F&O")
     opt = find_value_after(fno_rows, "Options Realized Profit") or 0.0
     fut = find_value_after(fno_rows, "Futures Realized Profit") or 0.0
 
-    # Tradewise Exits: per-symbol realized (aggregate over intraday+STCG+LTCG sections).
+    # Tradewise Exits: per-symbol realized, EQUITY sections only. The sheet also
+    # carries 'F&O' / 'Non Equity' / 'Currency' / 'Commodity' / 'Mutual Funds'
+    # sections (e.g. NIFTY options for a self account) — those must NOT leak into
+    # the equity winners/losers. Track the section; aggregate only under 'Equity*'.
     # n = distinct (symbol, exit-date) = positions closed (not lot rows).
     tw = sheet_rows("Tradewise Exits")
     by_sym, exits, last_exit = {}, set(), None
-    header_seen = False
+    section, in_table = None, False
     for r in tw:
         c1 = str(r[1]).strip() if len(r) > 1 and r[1] is not None else ""
-        if c1 == "Symbol":
-            header_seen = True
+        if not c1:
             continue
-        if not header_seen or not c1:
+        if c1 == "Symbol":            # column header → trade rows follow
+            in_table = True
             continue
         profit = num(r[8]) if len(r) > 8 else None
-        if profit is None:        # section title row (e.g. 'Equity - Short Term')
+        if profit is None:            # a section title (or metadata) → new section
+            section, in_table = c1, False
             continue
+        if not in_table or not section or not (section.startswith("Equity") or section == "Non Equity"):
+            continue                  # equity + ETF/SGB only; skip F&O / currency / commodity / MF
         by_sym[c1] = by_sym.get(c1, 0.0) + profit
         ed = parse_date(r[4]) if len(r) > 4 else None
         exits.add((c1, ed.date() if ed else None))
@@ -151,7 +158,7 @@ def parse_zerodha(path):
     return {
         "label": meta["label"], "owner": meta["owner"], "sleeve": meta["sleeve"], "fy": fy,
         "equity": {"stcg": round(stcg), "ltcg": round(ltcg), "intraday": round(intra),
-                   "realized": round(stcg + ltcg + intra)},
+                   "nonequity": round(noneq), "realized": round(stcg + ltcg + intra + noneq)},
         "fno": {"options": round(opt), "futures": round(fut), "realized": round(opt + fut)},
         "n": len(exits), "by_sym": by_sym, "lastExit": last_exit,
     }
@@ -199,11 +206,13 @@ def parse_dhan(path):
     import xlrd
     wb = xlrd.open_workbook(path)
     out = {}
+    fno_by_fy = {}
     for seg, sheet in (("equity", "Equity"), ("fno", "F&O")):
         if sheet not in wb.sheet_names():
             continue
         ws = wb.sheet_by_name(sheet)
         rows = [[ws.cell_value(ri, ci) for ci in range(ws.ncols)] for ri in range(ws.nrows)]
+        # all-time segment summary (Gross P&L of the summary rows above the per-trade table)
         gp_col = None
         total = 0.0
         for r in rows:
@@ -221,7 +230,31 @@ def parse_dhan(path):
             elif c0 and gp is None:            # section title (e.g. 'Tradewise Details')
                 break
         out[seg] = round(total)
-    return {"label": "dhan", "owner": "self", "sleeve": "trading", "allTime": out}
+        # F&O per-FY: bucket each tradewise row by Sell-Date FY (cols by header label)
+        if seg == "fno":
+            sd = gpc = npc = None
+            for r in rows:
+                for i, c in enumerate(r):
+                    s = str(c).strip() if c is not None else ""
+                    if s == "Sell Date": sd = i
+                    elif s == "Gross P&L": gpc = i
+                    elif s == "Net P&L": npc = i
+                if sd is not None and gpc is not None and npc is not None:
+                    break
+            for r in rows:
+                if num(r[0]) is None:          # only Sr-numbered trade rows
+                    continue
+                sell = parse_date(r[sd]) if sd is not None and sd < len(r) else None
+                g = num(r[gpc]) if gpc is not None and gpc < len(r) else None
+                nv = num(r[npc]) if npc is not None and npc < len(r) else None
+                if sell is None or g is None:
+                    continue
+                b = fno_by_fy.setdefault(fy_of(sell), {"gross": 0.0, "net": 0.0})
+                b["gross"] += g
+                b["net"] += nv if nv is not None else g
+    return {"label": "dhan", "owner": "self", "sleeve": "trading", "allTime": out,
+            "fnoByFY": {k: {"gross": round(v["gross"]), "net": round(v["net"])}
+                        for k, v in fno_by_fy.items()}}
 
 # ── Vested/DriveWealth P&L statement (.xlsx) — Realized breakdown by Date Sold ─
 def parse_vested(path):
@@ -294,28 +327,34 @@ def parse_astha(path):
     return {"label": "astha", "owner": "self", "sleeve": "trading", "fy": fy,
             "fno": {"realized": round(tot)}}
 
-# ── Groww equity P&L (.xlsx) — self equity, all-time (UCC 0258131546) ─────────
+# ── Groww equity P&L (.xlsx) — self equity, per-FY via Trade Level (0258131546) ─
 def parse_groww(path):
     wb = openpyxl.load_workbook(path, data_only=True)
     tl = [[c.value for c in r] for r in wb["Trade Level"].iter_rows()] if "Trade Level" in wb.sheetnames else []
     realized = find_value_after(tl, "Realised P&L")    # 'Realised P&L' row precedes 'Unrealised'
-    by_sym = {}
-    if "Scrip Level" in wb.sheetnames:
-        hdr = False
-        for r in [[c.value for c in row] for row in wb["Scrip Level"].iter_rows()]:
-            if r and str(r[0]).strip() == "Stock name":
-                hdr = True
-                continue
-            if not hdr:
-                continue
-            name = str(r[0]).strip() if r[0] else ""
-            pnl = num(r[7]) if len(r) > 7 else None
-            if name and name.lower() != "total" and pnl is not None:
-                by_sym[name] = by_sym.get(name, 0.0) + pnl
-    win, los = top_movers(by_sym, 3)
-    return {"label": "groww", "owner": "self", "sleeve": "equity_self",
-            "allTime": round(realized) if realized is not None else None,
-            "winners": win, "losers": los, "n": len(by_sym)}
+    # 'Realised trades' table: Stock[0] ISIN[1] Qty[2] BuyDate[3] BuyPrice[4] BuyValue[5]
+    #                          SellDate[6] SellPrice[7] SellValue[8]  → P&L = SellValue − BuyValue
+    by_fy = {}        # fy -> {amt, exits:set, by_sym:{}}
+    hdr = False
+    for r in tl:
+        c0 = str(r[0]).strip() if r and r[0] is not None else ""
+        if c0 == "Stock name":
+            hdr = True
+            continue
+        if not hdr or not c0 or c0.lower() == "total":
+            continue
+        sell = parse_date(r[6]) if len(r) > 6 else None
+        bv = num(r[5]) if len(r) > 5 else None
+        sv = num(r[8]) if len(r) > 8 else None
+        if sell is None or bv is None or sv is None:
+            continue
+        pnl = sv - bv
+        d = by_fy.setdefault(fy_of(sell), {"amt": 0.0, "exits": set(), "by_sym": {}})
+        d["amt"] += pnl
+        d["exits"].add((c0, sell.date()))
+        d["by_sym"][c0] = d["by_sym"].get(c0, 0.0) + pnl
+    return {"label": "groww", "owner": "self", "sleeve": "indian_equity_self",
+            "allTime": round(realized) if realized is not None else None, "by_fy": by_fy}
 
 # ── build the RealizedPanel-shaped block from per-FY accumulators ─────────────
 def realized_block(per_fy, asof, source, usd=False):
@@ -387,18 +426,24 @@ def main():
     if vested and vested["lastExit"] and (asof is None or vested["lastExit"] > asof):
         asof = vested["lastExit"]
 
-    # ── INDIAN_REALIZED: mom's Zerodha equity (GWS919) [+ Upstox swing when present] ──
+    # ── INDIAN_REALIZED: mom's Zerodha (GWS919) + the user's own equity ───────
+    # Folds in YXA918 (Zerodha self, equity sleeve only — its F&O stays in trading)
+    # and Groww (self equity). Upstox swing = held (₹0). Symbols aggregate across all.
     indian_per_fy = {}
+    def add_indian(fy, amt, n, by_sym):
+        d = indian_per_fy.setdefault(fy, {"amt": 0.0, "n": 0, "by_sym": {}})
+        d["amt"] += amt
+        d["n"] += n
+        for sym, a in by_sym.items():
+            d["by_sym"][sym] = d["by_sym"].get(sym, 0.0) + a
     for a in accounts:
-        if a["sleeve"] == "indian_equity":
-            fy = a["fy"]
-            d = indian_per_fy.setdefault(fy, {"amt": 0.0, "n": 0, "by_sym": {}})
-            d["amt"] += a["equity"]["realized"]
-            d["n"] += a.get("n", 0)
-            for sym, amt in a.get("by_sym", {}).items():   # full per-symbol aggregation
-                d["by_sym"][sym] = d["by_sym"].get(sym, 0.0) + amt
+        if (a["sleeve"] == "indian_equity" or a["label"] == "zerodha_self") and a.get("equity"):
+            add_indian(a["fy"], a["equity"]["realized"], a.get("n", 0), a.get("by_sym", {}))
+    if groww:
+        for fy, d in groww["by_fy"].items():
+            add_indian(fy, round(d["amt"]), len(d["exits"]), d["by_sym"])
     indian_realized = realized_block(
-        indian_per_fy, asof, "Zerodha tax P&L · realized (FIFO)") if indian_per_fy else None
+        indian_per_fy, asof, "Zerodha (mom + self) + Groww · equity realized") if indian_per_fy else None
 
     # ── US_REALIZED: Vested ──────────────────────────────────────────────────
     us_realized = None
@@ -408,15 +453,32 @@ def main():
             us_per_fy[fy] = {"amt": b["usd"], "n": len(b["exits"]), "by_sym": b["sym"]}
         us_realized = realized_block(us_per_fy, vested["lastExit"],
                                      "Vested realized P&L · lot-level", usd=True)
-        # attach INR totals per FY for the ≈₹ subline
         inr_by_fy = {fy: round(b["inr"]) for fy, b in vested["by_fy"].items()}
         for e in us_realized["fy"]:
             e["amtInr"] = inr_by_fy.get(e["label"])
 
-    # ── F&O corroboration (trading) ──────────────────────────────────────────
+    # ── F&O realized: per-FY × broker (GROSS, like the equity panel) + all-time ─
+    fno_by_fy = {}     # fy -> {broker: gross}
     for a in accounts:
-        if a["sleeve"] == "trading" and "fno" in a and a["fy"]:
-            fno_corro.setdefault(a["label"], {})[a["fy"]] = a["fno"]["realized"]
+        if a["sleeve"] == "trading" and a.get("fno") and a.get("fy"):
+            g = a["fno"].get("gross", a["fno"]["realized"])
+            if g is not None:
+                fno_by_fy.setdefault(a["fy"], {})[a["label"]] = \
+                    fno_by_fy.get(a["fy"], {}).get(a["label"], 0) + g
+    if dhan:
+        for fy, v in dhan["fnoByFY"].items():
+            fno_by_fy.setdefault(fy, {})["dhan"] = v["gross"]
+    brokers_seen = sorted({b for v in fno_by_fy.values() for b in v})
+    fno_realized = {
+        "asOf": fmt_asof(asof),
+        "source": "Broker F&O realized · gross (FIFO), by sell-date FY",
+        "total": round(sum(sum(v.values()) for v in fno_by_fy.values())),
+        "brokers": brokers_seen,
+        "byBroker": {b: round(sum(fno_by_fy[fy].get(b, 0) for fy in fno_by_fy)) for b in brokers_seen},
+        "fy": [{"label": fy, "amt": round(sum(fno_by_fy[fy].values())),
+                "byBroker": {b: round(fno_by_fy[fy][b]) for b in brokers_seen if b in fno_by_fy[fy]}}
+               for fy in sorted(fno_by_fy, key=lambda x: int(x[2:4]))],
+    } if fno_by_fy else None
 
     out = {
         "generatedFrom": "data/reports/* (broker tax/P&L exports)",
@@ -430,9 +492,9 @@ def main():
         ],
         "indian_realized": indian_realized,
         "us_realized": us_realized,
-        "fno": fno_corro,
+        "fno_realized": fno_realized,
         "dhan_allTime": dhan["allTime"] if dhan else None,
-        "groww_equity_self": groww,   # self equity, separate from the Indian (mom) sleeve
+        "groww_alltime": groww["allTime"] if groww else None,
     }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2, ensure_ascii=False)

@@ -1,5 +1,5 @@
 {
-  "_note": "ITR-verified F&O figures. INR. Net = Gross - Charges. CF reconciled to the 3-year tax model (Shyam_Pradhan_3yr_tax_model). labels: every FY name in the UI comes from here — roll labels at year-end and the UI follows. The fy2627 (current-FY) blocks are a FROZEN seed: the YTD realised up to `seedThrough`. From there app/page.js adds daily increments from data/fno-ledger.json (auto-captured) — do NOT hand-update fy2627 mid-year or you'll double-count. The only manual ritual is annual: at ITR, replace this fy2627 with the verified prior-FY block, roll labels, reset the next fy2627 seed to 0 with a new seedThrough, and archive the ledger.",
+  "_note": "ITR-verified F&O figures. INR. Net = Gross − Charges. Year-AGNOSTIC keys: `verified` = the last ITR-filed FY, `current` = the live FY (a frozen YTD seed; app/page.js adds daily increments from data/fno-ledger.json after `seedThrough` — do NOT hand-update `current` mid-year or you'll double-count). Display year names come from `labels` only. Annual ritual at ITR: move `current` → `verified`, roll `labels`, reset `current` to a fresh 0 seed with a new `seedThrough`, archive the ledger. Broker-wise per-FY realized (incl. all-time) is corroborated by data/broker-tax.json (parser-derived, GROSS). CF reconciled to the 3-year tax model.",
   "labels": {
     "verified": "FY25-26",
     "verifiedLong": "FY2025-26",
@@ -8,26 +8,26 @@
     "currentShort": "FY27"
   },
   "s01": {
-    "fy2526": {
+    "verified": {
       "rows": [
         { "broker": "Dhan",    "gross": 186496, "charges": 29364, "net": 157132 },
         { "broker": "Zerodha", "gross": 23029,  "charges": 716,   "net": 22313 }
       ],
       "total": { "gross": 209524, "charges": 30079, "net": 179445 }
     },
-    "fy2627": { "label": "Dhan F&O", "gross": 185536, "charges": 12108, "net": 173428, "seedThrough": "2026-06-22", "_seed": "ITR-verified FY26-27 YTD from Dhan tax P&L (01 Apr–22 Jun 2026, F&O only); ledger piles from 2026-06-23" }
+    "current": { "label": "Dhan F&O", "gross": 185536, "charges": 12108, "net": 173428, "seedThrough": "2026-06-22", "_seed": "ITR-verified FY26-27 YTD from Dhan tax P&L (01 Apr–22 Jun 2026, F&O only); ledger piles from 2026-06-23" }
   },
   "s02": {
-    "fy2526": {
+    "verified": {
       "rows": [
         { "broker": "Upstox", "gross": 277072,  "charges": 22733, "net": 254339 },
         { "broker": "Fyers",  "gross": -405615, "charges": 40788, "net": -446403 }
       ],
       "total": { "gross": -128544, "charges": 63520, "net": -192064 }
     },
-    "fy2627": { "label": "Fyers F&O", "gross": -16300, "charges": 10291, "net": -26591, "seedThrough": "2026-06-22", "_seed": "ITR-verified FY26-27 YTD from Fyers tax P&L (Apr–Jun 2026, options only); ledger piles from 2026-06-23" }
+    "current": { "label": "Fyers F&O", "gross": -16300, "charges": 10291, "net": -26591, "seedThrough": "2026-06-22", "_seed": "ITR-verified FY26-27 YTD from Fyers tax P&L (Apr–Jun 2026, options only); ledger piles from 2026-06-23" }
   },
-  "combined2526": { "gross": 80980, "charges": 93600, "net": -12619 },
+  "combinedVerified": { "gross": 80980, "charges": 93600, "net": -12619 },
   "carryforward": [
     { "label": "Non-spec business",      "val": -513011, "sub": "AY24-25: ₹1,41,206 · AY25-26: ₹3,71,805 · Sec 72 (8-yr)" },
     { "label": "Speculative (intraday)", "val": -84307,  "sub": "AY24-25: ₹16,958 · AY25-26: ₹67,310 · AY26-27: ₹39 · Sec 73 (4-yr)" },
@@ -35,18 +35,18 @@
     { "label": "CF entering FY26-27",    "val": -597318, "sub": "Non-spec + speculative; STCG consumed in FY25-26", "accent": true }
   ],
   "cf": {
-    "poolEnteringFY2627": 597318,
+    "poolEntering": 597318,
     "nonSpec": 513011,
     "nonSpecSub": "Sec 72 · 8-yr · offsets future F&O profit only",
     "speculative": 84307,
     "speculativeSub": "Sec 73 · 4-yr · ₹16,958 expires AY28-29 first",
     "stcgCarried": 0,
-    "fy2627Realised": 146837,
-    "fy2627Swing": 8364,
+    "currentRealised": 146837,
+    "currentSwing": 8364,
     "stcgNote": "₹4,700 brought-forward STCG loss was fully consumed against FY25-26 short-term gains — nil carried into FY26-27.",
     "equityBlock": "The ₹5.97L F&O + speculative loss pool can only offset future F&O / intraday profit — never capital gains. New gains here are taxed in full.",
     "taxSavingRealised": 15290,
-    "cg2526": {
+    "cgVerified": {
       "indianStcg": 1476,
       "indianStcgNote": "STT-paid delivery · Sec 111A @20% · fully absorbed in-year vs F&O loss (s71)",
       "foreignStcg": 27694,
