@@ -6,6 +6,7 @@ import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
+import FnoHistory from '../shared/FnoHistory';
 import Skel from '../shared/Skel';
 
 // Compact ₹ for capital figures: ₹3.9L / ₹40K — derived from ALGO splits.
@@ -14,7 +15,7 @@ const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math
 export default function AlgoTab({
   ytdTotal, ytdRealised, cfEntering, cfAfterRealised,
   insights, insightsOn, insightsFirstLoad,
-  ALGO, FY,
+  ALGO, FY, fnoRealized,
 }) {
   // One strategy card at a time (S01 / S02), persisted. The overall summaries
   // live OUTSIDE the strategy cards.
@@ -139,6 +140,8 @@ export default function AlgoTab({
           {'  '}<span className="mut">(S01 <SInrF n={FY.s01.verified.total.net} /> · S02 <SInrF n={FY.s02.verified.total.net} />)</span>
         </span>
       </div>
+
+      {fnoRealized ? <div className="sec"><FnoHistory data={fnoRealized} /></div> : null}
 
       <div className="card">
         <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>

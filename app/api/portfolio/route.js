@@ -9,6 +9,7 @@ import { loadPortfolio } from '../../lib/serverPortfolio';
 // (the sync pipeline writes broker-state/fno-ledger); freshness tracks redeploys
 // exactly as before. Non-personal market-wrap.json stays a normal client import.
 import fySeed from '../../../data/fno-verified.json';
+import brokerTax from '../../../data/broker-tax.json';
 import fnoLedger from '../../../data/fno-ledger.json';
 import volPnl from '../../../data/vol_pnl.json';
 import brokerState from '../../../data/broker-state.json';
@@ -26,7 +27,7 @@ export async function GET() {
   }
   const payload = {
     ...data,
-    _app: { fySeed, fnoLedger, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd },
+    _app: { fySeed, fnoLedger, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd, fnoRealized: brokerTax.fno_realized },
   };
   return new Response(JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

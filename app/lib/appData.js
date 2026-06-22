@@ -16,6 +16,7 @@ export const APP = {
   indianExits: [],
   snapSleeves: {},
   snapMd: '',
+  fnoRealized: null,   // per-FY × broker F&O realized + all-time (data/broker-tax.json)
 };
 
 export function hydrateAppData(d) {

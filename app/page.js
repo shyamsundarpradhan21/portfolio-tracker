@@ -1176,7 +1176,7 @@ function Dashboard() {
             <AlgoTab ytdTotal={ytdAccountTotal} ytdRealised={ytdRealised}
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              ALGO={ALGO} FY={FY} />
+              ALGO={ALGO} FY={FY} fnoRealized={APP.fnoRealized} />
           )}
           {tab === 6 && (
             <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} econCal={econCal} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} usSentiment={usSentiment} indiaSentiment={indiaSentiment} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
