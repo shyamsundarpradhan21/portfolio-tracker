@@ -32,6 +32,7 @@ export const CMPF_CONTRIBUTIONS = [];
 export const CMPF_RATES = {};
 export const CMPS_CONTRIBUTIONS = [];
 export const PAYSLIPS = [];
+export const BASIC_PAY = [];   // [{month, basic}] — actual basic pay from payslips (pensionable salary)
 export const PROJECTION = {};
 
 // ── Non-private scalars + presentation constants (safe to ship) ───────────────
@@ -110,7 +111,7 @@ export function loanOutstanding(date = new Date()) {
 const _fill = (arr, src) => { arr.length = 0; if (Array.isArray(src)) arr.push(...src); };
 const _assign = (obj, src) => { for (const k of Object.keys(obj)) delete obj[k]; if (src && typeof src === 'object') Object.assign(obj, src); };
 
-const _ARRAYS = { INDIAN, TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_BENCHMARKS, US_CASHFLOWS, US_CORP_ACTIONS, US_BENCHMARKS, US, FDS, MF_FUNDS, MF_CASHFLOWS, CMPF_CONTRIBUTIONS, CMPS_CONTRIBUTIONS, PAYSLIPS, SWING };
+const _ARRAYS = { INDIAN, TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_BENCHMARKS, US_CASHFLOWS, US_CORP_ACTIONS, US_BENCHMARKS, US, FDS, MF_FUNDS, MF_CASHFLOWS, CMPF_CONTRIBUTIONS, CMPS_CONTRIBUTIONS, PAYSLIPS, BASIC_PAY, SWING };
 const _OBJECTS = { INDIAN_REALIZED, US_REALIZED, US_DIVIDENDS, STATIC, LOAN, MF_SIP, MF_BENCHMARK, ALGO, CMPF_RATES, PROJECTION };
 
 let _hydrated = false;

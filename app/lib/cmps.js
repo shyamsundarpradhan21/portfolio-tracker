@@ -15,7 +15,7 @@
 // Total contributions paid in = Σ emp × 2 (employee + matching employer).
 // This is useful to show the "invested" dimension alongside the pension right.
 
-import { CMPS_CONTRIBUTIONS } from '../portfolio';
+import { CMPS_CONTRIBUTIONS, BASIC_PAY } from '../portfolio';
 
 const DOJ = new Date('2023-01-28'); // date of joining MCL
 const SUPERANNUATION_AGE = 60;
@@ -65,6 +65,18 @@ function estimateBasicFromContrib(empContrib) {
   return Math.round(empContrib / 0.045);
 }
 
+// Pensionable salary = average of the last 12 months' ACTUAL Basic Pay (from the
+// payslips, BASIC_PAY). Falls back to the contribution-based estimate only when
+// basic pay isn't hydrated. Actual basic (~₹73k) is far below the old estimate
+// (~₹2.1L from contrib/4.5%), so this materially lowers the projected pension.
+function pensionableBasic() {
+  if (Array.isArray(BASIC_PAY) && BASIC_PAY.length) {
+    const last12 = [...BASIC_PAY].sort((a, b) => b.month.localeCompare(a.month)).slice(0, 12);
+    return Math.round(last12.reduce((s, b) => s + b.basic, 0) / last12.length);
+  }
+  return estimateBasicFromContrib(latestRegular());
+}
+
 // Projected monthly pension at superannuation
 // atDate: valuation date (how much service to date, project forward)
 export function cmpsMonthlyPension(atDate) {
@@ -74,9 +86,8 @@ export function cmpsMonthlyPension(atDate) {
   const serviceMs = CMPS_RETIREMENT_DATE - DOJ;
   const serviceYears = Math.min(35, serviceMs / (365.25 * 24 * 3600 * 1000));
 
-  // Pensionable salary: use latest regular basic pay estimate
-  const lastEmp = latestRegular();
-  const pensionableSalary = estimateBasicFromContrib(lastEmp);
+  // Pensionable salary: average of the last 12 months' actual basic pay
+  const pensionableSalary = pensionableBasic();
 
   const monthly = Math.round((pensionableSalary * serviceYears) / 70);
   return monthly;
