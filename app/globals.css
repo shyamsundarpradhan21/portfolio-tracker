@@ -107,15 +107,18 @@
   --red-bg: rgba(225,69,59,.09);
   --blu-bg: rgba(37,99,235,.1);
   --hdr-bg-base: 244,246,250;
-  --thead-bg: rgba(237,241,247,.7);
-  /* Day glass: surfaces go translucent white so the ambient mesh reads through;
-     highlight + shadow deepen for the lighter backdrop. */
-  --glass-bg:   rgba(255,255,255,.58);
-  --glass-bg2:  rgba(255,255,255,.42);
-  --glass-brd:  rgba(255,255,255,.72);
-  --glass-hi:   rgba(255,255,255,.9);
-  --glass-shadow: 0 10px 30px rgba(40,60,90,.12);
-  --mesh-op:    .85;
+  --thead-bg: rgba(237,241,247,.62);
+  /* Day glass = VIVID: surfaces go translucent white so the ambient mesh reads
+     through; heavier blur, brighter borders/highlight, stronger mesh + shadow.
+     (Night keeps the calmer "frosted" level set in the base :root above.) */
+  --glass-bg:   rgba(255,255,255,.5);
+  --glass-bg2:  rgba(255,255,255,.38);
+  --glass-brd:  rgba(255,255,255,.85);
+  --glass-hi:   rgba(255,255,255,1);
+  --glass-shadow: 0 18px 44px rgba(40,60,90,.16);
+  --glass-blur: 30px;
+  --glass-sat:  170%;
+  --mesh-op:    1.2;
   --sc-cons: #2563EB;
   --sc-base: #7C3AED;  /* violet — was #059669, too close to the gain-green --grn */
   --sc-opt:  #B45309;
