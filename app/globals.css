@@ -132,15 +132,14 @@
 :root[data-tab="overview"] {
   --acc: #C2A9A0; --acc2: #D8C4BC; --acc-bg: rgba(194,169,160,.14);
 }
-/* Indian Stocks — Royal Blue on Powder Pink (FULL PAIR → light bg; see Layer 4b) */
+/* Indian Stocks — Royal Blue accent. On DAY the canvas becomes Powder Pink
+   (Layer 4b); on NIGHT it's the dark canvas + this accent, so day/night flips it. */
 :root[data-tab="indian"] {
   --acc: #3447AA; --acc2: #5A6BD0; --acc-bg: rgba(52,71,170,.14);
-  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
 }
-/* Mutual Funds — Periwinkle on Lavender (FULL PAIR → light bg; see Layer 4b) */
+/* Mutual Funds — Periwinkle accent. DAY canvas → Lavender (Layer 4b); NIGHT dark. */
 :root[data-tab="mf"] {
   --acc: #6260FF; --acc2: #8B89FF; --acc-bg: rgba(98,96,255,.14);
-  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
 }
 /* Fixed Deposits — Turquoise accent (accent-only on the global canvas). The
    green-family accent lives here because FD shows no holdings P&L to clash with. */
@@ -180,17 +179,16 @@
   --acc: #5C9E33; --acc2: #6EB23F; --acc-bg: rgba(92,158,51,.13);
 }
 
-/* ── Layer 4b: Full-pair light tabs (Indian · MF) ───────────────────────────
-   These two carry their FULL colour pair: the page background (set in the
-   per-tab blocks above) flips to the pair's light tint and surfaces switch to
-   the vivid day-glass + dark text + day P&L colours — in BOTH global themes. */
-:root[data-tab="indian"], :root[data-tab="mf"] {
-  --txt: #1C2533; --txt2: #5E6B80; --txt3: #636E84;
-  --grn: #0E9D69; --red: #D33C33;
-  --glass-bg: rgba(255,255,255,.5); --glass-bg2: rgba(255,255,255,.4);
-  --glass-brd: rgba(255,255,255,.85); --glass-hi: rgba(255,255,255,1);
-  --glass-blur: 30px; --glass-sat: 170%;
-  --glass-shadow: 0 16px 44px rgba(20,20,40,.14); --mesh-op: 1;
+/* ── Layer 4b: Light-pair backgrounds for Indian · MF (DAY only) ─────────────
+   On DAY these two swap the canvas for their pair's light tint (Powder Pink /
+   Lavender); the vivid glass, dark text and day P&L colours already come from
+   the global day theme. On NIGHT no override applies, so they fall back to the
+   dark canvas + accent and the day/night toggle flips them like every other tab. */
+:root[data-time="day"][data-tab="indian"] {
+  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
+}
+:root[data-time="day"][data-tab="mf"] {
+  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
