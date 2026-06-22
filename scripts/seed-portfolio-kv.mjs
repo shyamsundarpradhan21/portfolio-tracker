@@ -32,6 +32,18 @@ const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL 
 const kvTok = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || KV_ENV.KV_REST_API_TOKEN || KV_ENV.UPSTASH_REDIS_REST_TOKEN;
 
 const data = JSON.parse(readFileSync(SRC, 'utf8'));
+
+// Realized P&L is *derived* from the broker tax reports, not hand-curated. If the
+// committed canonical store exists, it owns INDIAN_REALIZED / US_REALIZED (regen
+// it with scripts/parse-broker-tax.py). Overlaid here so realized still reaches
+// the app via KV (never the client bundle), staying out of source-of-truth drift.
+try {
+  const bt = JSON.parse(readFileSync(join(ROOT, 'data', 'broker-tax.json'), 'utf8'));
+  if (bt.indian_realized) data.INDIAN_REALIZED = bt.indian_realized;
+  if (bt.us_realized) data.US_REALIZED = bt.us_realized;
+  console.log(`overlay: data/broker-tax.json → INDIAN_REALIZED, US_REALIZED (derived, asOf ${bt.asOf})`);
+} catch { /* no broker-tax.json yet — fall back to whatever is in the private seed */ }
+
 const keys = Object.keys(data);
 
 // Sanity guard — never push obviously-empty data (a populated container has

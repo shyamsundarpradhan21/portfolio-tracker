@@ -1,0 +1,670 @@
+{
+  "generatedFrom": "data/reports/* (broker tax/P&L exports)",
+  "asOf": "17 Jun 2026",
+  "note": "PII-stripped, derived — regen with scripts/parse-broker-tax.py; never hand-edit.",
+  "accounts": [
+    {
+      "label": "astha",
+      "broker": "astha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY23-24",
+      "equity": null,
+      "fno": {
+        "realized": -13102
+      },
+      "n": null
+    },
+    {
+      "label": "astha",
+      "broker": "astha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY22-23",
+      "equity": null,
+      "fno": {
+        "realized": 26228
+      },
+      "n": null
+    },
+    {
+      "label": "fyers",
+      "broker": "fyers",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY24-25",
+      "equity": {
+        "stcg": 0,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 0
+      },
+      "fno": {
+        "options": -15689,
+        "futures": 0,
+        "realized": -15689
+      },
+      "n": null
+    },
+    {
+      "label": "fyers",
+      "broker": "fyers",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY25-26",
+      "equity": {
+        "stcg": 1285,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 1285
+      },
+      "fno": {
+        "options": -427340,
+        "futures": 21725,
+        "realized": -405615
+      },
+      "n": null
+    },
+    {
+      "label": "fyers",
+      "broker": "fyers",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY26-27",
+      "equity": {
+        "stcg": 0,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 0
+      },
+      "fno": {
+        "options": -16300,
+        "futures": 0,
+        "realized": -16300
+      },
+      "n": null
+    },
+    {
+      "label": "zerodha_mom",
+      "broker": "zerodha",
+      "owner": "mom",
+      "sleeve": "indian_equity",
+      "fy": "FY22-23",
+      "equity": {
+        "stcg": 190,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 190
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 4
+    },
+    {
+      "label": "zerodha_mom",
+      "broker": "zerodha",
+      "owner": "mom",
+      "sleeve": "indian_equity",
+      "fy": "FY23-24",
+      "equity": {
+        "stcg": -116,
+        "ltcg": 0,
+        "intraday": 31,
+        "realized": -86
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 9
+    },
+    {
+      "label": "zerodha_mom",
+      "broker": "zerodha",
+      "owner": "mom",
+      "sleeve": "indian_equity",
+      "fy": "FY24-25",
+      "equity": {
+        "stcg": -1083,
+        "ltcg": 2789,
+        "intraday": 0,
+        "realized": 1706
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 108
+    },
+    {
+      "label": "zerodha_mom",
+      "broker": "zerodha",
+      "owner": "mom",
+      "sleeve": "indian_equity",
+      "fy": "FY25-26",
+      "equity": {
+        "stcg": -30752,
+        "ltcg": 0,
+        "intraday": -4895,
+        "realized": -35647
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 119
+    },
+    {
+      "label": "zerodha_mom",
+      "broker": "zerodha",
+      "owner": "mom",
+      "sleeve": "indian_equity",
+      "fy": "FY26-27",
+      "equity": {
+        "stcg": 5975,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 5975
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 7
+    },
+    {
+      "label": "zerodha_self",
+      "broker": "zerodha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY23-24",
+      "equity": {
+        "stcg": 397,
+        "ltcg": 0,
+        "intraday": -143,
+        "realized": 253
+      },
+      "fno": {
+        "options": -8137,
+        "futures": 0,
+        "realized": -8137
+      },
+      "n": 61
+    },
+    {
+      "label": "zerodha_self",
+      "broker": "zerodha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY24-25",
+      "equity": {
+        "stcg": 0,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 0
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 0
+    },
+    {
+      "label": "zerodha_self",
+      "broker": "zerodha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY25-26",
+      "equity": {
+        "stcg": 0,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 0
+      },
+      "fno": {
+        "options": 23029,
+        "futures": 0,
+        "realized": 23029
+      },
+      "n": 7
+    },
+    {
+      "label": "zerodha_self",
+      "broker": "zerodha",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY26-27",
+      "equity": {
+        "stcg": 0,
+        "ltcg": 0,
+        "intraday": 0,
+        "realized": 0
+      },
+      "fno": {
+        "options": 0,
+        "futures": 0,
+        "realized": 0
+      },
+      "n": 0
+    },
+    {
+      "label": "upstox",
+      "broker": "upstox",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY23-24",
+      "equity": null,
+      "fno": {
+        "realized": -18160,
+        "gross": -17656
+      },
+      "n": null
+    },
+    {
+      "label": "upstox",
+      "broker": "upstox",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY24-25",
+      "equity": null,
+      "fno": {
+        "realized": -155255,
+        "gross": -152379
+      },
+      "n": null
+    },
+    {
+      "label": "upstox",
+      "broker": "upstox",
+      "owner": "self",
+      "sleeve": "trading",
+      "fy": "FY25-26",
+      "equity": null,
+      "fno": {
+        "realized": 254339,
+        "gross": 277072
+      },
+      "n": null
+    }
+  ],
+  "indian_realized": {
+    "asOf": "17 Jun 2026",
+    "source": "Zerodha tax P&L · realized (FIFO)",
+    "total": -27862,
+    "ytdLabel": "FY26-27",
+    "fy": [
+      {
+        "label": "FY22-23",
+        "amt": 190,
+        "n": 4,
+        "winners": [
+          {
+            "sym": "PCJEWELLER",
+            "amt": 96
+          },
+          {
+            "sym": "HUDCO",
+            "amt": 66
+          },
+          {
+            "sym": "VIPCLOTHNG",
+            "amt": 28
+          }
+        ],
+        "losers": []
+      },
+      {
+        "label": "FY23-24",
+        "amt": -86,
+        "n": 9,
+        "winners": [
+          {
+            "sym": "JAMNAAUTO",
+            "amt": 56
+          },
+          {
+            "sym": "TATASTEEL",
+            "amt": 38
+          },
+          {
+            "sym": "KPRMILL",
+            "amt": 38
+          }
+        ],
+        "losers": [
+          {
+            "sym": "NTPC",
+            "amt": -249
+          },
+          {
+            "sym": "HINDALCO",
+            "amt": -7
+          }
+        ]
+      },
+      {
+        "label": "FY24-25",
+        "amt": 1706,
+        "n": 108,
+        "winners": [
+          {
+            "sym": "OIL",
+            "amt": 2100
+          },
+          {
+            "sym": "ARE&M",
+            "amt": 1728
+          },
+          {
+            "sym": "GOLDBEES",
+            "amt": 1420
+          }
+        ],
+        "losers": [
+          {
+            "sym": "EMAMILTD",
+            "amt": -1546
+          },
+          {
+            "sym": "CROMPTON",
+            "amt": -1291
+          },
+          {
+            "sym": "MOTHERSON",
+            "amt": -1167
+          }
+        ]
+      },
+      {
+        "label": "FY25-26",
+        "amt": -35647,
+        "n": 119,
+        "winners": [
+          {
+            "sym": "GOLDBEES",
+            "amt": 5840
+          },
+          {
+            "sym": "LAURUSLABS",
+            "amt": 1260
+          },
+          {
+            "sym": "LTF",
+            "amt": 916
+          }
+        ],
+        "losers": [
+          {
+            "sym": "TINNARUBR",
+            "amt": -7984
+          },
+          {
+            "sym": "HDFCBANK",
+            "amt": -4013
+          },
+          {
+            "sym": "ZYDUSLIFE",
+            "amt": -2870
+          }
+        ]
+      },
+      {
+        "label": "FY26-27",
+        "amt": 5975,
+        "n": 7,
+        "winners": [
+          {
+            "sym": "SUPRIYA",
+            "amt": 6046
+          },
+          {
+            "sym": "NATCOPHARM",
+            "amt": 4234
+          },
+          {
+            "sym": "FIEMIND",
+            "amt": 1456
+          }
+        ],
+        "losers": [
+          {
+            "sym": "HDFCBANK",
+            "amt": -2216
+          },
+          {
+            "sym": "VSTTILLERS",
+            "amt": -1974
+          },
+          {
+            "sym": "TCS",
+            "amt": -1572
+          }
+        ]
+      }
+    ],
+    "winners": [
+      {
+        "sym": "GOLDBEES",
+        "amt": 7259
+      },
+      {
+        "sym": "NATCOPHARM",
+        "amt": 4099
+      },
+      {
+        "sym": "SUPRIYA",
+        "amt": 4010
+      }
+    ],
+    "losers": [
+      {
+        "sym": "TINNARUBR",
+        "amt": -7984
+      },
+      {
+        "sym": "HDFCBANK",
+        "amt": -6228
+      },
+      {
+        "sym": "TECHNOE",
+        "amt": -2820
+      }
+    ],
+    "ytd": 5975
+  },
+  "us_realized": {
+    "asOf": "08 Jun 2026",
+    "source": "Vested realized P&L · lot-level",
+    "total": 343.56,
+    "ytdLabel": "FY26-27",
+    "fy": [
+      {
+        "label": "FY24-25",
+        "amt": 11.13,
+        "n": 71,
+        "winners": [
+          {
+            "sym": "SCHD",
+            "amt": 7.48
+          },
+          {
+            "sym": "VGT",
+            "amt": 7.06
+          },
+          {
+            "sym": "VOO",
+            "amt": 1.79
+          }
+        ],
+        "losers": [
+          {
+            "sym": "BITO",
+            "amt": -2.78
+          },
+          {
+            "sym": "MSTR",
+            "amt": -2.17
+          },
+          {
+            "sym": "ASML",
+            "amt": -1.84
+          }
+        ],
+        "amtInr": 923
+      },
+      {
+        "label": "FY25-26",
+        "amt": 318.19,
+        "n": 94,
+        "winners": [
+          {
+            "sym": "MSTR",
+            "amt": 76.91
+          },
+          {
+            "sym": "HOOD",
+            "amt": 66.41
+          },
+          {
+            "sym": "IREN",
+            "amt": 36.58
+          }
+        ],
+        "losers": [
+          {
+            "sym": "BTBT",
+            "amt": -21.04
+          },
+          {
+            "sym": "NOW",
+            "amt": -11.72
+          },
+          {
+            "sym": "IRDM",
+            "amt": -11.52
+          }
+        ],
+        "amtInr": 27694
+      },
+      {
+        "label": "FY26-27",
+        "amt": 14.24,
+        "n": 5,
+        "winners": [
+          {
+            "sym": "EEM",
+            "amt": 13.31
+          },
+          {
+            "sym": "IVV",
+            "amt": 0.62
+          },
+          {
+            "sym": "IUSB",
+            "amt": 0.3
+          }
+        ],
+        "losers": [],
+        "amtInr": 1327
+      }
+    ],
+    "winners": [
+      {
+        "sym": "MSTR",
+        "amt": 74.74
+      },
+      {
+        "sym": "HOOD",
+        "amt": 66.39
+      },
+      {
+        "sym": "IREN",
+        "amt": 36.58
+      }
+    ],
+    "losers": [
+      {
+        "sym": "BTBT",
+        "amt": -21.04
+      },
+      {
+        "sym": "NOW",
+        "amt": -11.72
+      },
+      {
+        "sym": "IRDM",
+        "amt": -11.52
+      }
+    ],
+    "ytdUsd": 14.24
+  },
+  "fno": {
+    "astha": {
+      "FY23-24": -13102,
+      "FY22-23": 26228
+    },
+    "fyers": {
+      "FY24-25": -15689,
+      "FY25-26": -405615,
+      "FY26-27": -16300
+    },
+    "zerodha_self": {
+      "FY23-24": -8137,
+      "FY24-25": 0,
+      "FY25-26": 23029,
+      "FY26-27": 0
+    },
+    "upstox": {
+      "FY23-24": -18160,
+      "FY24-25": -155255,
+      "FY25-26": 254339
+    }
+  },
+  "dhan_allTime": {
+    "equity": -44456,
+    "fno": 103584
+  },
+  "groww_equity_self": {
+    "label": "groww",
+    "owner": "self",
+    "sleeve": "equity_self",
+    "allTime": 3034,
+    "winners": [
+      {
+        "sym": "POWER FIN CORP LTD.",
+        "amt": 1559
+      },
+      {
+        "sym": "ZYDUS LIFESCIENCES LTD",
+        "amt": 591
+      },
+      {
+        "sym": "NCC LIMITED",
+        "amt": 529
+      }
+    ],
+    "losers": [
+      {
+        "sym": "CHOLAMANDALAM IN & FIN CO",
+        "amt": -312
+      },
+      {
+        "sym": "CIE AUTOMOTIVE INDIA LTD",
+        "amt": -189
+      },
+      {
+        "sym": "FINOLEX CABLES LTD",
+        "amt": -96
+      }
+    ],
+    "n": 20
+  }
+}
