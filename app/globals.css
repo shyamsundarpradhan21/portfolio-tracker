@@ -350,7 +350,15 @@ body {
 .tbl tr:hover td { background: var(--sur2); }
 .tbl .tot td {
   font-weight: 700; color: var(--txt);
-  border-top: .5px solid color-mix(in srgb, var(--acc) 14%, var(--brd2)); border-bottom: none;
+  background: color-mix(in srgb, var(--acc) 13%, var(--sur2));
+  border-top: .5px solid color-mix(in srgb, var(--acc) 30%, var(--brd2)); border-bottom: none;
+  font-family: var(--mono);
+}
+/* per-broker subtotal — lighter than the grand total: muted shade, dashed rule */
+.tbl .subtot td {
+  font-weight: 600; color: var(--txt2);
+  background: var(--sur2);
+  border-top: .5px dashed var(--brd2); border-bottom: none;
   font-family: var(--mono);
 }
 .ra { text-align: right; }

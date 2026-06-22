@@ -185,6 +185,14 @@ export default function IndianTab({
                   <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>{s.day != null ? pctS(s.day) : '—'}</td>
                 </tr>
               ))}
+              <tr className="subtot">
+                <td colSpan={4}>{(indianRec?.source || 'Zerodha')} · mom — {INDIAN.length} holdings</td>
+                <td className="ra"><InrC n={indian.inv} /></td>
+                <td className="ra">{indian.valued ? <InrC n={indian.val} /> : '…'}</td>
+                <td className={'ra ' + cl(indian.pl)}>{indian.valued ? <SInrC n={indian.pl} /> : '…'}</td>
+                <td className={'ra ' + cl(indian.pl)}>{indian.valued ? pctS(indian.pct) : '…'}</td>
+                <td />
+              </tr>
               {/* Upstox · me — swing positions: different account, same equity book */}
               <tr><td colSpan={9} style={DIV_STYLE}>{(swingRec?.source || 'Upstox')} · me · swing · {swing.rows.length}</td></tr>
               {swingSorted.map((s) => (
@@ -209,8 +217,16 @@ export default function IndianTab({
                   <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>{s.day != null ? pctS(s.day) : '—'}</td>
                 </tr>
               ))}
+              <tr className="subtot">
+                <td colSpan={4}>{(swingRec?.source || 'Upstox')} · me — {swing.rows.length} swing</td>
+                <td className="ra"><InrC n={swing.inv} /></td>
+                <td className="ra">{swing.valued ? <InrC n={swing.val} /> : '…'}</td>
+                <td className={'ra ' + cl(swing.pl)}>{swing.valued ? <SInrC n={swing.pl} /> : '…'}</td>
+                <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
+                <td />
+              </tr>
               <tr className="tot">
-                <td colSpan={4}>Total — {INDIAN.length + swing.rows.length} holdings · 2 accounts</td>
+                <td colSpan={4}>Grand total — {INDIAN.length + swing.rows.length} holdings · 2 accounts</td>
                 <td className="ra"><InrC n={eqInv} /></td>
                 <td className="ra">{eqValued ? <InrC n={eqVal} /> : '…'}</td>
                 <td className={'ra ' + cl(eqPl)}>{eqValued ? <SInrC n={eqPl} /> : '…'}</td>

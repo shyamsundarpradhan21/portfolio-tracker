@@ -44,7 +44,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
   return (
     <div className={'card ' + className}>
       {/* header */}
-      <div className="fxc" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+      <div className="fxc" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         <div>
           <div className="ctitle">Realized P&amp;L</div>
           <div className="sub" style={{ margin: 0 }}>{data.source || 'avg-cost'} · as on {data.asOf}</div>
@@ -55,7 +55,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           </div>
           <div className="sub" style={{ margin: 0 }}>
             {sel == null
-              ? (ytd != null ? <>overall, all years · <span className={cl(ytd)}><Money n={ytd} /></span> {data.ytdLabel} YTD</> : 'overall, all years')
+              ? (ytd != null ? <>overall, all years<br /><span className={cl(ytd)}><Money n={ytd} /></span> {data.ytdLabel} YTD</> : 'overall, all years')
               : <>{fy[sel].label} realised</>}
           </div>
         </div>
