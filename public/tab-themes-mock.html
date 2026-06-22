@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en" data-tab="overview" data-mode="dark" data-fullbg="on">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tab themes mock — 6 colour pairs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --mono:'JetBrains Mono','Courier New',monospace;
+  --body:'Source Sans 3',system-ui,sans-serif;
+  --title:'Playfair Display',Georgia,serif;
+  --fs-2xs:.72rem; --fs-xs:.8125rem; --fs-sm:.875rem; --fs-md:.97rem;
+  --fs-lg:1.12rem; --fs-xl:1.36rem; --fs-2xl:1.62rem;
+  --ease:cubic-bezier(.23,1,.32,1);
+  /* defaults (overview / neutral, dark) */
+  --acc:#C2A9A0; --bg:#0C0C12;
+  --acc2:color-mix(in srgb,var(--acc) 65%,#fff);
+  --acc-bg:color-mix(in srgb,var(--acc) 14%,transparent);
+}
+
+/* ── mode = dark : frosted night glass + light text ───────────────────────── */
+:root[data-mode="dark"]{
+  --txt:  color-mix(in srgb, var(--bg) 8%, #ffffff);
+  --txt2: color-mix(in srgb, var(--bg) 30%, #b9b9c6);
+  --txt3: color-mix(in srgb, var(--bg) 42%, #9a9aa8);
+  --grn:#34D399; --red:#F87171;
+  --acc2:color-mix(in srgb,var(--acc) 64%,#fff);
+  --glass-bg:rgba(255,255,255,.05); --glass-bg2:rgba(255,255,255,.032);
+  --glass-brd:rgba(255,255,255,.10); --glass-hi:rgba(255,255,255,.12);
+  --glass-blur:22px; --glass-sat:140%;
+  --glass-shadow:0 10px 34px rgba(0,0,0,.32); --mesh-op:.9;
+  --thead-bg:color-mix(in srgb,var(--bg) 70%,#15151d);
+}
+/* ── mode = light : vivid day glass + dark text ───────────────────────────── */
+:root[data-mode="light"]{
+  --txt:  color-mix(in srgb, var(--bg) 14%, #11131a);
+  --txt2: color-mix(in srgb, var(--bg) 30%, #495063);
+  --txt3: color-mix(in srgb, var(--bg) 38%, #5a6477);
+  --grn:#0E9D69; --red:#D33C33;
+  --acc2:color-mix(in srgb,var(--acc) 80%,#000);
+  --glass-bg:rgba(255,255,255,.5); --glass-bg2:rgba(255,255,255,.4);
+  --glass-brd:rgba(255,255,255,.85); --glass-hi:rgba(255,255,255,1);
+  --glass-blur:30px; --glass-sat:170%;
+  --glass-shadow:0 16px 44px rgba(20,20,40,.14); --mesh-op:1;
+  --thead-bg:color-mix(in srgb,var(--bg) 55%,#ffffff);
+}
+
+/* ── the 6 pairs (+ neutral overview) ─────────────────────────────────────── */
+:root[data-tab="overview"]{ --acc:#C2A9A0; --bg:#0C0C12; }
+:root[data-tab="indian"]  { --acc:#3447AA; --bg:#FBEAEB; }  /* Royal Blue / Powder Pink */
+:root[data-tab="fd"]      { --acc:#FCDB32; --bg:#141D38; }  /* Bright Sun / Big Stone */
+:root[data-tab="mf"]      { --acc:#6260FF; --bg:#E4E4FF; }  /* Periwinkle / Lavender */
+:root[data-tab="us"]      { --acc:#34E0A1; --bg:#000000; }  /* Turquoise / Black */
+:root[data-tab="algo"]    { --acc:#9FE870; --bg:#163300; }  /* Sulu / Deep Fir */
+:root[data-tab="macro"]   { --acc:#BDD9D7; --bg:#03363D; }  /* Jet Stream / Blue Whale */
+
+/* Accent-only mode: ignore the pair bg, force the dark canvas (compare view) */
+:root[data-fullbg="off"]{ --bg:#0C0C12 !important; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:clamp(15px,8px + .7vw,21px)}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--body);
+  font-size:var(--fs-md); line-height:1.55; min-height:100vh; position:relative; overflow-x:hidden;
+  transition:background-color .5s ease,color .5s ease;
+}
+body::before{
+  content:''; position:fixed; inset:-10%; z-index:0; pointer-events:none;
+  opacity:var(--mesh-op); transition:opacity .5s ease;
+  background:
+    radial-gradient(40% 44% at 14% 10%, color-mix(in srgb,var(--acc) 55%,transparent) 0%, transparent 70%),
+    radial-gradient(38% 42% at 86% 14%, color-mix(in srgb,var(--acc2) 50%,transparent) 0%, transparent 70%),
+    radial-gradient(48% 52% at 82% 88%, color-mix(in srgb,var(--acc) 38%,transparent) 0%, transparent 72%),
+    radial-gradient(40% 44% at 8% 92%,  color-mix(in srgb,var(--acc2) 42%,transparent) 0%, transparent 72%);
+}
+.wrap{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:18px 30px 60px}
+
+.rs{font-family:var(--body);font-size:1.1em;margin-right:.02em}
+.mono{font-family:var(--mono)}
+.grn{color:var(--grn)!important;font-weight:600}
+.red{color:var(--red)!important;font-weight:600}
+
+.glass{
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border:1px solid var(--glass-brd);
+  box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-hi);
+  border-radius:16px;
+  transition:background .5s ease,border-color .3s var(--ease),box-shadow .3s var(--ease),transform .18s var(--ease);
+}
+.glass.soft{background:var(--glass-bg2);border-radius:12px}
+
+/* ── tab bar ──────────────────────────────────────────────────────────────── */
+.tabbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 16px;padding:6px;border-radius:14px}
+.tabbar button{font:inherit;font-size:var(--fs-sm);font-weight:700;color:var(--txt2);background:transparent;border:1px solid transparent;
+  padding:8px 15px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:color .15s,background .15s,border-color .15s}
+.tabbar button .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(128,128,128,.25)}
+.tabbar button:hover{color:var(--txt)}
+.tabbar button.on{color:var(--acc);background:var(--acc-bg);border-color:color-mix(in srgb,var(--acc) 40%,transparent)}
+.pairlbl{margin-left:auto;font-size:var(--fs-2xs);color:var(--txt3);font-family:var(--mono);letter-spacing:.02em;white-space:nowrap}
+.pairlbl b{color:var(--acc)}
+
+/* ── topbar ───────────────────────────────────────────────────────────────── */
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:var(--fs-xs);color:var(--txt2)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 0 color-mix(in srgb,var(--grn) 50%,transparent)}
+.spacer{flex:1}
+.mkt{font-size:var(--fs-xs);font-weight:600;padding:3px 9px;border-radius:10px}
+.mkt.open{background:color-mix(in srgb,var(--grn) 16%,transparent);color:var(--grn)}
+.mkt.closed{background:color-mix(in srgb,var(--txt3) 22%,transparent);color:var(--txt3)}
+
+/* ── header hero + cards ──────────────────────────────────────────────────── */
+.hdr-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:stretch;margin:14px 0 16px}
+.hero{display:flex;flex-direction:column;justify-content:center;padding:14px 22px;min-width:0}
+.hlbl{font-size:var(--fs-2xs);letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);font-weight:700;margin-bottom:5px}
+.hlbl b{color:var(--grn);letter-spacing:.06em}
+.hval{font-family:var(--mono);font-weight:800;font-size:clamp(50px,5.1vw,62px);letter-spacing:-.047em;line-height:.9;
+  background:linear-gradient(105deg,var(--acc) 0%,color-mix(in srgb,var(--acc2) 60%,var(--acc)) 50%,var(--acc2) 100%);
+  background-size:280% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hsub{font-size:var(--fs-xs);color:var(--txt2);margin-top:8px}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:13px}
+.acard{display:flex;flex-direction:column;justify-content:center;padding:13px 15px;cursor:pointer;min-width:0}
+.acard.on{border-color:color-mix(in srgb,var(--acc) 60%,var(--glass-brd));box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-hi),inset 0 -2px 0 -.5px var(--acc)}
+.acard .lbl{font-size:var(--fs-2xs);color:var(--acc);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:600;display:flex;align-items:center;gap:6px}
+.acard .lbl i{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.acard .v{font-size:var(--fs-2xl);font-weight:700;font-family:var(--mono);letter-spacing:-.5px}
+.acard .s{font-size:var(--fs-xs);margin-top:4px;color:var(--txt2)}
+
+/* ── grid + cards ─────────────────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin-bottom:14px}
+.card{padding:18px 20px}
+.ctitle{font-family:var(--title);font-size:var(--fs-xl);font-weight:600;color:var(--txt);margin-bottom:3px}
+.csub{font-size:var(--fs-xs);color:var(--txt2);margin-bottom:14px}
+.alloc{display:flex;height:24px;border-radius:9px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.18)}
+.alloc>div{min-width:0}
+.leg{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:var(--fs-xs);color:var(--txt2);margin-top:14px}
+.leg span{display:inline-flex;align-items:center;gap:7px}
+.leg i{width:9px;height:9px;border-radius:50%}
+.hatch{background-image:repeating-linear-gradient(45deg,#5a5a66 0 3px,#2b2b33 3px 6px)}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mini{padding:13px 14px}
+.mini .k{font-size:var(--fs-2xs);letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.mini .v{font-family:var(--mono);font-weight:800;font-size:var(--fs-xl);letter-spacing:-.5px;margin-top:6px}
+.mini .sub{font-size:var(--fs-2xs);color:var(--txt2);margin-top:4px}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:var(--fs-xs);color:var(--txt3);text-transform:uppercase;letter-spacing:.7px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--glass-brd);font-weight:500}
+.tbl th.ra,.tbl td.ra{text-align:right}
+.tbl td{padding:11px 14px;border-bottom:1px solid color-mix(in srgb,var(--glass-brd) 55%,transparent);color:var(--txt2);font-size:var(--fs-sm)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--glass-bg2)}
+.tbl td.sym{color:var(--txt);font-weight:600;font-family:var(--mono)}
+.tbl td.num{font-family:var(--mono);color:var(--txt)}
+
+/* ── controls ─────────────────────────────────────────────────────────────── */
+.controls{position:fixed;top:14px;right:14px;z-index:50;display:flex;flex-direction:column;gap:9px;padding:13px;border-radius:13px;
+  background:var(--glass-bg);border:1px solid var(--glass-brd);box-shadow:var(--glass-shadow);
+  -webkit-backdrop-filter:blur(24px) saturate(150%);backdrop-filter:blur(24px) saturate(150%);max-width:210px}
+.controls .h{font-size:var(--fs-2xs);letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);font-weight:700}
+.seg{display:inline-flex;background:var(--glass-bg2);border:1px solid var(--glass-brd);border-radius:9px;padding:3px}
+.seg button{font:inherit;font-size:var(--fs-2xs);font-weight:700;color:var(--txt2);background:none;border:none;padding:5px 11px;border-radius:6px;cursor:pointer}
+.seg button.on{background:var(--acc-bg);color:var(--acc)}
+.note{font-size:var(--fs-2xs);color:var(--txt3);line-height:1.45}
+
+@media (max-width:760px){.hdr-grid{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.controls{position:static;max-width:none;margin-bottom:14px}}
+</style>
+</head>
+<body>
+<div class="controls">
+  <div class="h">Background</div>
+  <div class="seg" id="seg-bg">
+    <button data-v="on" class="on">Per-tab</button>
+    <button data-v="off">Accent only</button>
+  </div>
+  <div class="note">Click the tabs to flip themes. <b>Per-tab</b> = each tab's full pair (bg + accent), light pairs use vivid glass, dark pairs frosted. <b>Accent only</b> = keep the dark canvas, just swap accents.</div>
+</div>
+
+<div class="wrap">
+  <div class="tabbar glass soft" id="tabbar">
+    <button data-tab="overview" data-mode="dark" class="on"><span class="sw" style="background:#C2A9A0"></span>Overview</button>
+    <button data-tab="indian" data-mode="light"><span class="sw" style="background:#3447AA"></span>Indian</button>
+    <button data-tab="fd" data-mode="dark"><span class="sw" style="background:#FCDB32"></span>FD</button>
+    <button data-tab="mf" data-mode="light"><span class="sw" style="background:#6260FF"></span>MF</button>
+    <button data-tab="us" data-mode="dark"><span class="sw" style="background:#34E0A1"></span>US</button>
+    <button data-tab="algo" data-mode="dark"><span class="sw" style="background:#9FE870"></span>Algo</button>
+    <button data-tab="macro" data-mode="dark"><span class="sw" style="background:#BDD9D7"></span>Macro</button>
+    <span class="pairlbl" id="pairlbl"></span>
+  </div>
+
+  <div class="topbar">
+    <span class="pulse"></span><span>Updated at 14:32:07</span>
+    <span class="spacer"></span>
+    <span class="mkt closed">NSE · CLOSED</span>
+    <span class="mkt open">NYSE · OPEN</span>
+  </div>
+
+  <div class="hdr-grid">
+    <div class="hero glass">
+      <div class="hlbl">Net Worth <b>LIVE</b></div>
+      <div class="hval"><span class="rs">₹</span>3,21,84,500</div>
+      <div class="hsub">Today <span class="grn">₹84,210</span> · Total gain <span class="grn">₹61,40,200</span></div>
+    </div>
+    <div class="cards">
+      <div class="acard glass on"><div class="lbl"><i style="background:var(--acc)"></i>Indian</div><div class="v"><span class="rs">₹</span>92.4L</div><div class="s grn">+18.2%</div></div>
+      <div class="acard glass"><div class="lbl"><i style="background:var(--acc)"></i>US</div><div class="v"><span class="rs">$</span>78.3k</div><div class="s grn">+24.1%</div></div>
+      <div class="acard glass"><div class="lbl"><i style="background:var(--acc)"></i>FD</div><div class="v"><span class="rs">₹</span>41.0L</div><div class="s">7.1% blended</div></div>
+      <div class="acard glass"><div class="lbl"><i style="background:var(--acc)"></i>Mutual</div><div class="v"><span class="rs">₹</span>55.8L</div><div class="s grn">+13.4%</div></div>
+      <div class="acard glass"><div class="lbl"><i style="background:var(--acc)"></i>Algo</div><div class="v"><span class="rs">₹</span>22.6L</div><div class="s grn">+₹1.47L</div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card glass">
+      <div class="ctitle">Allocation</div>
+      <div class="csub">Live mix — pension segregated right, in hatch</div>
+      <div class="alloc">
+        <div style="flex:6.2;background:var(--acc)"></div>
+        <div style="flex:9.2;background:color-mix(in srgb,var(--acc) 70%,#fff)"></div>
+        <div style="flex:6.8;background:color-mix(in srgb,var(--acc) 45%,#fff)"></div>
+        <div style="flex:5.6;background:color-mix(in srgb,var(--acc2) 80%,var(--bg))"></div>
+        <div style="flex:2.3;background:color-mix(in srgb,var(--acc) 55%,var(--bg))"></div>
+        <div style="flex:3.1" class="hatch"></div>
+      </div>
+      <div class="leg">
+        <span><i style="background:var(--acc)"></i>FD 23%</span>
+        <span><i style="background:color-mix(in srgb,var(--acc) 70%,#fff)"></i>Indian 28%</span>
+        <span><i style="background:color-mix(in srgb,var(--acc) 45%,#fff)"></i>US 21%</span>
+        <span><i style="background:color-mix(in srgb,var(--acc2) 80%,var(--bg))"></i>MF 17%</span>
+        <span><i class="hatch" style="border-radius:2px"></i>CMPF 9%</span>
+      </div>
+    </div>
+    <div class="card glass">
+      <div class="ctitle">Performance</div>
+      <div class="csub">Money-weighted, since inception</div>
+      <div class="stat">
+        <div class="mini glass soft"><div class="k">XIRR</div><div class="v grn">21.4%</div><div class="sub">vs Nifty 14.8%</div></div>
+        <div class="mini glass soft"><div class="k">CAGR</div><div class="v grn">18.9%</div><div class="sub">3.2 yrs</div></div>
+        <div class="mini glass soft"><div class="k">Unrealised</div><div class="v grn"><span class="rs">₹</span>61.4L</div><div class="sub">+23.6%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card glass">
+    <div class="ctitle">Holdings</div>
+    <div class="csub">Live prices · sample rows</div>
+    <table class="tbl">
+      <thead><tr><th>Symbol</th><th class="ra">Qty</th><th class="ra">LTP</th><th class="ra">Value</th><th class="ra">P&amp;L</th><th class="ra">Day</th></tr></thead>
+      <tbody>
+        <tr><td class="sym">RELIANCE</td><td class="num ra">120</td><td class="num ra">2,940</td><td class="num ra">3,52,800</td><td class="num ra grn">+18.4%</td><td class="num ra grn">+1.2%</td></tr>
+        <tr><td class="sym">HDFCBANK</td><td class="num ra">85</td><td class="num ra">1,712</td><td class="num ra">1,45,520</td><td class="num ra grn">+9.1%</td><td class="num ra red">-0.4%</td></tr>
+        <tr><td class="sym">INFY</td><td class="num ra">60</td><td class="num ra">1,498</td><td class="num ra">89,880</td><td class="num ra red">-3.2%</td><td class="num ra grn">+0.7%</td></tr>
+        <tr><td class="sym">TATAMOTORS</td><td class="num ra">200</td><td class="num ra">988</td><td class="num ra">1,97,600</td><td class="num ra grn">+42.7%</td><td class="num ra grn">+2.1%</td></tr>
+        <tr><td class="sym">POWERGRID</td><td class="num ra">300</td><td class="num ra">312</td><td class="num ra">93,600</td><td class="num ra grn">+11.0%</td><td class="num ra red">-0.9%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const PAIRS = {
+    overview:{n:'Overview · neutral', acc:'#C2A9A0', bg:'#0C0C12'},
+    indian:{n:'Royal Blue', acc:'#3447AA', bg:'#FBEAEB'},
+    fd:{n:'Bright Sun', acc:'#FCDB32', bg:'#141D38'},
+    mf:{n:'Periwinkle', acc:'#6260FF', bg:'#E4E4FF'},
+    us:{n:'Turquoise', acc:'#34E0A1', bg:'#000000'},
+    algo:{n:'Sulu', acc:'#9FE870', bg:'#163300'},
+    macro:{n:'Jet Stream', acc:'#BDD9D7', bg:'#03363D'},
+  };
+  const lbl = document.getElementById('pairlbl');
+  function selectTab(btn){
+    const tab = btn.dataset.tab, mode = btn.dataset.mode;
+    root.setAttribute('data-tab', tab);
+    // accent-only mode forces dark treatment for legibility on the dark canvas
+    root.setAttribute('data-mode', root.getAttribute('data-fullbg')==='off' ? 'dark' : mode);
+    document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on', b===btn));
+    const p = PAIRS[tab];
+    lbl.innerHTML = tab==='overview' ? '<b>Overview</b> · neutral home' : `<b>${p.n}</b> ${p.acc} on ${p.bg}`;
+  }
+  document.getElementById('tabbar').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) selectTab(b); });
+  document.getElementById('seg-bg').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    root.setAttribute('data-fullbg', b.dataset.v);
+    document.querySelectorAll('#seg-bg button').forEach(x=>x.classList.toggle('on', x===b));
+    selectTab(document.querySelector('#tabbar button.on'));
+  });
+  selectTab(document.querySelector('#tabbar button.on'));
+</script>
+</body>
+</html>

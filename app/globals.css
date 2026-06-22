@@ -132,54 +132,65 @@
 :root[data-tab="overview"] {
   --acc: #C2A9A0; --acc2: #D8C4BC; --acc-bg: rgba(194,169,160,.14);
 }
-/* Indian Stocks — royal blue (matches the --blu sleeve colour) */
+/* Indian Stocks — Royal Blue on Powder Pink (FULL PAIR → light bg; see Layer 4b) */
 :root[data-tab="indian"] {
-  --acc: #3B82F6; --acc2: #6BA0FF; --acc-bg: rgba(59,130,246,.15);
+  --acc: #3447AA; --acc2: #5A6BD0; --acc-bg: rgba(52,71,170,.14);
+  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
 }
-/* Fixed Deposits — golden yellow (pulled away from orange) */
-:root[data-tab="fd"] {
-  --acc: #E6C04A; --acc2: #F5D878; --acc-bg: rgba(230,192,74,.13);
-}
-/* Mutual Funds — vivid violet (matches the --pur sleeve colour) */
+/* Mutual Funds — Periwinkle on Lavender (FULL PAIR → light bg; see Layer 4b) */
 :root[data-tab="mf"] {
-  --acc: #A974FF; --acc2: #C4A6FF; --acc-bg: rgba(169,116,255,.15);
+  --acc: #6260FF; --acc2: #8B89FF; --acc-bg: rgba(98,96,255,.14);
+  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
 }
-/* US Stocks — bright cyan (matches the --cyn sleeve colour) */
+/* Fixed Deposits — Turquoise accent (accent-only on the global canvas). The
+   green-family accent lives here because FD shows no holdings P&L to clash with. */
+:root[data-tab="fd"] {
+  --acc: #34E0A1; --acc2: #7CEFC4; --acc-bg: rgba(52,224,161,.14);
+}
+/* US Stocks — Jet Stream pale-teal accent (accent-only; non-green, P&L-safe) */
 :root[data-tab="us"] {
-  --acc: #2DD4EC; --acc2: #74E8F5; --acc-bg: rgba(45,212,236,.14);
+  --acc: #BDD9D7; --acc2: #D8ECEA; --acc-bg: rgba(189,217,215,.16);
 }
-/* Algo — vivid fuchsia (was orange; sat between FD amber and red) */
+/* Algo — Bright Sun yellow accent (accent-only; non-green, P&L-safe) */
 :root[data-tab="algo"] {
-  --acc: #E879F9; --acc2: #F2A6FF; --acc-bg: rgba(232,121,249,.13);
+  --acc: #FCDB32; --acc2: #FDE87A; --acc-bg: rgba(252,219,50,.14);
 }
-/* Macro — muted steel/slate blue. Was teal (#14B8A6), a blue-green that sat right
-   next to the gain-green +/- code; steel-blue reads as neutral chrome, clear of the
-   P&L green/red AND muted vs the vivid Indian-blue / US-cyan data sleeves. */
+/* Macro — Sulu lime accent (accent-only). Lime is the more distinguishable
+   green, and Macro's green/red are contextual gauges, not holdings P&L. */
 :root[data-tab="macro"] {
-  --acc: #6982AD; --acc2: #8AA1C6; --acc-bg: rgba(105,130,173,.15);
+  --acc: #9FE870; --acc2: #C2F0A0; --acc-bg: rgba(159,232,112,.14);
 }
 
-/* ── Layer 4: Per-tab accent colors (day) — slightly deeper for contrast ───── */
+/* ── Layer 4: Per-tab accent colors (day) — deepened so the accent reads on the
+   light day canvas. Indian + MF are NOT here: they carry their own light pair in
+   Layer 4b below, in BOTH global themes. */
 :root[data-time="day"][data-tab="overview"] {
   --acc: #8A6F66; --acc2: #9E847A; --acc-bg: rgba(138,111,102,.12);
 }
-:root[data-time="day"][data-tab="indian"] {
-  --acc: #2563EB; --acc2: #3B82F6; --acc-bg: rgba(37,99,235,.12);
-}
 :root[data-time="day"][data-tab="fd"] {
-  --acc: #A16207; --acc2: #CA8A04; --acc-bg: rgba(161,98,7,.12);
-}
-:root[data-time="day"][data-tab="mf"] {
-  --acc: #7C3AED; --acc2: #8B5CF6; --acc-bg: rgba(124,58,237,.12);
+  --acc: #0E9E72; --acc2: #14B884; --acc-bg: rgba(14,158,114,.13);
 }
 :root[data-time="day"][data-tab="us"] {
-  --acc: #0BA5C0; --acc2: #1FB6CE; --acc-bg: rgba(11,165,192,.13);
+  --acc: #5C8C88; --acc2: #74A5A0; --acc-bg: rgba(92,140,136,.15);
 }
 :root[data-time="day"][data-tab="algo"] {
-  --acc: #A21CAF; --acc2: #C026D3; --acc-bg: rgba(162,28,175,.12);
+  --acc: #B68A00; --acc2: #D1A50A; --acc-bg: rgba(182,138,0,.13);
 }
 :root[data-time="day"][data-tab="macro"] {
-  --acc: #4A6491; --acc2: #5E7AAA; --acc-bg: rgba(74,100,145,.13);
+  --acc: #5C9E33; --acc2: #6EB23F; --acc-bg: rgba(92,158,51,.13);
+}
+
+/* ── Layer 4b: Full-pair light tabs (Indian · MF) ───────────────────────────
+   These two carry their FULL colour pair: the page background (set in the
+   per-tab blocks above) flips to the pair's light tint and surfaces switch to
+   the vivid day-glass + dark text + day P&L colours — in BOTH global themes. */
+:root[data-tab="indian"], :root[data-tab="mf"] {
+  --txt: #1C2533; --txt2: #5E6B80; --txt3: #636E84;
+  --grn: #0E9D69; --red: #D33C33;
+  --glass-bg: rgba(255,255,255,.5); --glass-bg2: rgba(255,255,255,.4);
+  --glass-brd: rgba(255,255,255,.85); --glass-hi: rgba(255,255,255,1);
+  --glass-blur: 30px; --glass-sat: 170%;
+  --glass-shadow: 0 16px 44px rgba(20,20,40,.14); --mesh-op: 1;
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
@@ -255,7 +266,18 @@ body {
 body::before {
   content: ''; position: fixed; inset: -10%; z-index: 0;
   pointer-events: none; opacity: var(--mesh-op);
-  transition: opacity .6s ease;
+  transition: opacity .6s ease, background .6s ease;
+  /* Accent-driven: each tab's mesh is built from its own accent pair, so the
+     ambient glow matches the active tab theme. Overview overrides below. */
+  background:
+    radial-gradient(40% 44% at 14% 10%, color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 70%),
+    radial-gradient(38% 42% at 86% 14%, color-mix(in srgb, var(--acc2) 50%, transparent) 0%, transparent 70%),
+    radial-gradient(48% 52% at 82% 88%, color-mix(in srgb, var(--acc) 38%, transparent) 0%, transparent 72%),
+    radial-gradient(40% 44% at 8% 92%,  color-mix(in srgb, var(--acc2) 42%, transparent) 0%, transparent 72%);
+}
+/* Overview is the all-sleeves aggregate — keep its mesh multi-hue (the sleeve
+   colours) rather than a single accent, so the home view stays rich. */
+:root[data-tab="overview"] body::before {
   background:
     radial-gradient(38% 42% at 12% 8%,  color-mix(in srgb, var(--blu) 60%, transparent) 0%, transparent 70%),
     radial-gradient(36% 40% at 88% 12%, color-mix(in srgb, var(--cyn) 55%, transparent) 0%, transparent 70%),
