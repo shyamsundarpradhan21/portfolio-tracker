@@ -124,71 +124,46 @@
   --sc-opt:  #B45309;
 }
 
-/* ── Layer 3: Per-tab accent colors (night) ─────────────────────────────────
-   Each tab gets a distinct accent that drives: active nav highlight,
-   card accent borders, badge colors, hdr-val gradient, and hkpi underlines. */
-
-/* Overview — warm stone neutral (default, already set above; clear of every data hue + P&L) */
+/* ── Layer 3: Per-tab colour PAIRS — the 6 combos (janm_ux) ──────────────────
+   Each tab carries its combo's lighter + darker colour; the two-tone derivation
+   below turns the pair into a full theme that INVERTS for day/night:
+     DAY   → lighter colour is the canvas, darker is the accent + ink
+     NIGHT → darker colour is the canvas, lighter is the accent + ink
+   6 combos × 2 modes = 12 themes. Overview stays neutral stone (the home view). */
 :root[data-tab="overview"] {
   --acc: #C2A9A0; --acc2: #D8C4BC; --acc-bg: rgba(194,169,160,.14);
 }
-/* Indian Stocks — Royal Blue accent. On DAY the canvas becomes Powder Pink
-   (Layer 4b); on NIGHT it's the dark canvas + this accent, so day/night flips it. */
-:root[data-tab="indian"] {
-  --acc: #3447AA; --acc2: #5A6BD0; --acc-bg: rgba(52,71,170,.14);
-}
-/* Mutual Funds — Periwinkle accent. DAY canvas → Lavender (Layer 4b); NIGHT dark. */
-:root[data-tab="mf"] {
-  --acc: #6260FF; --acc2: #8B89FF; --acc-bg: rgba(98,96,255,.14);
-}
-/* Fixed Deposits — Turquoise accent (accent-only on the global canvas). The
-   green-family accent lives here because FD shows no holdings P&L to clash with. */
-:root[data-tab="fd"] {
-  --acc: #34E0A1; --acc2: #7CEFC4; --acc-bg: rgba(52,224,161,.14);
-}
-/* US Stocks — Jet Stream pale-teal accent (accent-only; non-green, P&L-safe) */
-:root[data-tab="us"] {
-  --acc: #BDD9D7; --acc2: #D8ECEA; --acc-bg: rgba(189,217,215,.16);
-}
-/* Algo — Bright Sun yellow accent (accent-only; non-green, P&L-safe) */
-:root[data-tab="algo"] {
-  --acc: #FCDB32; --acc2: #FDE87A; --acc-bg: rgba(252,219,50,.14);
-}
-/* Macro — Sulu lime accent (accent-only). Lime is the more distinguishable
-   green, and Macro's green/red are contextual gauges, not holdings P&L. */
-:root[data-tab="macro"] {
-  --acc: #9FE870; --acc2: #C2F0A0; --acc-bg: rgba(159,232,112,.14);
-}
-
-/* ── Layer 4: Per-tab accent colors (day) — deepened so the accent reads on the
-   light day canvas. Indian + MF are NOT here: they carry their own light pair in
-   Layer 4b below, in BOTH global themes. */
 :root[data-time="day"][data-tab="overview"] {
   --acc: #8A6F66; --acc2: #9E847A; --acc-bg: rgba(138,111,102,.12);
 }
-:root[data-time="day"][data-tab="fd"] {
-  --acc: #0E9E72; --acc2: #14B884; --acc-bg: rgba(14,158,114,.13);
-}
-:root[data-time="day"][data-tab="us"] {
-  --acc: #5C8C88; --acc2: #74A5A0; --acc-bg: rgba(92,140,136,.15);
-}
-:root[data-time="day"][data-tab="algo"] {
-  --acc: #B68A00; --acc2: #D1A50A; --acc-bg: rgba(182,138,0,.13);
-}
-:root[data-time="day"][data-tab="macro"] {
-  --acc: #5C9E33; --acc2: #6EB23F; --acc-bg: rgba(92,158,51,.13);
-}
+:root[data-tab="indian"] { --c-light: #FBEAEB; --c-dark: #3447AA; }  /* Royal Blue · Powder Pink */
+:root[data-tab="mf"]     { --c-light: #E4E4FF; --c-dark: #6260FF; }  /* Periwinkle · Lavender */
+:root[data-tab="us"]     { --c-light: #BDD9D7; --c-dark: #03363D; }  /* Jet Stream · Blue Whale */
+:root[data-tab="algo"]   { --c-light: #FCDB32; --c-dark: #141D38; }  /* Bright Sun · Big Stone */
+:root[data-tab="fd"]     { --c-light: #34E0A1; --c-dark: #000000; }  /* Turquoise · Black */
+:root[data-tab="macro"]  { --c-light: #9FE870; --c-dark: #163300; }  /* Sulu · Deep Fir */
 
-/* ── Layer 4b: Light-pair backgrounds for Indian · MF (DAY only) ─────────────
-   On DAY these two swap the canvas for their pair's light tint (Powder Pink /
-   Lavender); the vivid glass, dark text and day P&L colours already come from
-   the global day theme. On NIGHT no override applies, so they fall back to the
-   dark canvas + accent and the day/night toggle flips them like every other tab. */
-:root[data-time="day"][data-tab="indian"] {
-  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
+/* ── DAY two-tone: lighter colour = canvas, darker = accent + ink ──────────── */
+:root[data-time="day"]:is([data-tab="indian"],[data-tab="mf"],[data-tab="us"],[data-tab="algo"],[data-tab="fd"],[data-tab="macro"]) {
+  --bg:   var(--c-light);
+  --acc:  var(--c-dark);
+  --acc2: color-mix(in srgb, var(--c-dark) 66%, #fff);
+  --acc-bg: color-mix(in srgb, var(--c-dark) 14%, transparent);
+  --txt:  color-mix(in srgb, var(--c-dark) 88%, #000);
+  --txt2: color-mix(in srgb, var(--c-dark) 58%, var(--c-light));
+  --txt3: color-mix(in srgb, var(--c-dark) 40%, var(--c-light));
+  --thead-bg: color-mix(in srgb, var(--c-light) 72%, #ffffff);
 }
-:root[data-time="day"][data-tab="mf"] {
-  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
+/* ── NIGHT two-tone: darker colour = canvas, lighter = accent + ink ────────── */
+:root[data-time="night"]:is([data-tab="indian"],[data-tab="mf"],[data-tab="us"],[data-tab="algo"],[data-tab="fd"],[data-tab="macro"]) {
+  --bg:   var(--c-dark);
+  --acc:  var(--c-light);
+  --acc2: color-mix(in srgb, var(--c-light) 78%, #fff);
+  --acc-bg: color-mix(in srgb, var(--c-light) 16%, transparent);
+  --txt:  color-mix(in srgb, var(--c-light) 92%, #fff);
+  --txt2: color-mix(in srgb, var(--c-light) 60%, var(--c-dark));
+  --txt3: color-mix(in srgb, var(--c-light) 44%, var(--c-dark));
+  --thead-bg: color-mix(in srgb, var(--c-dark) 80%, #ffffff);
 }
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
@@ -268,10 +243,11 @@ body::before {
   /* Accent-driven: each tab's mesh is built from its own accent pair, so the
      ambient glow matches the active tab theme. Overview overrides below. */
   background:
-    radial-gradient(40% 44% at 14% 10%, color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 70%),
-    radial-gradient(38% 42% at 86% 14%, color-mix(in srgb, var(--acc2) 50%, transparent) 0%, transparent 70%),
-    radial-gradient(48% 52% at 82% 88%, color-mix(in srgb, var(--acc) 38%, transparent) 0%, transparent 72%),
-    radial-gradient(40% 44% at 8% 92%,  color-mix(in srgb, var(--acc2) 42%, transparent) 0%, transparent 72%);
+    radial-gradient(46% 50% at 14% 8%,  color-mix(in srgb, var(--acc)  62%, transparent) 0%, transparent 70%),
+    radial-gradient(44% 48% at 88% 14%, color-mix(in srgb, var(--acc2) 58%, transparent) 0%, transparent 70%),
+    radial-gradient(54% 58% at 84% 90%, color-mix(in srgb, var(--acc)  46%, transparent) 0%, transparent 72%),
+    radial-gradient(46% 50% at 8% 94%,  color-mix(in srgb, var(--acc2) 50%, transparent) 0%, transparent 72%),
+    radial-gradient(42% 44% at 58% 34%, color-mix(in srgb, var(--acc2) 28%, transparent) 0%, transparent 62%);
 }
 /* Overview is the all-sleeves aggregate — keep its mesh multi-hue (the sleeve
    colours) rather than a single accent, so the home view stays rich. */
@@ -442,6 +418,16 @@ body::before {
 .ra { text-align: right; }
 .grn { color: var(--grn) !important; font-weight: 600; }
 .red { color: var(--red) !important; font-weight: 600; }
+/* P&L "neutralise" on the green-canvas combos (FD Turquoise · Macro Sulu): the
+   gain/loss colours would melt into a green page, so lift each figure onto a
+   frosted chip. Colour still carries direction — no +/- glyphs. The chip tints
+   from --txt so it stays legible in both the light (day) and dark (night) form. */
+:root[data-tab="fd"] :is(.grn, .red),
+:root[data-tab="macro"] :is(.grn, .red) {
+  display: inline-block; padding: 0 6px; border-radius: 6px; font-weight: 700;
+  background: color-mix(in srgb, var(--txt) 12%, transparent);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+}
 .acc { color: var(--acc) !important; font-weight: 600; }
 .mut { color: var(--txt3) !important; }
 .mono { font-family: var(--mono); }
@@ -1371,10 +1357,12 @@ body { padding: 0; }
   z-index: 8;
   margin: 0 -28px 38px;
   padding: 0 28px;
-  background: rgba(var(--hdr-bg-base), .6);
+  /* Follows the active tab's canvas (--bg) so the frosted bar matches each of the
+     12 themes, instead of a fixed neutral rgb. */
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
   -webkit-backdrop-filter: saturate(1.5) blur(18px);
   backdrop-filter: saturate(1.5) blur(18px);
-  border-bottom: .5px solid rgba(255, 255, 255, .06);
+  border-bottom: .5px solid var(--glass-brd);
 }
 /* Soft fade band below the header so the frosted glass tapers off gradually
    into the content instead of ending on a hard edge. Both the tint and the
@@ -1385,16 +1373,16 @@ body { padding: 0; }
   left: 0; right: 0; top: 100%;
   height: 32px;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .82)), transparent);
-  -webkit-backdrop-filter: blur(calc(var(--hdr-t) * 10px));
-  backdrop-filter: blur(calc(var(--hdr-t) * 10px));
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 52%, transparent), transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
   mask-image: linear-gradient(to bottom, #000, transparent);
 }
 .main-header .topbar { margin-bottom: 0; }
 .main-header .page-header { margin-bottom: 16px; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .main-header { background: rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .96)); }
+  .main-header { background: var(--bg); }
 }
 
 /* Topbar inside main */
