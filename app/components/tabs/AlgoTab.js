@@ -1,10 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { cl, pctS, InrF, SInrF, SInrC, RsText, inrFull } from '../../lib/fmt';
+import { cl, SInrF, RsText, inrFull } from '../../lib/fmt';
 import { LiveSInrF } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
-import SyncBadge from '../shared/SyncBadge';
 import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
 import Skel from '../shared/Skel';
@@ -13,12 +12,11 @@ import Skel from '../shared/Skel';
 const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
 
 export default function AlgoTab({
-  swing, swingSorted, swSort, sortSw, markets,
   ytdTotal, ytdRealised, cfEntering, cfAfterRealised,
   insights, insightsOn, insightsFirstLoad,
-  ALGO, FY, swingRec,
+  ALGO, FY,
 }) {
-  // One strategy card at a time (S01 / S02), persisted. Swing + the overall summaries
+  // One strategy card at a time (S01 / S02), persisted. The overall summaries
   // live OUTSIDE the strategy cards.
   const [strat, setStrat] = useState('s01');
   useEffect(() => { try { const s = localStorage.getItem('nwTracker.algoStrat'); if (s === 's01' || s === 's02') setStrat(s); } catch {} }, []);
@@ -27,7 +25,7 @@ export default function AlgoTab({
     <div>
       <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'} · est. charges · ${FY.labels.verified} ITR-verified · swing live`} />
+        <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'} · est. charges · ${FY.labels.verified} ITR-verified`} />
       </div>
 
       <div className="g3 sec">
@@ -46,13 +44,12 @@ export default function AlgoTab({
           <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
           <div className="sub">
             S01 <span className={cl(FY.s01.fy2627.net)}><SInrF n={FY.s01.fy2627.net} /></span> ·{' '}
-            S02 <span className={cl(FY.s02.fy2627.net)}><SInrF n={FY.s02.fy2627.net} /></span> ·{' '}
-            swing {swing.valued ? <span className={cl(swing.pl)}><SInrF n={swing.pl} /></span> : '…'}
+            S02 <span className={cl(FY.s02.fy2627.net)}><SInrF n={FY.s02.fy2627.net} /></span>
           </div>
         </div>
       </div>
 
-      {/* Strategy toggle — one card at a time; swing + the overall summaries sit OUTSIDE */}
+      {/* Strategy toggle — one card at a time; the overall summaries sit OUTSIDE */}
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <div className="seg" role="tablist" aria-label="Strategy">
           {[['s01', ALGO.s01.title], ['s02', ALGO.s02.title]].map(([k, label]) => (
@@ -132,49 +129,6 @@ export default function AlgoTab({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Swing positions — lifted OUT of the S02 card into its own (delivery book, STCG/LTCG, not F&O business income) */}
-      <div className="card sec">
-        <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          Swing positions{' '}
-          <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'}` }} />
-          <SyncBadge rec={swingRec} />
-        </div>
-        <div className="ovx">
-          <table className="tbl" style={{ minWidth: 360 }}>
-            <thead>
-              <tr>
-                {[['sym','Symbol',false],['qty','Qty',true],['cost','Avg',true],['ltp','LTP',true],['pl','P&L',true],['pct','%',true]].map(([k, label, num]) => (
-                  <th key={k} className={num ? 'ra' : ''} onClick={() => sortSw(k)}>
-                    {label} {swSort.key === k ? (swSort.dir < 0 ? '↓' : '↑') : '↕'}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {swingSorted.map((r) => (
-                <tr key={r.sym}>
-                  <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{r.sym}</td>
-                  <td className="ra mut">{r.qty}</td>
-                  <td className="ra mut mono">{r.cost.toFixed(2)}</td>
-                  <td className="ra mono">{r.ltp != null ? r.ltp.toFixed(2) : <Skel w={42} h={11} />}</td>
-                  <td className={'ra mono ' + (r.pl != null ? cl(r.pl) : 'mut')}>{r.pl != null ? <SInrF n={r.pl} /> : '—'}</td>
-                  <td className={'ra mono ' + (r.pct != null ? cl(r.pct) : 'mut')}>{r.pct != null ? pctS(r.pct) : '—'}</td>
-                </tr>
-              ))}
-              <tr className="tot">
-                <td>Total</td><td /><td className="ra"><InrF n={swing.inv} /></td>
-                <td className="ra">{swing.valued ? <InrF n={swing.val} /> : '…'}</td>
-                <td className={'ra ' + cl(swing.pl)}>{swing.valued ? <SInrF n={swing.pl} /> : '…'}</td>
-                <td className={'ra ' + cl(swing.pl)}>{swing.valued ? pctS(swing.pct) : '…'}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
-          Swing positions held overnight in the delivery book — P&amp;L is STCG (&lt;12m) or LTCG (&gt;12m), not business income. MTM is live from the last NSE tick; gains crystallise only on exit.
-        </div>
       </div>
 
       <div className="csm sec">

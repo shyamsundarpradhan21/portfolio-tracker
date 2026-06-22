@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
   ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
-  TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
+  TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS, hydratePortfolio, isPortfolioHydrated,
 } from './portfolio';
@@ -473,34 +473,62 @@ function Dashboard() {
   }, [indian, inSort]);
   const sortIn = (key) => setInSort((s) => s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'sym' || key === 'name' ? 1 : -1 });
 
-  const inStats = useMemo(() => {
-    const value = indian.val; const totalInvested = TRANSACTIONS.reduce((s, t) => s + t.invested, 0);
+  // Equity stats over an arbitrary holdings set + cashflow ledger — shared by the
+  // Zerodha-only book (inStats, AI overview) and the combined Zerodha+swing book
+  // (eqStats, Indian tab). Pure over (rows, value, valued, txns) + hist/now closure.
+  const equityStats = (rows, value, valued, txns) => {
+    const totalInvested = txns.reduce((s, t) => s + t.invested, 0);
     let portXirr = null, cagr = null, years = null;
-    if (indian.valued && value) {
-      const cfs = TRANSACTIONS.map((t) => ({ date: new Date(t.date), amount: -t.invested }));
+    if (valued && value) {
+      const cfs = txns.map((t) => ({ date: new Date(t.date), amount: -t.invested }));
       const x = xirr([...cfs, { date: now, amount: value }]); portXirr = x != null ? x * 100 : null;
-      const c = weightedCagr(TRANSACTIONS, value, now); cagr = c.cagr; years = c.years;
+      const c = weightedCagr(txns, value, now); cagr = c.cagr; years = c.years;
     }
     const sectorMap = {}, capMap = {};
-    indian.rows.forEach((r) => { if (r.val == null) return; sectorMap[r.sector] = (sectorMap[r.sector] || 0) + r.val; capMap[r.cap] = (capMap[r.cap] || 0) + r.val; });
+    rows.forEach((r) => { if (r.val == null) return; sectorMap[r.sector] = (sectorMap[r.sector] || 0) + r.val; capMap[r.cap] = (capMap[r.cap] || 0) + r.val; });
     const sectors = Object.entries(sectorMap).map(([label, val]) => ({ label, val, pct: value ? (val / value) * 100 : 0 })).sort((a, b) => b.val - a.val);
     const caps = ['Large','Mid','Small'].map((label) => ({ label, val: capMap[label] || 0, pct: value ? ((capMap[label] || 0) / value) * 100 : 0 }));
-    const valued = indian.rows.filter((r) => r.pct != null);
-    const winner  = valued.length ? valued.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
-    const laggard = valued.length ? valued.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
-    const topPos  = valued.length && value ? valued.reduce((a, b) => (b.val > a.val ? b : a)) : null;
-    const cfFor = (b) => { if (!hist?.series || !indian.valued || !value) return null; for (const sym of b.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], TRANSACTIONS, now); if (cf) return cf; } return null; };
+    const vr = rows.filter((r) => r.pct != null);
+    const winner  = vr.length ? vr.reduce((a, b) => (b.pct > a.pct ? b : a)) : null;
+    const laggard = vr.length ? vr.reduce((a, b) => (b.pct < a.pct ? b : a)) : null;
+    const topPos  = vr.length && value ? vr.reduce((a, b) => (b.val > a.val ? b : a)) : null;
+    const cfFor = (b) => { if (!hist?.series || !valued || !value) return null; for (const sym of b.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], txns, now); if (cf) return cf; } return null; };
     const benchmarks = INDIAN_BENCHMARKS.map((b) => { const cf = cfFor(b); return { ...b, value: cf?.value ?? null, xirr: cf?.xirr ?? null, cagr: cf?.cagr ?? null, ret: cf?.ret ?? null }; });
     return { value, totalInvested, portXirr, cagr, years, sectors, caps, winner, laggard, topPos, benchmarks, topSector: sectors[0] || null };
-  }, [indian, hist, now]);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const inStats = useMemo(() => equityStats(indian.rows, indian.val, indian.valued, TRANSACTIONS), [indian, hist, now]);
 
-  const indianRisk = useMemo(() => { const reg = computeBetaVol(hist, heldIndian, now); return { ...(reg || {}), hasReg: !!reg }; }, [hist, heldIndian, now]);
+  const indianRisk = useMemo(() => { const reg = computeBetaVol(hist, heldIndian.concat(SWING), now); return { ...(reg || {}), hasReg: !!reg }; }, [hist, heldIndian, now]);
 
   const indianDay = useMemo(() => {
     let dayPl = 0, prevTot = 0;
     indian.rows.forEach((r) => { if (r.val == null || r.day == null) return; const prev = r.val / (1 + r.day / 100); dayPl += r.val - prev; prevTot += prev; });
     return { dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0 };
   }, [indian]);
+
+  // Realized equity P&L derived LIVE from the Zerodha exits ledger (gross sell−buy),
+  // grouped by FY of the sell — the curated INDIAN_REALIZED figure had gone stale.
+  // Upstox swing booked nothing (all held, verified from its tradebook), so this is
+  // the combined equity realised. The ledger carries no symbols → no per-name movers.
+  const indianRealized = useMemo(() => {
+    const trades = APP.indianExits?.trades || [];
+    const fyOf = (iso) => { const [y, m] = String(iso).split('-').map(Number); const s = m >= 4 ? y : y - 1; return `FY${s % 100}-${(s + 1) % 100}`; };
+    const byFy = {};
+    for (const [, x, buy, sell] of trades) { const k = fyOf(x); byFy[k] = (byFy[k] || 0) + (sell - buy); }
+    const fy = Object.keys(byFy).sort().map((label) => ({
+      label, amt: Math.round(byFy[label]), winners: [], losers: [],
+      n: trades.filter(([, x]) => fyOf(x) === label).length,
+    }));
+    const cur = fyOf(isoOf(now));
+    const ytdEntry = fy.find((f) => f.label === cur);
+    return {
+      fy, total: Math.round(fy.reduce((s, f) => s + f.amt, 0)),
+      ytd: ytdEntry ? ytdEntry.amt : 0, ytdLabel: cur,
+      source: 'Zerodha tradebook', asOf: APP.indianExits?.asOf || isoOf(now),
+      winners: [], losers: [],
+    };
+  }, [now]);
 
   // ─── derived: US ────────────────────────────────────────────────────────────
   const usData = useMemo(() => {
@@ -565,15 +593,45 @@ function Dashboard() {
 
   // ─── derived: swing ─────────────────────────────────────────────────────────
   const swing = useMemo(() => {
+    // The broker feed carries no sector/cap/buy-date for the swing book, so they're
+    // tagged here (all bought 2026-02-09, confirmed from the Upstox tradebook) — this
+    // folds swing into the combined sector/cap mix and the money-weighted CAGR.
+    const META = {
+      BANKBARODA: { sector: 'Banking',     cap: 'Large', bought: '2026-02-09' },
+      AVANTEL:    { sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
+      TDPOWERSYS: { sector: 'Industrials', cap: 'Small', bought: '2026-02-09' },
+      HAPPSTMNDS: { sector: 'Technology',  cap: 'Small', bought: '2026-02-09' },
+      LAURUSLABS: { sector: 'Pharma',      cap: 'Mid',   bought: '2026-02-09' },
+    };
     let inv = 0, val = 0, valued = true;
     const rows = SWING_R.rows.map((s) => {
       const q = prices[s.ns]; const ltp = q && !q.error ? q.price : null;
       const v = ltp != null ? s.qty * ltp : null; const pl = v != null ? v - s.inv : null;
+      const m = META[s.sym] || {};
       inv += s.inv; if (v != null) val += v; else valued = false;
-      return { ...s, ltp, val: v, pl, pct: pl != null ? (pl / s.inv) * 100 : null };
+      return { ...s, ltp, val: v, pl, pct: pl != null ? (pl / s.inv) * 100 : null, day: q && !q.error ? q.pct : null, sector: m.sector, cap: m.cap, bought: m.bought };
     });
     return { rows, inv, val, pl: val - inv, pct: inv ? ((val - inv) / inv) * 100 : 0, valued };
   }, [prices]);
+
+  // Swing is overnight delivery equity (NSE, marked-to-market live) — reclassified
+  // as part of the INDIAN EQUITY sleeve, NOT F&O trading. `indianEq` = held holdings
+  // + swing; it feeds net worth, the allocation/sleeve breakdown and the header card.
+  // The holdings-only `indian` stays for the per-stock XIRR/benchmark analysis.
+  const indianEq = useMemo(() => {
+    const inv = indian.inv + swing.inv;
+    const val = (indian.val || 0) + (swing.val || 0);
+    return { inv, val, pl: val - inv, pct: inv ? ((val - inv) / inv) * 100 : 0, valued: indian.valued && swing.valued };
+  }, [indian, swing]);
+
+  // Combined equity analytics = held holdings + swing (swing entered as cashflows at
+  // its buy dates). Feeds the Indian tab's CAGR / benchmarks / sector mix / winner-
+  // drag; the Zerodha-only inStats still backs the AI overview.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const eqStats = useMemo(() => {
+    const swTxns = swing.rows.filter((r) => r.bought).map((r) => ({ date: r.bought, invested: r.inv }));
+    return equityStats([...indian.rows, ...swing.rows], indianEq.val, indianEq.valued, [...TRANSACTIONS, ...swTxns]);
+  }, [indian, swing, indianEq, hist, now]);
 
   const swingSorted = useMemo(() => {
     const arr = [...swing.rows]; const { key, dir } = swSort;
@@ -590,9 +648,10 @@ function Dashboard() {
   //                 the only figure allowed near net worth.
   const ytdRealised = FY.s01.fy2627.net + FY.s02.fy2627.net;
   const ytdOwn      = Math.round(FY.s01.fy2627.net * algoOwnFactor(ALGO.s01)) + FY.s02.fy2627.net;
-  const ytdTotal    = swing.valued ? ytdOwn + swing.pl : null;
-  // Account-level total for the Trading tab (its S01/S02 subs are account figures)
-  const ytdAccountTotal = swing.valued ? ytdRealised + swing.pl : null;
+  // Swing P&L is no longer trading — it lives in the Indian-equity sleeve (net
+  // worth) now, so the Trading figures are pure F&O.
+  const ytdTotal    = ytdOwn;       // own F&O share — the only trading figure shown near NW
+  const ytdAccountTotal = ytdRealised; // full F&O account P&L for the Trading tab
   const cfEntering  = Math.abs(FY.carryforward.find((c) => c.accent).val);
   const cfAfterRealised = cfEntering - ytdRealised;
 
@@ -633,7 +692,7 @@ function Dashboard() {
     // can't honestly sit next to the live-priced sleeves. It stays fully
     // tracked on the Algo tab and the header card.
     const pfValue = cmpfCorpus(new Date());
-    const totalAssets = indian.val + usInr + fdValue + mf.totVal + pfValue;
+    const totalAssets = indianEq.val + usInr + fdValue + mf.totVal + pfValue;
     const loan = loanOutstanding(new Date());
     const cmpsPaid = cmpsTotalPaid(new Date());
     const cmpsPension = cmpsMonthlyPension(new Date());
@@ -642,12 +701,12 @@ function Dashboard() {
     const cmpsVested = cmpsService >= CMPS_MIN_QUALIFYING_YEARS;
     const cmpsVestYear = CMPS_VEST_DATE.getFullYear();
     return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService, cmpsVested, cmpsVestYear };
-  }, [indian.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
+  }, [indianEq.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
 
   const projInvested0 = useMemo(() => {
-    const gains = (indian.pl || 0) + (usData.pl || 0) * fxRate + (mf.totVal - mf.totCost) + (fds.accrued || 0);
+    const gains = (indianEq.pl || 0) + (usData.pl || 0) * fxRate + (mf.totVal - mf.totCost) + (fds.accrued || 0);
     return Math.round((ov.nw || 0) - gains);
-  }, [ov.nw, indian.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
+  }, [ov.nw, indianEq.pl, usData.pl, fxRate, mf.totVal, mf.totCost, fds.accrued]);
 
   // ── Macro sensitivities — computed weekly-returns regressions (with R²) ──────
   // US-tech beta carves out the gold ETF (GLDM) so a defensive holding doesn't
@@ -863,7 +922,7 @@ function Dashboard() {
   // rather than showing stale hardcoded figures as if they were real.
   const donutSegs = [
     { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,      color: ALLOC_COLORS.fd     },
-    { key: 'indian', label: 'Indian Stocks',  value: indian.val || 0, color: ALLOC_COLORS.indian },
+    { key: 'indian', label: 'Indian Stocks',  value: indianEq.val || 0, color: ALLOC_COLORS.indian },
     { key: 'us',     label: 'US Stocks',      value: ov.usInr   || 0, color: ALLOC_COLORS.us     },
     { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,    color: ALLOC_COLORS.mf     },
     { key: 'elss',   label: 'ELSS',           value: mf.elss.value,   color: ALLOC_COLORS.elss   },
@@ -873,7 +932,7 @@ function Dashboard() {
   const projSleeves = useMemo(
     () => donutSegs.map((s) => ({ ...s, value: Math.round(s.value || 0) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [Math.round(ov.fdValue || 0), Math.round(indian.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.pfValue || 0)],
+    [Math.round(ov.fdValue || 0), Math.round(indianEq.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.pfValue || 0)],
   );
 
   // Per-sleeve value + invested basis (keys match projSleeves) — feeds the daily
@@ -881,13 +940,13 @@ function Dashboard() {
   // waffles. invested = cost basis, so value − invested = that sleeve's gain.
   const sleeveBasis = useMemo(() => ({
     fd:     { v: Math.round(ov.fdValue || 0),    i: Math.round((fds.principal || 0) + (fds.maturedCash || 0)) },
-    indian: { v: Math.round(indian.val || 0),    i: Math.round(indian.inv || 0) },
+    indian: { v: Math.round(indianEq.val || 0),    i: Math.round(indianEq.inv || 0) },
     us:     { v: Math.round(ov.usInr || 0),      i: Math.round((usData.inv || 0) * fxRate) },
     mf:     { v: Math.round(mf.jio.value || 0),  i: Math.round(mf.jio.cost || 0) },
     elss:   { v: Math.round(mf.elss.value || 0), i: Math.round(mf.elss.cost || 0) },
     pf:     { v: Math.round(ov.pfValue || 0),    i: cmpfPaid(new Date()) },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [ov.fdValue, ov.usInr, ov.pfValue, indian.val, indian.inv, usData.inv, fxRate, mf.jio.value, mf.jio.cost, mf.elss.value, mf.elss.cost, fds.principal, fds.maturedCash]);
+  }), [ov.fdValue, ov.usInr, ov.pfValue, indianEq.val, indianEq.inv, usData.inv, fxRate, mf.jio.value, mf.jio.cost, mf.elss.value, mf.elss.cost, fds.principal, fds.maturedCash]);
 
   // Live single-day P&L per sleeve (INR). Only the equity sleeves move intraday
   // (live quotes carry day-change); FD/MF/CMPF accrue smoothly, so ~0 for today.
@@ -1006,8 +1065,8 @@ function Dashboard() {
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
     { label: 'Indian equity', tab: 1, live: markets.nse,
-      val: indian.valued ? <LiveInrC n={indian.val} /> : <Skel w={58} h={18} />,
-      sub: indian.valued ? <span className={cl(indian.pl)}><SInrC n={indian.pl} /> · {pctS(indian.pct)}</span> : `${INDIAN.length} stocks` },
+      val: indian.valued ? <LiveInrC n={indianEq.val} /> : <Skel w={58} h={18} />,
+      sub: indian.valued ? <span className={cl(indianEq.pl)}><SInrC n={indianEq.pl} /> · {pctS(indianEq.pct)}</span> : `${INDIAN.length} stocks + swing` },
     { label: 'Mutual funds', tab: 3,
       val: <LiveInrC n={mf.totVal} />,
       sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · {mf.navLive ? 'live NAV' : mf.navDate ? `NAV ${new Date(mf.navDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : 'NAV n/a'}</> },
@@ -1066,7 +1125,7 @@ function Dashboard() {
                   Assets <strong>{indian.valued && usdInr ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
                   {indian.valued && usdInr && (
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Indian ${inrFull(Math.round(indian.val))} + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
+                      title={`Indian ${inrFull(Math.round(indianEq.val))} (incl. swing) + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
                       {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
                     </span>
                   )}
@@ -1077,7 +1136,7 @@ function Dashboard() {
                 <div>
                   {indian.valued && usdInr ? (
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; realised + swing MTM)`}>
+                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; F&O realised)`}>
                       incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
                     </span>
                   ) : 'excl. trading'}
@@ -1115,10 +1174,11 @@ function Dashboard() {
           )}
           {tab === 1 && (
             <IndianTab indian={indian} indianDayPl={indianDay.dayPl} indianDayPct={indianDay.dayPct}
-              inStats={inStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
+              inStats={eqStats} indianRisk={indianRisk} inSorted={inSorted} inSort={inSort} sortIn={sortIn}
               flash={flash} markets={markets} lastUpdate={lastUpdate} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
-              INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
-              indianRec={indianRec} />
+              INDIAN={INDIAN} INDIAN_REALIZED={indianRealized} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
+              indianRec={indianRec}
+              swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw} swingRec={SWING_R} />
           )}
           {tab === 2 && (
             <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
@@ -1135,8 +1195,7 @@ function Dashboard() {
               US={US} US_REALIZED={US_REALIZED} US_DIVIDENDS={US_DIVIDENDS} FY={FY} />
           )}
           {tab === 5 && (
-            <AlgoTab swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw} swingRec={SWING_R}
-              markets={markets} ytdTotal={ytdAccountTotal} ytdRealised={ytdRealised}
+            <AlgoTab ytdTotal={ytdAccountTotal} ytdRealised={ytdRealised}
               cfEntering={cfEntering} cfAfterRealised={cfAfterRealised}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               ALGO={ALGO} FY={FY} />

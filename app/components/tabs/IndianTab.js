@@ -26,10 +26,28 @@ const IN_COLS = [
 const capColor = { Large: 'var(--blu)', Mid: 'var(--pur)', Small: 'var(--cyn)' };
 
 export default function IndianTab({
-  indian, indianDayPl, indianDayPct, inStats, indianRisk, inSorted, inSort, sortIn,
+  indian, inStats, indianRisk, inSorted, inSort, sortIn,
   flash, markets, lastUpdate, insights, insightsOn, insightsFirstLoad,
   INDIAN, INDIAN_REALIZED, CORPORATE_ACTIONS, FY, indianRec,
+  swing, swingSorted, swSort, sortSw, swingRec,
 }) {
+  // Combined Indian-equity book = Zerodha holdings (mom) + Upstox swing (me),
+  // tracked together for accounting. The value/P&L summary cards and the merged
+  // Holdings table run off this; the performance analytics (CAGR / benchmarks /
+  // sector mix) still run off the core Zerodha book until the swing cashflows +
+  // sector tags land.
+  const eqValued = indian.valued && swing.valued;
+  const eqInv = indian.inv + swing.inv;
+  const eqVal = (indian.val || 0) + (swing.val || 0);
+  const eqPl = eqVal - eqInv;
+  const eqPct = eqInv ? (eqPl / eqInv) * 100 : 0;
+  const _eqDay = [...indian.rows, ...swing.rows].reduce((a, r) => {
+    if (r.val == null || r.day == null) return a;
+    const prev = r.val / (1 + r.day / 100);
+    return { dayPl: a.dayPl + (r.val - prev), prevTot: a.prevTot + prev };
+  }, { dayPl: 0, prevTot: 0 });
+  const eqDayPl = _eqDay.dayPl, eqDayPct = _eqDay.prevTot ? (_eqDay.dayPl / _eqDay.prevTot) * 100 : 0;
+  const DIV_STYLE = { background: 'var(--sur2)', color: 'var(--txt3)', fontSize: 'var(--fs-2xs)', textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700, padding: '8px 10px' };
   return (
     <div>
       <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--blu)" />
@@ -41,29 +59,29 @@ export default function IndianTab({
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
-          <div className="vmd"><InrC n={indian.inv} /></div>
-          <div className="sub">{INDIAN.length} positions · ~<Rs />30K each, equal-weight</div>
+          <div className="vmd"><InrC n={eqInv} /></div>
+          <div className="sub">{INDIAN.length} core + {swing.rows.length} swing · 2 accounts</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
-          <div className="vmd">{indian.valued ? <LiveInrC n={indian.val} /> : <Skel w={90} h={20} />}</div>
+          <div className="vmd">{eqValued ? <LiveInrC n={eqVal} /> : <Skel w={90} h={20} />}</div>
           <div className="sub">marked live · NSE LTP</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
-          <div className={'vmd ' + (indian.valued ? cl(indian.pl) : '')}>
-            {indian.valued ? <LiveSInrC n={indian.pl} /> : <Skel w={80} h={20} />}
+          <div className={'vmd ' + (eqValued ? cl(eqPl) : '')}>
+            {eqValued ? <LiveSInrC n={eqPl} /> : <Skel w={80} h={20} />}
           </div>
-          <div className="sub">{indian.valued ? pctS(indian.pct) + ' on cost' : 'value − invested'}</div>
+          <div className="sub">{eqValued ? pctS(eqPct) + ' on cost' : 'value − invested'}</div>
         </div>
       </div>
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
-          <div className={'vmd ' + (indian.valued ? cl(indianDayPl) : '')}>
-            {indian.valued ? <LiveSInrC n={indianDayPl} /> : <Skel w={80} h={20} />}
+          <div className={'vmd ' + (eqValued ? cl(eqDayPl) : '')}>
+            {eqValued ? <LiveSInrC n={eqDayPl} /> : <Skel w={80} h={20} />}
           </div>
-          <div className="sub">{indian.valued ? `${pctS(indianDayPct)} vs prev close` : 'intraday move'}</div>
+          <div className="sub">{eqValued ? `${pctS(eqDayPct)} vs prev close` : 'intraday move'}</div>
         </div>
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
@@ -97,7 +115,7 @@ export default function IndianTab({
               { label: 'Winner',  cls: 'grn', sym: inStats.winner?.sym,  pct: inStats.winner?.pct },
               { label: 'Drag',    cls: 'red', sym: inStats.laggard?.sym, pct: inStats.laggard?.pct },
               { label: 'Largest', cls: '',    sym: inStats.topPos?.sym,
-                sub: inStats.topPos && indian.val ? ((inStats.topPos.val / indian.val)*100).toFixed(0) + '% of book' : 'by value' },
+                sub: inStats.topPos && inStats.value ? ((inStats.topPos.val / inStats.value)*100).toFixed(0) + '% of book' : 'by value' },
             ].map(({ label, cls, sym, pct, sub }) => (
               <div className="mini" key={label}>
                 <div className="lbl" style={{ marginBottom: 4 }}>{label}</div>
@@ -123,8 +141,8 @@ export default function IndianTab({
         <div className="fxc" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           <div className="ctitle">Holdings</div>
           <div className="sub" style={{ margin: 0 }}>
-            {indian.valued
-              ? <><InrC n={indian.inv} /> → <InrC n={indian.val} /> · <span className={cl(indian.pl)}><SInrC n={indian.pl} /> ({pctS(indian.pct)})</span></>
+            {eqValued
+              ? <><InrC n={eqInv} /> → <InrC n={eqVal} /> · <span className={cl(eqPl)}><SInrC n={eqPl} /> ({pctS(eqPct)})</span></>
               : 'loading live prices…'}
           </div>
         </div>
@@ -143,6 +161,8 @@ export default function IndianTab({
               </tr>
             </thead>
             <tbody>
+              {/* Zerodha · mom — the core delivery book */}
+              <tr><td colSpan={9} style={DIV_STYLE}>{(indianRec?.source || 'Zerodha')} · mom · {INDIAN.length} holdings</td></tr>
               {inSorted.map((s) => (
                 <tr key={s.sym}>
                   <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">
@@ -165,18 +185,39 @@ export default function IndianTab({
                   <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>{s.day != null ? pctS(s.day) : '—'}</td>
                 </tr>
               ))}
+              {/* Upstox · me — swing positions: different account, same equity book */}
+              <tr><td colSpan={9} style={DIV_STYLE}>{(swingRec?.source || 'Upstox')} · me · swing · {swing.rows.length}</td></tr>
+              {swingSorted.map((s) => (
+                <tr key={'sw-' + s.sym}>
+                  <td style={{ color: 'var(--txt)', fontWeight: 600 }} className="mono">{s.sym}</td>
+                  <td className="ra mut mono">{s.qty}</td>
+                  <td className="ra mut mono"><InrF n={s.cost} /></td>
+                  <td className="ra mono">
+                    {s.ltp != null
+                      ? <span key={'sw-' + s.sym + '-' + s.ltp} className={flash[s.ns] ? 'flash-' + flash[s.ns] : ''}><InrF n={s.ltp} /></span>
+                      : <Skel w={48} h={11} />}
+                  </td>
+                  <td className="ra mono"><InrC n={s.inv} /></td>
+                  <td className="ra mono">{s.val != null ? <InrC n={s.val} /> : '—'}</td>
+                  <td className={'ra mono ' + (s.pl != null ? cl(s.pl) : 'mut')}>{s.pl != null ? <SInrF n={s.pl} /> : '—'}</td>
+                  <td className={'ra mono ' + (s.pct != null ? cl(s.pct) : 'mut')}>{s.pct != null ? pctS(s.pct) : '—'}</td>
+                  <td className={'ra mono ' + (s.day != null ? cl(s.day) : 'mut')}>{s.day != null ? pctS(s.day) : '—'}</td>
+                </tr>
+              ))}
               <tr className="tot">
-                <td colSpan={4}>Total — {INDIAN.length} positions</td>
-                <td className="ra"><InrC n={indian.inv} /></td>
-                <td className="ra">{indian.valued ? <InrC n={indian.val} /> : '…'}</td>
-                <td className={'ra ' + cl(indian.pl)}>{indian.valued ? <SInrC n={indian.pl} /> : '…'}</td>
-                <td className={'ra ' + cl(indian.pl)}>{indian.valued ? pctS(indian.pct) : '…'}</td>
+                <td colSpan={4}>Total — {INDIAN.length + swing.rows.length} holdings · 2 accounts</td>
+                <td className="ra"><InrC n={eqInv} /></td>
+                <td className="ra">{eqValued ? <InrC n={eqVal} /> : '…'}</td>
+                <td className={'ra ' + cl(eqPl)}>{eqValued ? <SInrC n={eqPl} /> : '…'}</td>
+                <td className={'ra ' + cl(eqPl)}>{eqValued ? pctS(eqPct) : '…'}</td>
                 <td />
               </tr>
             </tbody>
           </table>
         </div>
-        <div className="sub" style={{ marginTop: 10 }}>click headers to sort · live NSE LTP, flashes on each tick</div>
+        <div className="sub" style={{ marginTop: 10 }}>
+          click headers to sort · live NSE LTP · <b>Zerodha</b> (mom) + <b>Upstox</b> (me) combined for accounting · swing held overnight (STCG/LTCG, not F&amp;O income)
+        </div>
       </div>
 
       <div className="g2 sec">
