@@ -408,7 +408,9 @@ body::before {
 .lbl {
   font-size: var(--fs-2xs); color: var(--acc); text-transform: uppercase;
   letter-spacing: .07em; margin-bottom: 6px; font-weight: 600;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* RSP-004: short labels WRAP rather than truncate ("UNREALIZED P&…") on narrow
+     summary cards; min-width:0 lets the flex/grid child actually shrink. */
+  overflow-wrap: anywhere; min-width: 0;
 }
 /* Summary-card value (Section 0a): 24px mono. */
 .vlg { font-size: var(--fs-2xl); font-weight: 800; font-family: var(--mono); letter-spacing: -.5px; }
@@ -550,6 +552,21 @@ body::before {
    stay compact instead of running off the page. Short tables just don't scroll. */
 .ovx {
   overflow-x: auto; -webkit-overflow-scrolling: touch;
+  /* RSP-002: OWN the overflow — a wide table (even pathological unbreakable content)
+     can never push the document; it scrolls inside .ovx instead of breaking out. */
+  max-width: 100%; min-width: 0;
+  /* Faint, state-driven scroll shadow (Lea Verou technique): a right/left shadow
+     shows only while there is more table to reveal that way. The cover gradients
+     (background-attachment: local) ride with the content to mask the shadow at the
+     true edges; the shadows (scroll) stay pinned to the container. --bg follows theme. */
+  background:
+    linear-gradient(90deg, var(--bg), transparent 70%) 0 0,
+    linear-gradient(270deg, var(--bg), transparent 70%) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.20), transparent) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.20), transparent) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 30px 100%, 30px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 .ovx thead th {
   position: sticky; top: 0; z-index: 1;
@@ -848,6 +865,13 @@ body::before {
 
 .ov-fill { flex: 1 1 auto; }
 
+/* RSP-004: at tablet (incl. 1024) the 3-up summary grid goes 2-up so card values
+   (.vsm/.vmd) have room and stop ellipsis-clipping (mf returns cX49@768, cX7@1024).
+   Threshold 1080 covers the in-scope 768/820/1024 widths; 1280+ keeps 3-up. Must sit
+   ABOVE the <=720 phone rule so the 1-col phone layout still wins below 720. */
+@media (max-width: 1080px) {
+  .g3 { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 720px) {
   .g3 { grid-template-columns: 1fr; }
   .g2 { grid-template-columns: 1fr; }
@@ -1404,12 +1428,27 @@ body { padding: 0; }
 /* Always one row of 5 — on narrow screens the row scrolls sideways rather
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
-  display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 20px;
-  /* No overflow clip on desktop — it was slicing the rounded corners + active
-     glow off the first/last cards. Scroll is re-enabled below 1080px where the
-     row no longer fits (see media query). */
+  display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 20px;
+  /* RSP-001: the asset-card row is ALWAYS a single non-wrapping strip that OWNS its
+     overflow (overflow-x:auto + min-width:0) — a too-wide row, or a big value injected
+     into a card, scrolls INSIDE the strip and never pushes the document. 160px min
+     keeps the longest label on one line (no "INDIAN EQUIT…"). The vertical padding
+     gives the card drop-shadow room inside the scroll clip. */
+  overflow-x: auto; min-width: 0; padding: 8px 4px; scrollbar-width: none;
 }
 .hdr-cards::-webkit-scrollbar { display: none; }
+/* State-driven scroll affordance: edge fades appear ONLY when there is more to reveal
+   that way (the .edge-l/.edge-r classes are toggled from page.js on scroll/resize, so
+   a silent scroll never replaces the silent clip). Uses --bg so it follows the theme. */
+.hdr-cards-wrap { position: relative; min-width: 0; }
+.hdr-cards-wrap::before, .hdr-cards-wrap::after {
+  content: ''; position: absolute; top: 8px; bottom: 8px; width: 38px; z-index: 3;
+  pointer-events: none; opacity: 0; transition: opacity .15s var(--ease);
+}
+.hdr-cards-wrap::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+.hdr-cards-wrap::after  { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
+.hdr-cards-wrap.edge-l::before { opacity: .92; }
+.hdr-cards-wrap.edge-r::after  { opacity: .92; }
 .hdr-card {
   display: flex; flex-direction: column; justify-content: center; /* centre content in the taller, hero-matched height */
   text-align: left; cursor: pointer; min-width: 0;
@@ -1444,9 +1483,13 @@ body { padding: 0; }
 /* One tier below the hero label + tighter tracking so the long labels
    ("FIXED DEPOSITS", "INDIAN EQUITY" + live-dot) fit on one line inside the
    gutter-narrowed cards instead of truncating to "INDIAN EQU…". */
-.hdr-card .lbl { font-size: var(--fs-sm); letter-spacing: .035em; line-height: 1.25; margin-bottom: 20px; color: var(--txt2); }
+/* Header nav label stays ONE line (RSP-001 sizes the card wide enough so it never
+   truncates); keep nowrap here so it doesn't inherit the summary-card wrap above. */
+.hdr-card .lbl { font-size: var(--fs-sm); letter-spacing: .035em; line-height: 1.25; margin-bottom: 20px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdr-card .vmd { font-size: clamp(17px, 1.85vw, 28px); line-height: 0.85; letter-spacing: -.5px; }
-.hdr-card .sub { font-size: var(--fs-md); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* RSP-001: --fs-sm so the sub ("₹1.00L · 21.22%") fits the card at desktop width
+   (cleared the 4px ellipsis clip at 1280); still ellipsis-safe inside the strip. */
+.hdr-card .sub { font-size: var(--fs-sm); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 1080px) {
   /* Keep the uniform hero + 5-card row side by side; the card row scrolls sideways

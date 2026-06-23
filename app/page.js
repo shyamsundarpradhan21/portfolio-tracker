@@ -233,6 +233,26 @@ function Dashboard() {
   const headerRef                   = useRef(null);
   const prevNw                      = useRef(null);
 
+  // RSP-001: state-driven scroll affordance for the asset-card strip. Edge fades show
+  // only when there is more to reveal that direction, so the horizontal scroll is never
+  // silent. ResizeObserver catches both viewport changes and card-content width shifts.
+  const hdrCardsRef                 = useRef(null);
+  const [hdrEdge, setHdrEdge]       = useState({ l: false, r: false });
+  const updHdrEdge = useCallback(() => {
+    const el = hdrCardsRef.current; if (!el) return;
+    const l = el.scrollLeft > 2;
+    const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setHdrEdge((p) => (p.l === l && p.r === r ? p : { l, r }));
+  }, []);
+  useEffect(() => {
+    const el = hdrCardsRef.current; if (!el) return;
+    updHdrEdge();
+    const ro = new ResizeObserver(updHdrEdge);
+    ro.observe(el);
+    window.addEventListener('resize', updHdrEdge);
+    return () => { ro.disconnect(); window.removeEventListener('resize', updHdrEdge); };
+  }, [updHdrEdge]);
+
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'macro'];
 
@@ -1130,8 +1150,10 @@ function Dashboard() {
               </div>
             </button>
 
-            {/* Asset-class cards — primary navigation */}
-            <div className="hdr-cards">
+            {/* Asset-class cards — primary navigation (single-row scroll strip; the
+                wrapper carries the state-driven edge-fade affordance — RSP-001). */}
+            <div className={'hdr-cards-wrap' + (hdrEdge.l ? ' edge-l' : '') + (hdrEdge.r ? ' edge-r' : '')}>
+            <div className="hdr-cards" ref={hdrCardsRef} onScroll={updHdrEdge}>
               {headerCards.map((c) => (
                 <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '') + (c.cls ? ' ' + c.cls : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
                   <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
@@ -1139,6 +1161,7 @@ function Dashboard() {
                   <div className="sub">{c.sub}</div>
                 </button>
               ))}
+            </div>
             </div>
           </div>
         </div>
