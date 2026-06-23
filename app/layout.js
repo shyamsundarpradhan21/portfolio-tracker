@@ -2,6 +2,7 @@ import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Source_Sans_3, Playfair_Display, JetBrains_Mono } from 'next/font/google';
+import DevAnnotation from './components/shared/DevAnnotation';
 
 // latin-ext is required for the rupee sign — U+20B9 is not in Google's latin
 // subset, so without it every ₹ falls back to a system font with different
@@ -36,6 +37,7 @@ export default function RootLayout({ children }) {
       <body>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {children}<Analytics /><SpeedInsights />
+        {process.env.NODE_ENV !== 'production' && <DevAnnotation />}
       </body>
     </html>
   );

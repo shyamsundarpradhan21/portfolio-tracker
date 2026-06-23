@@ -21,6 +21,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "agentation": "^3.0.2",
     "puppeteer": "^25.1.0",
     "vitest": "^4.1.9"
   }
