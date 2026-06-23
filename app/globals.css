@@ -57,7 +57,7 @@
   --glass-shadow: 0 10px 34px rgba(0,0,0,.30);
   --glass-blur: 22px;
   --glass-sat:  140%;
-  --mesh-op:    .9;                       /* ambient mesh strength */
+  --mesh-op:    .3;                       /* ambient mesh strength — dimmed so the fixed mesh barely parallaxes on scroll */
   /* Scenario accents (projection outlook); the day layer deepens them */
   --sc-cons: #3B82F6;
   --sc-base: #A78BFA;  /* violet — was #34D399, identical to the gain-green --grn */
@@ -121,7 +121,7 @@
   --glass-shadow: 0 18px 44px rgba(40,60,90,.16);
   --glass-blur: 30px;
   --glass-sat:  170%;
-  --mesh-op:    1.2;
+  --mesh-op:    .42;
   --sc-cons: #2563EB;
   --sc-base: #7C3AED;  /* violet — was #059669, too close to the gain-green --grn */
   --sc-opt:  #B45309;
@@ -206,7 +206,7 @@
    drowns the data. Dial the mesh right down so the theme is a hint and the
    figures read clearly (overrides both the night .9 and the day 1.2). */
 :root[data-tab="algo"], :root[data-tab="fd"], :root[data-tab="macro"] {
-  --mesh-op: .4;
+  --mesh-op: .15;
 }
 
 /* ── Market Wrap theme = live sentiment ──────────────────────────────────────
