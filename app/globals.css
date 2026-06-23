@@ -1688,6 +1688,12 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
   body { padding: 0; }
   .main { padding: 0 14px 32px; }
   .main .topbar { padding: 12px 0 10px; }
+  /* The full-bleed content column blankets nearly the whole viewport on a narrow
+     portrait screen (gutters drop to 14px), so the corner mesh blobs read far
+     weaker than on desktop. Lift the mesh ~1.5× of whatever the theme set so the
+     ambient glow still carries through the gutters + frosted cards — scaled off
+     --mesh-op (not a flat value) to keep the day/night/risk-off relationship. */
+  body::before { opacity: calc(var(--mesh-op) * 1.5); }
 }
 
 /* Pulse = a standout topbar pill — deliberately NOT part of the grey market
