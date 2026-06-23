@@ -1068,21 +1068,24 @@ function Dashboard() {
 
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
+    // Every card's sub is the uniform growth/dip figure: absolute gain · return %,
+    // coloured by direction (cl). FD's % is accrued-on-principal; Trading's is P&L
+    // on own capital — so all five read the same shape.
     { label: 'Indian equity', cls: 'hc-indian', tab: 1, live: markets.nse,
       val: indian.valued ? <LiveInrC n={indianEq.val} /> : <Skel w={58} h={18} />,
-      sub: indian.valued ? <span className={cl(indianEq.pl)}>{pctS(indianEq.pct)} · <SInrC n={indianEq.pl} /></span> : `${INDIAN.length} stocks + swing` },
+      sub: indian.valued ? <span className={cl(indianEq.pl)}><SInrC n={indianEq.pl} /> · {pctS(indianEq.pct)}</span> : `${INDIAN.length} stocks + swing` },
     { label: 'Mutual funds', cls: 'hc-mf', tab: 3,
       val: <LiveInrC n={mf.totVal} />,
-      sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · {mf.navLive ? 'live NAV' : mf.navDate ? `NAV ${new Date(mf.navDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : 'NAV n/a'}</> },
+      sub: mf.totVal ? <span className={cl(mf.totVal - mf.totCost)}><SInrC n={mf.totVal - mf.totCost} /> · {pctS(mf.totRet)}</span> : 'NAV n/a' },
     { label: 'Fixed deposits', cls: 'hc-fd', tab: 2,
       val: <LiveInrC n={ov.fdValue} />,
-      sub: <><span className="grn"><InrF n={fds.accrued} /></span> accrued</> },
+      sub: <span className={cl(fds.accrued)}><SInrC n={fds.accrued} /> · {pctS(fds.principal ? (fds.accrued / fds.principal) * 100 : 0)}</span> },
     { label: 'US equity', cls: 'hc-us', tab: 4, live: markets.nyse,
       val: usData.val ? <LiveInrC n={ov.usInr} /> : <Skel w={58} h={18} />,
-      sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
+      sub: usData.val ? <span className={cl(usData.pl)}><SInrC n={usData.pl * fxRate} /> · {pctS(usData.pct)}</span> : `${US.length} holdings` },
     { label: 'Trading', cls: 'hc-algo', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,
-      sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
+      sub: ytdTotal != null ? <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /> · {pctS(STATIC.algo ? (ytdTotal / STATIC.algo) * 100 : 0)}</span> : 'own capital · off-NW' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
