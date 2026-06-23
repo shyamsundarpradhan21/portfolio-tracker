@@ -1070,7 +1070,7 @@ function Dashboard() {
   const headerCards = [
     { label: 'Indian equity', cls: 'hc-indian', tab: 1, live: markets.nse,
       val: indian.valued ? <LiveInrC n={indianEq.val} /> : <Skel w={58} h={18} />,
-      sub: indian.valued ? <span className={cl(indianEq.pl)}><SInrC n={indianEq.pl} /> · {pctS(indianEq.pct)}</span> : `${INDIAN.length} stocks + swing` },
+      sub: indian.valued ? <span className={cl(indianEq.pl)}>{pctS(indianEq.pct)} · <SInrC n={indianEq.pl} /></span> : `${INDIAN.length} stocks + swing` },
     { label: 'Mutual funds', cls: 'hc-mf', tab: 3,
       val: <LiveInrC n={mf.totVal} />,
       sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · {mf.navLive ? 'live NAV' : mf.navDate ? `NAV ${new Date(mf.navDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : 'NAV n/a'}</> },

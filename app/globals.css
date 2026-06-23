@@ -1207,7 +1207,7 @@ body::before {
    (the taller period-tile row) and the scenario tabs match it at any zoom. */
 .pjx-switch { display: grid; margin-top: 10px; }
 .pjx-switch > * { grid-area: 1 / 1; min-width: 0; }
-.pjx-gcards { display: grid; grid-template-columns: repeat(5, minmax(0, 190px)); justify-content: space-between; gap: 10px; }
+.pjx-gcards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .pjx-gcell {
   /* tall, narrow tile: label / value+% / waffle stacked top-to-bottom */
   display: flex; flex-direction: column; gap: 6px;
@@ -1411,15 +1411,15 @@ body { padding: 0; }
 .hdr-hero {
   display: flex; flex-direction: column; justify-content: center;
   text-align: left; cursor: pointer; min-width: 0;
-  background: color-mix(in srgb, var(--acc) 6%, var(--glass-bg));
-  border: .5px solid color-mix(in srgb, var(--acc) 16%, var(--glass-brd));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  /* fully transparent — no glass fill/border/shadow; the net-worth figure reads as
+     a heading, distinct from the glass nav cards. Transparent border preserves the
+     box size so the row stays height-aligned with the cards. */
+  background: transparent;
+  border: .5px solid transparent;
   padding: 12px 20px; border-radius: 14px;
-  transition: border-color .15s var(--ease), box-shadow .2s var(--ease), background .6s ease;
+  transition: border-color .15s var(--ease);
 }
-.hdr-hero:hover { border-color: color-mix(in srgb, var(--acc) 34%, var(--glass-brd)); }
+.hdr-hero:hover { border-color: color-mix(in srgb, var(--acc) 20%, transparent); }
 .hdr-hero.active .page-header-lbl { color: var(--acc); }
 
 /* Compact icon toggles (AI / theme / refresh) — small, not tab-sized */
