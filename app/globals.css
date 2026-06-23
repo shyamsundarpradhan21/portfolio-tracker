@@ -750,8 +750,9 @@ body::before {
 .fdderiv .fdd b { font-family: var(--mono); font-size: var(--fs-md); font-weight: 600; }
 .fdderiv-read { font-size: var(--fs-xs); color: var(--txt2); line-height: 1.5; }
 
-/* market-internals quick-card (qc): used as the macro-grid cells (sentiment, hot
-   sectors, movers) — see .macro-grid for the layout that places them. */
+/* market-internals vertical stack: sentiment band · treemap square · movers split */
+.wstack { display: flex; flex-direction: column; gap: 9px; }
+.wstack .qc { min-height: 0; }
 .qc { background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
 .qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
 /* Legend mirrors the treemap's sheat(): mix toward --sur2 (the panel surface) so
@@ -763,7 +764,7 @@ body::before {
 .senthd em { font-size: var(--fs-xs); font-weight: 700; font-style: normal; }
 .qc.sent.greed { background: color-mix(in srgb, var(--grn) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--grn) 22%, var(--brd)); }
 .qc.sent.fear { background: color-mix(in srgb, var(--red) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--red) 22%, var(--brd)); }
-/* hot-sectors card spans rows 1-2 of the macro grid; treemap fills the tall cell */
+/* treemap square — fills the tall cell, bigger tiles */
 .tree .treemap { flex: 1; align-content: stretch; }
 .tree .tm { min-height: 74px; flex: 1 1 92px; }
 .sgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
@@ -782,13 +783,11 @@ body::before {
 .sfac { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 8px; line-height: 1.5; }
 /* US sentiment: leading (differentiated) vs coincident (collapsed) signal rows */
 .srcp { margin-left: 8px; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: .04em; color: var(--acc2); background: var(--acc-bg); padding: 1px 6px; border-radius: 5px; text-transform: none; }
-.usdet { margin-top: 5px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; align-items: start; }
+.usdet { margin-top: 9px; display: flex; flex-direction: column; }
 .usdx { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--txt3); opacity: .75; font-style: italic; }
 /* breadth-divergence callout — the "index level is lying" flag, always visible */
-.usdiv { grid-column: 1 / -1; margin: 0 0 3px; padding: 3px 8px; font-size: var(--fs-2xs); line-height: 1.22; color: var(--txt2); background: color-mix(in srgb, var(--sc-opt) 11%, transparent); border-left: 2px solid var(--sc-opt); border-radius: 4px; }
-/* single-line signal row: label · mono value · descriptor (the sentiment card is
-   wide — spans the left half of the macro grid — so the three fit on one line) */
-.lsig { display: grid; grid-template-columns: 1fr auto auto; column-gap: 9px; align-items: baseline; padding: 4px 0; font-size: var(--fs-xs); border-top: .5px solid var(--brd2); }
+.usdiv { margin: 0 0 5px; padding: 5px 9px; font-size: var(--fs-2xs); line-height: 1.35; color: var(--txt2); background: color-mix(in srgb, var(--sc-opt) 11%, transparent); border-left: 2px solid var(--sc-opt); border-radius: 4px; }
+.lsig { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; gap: 9px; padding: 4px 0; font-size: var(--fs-xs); border-top: .5px solid var(--brd2); }
 .lsig:first-of-type { border-top: 0; }
 .lsig.context { opacity: .68; } /* DII alongside FII — context, not a scored signal */
 .lsig.context .ll, .lsig.context .lv, .lsig.context .lt { color: var(--txt3); }
@@ -796,17 +795,13 @@ body::before {
 .lv { font-family: var(--mono); font-weight: 700; color: var(--txt); text-align: right; }
 /* descriptor is neutral — colour is carried only by the group outlook labels + headline */
 .lt { font-size: var(--fs-2xs); font-weight: 600; text-transform: capitalize; text-align: right; min-width: 62px; color: var(--txt2); }
-.uscol { margin-top: 2px; min-width: 0; }
-/* desktop: Leading | Coincident side-by-side, split by a vertical divider */
-.uscol + .uscol { border-left: .5px solid var(--brd2); padding-left: 14px; }
-/* phones: the sentiment card is narrow — stack the two groups so each signal row
-   keeps its full single-line width (label · value · descriptor) and never crams */
-@media (max-width: 560px) {
-  .usdet { grid-template-columns: 1fr; }
-  .uscol + .uscol { border-left: 0; padding-left: 0; border-top: .5px solid var(--brd2); padding-top: 3px; }
-}
-.uscol > .uschd { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; padding: 2px 0 3px; }
-.uscol > .uschd.grn { color: var(--grn); } .uscol > .uschd.red { color: var(--red); }
+.uscol { margin-top: 2px; }
+.uscol + .uscol { border-top: .5px solid var(--brd2); }
+.uscol > summary { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; cursor: pointer; list-style: none; padding: 5px 0; user-select: none; }
+.uscol > summary.grn { color: var(--grn); } .uscol > summary.red { color: var(--red); }
+.uscol > summary::-webkit-details-marker { display: none; }
+.uscol > summary::before { content: '\25B8'; margin-right: 5px; }
+.uscol[open] > summary::before { content: '\25BE'; }
 .mvlist { display: flex; flex-direction: column; gap: 1px; }
 .mv { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs); padding: 2px 0; }
 .mv .s { color: var(--txt2); font-weight: 600; }
@@ -833,37 +828,27 @@ body::before {
 .ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .ncard .nm { font-size: var(--fs-2xs); color: var(--txt3); margin-top: auto; }
 
-/* Macro grid — 50:50 main split. Left two columns (25% + 25%) sum to the right
-   column (50%). Hot sectors spans rows 1-2; market sentiment and portfolio news
-   span the left half. FII/DII fills the bottom-right cell (India only); when it's
-   absent (US view) portfolio news takes the full width of row 3 (.no-fii). */
-.macro-grid {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,2fr);
-  /* row 1 sizes to the sentiment card; rows 2-3 are capped so the calendar and
-     news lists SCROLL inside their cells instead of inflating the whole grid */
-  grid-template-rows: auto 224px 252px;
-  grid-template-areas: "senti senti hot" "mov cal hot" "news news fii";
-  gap: 10px; margin-bottom: 12px; align-items: stretch;
-}
-.macro-grid.no-fii { grid-template-areas: "senti senti hot" "mov cal hot" "news news news"; }
-.macro-grid > * { min-width: 0; min-height: 0; }
-/* uniform cell chrome — the .card cells (news/calendar/FII-DII) match the .qc minis */
-.macro-grid > .card { background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 11px; padding: 9px 11px; margin: 0; display: flex; flex-direction: column; overflow: hidden; }
-.macro-grid > .qc.sent { grid-area: senti; }
-.macro-grid > .qc.tree { grid-area: hot; }
-.macro-grid > .qc.movers { grid-area: mov; padding: 0; }
-.macro-grid > .calcard { grid-area: cal; }
-.macro-grid > .feedcard { grid-area: news; }
-.macro-grid > .fdcard { grid-area: fii; }
-.macro-grid > .qc.movers .mvcols { flex: 1; }
-.macro-grid .calcard .ecal { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
-.macro-grid .feedcard .feed { flex: 1; min-height: 0; max-height: none; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+/* Wrap mid-row: left = market insights (tall), right column = portfolio news
+   (3-up, scrollable) stacked over the upcoming calendar (scrollable). */
+/* Insights (left) drives the row height; the right column stretches to match it,
+   so news + calendar together never exceed the insights card. */
+.wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+@media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; align-items: start; } }
+/* overflow:hidden zeroes the flex auto-min so the cards bound to their share and
+   SCROLL inside, instead of a long news list inflating the whole row. Insights
+   (left) stays the height authority; news : calendar = 1 : 1. */
+.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
+.wrap-mid-r .feedcard { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 290px; min-height: 0; }
+.wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.wrap-mid-r .calcard .ecal { flex: 1; max-height: 290px; min-height: 0; overflow-y: auto; padding-right: 4px; }
 @media (max-width: 920px) {
-  .macro-grid, .macro-grid.no-fii { grid-template-columns: 1fr; grid-template-rows: none; grid-template-areas: "senti" "hot" "mov" "cal" "news" "fii"; }
-  .macro-grid > .qc.tree { min-height: 260px; }
-  .macro-grid > .calcard, .macro-grid > .feedcard, .macro-grid > .fdcard { min-height: 240px; }
+  .wrap-mid-r { overflow: visible; }
+  .wrap-mid-r .feedcard, .wrap-mid-r .calcard { flex: none; overflow: visible; }
+  .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr 1fr; max-height: 520px; }
+  .wrap-mid-r .calcard .ecal { max-height: 230px; }
 }
+@media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
 
 /* macro percentile sliders — multi-column packing so the 5 groups fill the card
    (balanced columns) instead of orphaning the 5th group on its own grid row. */
