@@ -1382,21 +1382,11 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  /* Capped, centred content column. At 1920px the old full-bleed column stretched
-     the cards edge-to-edge; capping at 1600 and centring gives side breathing room
-     at full font size (the look you otherwise only got by zooming the browser out).
-     Flat 28px gutters — the auto margins, not padding, now provide the breathing
-     room, so the header cards keep their width and labels don't truncate. Below
-     1600 the column fills the viewport with the same 28px gutters. */
+  /* Full-bleed content column — fills the viewport (minus the flat gutters) so the
+     dashboard never reads as a narrow centred panel floating over the ambient mesh.
+     The 32px side padding is the only breathing room; no max-width cap / auto margins. */
   padding: 24px 32px 40px;
-  max-width: 1560px;
-  margin: 0 auto;
 }
-/* Big landscape displays (large PC monitors, TVs): widen the column so the
-   dashboard doesn't strand the screen as a narrow centred strip. The 1920 laptop
-   view (≤2099px) is unchanged — this only kicks in on genuinely large screens. */
-@media (min-width: 2100px) { .main { max-width: 1840px; } }
-@media (min-width: 3200px) { .main { max-width: 2560px; } }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
 .topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; justify-self: end; }

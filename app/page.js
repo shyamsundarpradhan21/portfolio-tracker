@@ -1216,10 +1216,6 @@ function Dashboard() {
           )}
         </div>
         </AiContext.Provider>
-
-        <div style={{ textAlign: 'center', color: 'var(--txt3)', fontSize: 'var(--fs-2xs)', marginTop: 32, paddingBottom: 16 }}>
-          Live prices via Yahoo Finance · auto-refresh every 15 min · personal use only
-        </div>
       </main>
     </div>
   );
