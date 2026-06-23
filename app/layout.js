@@ -30,7 +30,9 @@ const THEME_BOOT =
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${body.variable} ${serif.variable} ${mono.variable}`}>
+    // suppressHydrationWarning: THEME_BOOT sets data-time on <html> before paint,
+    // so the client tree intentionally differs from the server's — expected, not a bug.
+    <html lang="en" suppressHydrationWarning className={`${body.variable} ${serif.variable} ${mono.variable}`}>
       <body>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {children}<Analytics /><SpeedInsights />

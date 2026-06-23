@@ -667,7 +667,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       {/* live allocation strip — top of the card; the growth title + Value/Return + range
           sit below its legends. Drifts with the scrubber; hover brightens a segment. */}
       {footer && <div className="pjx-alloc">{footer}</div>}
-      <div className="fxc" style={{ alignItems: 'baseline' }}>
+      <div className="fxc pjx-head" style={{ alignItems: 'baseline' }}>
         <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
           {view === 'return' ? 'Performance · returns vs market' : scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
           {!dataReady && (
@@ -676,7 +676,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="pjx-head-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="pjx-viewtoggle" role="tablist" aria-label="Chart view">
             <button role="tab" aria-selected={view === 'value'} className={view === 'value' ? 'on' : ''} onClick={() => setView('value')}>Value</button>
             <button role="tab" aria-selected={view === 'return'} className={view === 'return' ? 'on' : ''} onClick={() => { stopPlay(); setT(0); setView('return'); }}>Return</button>

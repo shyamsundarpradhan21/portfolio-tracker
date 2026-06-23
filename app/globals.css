@@ -687,6 +687,17 @@ body::before {
 .fdstat .k { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
 .fdstat b { font-family: var(--mono); font-size: var(--fs-xl); }
 
+/* FII derivative positioning strip — under the cash chart, same card. Quieter than
+   the cash stats above it (it's the supporting read); direction kept by colour. */
+.fdderiv { margin-top: 14px; padding-top: 14px; border-top: .5px solid var(--brd2); display: flex; flex-direction: column; gap: 10px; }
+.fdderiv-h { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.fdderiv-h .hint { margin-left: auto; font-weight: 600; letter-spacing: 0; text-transform: none; font-style: italic; }
+.fdderiv-row { display: flex; gap: 32px; }
+.fdderiv .fdd { display: flex; flex-direction: column; gap: 4px; }
+.fdderiv .fdd .k { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
+.fdderiv .fdd b { font-family: var(--mono); font-size: var(--fs-base); font-weight: 600; }
+.fdderiv-read { font-size: var(--fs-xs); color: var(--txt2); line-height: 1.5; }
+
 /* market-internals quick-card (qc): used as the macro-grid cells (sentiment, hot
    sectors, movers) — see .macro-grid for the layout that places them. */
 .qc { background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
@@ -1083,6 +1094,12 @@ body::before {
 .pjx-viewtoggle button { font: inherit; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 12px; background: transparent; color: var(--txt3); border: none; cursor: pointer; transition: background .18s ease, color .18s ease; }
 .pjx-viewtoggle button.on { background: var(--acc-bg); color: var(--acc); }
 .pjx-viewtoggle button:not(.on):hover { color: var(--txt2); }
+/* Narrow widths: let the growth-card header wrap so the title and the
+   Value/Return toggle + range label stop colliding (the toggle clipped to "RETU"). */
+@media (max-width: 560px) {
+  .pjx-head { flex-wrap: wrap; row-gap: 6px; }
+  .pjx-head-right { flex-wrap: wrap; row-gap: 6px; }
+}
 
 /* Performance curve — legend + line keys */
 .pjx-perf-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: var(--fs-xs); color: var(--txt2); }

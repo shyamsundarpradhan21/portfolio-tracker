@@ -88,11 +88,34 @@ export function recordSnapshot(snap) {
 // On load we merge KV → local (KV wins per date); on record we push the point up.
 // Both degrade silently when no store is wired — local behaviour is unchanged.
 
+// Learned from the first GET: `stale:true` means the server has no KV store wired
+// (e.g. local dev with no creds), so POSTs would only 503. Until we know, the first
+// push is parked (not fired) so we neither spam the console nor lose the point:
+// once the GET resolves we flush it if KV is up, or drop it if it isn't.
+let kvAvailable = null;
+let pendingPush = null;
+
+function postSnapshot(snap) {
+  try {
+    fetch('/api/snapshots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // `sl` = per-sleeve {v,i} allocation/basis → the historical-allocation waffles need it.
+      body: JSON.stringify({ d: snap.d, nw: snap.nw, assets: snap.assets, invested: snap.invested, sl: snap.sl }),
+      cache: 'no-store', keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}
+
 export async function syncSnapshotsFromKv() {
   try {
     const res = await fetch('/api/snapshots', { cache: 'no-store' });
     if (!res.ok) return getSnapshots();
-    const { snapshots } = await res.json();
+    const json = await res.json();
+    kvAvailable = !json.stale;
+    if (kvAvailable && pendingPush) postSnapshot(pendingPush);
+    pendingPush = null; // resolved either way — drop any parked point
+    const { snapshots } = json;
     if (!Array.isArray(snapshots) || !snapshots.length) return getSnapshots();
     const byDate = new Map(getSnapshots().map((s) => [s.d, s]));
     snapshots.forEach((s) => { if (s && s.d && Number.isFinite(s.nw)) byDate.set(s.d, s); }); // KV wins on collision
@@ -104,13 +127,7 @@ export async function syncSnapshotsFromKv() {
 
 export function pushSnapshotToKv(snap) {
   if (!snap || !snap.d || !Number.isFinite(snap.nw)) return;
-  try {
-    fetch('/api/snapshots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // `sl` = per-sleeve {v,i} allocation/basis → the historical-allocation waffles need it.
-      body: JSON.stringify({ d: snap.d, nw: snap.nw, assets: snap.assets, invested: snap.invested, sl: snap.sl }),
-      cache: 'no-store', keepalive: true,
-    }).catch(() => {});
-  } catch {}
+  if (kvAvailable === null) { pendingPush = snap; return; } // park until the GET tells us if KV is wired
+  if (kvAvailable === false) return;                        // no store wired — skip (would only 503)
+  postSnapshot(snap);
 }
