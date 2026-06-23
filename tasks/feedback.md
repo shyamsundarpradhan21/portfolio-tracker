@@ -78,6 +78,15 @@ commit on `main`, push to `origin/main`. Do not create `claude/*` branches.
 (Caught: I kept spinning up a `claude/*` branch per task; the user asked plainly
 to stop and work on main — "ship to main.. work on main.. why are u creating branches".)
 
+### Always commit finished work — don't leave it sitting in the working tree
+Once a change is done and verified, **commit it on the current branch without
+being asked** ("commit it always"). Don't stop to ask "want me to commit?" — the
+default is yes. Committing ≠ publishing: **only push / merge to `main` when the
+user explicitly says so**. So a normal task ends with a local commit on the
+working branch and no push, unless they say push/ship/merge.
+(Caught: I kept finishing edits and asking whether to commit; the user wants the
+commit done automatically, just held back from origin/main until told.)
+
 ### "push" / "ship" = commit on main and push
 When the user says **push** or **ship**, commit the work on `main` and push to
 `origin/main` — no confirmation needed unless something genuinely conflicts.
