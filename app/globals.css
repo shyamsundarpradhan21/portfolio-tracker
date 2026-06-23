@@ -915,13 +915,13 @@ body::before {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  /* Fluid floor 46 → cap 58. The figure must STRETCH to ~the subtext's last letter:
-     the caption's widest line (~241px) needs ≥46px here, and 40px left it visibly
-     short ("reduced from its past glory" — live feedback). Caps at 58 (not the old
-     64 that towered ~28px over the card row) to keep the hero height close to the
-     asset cards. Uses vw (not cqw) because the hero column hugs the figure — a
-     container unit would be circular (figure → column → font → figure). */
-  font-size: clamp(46px, 4.8vw, 58px) !important;
+  /* The figure STRETCHES to the last letter of the caption's 2nd line ("incl.
+     trading … · Liabilities …"). Measured: at 46px the glyph ran 41px short of that
+     line; the glyph grows ~3.85px per 1px of font, so ~57px lands the right edge on
+     it. The 2nd line is fixed text (≈constant width across viewports), so the figure
+     is near-constant ~57px — only the largest monitors nudge to the 60 cap. Uses vw
+     (not cqw) since the hero column hugs the figure (a container unit is circular). */
+  font-size: clamp(57px, 4.8vw, 60px) !important;
   font-weight: 800 !important;
   letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
   line-height: 0.85; /* the mono font carries ~10% extra leading; trim it so the
