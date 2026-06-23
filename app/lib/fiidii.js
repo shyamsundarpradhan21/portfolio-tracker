@@ -26,14 +26,21 @@ export function getFiiDiiTrail() {
 // one point per session date; a same-date re-read overwrites (NSE revises the
 // provisional figure to final the next morning). Non-numeric nets are skipped so
 // a stale/garbled fetch never pollutes the trail with a zero that reads as flat.
-export function recordFiiDii(latest) {
+// derivs: /api/premarket fiiDerivs — captured onto the SAME point (point.der) so
+// FII derivative positioning has a per-session history alongside the cash net.
+export function recordFiiDii(latest, derivs) {
   if (!latest || !latest.date) return getFiiDiiTrail();
   const fii = latest.fii?.net, dii = latest.dii?.net;
   if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) return getFiiDiiTrail();
   try {
     const arr = getFiiDiiTrail();
     const point = { d: latest.date, fii: isFinite(fii) ? fii : null, dii: isFinite(dii) ? dii : null };
+    if (derivs && !derivs.stale && derivs.fii) {
+      point.der = { ...derivs.fii, stance: derivs.stance, divergence: derivs.divergence, rIdxFut: derivs.retail?.idxFut };
+    }
     const i = arr.findIndex((p) => p.d === point.d);
+    // keep an already-captured der if this re-read couldn't get one (CSV flaked)
+    if (i >= 0 && !point.der && arr[i].der) point.der = arr[i].der;
     if (i >= 0) arr[i] = point; else arr.push(point);
     // NSE dates are 'DD-Mon-YYYY'; sort by parsed time so ordering is stable.
     arr.sort((a, b) => new Date(a.d) - new Date(b.d));

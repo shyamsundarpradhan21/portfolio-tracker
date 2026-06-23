@@ -318,11 +318,12 @@ export async function GET() {
   const [cues, sessions, usSectors, usMovers, usVix, fiidii, indices] = await Promise.all([
     fetchCues(), fetchSessions(), fetchUsSectors(), fetchUsMovers(), yhQuote('^VIX', 'Yahoo ^VIX'), fetchFiiDii(cookie), fetchIndices(cookie),
   ]);
-  // Persist + attach the server trail when KV is configured; null otherwise.
-  const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null);
-  if (trail) fiidii.trail = trail;
   // FII derivative positioning — keyed to the cash feed's authoritative session date.
   const fiiDerivs = await fetchParticipantStats(cookie, fiidii && !fiidii.stale ? fiidii.latest?.date : null);
+  // Persist + attach the server trail when KV is configured; null otherwise. The
+  // positioning is captured onto the same session point so it builds a history too.
+  const trail = await persistTrail(fiidii && !fiidii.stale ? fiidii.latest : null, fiiDerivs);
+  if (trail) fiidii.trail = trail;
   return Response.json(
     {
       fetchedAt: new Date().toISOString(),

@@ -734,21 +734,29 @@ body::before {
 .fdleg .ln { width: 11px; height: 2px; background: var(--txt); }
 /* FII/DII latest figures — the card's headline values: a spacious 3-stat footer that
    fills the bottom section, large mono values, direction kept by colour (cls). */
-.fdstats { margin-top: 16px; padding-top: 16px; border-top: .5px solid var(--brd2); }  /* grid via .statgrid */
+.fdstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; padding-top: 16px; border-top: .5px solid var(--brd2); }
+/* one strip, two captioned groups: cash FII/DII/net (₹ Cr) | FII Idx/Stk Fut
+   (contracts). Captions occupy their own row above the values via grid areas. */
+.fdstats.has-d { grid-template-columns: repeat(5, 1fr); grid-template-areas: "cl cl cl cr cr" "fii dii net idx stk"; }
+.fdstats.only-d { grid-template-columns: repeat(2, 1fr); grid-template-areas: "cr cr" "idx stk"; }
 .fdstat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .fdstat .k { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
 .fdstat b { font-family: var(--mono); font-size: var(--fs-xl); }
-
-/* FII derivative positioning strip — under the cash chart, same card. Quieter than
-   the cash stats above it (it's the supporting read); direction kept by colour. */
-.fdderiv { margin-top: 14px; padding-top: 14px; border-top: .5px solid var(--brd2); display: flex; flex-direction: column; gap: 10px; }
-.fdderiv-h { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.fdderiv-h .hint { margin-left: auto; font-weight: 600; letter-spacing: 0; text-transform: none; font-style: italic; }
-.fdderiv-row { display: flex; gap: 32px; }
-.fdderiv .fdd { display: flex; flex-direction: column; gap: 4px; }
-.fdderiv .fdd .k { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
-.fdderiv .fdd b { font-family: var(--mono); font-size: var(--fs-md); font-weight: 600; }
-.fdderiv-read { font-size: var(--fs-xs); color: var(--txt2); line-height: 1.5; }
+.fdstat .dw { font-size: var(--fs-sm); font-weight: 600; } /* long/short word — colour inherits from the value */
+/* group captions — restore the context the two separate footer blocks carried */
+.fdcap { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--txt3); font-weight: 700; text-align: center; padding-bottom: 2px; align-self: end; }
+.fdcap-l { grid-area: cl; } .fdcap-r { grid-area: cr; }
+.fdcell-fii { grid-area: fii; } .fdcell-dii { grid-area: dii; } .fdcell-net { grid-area: net; }
+.fdcell-idx { grid-area: idx; } .fdcell-stk { grid-area: stk; }
+/* vertical rule dividing the cash trio from the derivative pair (caption + values) */
+.fdstats .sep { border-left: .5px solid var(--brd2); }
+.fdstats.only-d .sep { border-left: 0; }
+/* derivative read-line: stance + divergence, one line under the strip */
+.fdderiv-read { margin-top: 12px; font-size: var(--fs-xs); color: var(--txt2); line-height: 1.5; }
+@media (max-width: 640px) {
+  .fdstats.has-d { grid-template-columns: repeat(3, 1fr); grid-template-areas: "cl cl cl" "fii dii net" "cr cr cr" "idx stk stk"; row-gap: 12px; }
+  .fdstats.has-d .sep { border-left: 0; }
+}
 
 /* market-internals vertical stack: sentiment band · treemap square · movers split */
 .wstack { display: flex; flex-direction: column; gap: 9px; }

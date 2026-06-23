@@ -1013,8 +1013,8 @@ function Dashboard() {
     const serverTrail = premarket?.fiidii?.trail;
     if (Array.isArray(serverTrail) && serverTrail.length) { setFiidiiTrail(serverTrail); return; }
     const latest = premarket?.fiidii && !premarket.fiidii.stale ? premarket.fiidii.latest : null;
-    if (latest?.date) setFiidiiTrail(recordFiiDii(latest));
-  }, [premarket?.fiidii?.trail, premarket?.fiidii?.latest?.date]);
+    if (latest?.date) setFiidiiTrail(recordFiiDii(latest, premarket?.fiiDerivs));
+  }, [premarket?.fiidii?.trail, premarket?.fiidii?.latest?.date, premarket?.fiiDerivs?.asOf]);
 
   // Ledger-reconstructed weekly history fills the curve before real dailies
   // began. Computed fresh per load (nothing synthetic is persisted); real

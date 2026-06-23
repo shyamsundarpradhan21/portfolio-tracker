@@ -85,7 +85,7 @@ async function kvClient() {
 
 // Upsert today's FII/DII point into the KV trail (deduped by date, time-sorted, capped).
 // Returns the trail array, or null when there's no store / nothing live to record.
-export async function persistTrail(latest) {
+export async function persistTrail(latest, derivs) {
   const kv = await kvClient();
   if (!kv || !latest?.date) return null;
   const fii = latest.fii?.net, dii = latest.dii?.net;
@@ -93,7 +93,11 @@ export async function persistTrail(latest) {
     const arr = (await kv.get(KV_KEY)) || [];
     if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) return arr.length ? arr : null;
     const point = { d: latest.date, fii: isFinite(fii) ? fii : null, dii: isFinite(dii) ? dii : null };
+    if (derivs && !derivs.stale && derivs.fii) {
+      point.der = { ...derivs.fii, stance: derivs.stance, divergence: derivs.divergence, rIdxFut: derivs.retail?.idxFut };
+    }
     const i = arr.findIndex((p) => p.d === point.d);
+    if (i >= 0 && !point.der && arr[i].der) point.der = arr[i].der;
     if (i >= 0) arr[i] = point; else arr.push(point);
     arr.sort((a, b) => new Date(a.d) - new Date(b.d));
     const trimmed = arr.slice(-TRAIL_CAP);
