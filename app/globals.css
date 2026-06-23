@@ -1496,7 +1496,11 @@ body { padding: 0; }
 /* Header nav label stays ONE line (RSP-001 sizes the card wide enough so it never
    truncates); keep nowrap here so it doesn't inherit the summary-card wrap above. */
 .hdr-card .lbl { font-size: var(--fs-sm); letter-spacing: .035em; line-height: 1.25; margin-bottom: 20px; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hdr-card .vmd { font-size: clamp(17px, 1.85vw, 28px); line-height: 0.85; letter-spacing: -.5px; }
+/* Match the in-tab summary cards' value size (--fs-2xl) exactly — the old clamp
+   shrank these to ~17px, so the SAME figure read smaller in the nav card than
+   inside its tab (ambiguous) and looked dwarfed next to the net-worth hero. One
+   token, one size everywhere. */
+.hdr-card .vmd { font-size: var(--fs-2xl); line-height: 0.9; letter-spacing: -.5px; }
 /* RSP-001: --fs-sm so the sub ("₹1.00L · 21.22%") fits the card at desktop width
    (cleared the 4px ellipsis clip at 1280); still ellipsis-safe inside the strip. */
 .hdr-card .sub { font-size: var(--fs-sm); line-height: 1.35; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
