@@ -116,6 +116,39 @@ function FiiDiiChart({ trail }) {
   );
 }
 
+// ── FII derivative positioning strip — sits UNDER the cash chart in the same card.
+// The cash net (above) can read flat while the F&O book is firmly directional; this
+// surfaces the FII stance (net futures + options lean) the cash row hides, plus the
+// FII-vs-retail divergence. Open interest, in contracts. Direction by COLOUR + a
+// long/short word — no +/- glyph (house rule).
+function FiiDerivStrip({ derivs }) {
+  if (!derivs || derivs.stale || !derivs.fii) return null;
+  const { fii, retail, stance, divergence } = derivs;
+  const L = (n) => (n == null || !isFinite(n) ? '—' : `${(Math.abs(n) / 1e5).toFixed(2)}L`);
+  const word = (n) => (n > 0 ? 'long' : n < 0 ? 'short' : 'flat');
+  const dc = (n) => (n > 0 ? 'grn' : n < 0 ? 'red' : 'mut'); // long = green, short = red
+  const stanceCls = stance === 'bearish' ? 'red' : stance === 'bullish' ? 'grn' : 'mut';
+  const opt = [
+    fii.idxCall > 0 ? 'long calls' : fii.idxCall < 0 ? 'short calls' : null,
+    fii.idxPut > 0 ? 'long puts' : fii.idxPut < 0 ? 'short puts' : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div className="fdderiv">
+      <div className="fdderiv-h">Derivatives · positioning
+        <span className="hint">FII open interest · contracts</span>
+      </div>
+      <div className="fdderiv-row">
+        <div className="fdd"><span className="k">Idx Fut</span><b className={dc(fii.idxFut)}>{L(fii.idxFut)} {word(fii.idxFut)}</b></div>
+        <div className="fdd"><span className="k">Stk Fut</span><b className={dc(fii.stkFut)}>{L(fii.stkFut)} {word(fii.stkFut)}</b></div>
+      </div>
+      <div className="fdderiv-read">
+        {opt && <>{opt} → </>}<b className={stanceCls}>FII {stance}</b>
+        {divergence && retail && <> · <span className="mut">retail {word(retail.idxFut)} index futures — divergence</span></>}
+      </div>
+    </div>
+  );
+}
+
 // ── Market sentiment: a fear/greed score (0-100) from breadth + India VIX +
 // FII/DII net flow + Nifty momentum, with a red→amber→green gauge (à la the
 // Stratzy sentiment meter). Each factor degrades gracefully if absent.
@@ -453,7 +486,8 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII fills the bottom-right grid cell (India only); when absent, portfolio
   // news spans the full width of row 3 (see .macro-grid.no-fii).
-  const showFii = showIN && (ind.breadthAD || fdTrail.length >= 2);
+  const fiiDerivs = premarket?.fiiDerivs;
+  const showFii = showIN && (ind.breadthAD || fdTrail.length >= 2 || (fiiDerivs && !fiiDerivs.stale));
   // US-side sentiment inputs (Global view mirrors India minus FII/DII): sector
   // breadth (% of SPDR sectors green), US VIX, S&P 500 day move + day movers.
   const usSecLive = usSectors.filter((s) => s.pct != null);
@@ -535,6 +569,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
               <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
             </div>
             <FiiDiiChart trail={fiidiiTrail} />
+            <FiiDerivStrip derivs={fiiDerivs} />
           </div>
         )}
       </div>
