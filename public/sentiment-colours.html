@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-time="night">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Market Wrap — sentiment colours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --mono:'JetBrains Mono',monospace; --body:'Source Sans 3',system-ui,sans-serif; --title:'Playfair Display',Georgia,serif;
+  --bg:#0C0C12; --txt:#E8E8EC; --txt2:#868693; --txt3:#79798B; --grn:#34D399; --red:#F87171;
+}
+:root[data-time="day"]{ --bg:#F4F6FA; --txt:#1C2533; --txt2:#5E6B80; --txt3:#636E84; --grn:#13A871; --red:#E1453B; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{background:var(--bg);color:var(--txt);font-family:var(--body);min-height:100vh;padding:34px 30px 60px;transition:background .4s,color .4s}
+h1{font-family:var(--title);font-weight:700;font-size:1.7rem;letter-spacing:-.3px}
+.sub{color:var(--txt2);font-size:.92rem;margin:6px 0 26px;max-width:760px;line-height:1.5}
+.toggle{position:fixed;top:20px;right:22px;display:inline-flex;gap:3px;padding:3px;border-radius:10px;background:rgba(128,128,128,.14);border:1px solid rgba(128,128,128,.2)}
+.toggle button{font:inherit;font-size:.78rem;font-weight:700;color:var(--txt2);background:none;border:none;padding:6px 14px;border-radius:7px;cursor:pointer}
+.toggle button.on{background:rgba(128,128,128,.25);color:var(--txt)}
+
+/* ── sentiment tiles ─────────────────────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:34px}
+@media (max-width:880px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.grid{grid-template-columns:1fr}}
+.tile{
+  position:relative;overflow:hidden;border-radius:18px;padding:20px;min-height:300px;
+  background:
+    radial-gradient(60% 55% at 16% 8%, color-mix(in srgb,var(--a) 42%,transparent), transparent 70%),
+    radial-gradient(56% 52% at 88% 96%, color-mix(in srgb,var(--a2) 38%,transparent), transparent 72%),
+    color-mix(in srgb,var(--a) 7%, var(--card,rgba(255,255,255,.04)));
+  border:1px solid color-mix(in srgb,var(--a) 26%, rgba(255,255,255,.1));
+  box-shadow:0 14px 40px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.12);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);
+  display:flex;flex-direction:column;gap:12px;
+}
+:root[data-time="day"] .tile{ --card:rgba(255,255,255,.55); box-shadow:0 14px 36px rgba(40,60,90,.13), inset 0 1px 0 #fff; }
+.state{font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--a) 78%,var(--txt))}
+.mood{font-family:var(--title);font-size:1.28rem;font-weight:700;color:var(--txt);line-height:1.1}
+.nw{font-family:var(--mono);font-weight:800;font-size:2.05rem;letter-spacing:-1.5px;line-height:1;margin-top:2px;
+  background:linear-gradient(105deg,var(--a),color-mix(in srgb,var(--a2) 60%,var(--a)),var(--a2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.chip{align-self:flex-start;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:8px;
+  background:color-mix(in srgb,var(--a) 18%,transparent);color:color-mix(in srgb,var(--a) 82%,var(--txt));
+  border:1px solid color-mix(in srgb,var(--a) 40%,transparent)}
+.gauge{margin-top:auto;height:7px;border-radius:5px;position:relative;
+  background:linear-gradient(90deg,#A33347,#EE8A3C 33%,#6982AD 60%,#9FE870)}
+.gauge i{position:absolute;top:-3px;width:3px;height:13px;border-radius:2px;background:var(--txt);transform:translateX(-50%);box-shadow:0 0 0 1.5px var(--bg)}
+.hex{font-family:var(--mono);font-size:.74rem;color:var(--txt3);letter-spacing:.02em}
+.desc{font-size:.82rem;color:var(--txt2);line-height:1.5}
+
+/* ── comparison swatch strip ─────────────────────────────────────────────── */
+.cmp-h{font-size:.74rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:12px}
+.swatches{display:flex;flex-wrap:wrap;gap:14px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:8px;width:120px}
+.sw .dot{width:84px;height:84px;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.25)}
+.sw .nm{font-size:.8rem;font-weight:700}
+.sw .hx{font-family:var(--mono);font-size:.72rem;color:var(--txt3)}
+.sw.ref .nm{color:var(--txt2)}
+.note{margin-top:18px;font-size:.82rem;color:var(--txt2);line-height:1.5;max-width:760px}
+.note b{color:var(--txt)}
+</style>
+</head>
+<body>
+<div class="toggle" id="tg">
+  <button data-v="night" class="on">☾ Night</button>
+  <button data-v="day">☀ Day</button>
+</div>
+
+<h1>Market Wrap — sentiment colours</h1>
+<p class="sub">The Wrap tab's accent tracks the live market regime (<code>classifyRegime</code>). Each state below is the whole-tab theme it produces. None of them are yellow/gold, so the Wrap theme never collides with Trading's Bright Sun.</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="cmp-h">All four vs Trading — proof of no overlap</div>
+<div class="swatches" id="sw"></div>
+<p class="note">Trading's <b>Bright Sun</b> is a pure yellow; the Wrap sentiments are lime, steel-blue, orange and oxblood — all clearly off it. The old neutral (gold) and watch (amber) were the culprits; they're gone.</p>
+
+<div class="cmp-h" style="margin-top:38px">Risk-off vs the reserved P&amp;L red — pick one</div>
+<div class="swatches">
+  <div class="sw ref"><div class="dot" style="background:#34D399"></div><div class="nm">P&amp;L gain</div><div class="hx">RESERVED ✦</div></div>
+  <div class="sw ref"><div class="dot" style="background:#F87171"></div><div class="nm">P&amp;L loss</div><div class="hx">RESERVED ✦</div></div>
+  <div class="sw"><div class="dot" style="background:#F0655C;outline:2px dashed var(--txt3);outline-offset:4px"></div><div class="nm">Coral (old)</div><div class="hx">too close ✗</div></div>
+  <div class="sw"><div class="dot" style="background:#A33347;box-shadow:0 0 0 2px rgba(255,255,255,.5),0 6px 18px rgba(0,0,0,.4)"></div><div class="nm">Oxblood ✓</div><div class="hx">#A33347</div></div>
+  <div class="sw"><div class="dot" style="background:#C42B49"></div><div class="nm">Crimson</div><div class="hx">#C42B49</div></div>
+  <div class="sw"><div class="dot" style="background:#7A2734"></div><div class="nm">Burgundy</div><div class="hx">#7A2734</div></div>
+</div>
+<p class="note">The reserved <b>P&amp;L loss red</b> (#F87171) is a light, clean salmon. <b>Coral</b> (old risk-off) sat right on it — dropped. <b>Oxblood</b> (chosen, ringed) is a deep wine-crimson: same stress feeling, unmistakably not the data red. <b>Crimson</b> is bolder/more magenta; <b>Burgundy</b> is darker still. Say the word if you want crimson or burgundy instead.</p>
+
+<script>
+  const NIGHT = {
+    'risk-on':  { mood:'Bullish',  a:'#9FE870', a2:'#C2F0A0', pos:'92%', desc:'Risk-on — conditions easing. Keeps the Sulu lime you liked.' },
+    'neutral':  { mood:'Neutral',  a:'#6982AD', a2:'#8AA1C6', pos:'55%', desc:'Balanced — the original Macro steel-blue "neutral chrome".' },
+    'watch':    { mood:'Watch',    a:'#EE8A3C', a2:'#F5A862', pos:'24%', desc:'Caution building — warm orange, clearly not the trading yellow.' },
+    'risk-off': { mood:'Risk-off', a:'#C42B49', a2:'#DC5A78', pos:'6%',  desc:'Stress / bearish — CRIMSON at night, OXBLOOD by day. Clear of the P&L red.' },
+  };
+  const DAY = {
+    'risk-on':  { ...NIGHT['risk-on'],  a:'#5C9E33', a2:'#6EB23F' },
+    'neutral':  { ...NIGHT['neutral'],  a:'#4A6491', a2:'#5E7AAA' },
+    'watch':    { ...NIGHT['watch'],    a:'#C2701E', a2:'#D6822A' },
+    'risk-off': { ...NIGHT['risk-off'], a:'#872B3C', a2:'#A03F50' },
+  };
+  const ORDER = ['risk-on','neutral','watch','risk-off'];
+  const TRADING = { night:'#FCDB32', day:'#B68A00' };
+
+  function render(){
+    const time = document.documentElement.getAttribute('data-time');
+    const SET = time==='day' ? DAY : NIGHT;
+    document.getElementById('grid').innerHTML = ORDER.map(k=>{
+      const s = SET[k];
+      return `<div class="tile" style="--a:${s.a};--a2:${s.a2}">
+        <div class="state">${k}</div>
+        <div class="mood">${s.mood}</div>
+        <div class="nw"><span style="font-family:var(--body)">₹</span>3,21,84,500</div>
+        <span class="chip">Market Wrap · ${s.mood}</span>
+        <div class="desc">${s.desc}</div>
+        <div class="hex">${s.a.toUpperCase()}</div>
+        <div class="gauge"><i style="left:${s.pos}"></i></div>
+      </div>`;
+    }).join('');
+    const sws = ORDER.map(k=>`<div class="sw"><div class="dot" style="background:${SET[k].a}"></div><div class="nm">${SET[k].mood}</div><div class="hx">${SET[k].a.toUpperCase()}</div></div>`).join('');
+    document.getElementById('sw').innerHTML = sws +
+      `<div class="sw ref"><div class="dot" style="background:${TRADING[time]||TRADING.night};opacity:.95"></div><div class="nm">Trading</div><div class="hx">${(TRADING[time]||TRADING.night).toUpperCase()}</div></div>`;
+  }
+  document.getElementById('tg').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.documentElement.setAttribute('data-time', b.dataset.v);
+    document.querySelectorAll('#tg button').forEach(x=>x.classList.toggle('on',x===b));
+    render();
+  });
+  render();
+</script>
+</body>
+</html>

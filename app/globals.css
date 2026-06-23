@@ -15,16 +15,18 @@
   --txt3: #79798B;  /* tertiary — ~4.6:1 on --bg (WCAG AA min; was #4A4A57 ≈2.2:1) */
   --grn:  #34D399;
   --red:  #F87171;
-  /* Categorical data palette — six maximally-separated hues for the allocation
-     sleeves (sunburst + pill waffles) so no two read alike at thumbnail size.
-     Green/red are reserved for P&L and never appear as a category. Spacing
-     (deep royal blue → bright cyan → violet → magenta, plus gold + grey hatch)
-     keeps the closest pair apart in BOTH hue and lightness. */
-  --blu:  #3B82F6;  /* indian — royal blue (deeper than us cyan) */
+  /* Categorical SLEEVE palette — six maximally-separated hues for the views that
+     COMBINE sleeves: the allocation bar/sunburst (ALLOC_COLORS), the Overview
+     asset cards, the iridescent net-worth hero and the home mesh. Kept DISTINCT
+     from the per-tab combo themes on purpose — the combo colours are perfect on a
+     single tab but go muddy blended together (two teals, two blues), whereas
+     these separated hues make the net-worth figure sing. Green/red stay reserved
+     for P&L. */
+  --blu:  #3B82F6;  /* indian — royal blue */
   --pur:  #A974FF;  /* mf — vivid violet */
-  --pnk:  #FF5CA8;  /* elss — hot magenta (clear of violet AND loss-red) */
-  --cyn:  #2DD4EC;  /* us — bright cyan (lighter than indian blue) */
-  --gld:  #E6C04A;  /* fd — gold (also FD-tab accent) */
+  --pnk:  #FF5CA8;  /* elss — hot magenta */
+  --cyn:  #2DD4EC;  /* us — bright cyan */
+  --gld:  #E6C04A;  /* fd — gold */
   --grn-bg: rgba(52,211,153,.1);
   --red-bg: rgba(248,113,113,.1);
   --blu-bg: rgba(59,130,246,.1);
@@ -98,6 +100,7 @@
   --txt3: #636E84;  /* tertiary — ~4.7:1 on light --bg (WCAG AA; was #94A0B4 ≈2.5:1) */
   --grn:  #13A871;
   --red:  #E1453B;
+  /* Sleeve palette (day) — deeper on the light canvas. */
   --blu:  #2563EB;  /* indian — royal blue */
   --pur:  #7C3AED;  /* mf — violet */
   --pnk:  #D81B7E;  /* elss — magenta */
@@ -124,47 +127,105 @@
   --sc-opt:  #B45309;
 }
 
-/* ── Layer 3: Per-tab colour PAIRS — the 6 combos (janm_ux) ──────────────────
-   Each tab carries its combo's lighter + darker colour; the two-tone derivation
-   below turns the pair into a full theme that INVERTS for day/night:
-     DAY   → lighter colour is the canvas, darker is the accent + ink
-     NIGHT → darker colour is the canvas, lighter is the accent + ink
-   6 combos × 2 modes = 12 themes. Overview stays neutral stone (the home view). */
-:root[data-tab="overview"] {
-  --acc: #C2A9A0; --acc2: #D8C4BC; --acc-bg: rgba(194,169,160,.14);
-}
-:root[data-time="day"][data-tab="overview"] {
-  --acc: #8A6F66; --acc2: #9E847A; --acc-bg: rgba(138,111,102,.12);
-}
-:root[data-tab="indian"] { --c-light: #FBEAEB; --c-dark: #3447AA; }  /* Royal Blue · Powder Pink */
-:root[data-tab="mf"]     { --c-light: #E4E4FF; --c-dark: #6260FF; }  /* Periwinkle · Lavender */
-:root[data-tab="us"]     { --c-light: #BDD9D7; --c-dark: #03363D; }  /* Jet Stream · Blue Whale */
-:root[data-tab="algo"]   { --c-light: #FCDB32; --c-dark: #141D38; }  /* Bright Sun · Big Stone */
-:root[data-tab="fd"]     { --c-light: #34E0A1; --c-dark: #000000; }  /* Turquoise · Black */
-:root[data-tab="macro"]  { --c-light: #9FE870; --c-dark: #163300; }  /* Sulu · Deep Fir */
+/* ── Layer 3: Per-tab accent colors (night) ─────────────────────────────────
+   Each tab gets a distinct accent that drives: active nav highlight,
+   card accent borders, badge colors, hdr-val gradient, and hkpi underlines. */
 
-/* ── DAY two-tone: lighter colour = canvas, darker = accent + ink ──────────── */
-:root[data-time="day"]:is([data-tab="indian"],[data-tab="mf"],[data-tab="us"],[data-tab="algo"],[data-tab="fd"],[data-tab="macro"]) {
-  --bg:   var(--c-light);
-  --acc:  var(--c-dark);
-  --acc2: color-mix(in srgb, var(--c-dark) 66%, #fff);
-  --acc-bg: color-mix(in srgb, var(--c-dark) 14%, transparent);
-  --txt:  color-mix(in srgb, var(--c-dark) 88%, #000);
-  --txt2: color-mix(in srgb, var(--c-dark) 58%, var(--c-light));
-  --txt3: color-mix(in srgb, var(--c-dark) 40%, var(--c-light));
-  --thead-bg: color-mix(in srgb, var(--c-light) 72%, #ffffff);
+/* Overview — Jet Stream teal (took the US accent). The home chrome is no longer
+   bland stone; the iridescent hero + per-sleeve cards still sit on top. */
+:root[data-tab="overview"] {
+  --acc: #BDD9D7; --acc2: #D8ECEA; --acc-bg: rgba(189,217,215,.16);
 }
-/* ── NIGHT two-tone: darker colour = canvas, lighter = accent + ink ────────── */
-:root[data-time="night"]:is([data-tab="indian"],[data-tab="mf"],[data-tab="us"],[data-tab="algo"],[data-tab="fd"],[data-tab="macro"]) {
-  --bg:   var(--c-dark);
-  --acc:  var(--c-light);
-  --acc2: color-mix(in srgb, var(--c-light) 78%, #fff);
-  --acc-bg: color-mix(in srgb, var(--c-light) 16%, transparent);
-  --txt:  color-mix(in srgb, var(--c-light) 92%, #fff);
-  --txt2: color-mix(in srgb, var(--c-light) 60%, var(--c-dark));
-  --txt3: color-mix(in srgb, var(--c-light) 44%, var(--c-dark));
-  --thead-bg: color-mix(in srgb, var(--c-dark) 80%, #ffffff);
+/* Indian Stocks — royal blue. NIGHT uses a BRIGHTER royal blue (#5479EE, ~5:1 on
+   the dark canvas) because the deep combo #3447AA scored only 2.44:1; DAY keeps
+   the deep #3447AA on Powder Pink (Layer 4b), where dark-on-light reads fine. */
+:root[data-tab="indian"] {
+  --acc: #5479EE; --acc2: #7A98F5; --acc-bg: rgba(84,121,238,.16);
 }
+/* US Stocks — periwinkle (took MF's old pair). NIGHT uses a brighter periwinkle
+   (#7370FF, ~5:1) so it clears contrast on dark; DAY uses a deeper periwinkle on
+   Lavender (Layer 4b), where it needs to be dark to read. */
+:root[data-tab="us"] {
+  --acc: #7370FF; --acc2: #948FFF; --acc-bg: rgba(115,112,255,.16);
+}
+/* Mutual Funds — Plum Wine accent (accent-only on the global canvas). New hue,
+   freed up when MF's Periwinkle/Lavender pair moved to US. Night runs a more
+   vibrant, saturated plum so it pops on the dark canvas. */
+:root[data-tab="mf"] {
+  --acc: #CB5189; --acc2: #E47BAB; --acc-bg: rgba(203,81,137,.17);
+}
+/* Fixed Deposits — Turquoise accent (accent-only) */
+:root[data-tab="fd"] {
+  --acc: #34E0A1; --acc2: #7CEFC4; --acc-bg: rgba(52,224,161,.14);
+}
+/* Algo — Bright Sun yellow accent (accent-only) */
+:root[data-tab="algo"] {
+  --acc: #FCDB32; --acc2: #FDE87A; --acc-bg: rgba(252,219,50,.14);
+}
+/* Macro — Sulu lime accent (accent-only) */
+:root[data-tab="macro"] {
+  --acc: #9FE870; --acc2: #C2F0A0; --acc-bg: rgba(159,232,112,.14);
+}
+
+/* ── Layer 4: Per-tab accent colors (day) — deepened so the accent reads on the
+   light day canvas. Indian + US carry their own light pair in Layer 4b, so they
+   are NOT here. */
+:root[data-time="day"][data-tab="overview"] {
+  --acc: #4E807C; --acc2: #5C8C88; --acc-bg: rgba(78,128,124,.14);  /* Jet Stream, deepened */
+}
+:root[data-time="day"][data-tab="mf"] {
+  --acc: #7C2F54; --acc2: #94476C; --acc-bg: rgba(124,47,84,.13);   /* Plum Wine, deepened */
+}
+:root[data-time="day"][data-tab="fd"] {
+  --acc: #0E9E72; --acc2: #14B884; --acc-bg: rgba(14,158,114,.13);
+}
+:root[data-time="day"][data-tab="algo"] {
+  --acc: #B68A00; --acc2: #D1A50A; --acc-bg: rgba(182,138,0,.13);
+}
+:root[data-time="day"][data-tab="macro"] {
+  --acc: #5C9E33; --acc2: #6EB23F; --acc-bg: rgba(92,158,51,.13);
+}
+
+/* ── Layer 4b: Light-pair backgrounds for Indian · US (DAY only) ─────────────
+   On DAY these two swap the canvas for their pair's light tint (Powder Pink /
+   Lavender); the vivid glass, dark text and day P&L already come from the global
+   day theme. On NIGHT no override applies → dark canvas + accent + night P&L, so
+   the day/night toggle flips them like every other tab. */
+:root[data-time="day"][data-tab="indian"] {
+  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
+  --acc: #3447AA; --acc2: #5A6BD0; --acc-bg: rgba(52,71,170,.14);   /* deep on pink */
+}
+:root[data-time="day"][data-tab="us"] {
+  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
+  --acc: #4F4DE0; --acc2: #6E6CEC; --acc-bg: rgba(79,77,224,.14);   /* deep on lavender (~4.9:1) */
+}
+
+/* ── Bleed fix — Trading (yellow) · FD (turquoise) · Wrap/Macro (lime) ────────
+   These accent-only tabs are data-heavy with bright accents and lots of P&L /
+   heat / flow colour; the strong ambient mesh washes the page in the accent and
+   drowns the data. Dial the mesh right down so the theme is a hint and the
+   figures read clearly (overrides both the night .9 and the day 1.2). */
+:root[data-tab="algo"], :root[data-tab="fd"], :root[data-tab="macro"] {
+  --mesh-op: .4;
+}
+
+/* ── Market Wrap theme = live sentiment ──────────────────────────────────────
+   The Macro/Wrap accent tracks the deterministic market regime (set on
+   <html data-regime> from classifyRegime). Bullish (risk-on) keeps the Sulu lime
+   set in the base block above, then it warms through gold (neutral) and amber
+   (watch) to coral-red (risk-off) — so the tab colour showcases the market mood.
+   The mesh is still dialed to .4 here, so even risk-off is a hint, not alarming. */
+/* Neutral = steel-blue (the Macro tab's original neutral-chrome hue), watch =
+   orange, risk-off = coral-red. Deliberately NONE of them yellow/gold, so the
+   Wrap theme never collides with Trading's Bright Sun. risk-on keeps the lime. */
+/* risk-off is OXBLOOD (deep wine-crimson), NOT the bright P&L red — green/red
+   stay reserved for P&L, so the sentiment never reads as a loss. */
+:root[data-tab="macro"][data-regime="neutral"]  { --acc: #6982AD; --acc2: #8AA1C6; --acc-bg: rgba(105,130,173,.15); }
+:root[data-tab="macro"][data-regime="watch"]    { --acc: #EE8A3C; --acc2: #F5A862; --acc-bg: rgba(238,138,60,.14); }
+:root[data-tab="macro"][data-regime="risk-off"] { --acc: #C42B49; --acc2: #DC5A78; --acc-bg: rgba(196,43,73,.16); }  /* night = crimson */
+:root[data-time="day"][data-tab="macro"][data-regime="neutral"]  { --acc: #4A6491; --acc2: #5E7AAA; --acc-bg: rgba(74,100,145,.13); }
+:root[data-time="day"][data-tab="macro"][data-regime="watch"]    { --acc: #C2701E; --acc2: #D6822A; --acc-bg: rgba(194,112,30,.13); }
+:root[data-time="day"][data-tab="macro"][data-regime="risk-off"] { --acc: #872B3C; --acc2: #A03F50; --acc-bg: rgba(135,43,60,.14); }  /* day = oxblood */
 
 /* Currency symbols (₹/$). No transform/inline-block here — those break
    -webkit-background-clip:text on the gradient net-worth headline and make
@@ -243,21 +304,21 @@ body::before {
   /* Accent-driven: each tab's mesh is built from its own accent pair, so the
      ambient glow matches the active tab theme. Overview overrides below. */
   background:
-    radial-gradient(46% 50% at 14% 8%,  color-mix(in srgb, var(--acc)  62%, transparent) 0%, transparent 70%),
-    radial-gradient(44% 48% at 88% 14%, color-mix(in srgb, var(--acc2) 58%, transparent) 0%, transparent 70%),
-    radial-gradient(54% 58% at 84% 90%, color-mix(in srgb, var(--acc)  46%, transparent) 0%, transparent 72%),
-    radial-gradient(46% 50% at 8% 94%,  color-mix(in srgb, var(--acc2) 50%, transparent) 0%, transparent 72%),
-    radial-gradient(42% 44% at 58% 34%, color-mix(in srgb, var(--acc2) 28%, transparent) 0%, transparent 62%);
+    radial-gradient(40% 44% at 14% 10%, color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 70%),
+    radial-gradient(38% 42% at 86% 14%, color-mix(in srgb, var(--acc2) 50%, transparent) 0%, transparent 70%),
+    radial-gradient(48% 52% at 82% 88%, color-mix(in srgb, var(--acc) 38%, transparent) 0%, transparent 72%),
+    radial-gradient(40% 44% at 8% 92%,  color-mix(in srgb, var(--acc2) 42%, transparent) 0%, transparent 72%);
 }
 /* Overview is the all-sleeves aggregate — keep its mesh multi-hue (the sleeve
    colours) rather than a single accent, so the home view stays rich. */
 :root[data-tab="overview"] body::before {
+  /* Four corner blobs in the sleeve hues — no centre blob (a --pnk glow used to
+     sit dead-centre behind the content and read as an out-of-place pink wash). */
   background:
     radial-gradient(38% 42% at 12% 8%,  color-mix(in srgb, var(--blu) 60%, transparent) 0%, transparent 70%),
     radial-gradient(36% 40% at 88% 12%, color-mix(in srgb, var(--cyn) 55%, transparent) 0%, transparent 70%),
     radial-gradient(46% 50% at 80% 90%, color-mix(in srgb, var(--pur) 55%, transparent) 0%, transparent 72%),
-    radial-gradient(42% 46% at 8% 92%,  color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 72%),
-    radial-gradient(34% 36% at 50% 50%, color-mix(in srgb, var(--pnk) 30%, transparent) 0%, transparent 70%);
+    radial-gradient(42% 46% at 8% 92%,  color-mix(in srgb, var(--acc) 55%, transparent) 0%, transparent 72%);
 }
 :root[data-time="day"] body::before { filter: saturate(.85) brightness(1.08); }
 @media (prefers-reduced-motion: reduce) { body::before { transition: none; } }
@@ -418,16 +479,6 @@ body::before {
 .ra { text-align: right; }
 .grn { color: var(--grn) !important; font-weight: 600; }
 .red { color: var(--red) !important; font-weight: 600; }
-/* P&L "neutralise" on the green-canvas combos (FD Turquoise · Macro Sulu): the
-   gain/loss colours would melt into a green page, so lift each figure onto a
-   frosted chip. Colour still carries direction — no +/- glyphs. The chip tints
-   from --txt so it stays legible in both the light (day) and dark (night) form. */
-:root[data-tab="fd"] :is(.grn, .red),
-:root[data-tab="macro"] :is(.grn, .red) {
-  display: inline-block; padding: 0 6px; border-radius: 6px; font-weight: 700;
-  background: color-mix(in srgb, var(--txt) 12%, transparent);
-  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
-}
 .acc { color: var(--acc) !important; font-weight: 600; }
 .mut { color: var(--txt3) !important; }
 .mono { font-family: var(--mono); }
@@ -851,6 +902,48 @@ body::before {
   -webkit-background-clip: text; background-clip: text;
   filter: none;
 }
+/* Overview is the aggregate of every sleeve — so its net-worth hero gets an
+   IRIDESCENT sweep of all the sleeve hues (blue → cyan → violet → pink → gold)
+   instead of the flat stone gradient. The home reads as rich as the colour-themed
+   tabs; the surrounding chrome stays neutral so the figure is the one showpiece.
+   nw-shine still animates the position, so the aurora shimmers. */
+:root[data-tab="overview"] .hdr-val {
+  background: linear-gradient(105deg,
+    var(--blu) 0%,
+    var(--cyn) 22%,
+    color-mix(in srgb, var(--pur) 65%, #fff) 38%,
+    #ffffff 50%,
+    var(--pur) 62%,
+    var(--pnk) 80%,
+    var(--gld) 100%
+  );
+  background-size: 320% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+:root[data-time="day"][data-tab="overview"] .hdr-val {
+  background: linear-gradient(105deg,
+    var(--blu) 0%,
+    var(--cyn) 26%,
+    var(--pur) 50%,
+    var(--pnk) 76%,
+    var(--gld) 100%
+  );
+  background-size: 280% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  filter: none;
+}
+/* Overview = the aggregate home: each asset card glows in ITS sleeve hue, so the
+   header reads as a vibrant all-sleeves control centre rather than uniform stone.
+   Overriding --acc on a card recolours its tint, border, label and active ring in
+   one line. Scoped to Overview — on a sleeve's own tab the cards unify to that
+   tab's theme. The iridescent hero blends these same hues; the cards separate them. */
+:root[data-tab="overview"] .hdr-card .lbl { color: var(--acc); }
+:root[data-tab="overview"] .hdr-card.hc-indian { --acc: var(--blu); --acc2: var(--cyn); }
+:root[data-tab="overview"] .hdr-card.hc-us     { --acc: var(--cyn); --acc2: var(--blu); }
+:root[data-tab="overview"] .hdr-card.hc-fd     { --acc: var(--gld); --acc2: var(--gld); }
+:root[data-tab="overview"] .hdr-card.hc-mf     { --acc: var(--pur); --acc2: var(--pnk); }
+:root[data-tab="overview"] .hdr-card.hc-algo   { --acc: var(--pnk); --acc2: var(--pur); }
 @keyframes nw-shine {
   0%   { background-position: 0% 0; }
   50%  { background-position: 100% 0; }
@@ -1357,12 +1450,10 @@ body { padding: 0; }
   z-index: 8;
   margin: 0 -28px 38px;
   padding: 0 28px;
-  /* Follows the active tab's canvas (--bg) so the frosted bar matches each of the
-     12 themes, instead of a fixed neutral rgb. */
-  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  background: rgba(var(--hdr-bg-base), .6);
   -webkit-backdrop-filter: saturate(1.5) blur(18px);
   backdrop-filter: saturate(1.5) blur(18px);
-  border-bottom: .5px solid var(--glass-brd);
+  border-bottom: .5px solid rgba(255, 255, 255, .06);
 }
 /* Soft fade band below the header so the frosted glass tapers off gradually
    into the content instead of ending on a hard edge. Both the tint and the
@@ -1373,16 +1464,16 @@ body { padding: 0; }
   left: 0; right: 0; top: 100%;
   height: 32px;
   pointer-events: none;
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 52%, transparent), transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(to bottom, rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .82)), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--hdr-t) * 10px));
+  backdrop-filter: blur(calc(var(--hdr-t) * 10px));
   -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
   mask-image: linear-gradient(to bottom, #000, transparent);
 }
 .main-header .topbar { margin-bottom: 0; }
 .main-header .page-header { margin-bottom: 16px; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .main-header { background: var(--bg); }
+  .main-header { background: rgba(var(--hdr-bg-base), calc(var(--hdr-t) * .96)); }
 }
 
 /* Topbar inside main */

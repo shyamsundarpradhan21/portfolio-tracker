@@ -173,7 +173,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
                 <tr key={f.id}>
                   <td style={{ color: 'var(--txt)', fontWeight: 500 }}>
                     {f.name}
-                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', fontWeight: 400, marginTop: 2 }}>{f.cat} · <Pct n={f.share} d={1} /></div>
+                    <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt2)', fontWeight: 500, marginTop: 2 }}>{f.cat} · <span style={{ color: 'var(--acc)', fontWeight: 700 }}><Pct n={f.share} d={1} /></span></div>
                   </td>
                   <td><span className="mf-pill" style={platStyle(f.platform)}>{f.platform}</span></td>
                   <td className="ra mono mut">{f.units.toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</td>

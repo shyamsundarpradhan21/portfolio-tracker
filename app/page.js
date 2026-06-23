@@ -809,6 +809,12 @@ function Dashboard() {
   // Deterministic market-regime read (no LLM) from the live macro clock — drives
   // the Pulse headline + the topbar pill. States current conditions, never predicts.
   const regime = useMemo(() => classifyRegime(macro?.live), [macro]);
+  // Surface the regime on <html data-regime> so the Market Wrap tab's accent can
+  // track the market mood (bullish → lime … risk-off → coral) — see globals.css.
+  useEffect(() => {
+    const s = regime?.state;
+    if (s && s !== 'unavailable') document.documentElement.dataset.regime = s;
+  }, [regime]);
 
   // Compact live-macro backdrop string (FRED + Yahoo) fed to the AI pulse read.
   const macroClockStr = useMemo(() => {
@@ -1042,19 +1048,19 @@ function Dashboard() {
 
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
-    { label: 'Indian equity', tab: 1, live: markets.nse,
+    { label: 'Indian equity', cls: 'hc-indian', tab: 1, live: markets.nse,
       val: indian.valued ? <LiveInrC n={indianEq.val} /> : <Skel w={58} h={18} />,
       sub: indian.valued ? <span className={cl(indianEq.pl)}><SInrC n={indianEq.pl} /> · {pctS(indianEq.pct)}</span> : `${INDIAN.length} stocks + swing` },
-    { label: 'Mutual funds', tab: 3,
+    { label: 'Mutual funds', cls: 'hc-mf', tab: 3,
       val: <LiveInrC n={mf.totVal} />,
       sub: <><span className={cl(mf.totRet)}>{pctS(mf.totRet)}</span> · {mf.navLive ? 'live NAV' : mf.navDate ? `NAV ${new Date(mf.navDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}` : 'NAV n/a'}</> },
-    { label: 'Fixed deposits', tab: 2,
+    { label: 'Fixed deposits', cls: 'hc-fd', tab: 2,
       val: <LiveInrC n={ov.fdValue} />,
       sub: <><span className="grn"><InrF n={fds.accrued} /></span> accrued</> },
-    { label: 'US equity', tab: 4, live: markets.nyse,
+    { label: 'US equity', cls: 'hc-us', tab: 4, live: markets.nyse,
       val: usData.val ? <LiveInrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       sub: usData.val ? <><span className={cl(usData.pl)}>{pctS(usData.pct)}</span> @<Rs />{fxRate.toFixed(0)}</> : `${US.length} holdings` },
-    { label: 'Trading', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
+    { label: 'Trading', cls: 'hc-algo', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
       val: <InrC n={STATIC.algo} />,
       sub: ytdTotal != null ? <>{FY.labels.currentShort} <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /></span> · off-NW</> : 'own capital · off-NW' },
   ];
