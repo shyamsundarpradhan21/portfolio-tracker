@@ -148,17 +148,17 @@ function SigRow({ label, value, tag, title, context }) {
   );
 }
 
-// Generic LEADING vs COINCIDENT detail: two collapsibles fed by row arrays, each group
+// Generic LEADING vs COINCIDENT detail: two always-open groups fed by row arrays, each group
 // label tinted by the mean of its (non-context) scores, with an optional divergence
 // callout on top. The per-market row + divergence wiring lives in the build* helpers
 // below, so US and India share this shell without if(market) branches.
 function SentimentDetail({ leading, coincident, divergence }) {
   const outlook = (rows) => { const xs = (rows || []).filter((r) => !r.context && isNum(r.score)).map((r) => r.score); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
   const Group = ({ title, sub, rows }) => (
-    <details className="uscol">
-      <summary className={sChip(outlook(rows))}>{title} <span className="usdx">{sub}</span></summary>
+    <div className="uscol">
+      <div className={`uschd ${sChip(outlook(rows))}`}>{title} <span className="usdx">{sub}</span></div>
       {(rows || []).map((r, i) => <SigRow key={i} {...r} />)}
-    </details>
+    </div>
   );
   return (
     <div className="usdet">
@@ -451,6 +451,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const breadthPct = ind.breadthAD?.pctUp;
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
+  // FII/DII fills the bottom-right grid cell (India only); when absent, portfolio
+  // news spans the full width of row 3 (see .macro-grid.no-fii).
+  const showFii = showIN && (ind.breadthAD || fdTrail.length >= 2);
   // US-side sentiment inputs (Global view mirrors India minus FII/DII): sector
   // breadth (% of SPDR sectors green), US VIX, S&P 500 day move + day movers.
   const usSecLive = usSectors.filter((s) => s.pct != null);
@@ -501,48 +504,40 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Left: market insights (sentiment · treemap · movers). Right: portfolio news
-          (3-up, scrollable) stacked over the upcoming calendar (scrollable). */}
-      <div className="wrap-mid">
-        <div className="card">
-          <div className="wlabel">Market insights <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
-          <div className="wstack">
-            <SentimentCell
-              detail={showIN
-                ? { composite: indiaSentiment?.composite, tag: isNum(indiaSentiment?.composite?.score) ? 'India · blend' : null, ...buildIndiaDetail(indiaSentiment, breadthPct) }
-                : { composite: usSentiment?.composite, tag: isNum(usSentiment?.composite?.score) ? 'US · CNN' : null, ...buildUsDetail(usSentiment) }}
-              fallback={{
-                breadthPct: showIN ? breadthPct : usBreadthPct,
-                vix: showIN ? ivix?.last : usVix,
-                net: showIN ? fiiNet : null,
-                niftyPct: showIN ? niftyPct : spxPct,
-              }}
-              momLabel={showIN ? 'Nifty' : 'S&P'}
-            />
-            <SectorTreemap tiles={sectorTiles} />
-            <MoversSplit
-              gainers={showIN ? nifty50?.movers?.gainers : usMovers?.gainers}
-              losers={showIN ? nifty50?.movers?.losers : usMovers?.losers}
-            />
+      {/* Macro grid — 50:50 split. Left half: market sentiment (row 1) · movers +
+          calendar (row 2) · portfolio news (row 3, scrollable). Right half: hot
+          sectors (spans rows 1-2) · FII/DII (row 3, India only — else news goes
+          full-width via .no-fii). */}
+      <div className={`macro-grid${showFii ? '' : ' no-fii'}`}>
+        <SentimentCell
+          detail={showIN
+            ? { composite: indiaSentiment?.composite, tag: isNum(indiaSentiment?.composite?.score) ? 'India · blend' : null, ...buildIndiaDetail(indiaSentiment, breadthPct) }
+            : { composite: usSentiment?.composite, tag: isNum(usSentiment?.composite?.score) ? 'US · CNN' : null, ...buildUsDetail(usSentiment) }}
+          fallback={{
+            breadthPct: showIN ? breadthPct : usBreadthPct,
+            vix: showIN ? ivix?.last : usVix,
+            net: showIN ? fiiNet : null,
+            niftyPct: showIN ? niftyPct : spxPct,
+          }}
+          momLabel={showIN ? 'Nifty' : 'S&P'}
+        />
+        <SectorTreemap tiles={sectorTiles} />
+        <MoversSplit
+          gainers={showIN ? nifty50?.movers?.gainers : usMovers?.gainers}
+          losers={showIN ? nifty50?.movers?.losers : usMovers?.losers}
+        />
+        <CalendarBoard cal={econCal} region={region} />
+        <NewsFeed news={portfolioNews} region={region} />
+        {showFii && (
+          <div className="card fdcard">
+            <div className="wlabel">FII / DII · net flow
+              <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
+              <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
+            </div>
+            <FiiDiiChart trail={fiidiiTrail} />
           </div>
-        </div>
-        <div className="wrap-mid-r">
-          <NewsFeed news={portfolioNews} region={region} />
-          {/* Upcoming — region-aware economic calendar (keyless), under the news */}
-          <CalendarBoard cal={econCal} region={region} />
-        </div>
+        )}
       </div>
-
-      {/* FII/DII — its own full-width card below the internals + news row (India only) */}
-      {showIN && (ind.breadthAD || fdTrail.length >= 2) && (
-        <div className="card fdcard">
-          <div className="wlabel">FII / DII · net flow
-            <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
-            <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
-          </div>
-          <FiiDiiChart trail={fiidiiTrail} />
-        </div>
-      )}
 
       {/* Macro percentile sliders */}
       <SliderBoard board={macroBoard} region={region} />
