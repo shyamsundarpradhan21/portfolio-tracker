@@ -151,6 +151,18 @@ currently has, confirm drop-vs-keep before removing. (This cost a full Wrap
 rebuild: I shipped the data wiring in the house style when a detailed mockup
 had already been provided.)
 
+### "Mirror / copy / replicate layout X" = build THAT layout — don't redesign or copy the wrong source
+When the user says "mirror the desktop layout in tablet," "copy this layout," or hands an explicit
+layout spec (e.g. `grid-template-areas`), produce exactly that arrangement. Two failure modes to avoid:
+(a) inventing new variations (50:50, transpose, custom column splits) when they asked to replicate
+something specific; (b) literally copying the CSS of another breakpoint when they meant the visual
+**layout** (grouping), not the **grid** definition. If they give exact areas/row-spans, apply them
+verbatim. Render once and confirm the target, then build — cycling through several guessed
+arrangements is the churn. (Caught: asked to mirror the Macro tab layout in tablet, I cycled through
+50:50 → transpose → col3-as-row → a literal desktop-grid copy before the user spelled out the exact
+`grid-template-areas`. They said "layout, not grid" — they meant the visual arrangement, which I
+should have just built/confirmed up front. Pairs with "Build to the provided mockup/spec".)
+
 ### Fewer upfront questions; do the work, then let them react
 For analysis/strategy tasks, default to producing a concrete, data-grounded draft
 and iterating on it — not a questionnaire. One short round of genuinely
