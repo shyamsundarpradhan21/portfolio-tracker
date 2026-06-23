@@ -915,13 +915,13 @@ body::before {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  /* Fluid 5.2vw, 54px floor → 64px cap — prominent in both orientations but sized to
-     sit WITHIN the caption width (a larger cap bled past it on narrower viewports).
-     Uses vw (not cqw) because the hero column hugs the figure — a container unit
-     would be circular (figure → column → font → figure). */
-  /* sized down from 54–64px so the hero card's height ≈ the asset cards' (it
-     used to tower ~28px taller, leaving dead space in the card row) */
-  font-size: clamp(40px, 4vw, 48px) !important;
+  /* Fluid floor 46 → cap 58. The figure must STRETCH to ~the subtext's last letter:
+     the caption's widest line (~241px) needs ≥46px here, and 40px left it visibly
+     short ("reduced from its past glory" — live feedback). Caps at 58 (not the old
+     64 that towered ~28px over the card row) to keep the hero height close to the
+     asset cards. Uses vw (not cqw) because the hero column hugs the figure — a
+     container unit would be circular (figure → column → font → figure). */
+  font-size: clamp(46px, 4.8vw, 58px) !important;
   font-weight: 800 !important;
   letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
   line-height: 0.85; /* the mono font carries ~10% extra leading; trim it so the
