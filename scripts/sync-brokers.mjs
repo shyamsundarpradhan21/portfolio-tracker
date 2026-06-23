@@ -154,6 +154,41 @@ async function fyersRefreshMint() {
   return j.access_token;
 }
 
+// Raw broker positions → the common F&O row shape (matches pullDhan's mapping).
+// Only F&O legs are kept (segmentOf detects a strike-digit before CE/PE/FUT); any
+// equity intraday position is dropped. Strike/expiry that the broker embeds in the
+// symbol (rather than as fields, the way Dhan does) are left null — the UI labels
+// off the symbol. Defensive: every field optional-chained, numeric-coerced.
+function optType(sym) {
+  const g = segmentOf(sym);
+  if (g === 'futures') return 'FUT';
+  if (g === 'options') return /PE$/i.test(String(sym).replace(/\s+/g, '')) ? 'PUT' : 'CALL';
+  return null;
+}
+function normFnoUpstox(p) {
+  const sym = p.trading_symbol || p.tradingsymbol || '';
+  if (!segmentOf(sym)) return null;
+  const q = Number(p.quantity) || 0;
+  return {
+    sym, type: optType(sym), strike: null, expiry: null,
+    status: q > 0 ? 'LONG' : q < 0 ? 'SHORT' : 'CLOSED',
+    netQty: q, avg: p.average_price != null ? +p.average_price : null,
+    realized: Number(p.realised) || 0, unrealized: Number(p.unrealised) || 0,
+  };
+}
+function normFnoFyers(p) {
+  const sym = p.symbol || '';
+  if (!segmentOf(sym)) return null;
+  const q = Number(p.netQty) || 0;
+  const side = Number(p.side);
+  return {
+    sym, type: optType(sym), strike: null, expiry: null,
+    status: side === 1 ? 'LONG' : side === -1 ? 'SHORT' : (q > 0 ? 'LONG' : q < 0 ? 'SHORT' : 'CLOSED'),
+    netQty: q, avg: p.netAvg != null ? +p.netAvg : (p.buyAvg != null ? +p.buyAvg : null),
+    realized: Number(p.realized_profit) || 0, unrealized: Number(p.unrealized_profit) || 0,
+  };
+}
+
 async function pullUpstox() {
   const tok = readJSON(join(ROOT, 'mcp', 'upstox', '.token.json'))?.access_token;
   if (!tok) throw new Error('no token (run UpstoxDailyLogin)');
@@ -164,10 +199,13 @@ async function pullUpstox() {
     sym: d.tradingsymbol, qty: d.quantity, avg: d.average_price,
     ltp: d.last_price, pnl: d.pnl, dayPct: d.day_change_percentage,
   }));
+  const pos = await getJSON('https://api.upstox.com/v2/portfolio/short-term-positions', H);
+  const fnoRows = (Array.isArray(pos.json?.data) ? pos.json.data : []).map(normFnoUpstox).filter(Boolean);
   const fund = await getJSON('https://api.upstox.com/v2/user/get-funds-and-margin', H);
   const avail = fund.json?.data?.equity?.available_margin;
   return {
     swing: { source: 'Upstox', syncedAt: nowIst(), rows },
+    fno: { source: 'Upstox', syncedAt: nowIst(), rows: fnoRows },
     funds: avail != null ? { available: +avail }
       : { available: null, note: fund.json?.errors?.[0]?.message || 'funds window 00:00-05:30 IST' },
   };
@@ -180,7 +218,8 @@ async function pullDhan() {
   const rows = list.map((p) => ({
     sym: p.tradingSymbol, type: p.drvOptionType, strike: p.drvStrikePrice,
     expiry: String(p.drvExpiryDate || '').slice(0, 10), status: p.positionType,
-    netQty: p.netQty, buyAvg: p.buyAvg, realized: p.realizedProfit, unrealized: p.unrealizedProfit,
+    netQty: p.netQty, avg: p.positionType === 'SHORT' ? p.sellAvg : p.buyAvg,
+    realized: p.realizedProfit, unrealized: p.unrealizedProfit,
   }));
   const fund = await getJSON('https://api.dhan.co/v2/fundlimit', H);
   return {
@@ -198,7 +237,13 @@ async function pullFyers() {
   if (fund.json?.s !== 'ok') fund = await getJSON('https://api.fyers.in/api/v3/funds', H);
   const avail = (fund.json?.fund_limit || []).find((f) => f.title === 'Available Balance')?.equityAmount;
   if (avail == null) throw new Error('funds: ' + JSON.stringify(fund.json).slice(0, 150));
-  return { funds: { available: +avail } };
+  let pos = await getJSON('https://api-t1.fyers.in/api/v3/positions', H);
+  if (pos.json?.s !== 'ok') pos = await getJSON('https://api.fyers.in/api/v3/positions', H);
+  const fnoRows = (Array.isArray(pos.json?.netPositions) ? pos.json.netPositions : []).map(normFnoFyers).filter(Boolean);
+  return {
+    funds: { available: +avail },
+    fno: { source: 'Fyers', syncedAt: nowIst(), rows: fnoRows },
+  };
 }
 
 // ── Market Wrap fallback (Fyers index quotes) ────────────────────────────────
@@ -348,7 +393,7 @@ for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', 
       } else throw e;
     }
     if (r.swing) state.holdings.SWING = r.swing;
-    if (r.fno) state.positions.DHAN_FNO = r.fno;
+    if (r.fno) state.positions[`${name.toUpperCase()}_FNO`] = r.fno;
     if (r.funds) state.funds[name] = r.funds;
     state.brokers[name] = { ok: true, note: '' };
     log.push(`${name}: ok${r.swing ? ` · ${r.swing.rows.length} holdings` : ''}${r.fno ? ` · ${r.fno.rows.length} positions` : ''}`);

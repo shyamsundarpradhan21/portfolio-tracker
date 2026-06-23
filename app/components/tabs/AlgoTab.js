@@ -7,7 +7,9 @@ import FreshnessTag from '../shared/FreshnessTag';
 import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
 import FnoHistory from '../shared/FnoHistory';
+import FnoPositions from '../shared/FnoPositions';
 import Skel from '../shared/Skel';
+import { fnoLive } from '../../lib/brokerState';
 
 // Compact ₹ for capital figures: ₹3.9L / ₹40K — derived from ALGO splits.
 const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
@@ -22,6 +24,9 @@ export default function AlgoTab({
   const [strat, setStrat] = useState('s01');
   useEffect(() => { try { const s = localStorage.getItem('nwTracker.algoStrat'); if (s === 's01' || s === 's02') setStrat(s); } catch {} }, []);
   const pick = (s) => { setStrat(s); try { localStorage.setItem('nwTracker.algoStrat', s); } catch {} };
+  // Live F&O positions (all brokers, open + closed) — one derivation feeds both the
+  // panel below and the YTD open-MTM line in each strategy card, so they agree.
+  const fno = fnoLive();
   return (
     <div>
       <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
@@ -85,7 +90,7 @@ export default function AlgoTab({
                 </div>
                 <BrokerTable data={FY.s01.verified} />
               </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.current.label}`} data={FY.s01.current} />
+              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.current.label}`} data={FY.s01.current} liveMtm={fno.byStrategy.S01.openMtm} />
               <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
                   CF absorption — {FY.labels.current} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
@@ -126,11 +131,13 @@ export default function AlgoTab({
                 </div>
                 <BrokerTable data={FY.s02.verified} />
               </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.current.label}`} data={FY.s02.current} />
+              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.current.label}`} data={FY.s02.current} liveMtm={fno.byStrategy.S02.openMtm} />
             </div>
           </div>
         )}
       </div>
+
+      {fno.hasAny ? <div className="sec"><FnoPositions data={fno} /></div> : null}
 
       <div className="csm sec">
         <span style={{ color: 'var(--txt2)' }}>
