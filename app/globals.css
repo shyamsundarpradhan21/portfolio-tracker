@@ -1513,8 +1513,11 @@ body { padding: 0; }
   position: sticky;
   top: 0;
   z-index: 8;
-  margin: 0 -28px 38px;
-  padding: 0 28px;
+  /* Bleed the frosted bar out by the full .main side padding (32px) so it reaches
+     the viewport edges. A stale -28px left a 4px strip on each side that exposed
+     the fixed ambient mesh while scrolling — the header read as a floating panel. */
+  margin: 0 -32px 38px;
+  padding: 0 32px;
   background: rgba(var(--hdr-bg-base), .6);
   -webkit-backdrop-filter: saturate(1.5) blur(18px);
   backdrop-filter: saturate(1.5) blur(18px);
