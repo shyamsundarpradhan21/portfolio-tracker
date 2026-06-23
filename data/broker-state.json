@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-23T09:42:09+05:30",
+  "syncedAt": "2026-06-23T09:55:18+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,8 +7,8 @@
       "note": ""
     },
     "dhan": {
-      "ok": false,
-      "note": "mint failed: {\"message\":\"Invalid TOTP\",\"status\":\"error\"}"
+      "ok": true,
+      "note": ""
     },
     "fyers": {
       "ok": true,
@@ -196,18 +196,29 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-21T06:11:28+05:30",
+      "syncedAt": "2026-06-23T09:55:19+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Jun2026-23600-PE",
-          "type": "PUT",
-          "strike": 23600,
+          "sym": "NIFTY-Jun2026-24150-CE",
+          "type": "CALL",
+          "strike": 24150,
+          "expiry": "2026-06-23",
+          "status": "SHORT",
+          "netQty": -260,
+          "buyAvg": 0,
+          "realized": 0,
+          "unrealized": 10764
+        },
+        {
+          "sym": "NIFTY-Jun2026-24550-CE",
+          "type": "CALL",
+          "strike": 24550,
           "expiry": "2026-06-23",
           "status": "LONG",
-          "netQty": 325,
-          "buyAvg": 9.35,
+          "netQty": 260,
+          "buyAvg": 2.65,
           "realized": 0,
-          "unrealized": -2730
+          "unrealized": -806
         }
       ]
     }
@@ -217,8 +228,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 640593,
-      "utilized": 0
+      "available": 311031.88,
+      "utilized": 349641
     },
     "upstox": {
       "available": 0

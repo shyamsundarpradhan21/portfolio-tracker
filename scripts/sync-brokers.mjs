@@ -60,8 +60,8 @@ function base32Decode(b32) {
   }
   return Buffer.from(out);
 }
-function totp(secret) {
-  const counter = Math.floor(Date.now() / 1000 / 30);
+function totp(secret, stepOffset = 0) {
+  const counter = Math.floor(Date.now() / 1000 / 30) + stepOffset;
   const buf = Buffer.alloc(8); buf.writeBigInt64BE(BigInt(counter));
   const h = crypto.createHmac('sha1', base32Decode(secret)).update(buf).digest();
   const o = h[h.length - 1] & 0xf;
@@ -85,10 +85,22 @@ async function dhanToken() {
   const cid = process.env.DHAN_CLIENT_ID || e.DHAN_CLIENT_ID;
   const pin = process.env.DHAN_PIN || e.DHAN_PIN;
   const seed = process.env.DHAN_TOTP_SEED || e.DHAN_TOTP_SEED;
-  const url = `https://auth.dhan.co/app/generateAccessToken?dhanClientId=${cid}&pin=${pin}&totp=${totp(seed)}`;
-  const r = await fetch(url, { method: 'POST' });
-  const j = await r.json();
-  if (!j.accessToken) throw new Error('mint failed: ' + JSON.stringify(j).slice(0, 200));
+  // Dhan validates the TOTP against a server clock observed to lag ~one 30s step
+  // behind real time, so the current-window code is rejected while the previous-
+  // window code mints. Try current → previous → next window and stop on the first
+  // success — resilient to that lag drifting either way or to a boundary race.
+  // Invalid-TOTP attempts are free; the "once every 2 minutes" rate-limit only
+  // begins after a token is actually minted, which is exactly when we stop.
+  let j, lastMsg;
+  for (const off of [0, -1, 1]) {
+    const url = `https://auth.dhan.co/app/generateAccessToken?dhanClientId=${cid}&pin=${pin}&totp=${totp(seed, off)}`;
+    const r = await fetch(url, { method: 'POST' });
+    j = await r.json();
+    if (j.accessToken) break;
+    lastMsg = j.message || JSON.stringify(j);
+    if (/once every/i.test(lastMsg)) break; // a token was just minted — don't hammer
+  }
+  if (!j?.accessToken) throw new Error('mint failed: ' + String(lastMsg).slice(0, 200));
   writeFileSync(join(ROOT, 'mcp', 'dhan', '.token.json'),
     JSON.stringify({ accessToken: j.accessToken, expiryTs: Math.floor(Date.now() / 1000) + 23 * 3600 }));
   return j.accessToken;
