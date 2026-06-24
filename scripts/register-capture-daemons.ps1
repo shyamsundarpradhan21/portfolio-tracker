@@ -27,7 +27,15 @@ function Register-CaptureTask {
   $action  = New-ScheduledTaskAction -Execute $cmd -Argument $SessionArg -WorkingDirectory $repo
   $trigger = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday, Tuesday, Wednesday, Thursday, Friday -At $TriggerAt
+  # Laptop-hardening so a session survives an unattended overnight window:
+  #   -WakeToRun                 wake from sleep at the trigger to launch
+  #   -AllowStartIfOnBatteries   a laptop is usually on battery — don't refuse
+  #   -DontStopIfGoingOnBatteries don't kill a running session when it unplugs
+  # Idle-sleep DURING the window is handled by the daemon's own keep-awake power
+  # request (scripts/lib/keepAwake.mjs), not a global power-plan change. NB: a
+  # lid-close sleep is a separate Windows "on lid close" setting the user owns.
   $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -Hidden `
+    -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -ExecutionTimeLimit (New-TimeSpan -Hours $LimitHours) `
     -MultipleInstances IgnoreNew
   $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `

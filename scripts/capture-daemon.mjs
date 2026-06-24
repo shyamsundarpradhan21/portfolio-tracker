@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { captureTick, captureEquityTick, captureUsTick } from './lib/intradayTick.mjs';
 import { marketState, usMarketState, istParts } from './lib/marketHours.mjs';
+import { keepSystemAwake } from './lib/keepAwake.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION = process.env.SESSION === 'us' ? 'us' : 'in';
@@ -34,6 +35,7 @@ let n = 0;             // F&O tick counter (drives the orders throttle)
 const timers = [];
 let committed = false;  // archive committed once at close
 let timer = null;
+let releaseAwake = () => {};  // power request held while capturing (set at start)
 
 function commitArchive() {
   if (committed || process.env.SYNC_SKIP_GIT) return;
@@ -60,6 +62,7 @@ function commitArchive() {
 
 function stop(reason) {
   timers.forEach(clearInterval);
+  try { releaseAwake(); } catch {}   // let the laptop sleep normally again
   commitArchive();
   console.log(`capture-daemon: ${reason} — exiting`);
   process.exit(0);
@@ -122,6 +125,10 @@ async function usTick() {
 
 process.on('SIGTERM', () => stop('SIGTERM'));
 process.on('SIGINT', () => stop('SIGINT'));
+
+// Hold a system power request so idle sleep can't suspend the session mid-window
+// (released in stop()). No-op off Windows; never blocks capture if it fails.
+releaseAwake = keepSystemAwake();
 
 if (SESSION === 'us') {
   console.log(`capture-daemon: starting US session (EQ ${EQUITY_MS}ms, force=${FORCE})`);
