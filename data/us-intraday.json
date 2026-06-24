@@ -1,5 +1,274 @@
 {
   "note": "Intraday US-equity day-change tape in INR (Σ qty×(price−prevClose)×USD/INR). Written by SESSION=us scripts/capture-daemon.mjs during US hours (overnight IST) via keyless Yahoo. Non-personal aggregate; safe to commit.",
-  "updatedAt": null,
-  "days": {}
+  "updatedAt": "2026-06-24T20:16:09+05:30",
+  "days": {
+    "2026-06-24": [
+      {
+        "t": "19:39",
+        "net": -2960.15,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:40",
+        "net": -2802.8,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:41",
+        "net": -2381.37,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:42",
+        "net": -3644.12,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:43",
+        "net": -4241.43,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:44",
+        "net": -4774.81,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:45",
+        "net": -4163.64,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:46",
+        "net": -5232.1,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:47",
+        "net": -5558.64,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:48",
+        "net": -5587.93,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:49",
+        "net": -5929.91,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:50",
+        "net": -6573.76,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:51",
+        "net": -6553.76,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:52",
+        "net": -5522.74,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:53",
+        "net": -5002.13,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:54",
+        "net": -4257.26,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:55",
+        "net": -4033.03,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:56",
+        "net": -4095.61,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:57",
+        "net": -4274.8,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:58",
+        "net": -3732.56,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "19:59",
+        "net": -4021.97,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:00",
+        "net": -3499,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:01",
+        "net": -2831.73,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:02",
+        "net": -2561.18,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:03",
+        "net": -2635.65,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:04",
+        "net": -2663.93,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:05",
+        "net": -2758.16,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:06",
+        "net": -2487.1,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:07",
+        "net": -2656.7,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:08",
+        "net": -2511.27,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:09",
+        "net": -3010.02,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:10",
+        "net": -3615.08,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:11",
+        "net": -3756.47,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:12",
+        "net": -4131.39,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:13",
+        "net": -4232.19,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:14",
+        "net": -3914.42,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:15",
+        "net": -3203,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      },
+      {
+        "t": "20:16",
+        "net": -3423.55,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null
+      }
+    ]
+  }
 }
