@@ -19,7 +19,8 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
-| **IntradayDaemon** (live F&O P&L + equity day-change tapes → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, ~09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler (launch-at-login / keep-alive) |
+| **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, 09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler |
+| **CaptureIntradayUS** (US equity day-change in ₹ → KV + `us-intraday.json`) | one long-running process, 18:40 IST → 02:30 IST (overnight) weekdays | this laptop, headless | Windows Task Scheduler |
 | **CloudFnoCapture** (Dhan S01 + Fyers S02 F&O realised, laptop-off) | ~18:45 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
@@ -29,33 +30,49 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 > so there's nothing to schedule.
 
 > **IntradayDaemon** is the live path — ONE long-running process per session, not
-> a periodic job. Launch `node scripts/capture-daemon.mjs` near 09:10 IST (a
-> launch-at-login task or keep-alive wrapper that relaunches if it dies); it gates
-> on the IST clock, ticks every 10s, and exits itself after 15:33 IST. Each tick it
-> reuses the daily tokens the login tasks already mint — reads them off disk and
-> **never mints** (no browser, no rate-limit risk) — sums realised + open MTM across
-> the brokers that are live (a token-less broker is skipped, not zeroed), appends the
-> local archive, and republishes the day's tape to KV (`intraday:<date>`, 3-day TTL)
-> so the deployed app reads it near-live via `/api/intraday` with NO redeploy. Git is
-> touched exactly ONCE — a single archive commit+push at close (`--autostash`, so an
-> unrelated dirty tree can't strand it). The pending-order check is throttled to
-> ~1/min (`ORDERS_EVERY`).
+> a periodic job. The daemon (`scripts/capture-daemon.mjs`) is launched by Task
+> Scheduler at each session's open and gates on the IST clock itself; it self-exits
+> when the window closes, so it's relaunched fresh each day. It reads daily broker
+> tokens off disk and **never mints** (no browser, no rate-limit risk); a broker
+> without a token is skipped for that tick (not zeroed). Each tick republishes the
+> day's tape to KV (`intraday:<kind>:<date>`, 3-day TTL) so the deployed app reads
+> it near-live via `/api/intraday` with NO redeploy. Git is touched exactly ONCE
+> per session — a single archive commit+push at close (`--autostash`, so an
+> unrelated dirty tree can't strand it).
 >
-> It also captures an **equity day-change** tape on an independent 60s loop
-> (`EQUITY_MS`) — Σ qty×(price−prevClose) over INDIAN + SWING holdings priced via
-> keyless Yahoo, published to `intraday:eq:<date>` and read by the Indian tab's live
-> curve (`/api/intraday?kind=eq`). The two loops have separate in-flight guards, so a
-> slow Yahoo fetch never stalls the 10s F&O capture. No Kite token needed — the
-> delivery holdings come from the already-committed `broker-state.json`.
+> **Two sessions**, each its own scheduled task:
+> - `SESSION=in` (default, 09:13–15:32 IST) — F&O (10s, Dhan/Upstox/Fyers; pending-
+>   order check throttled to ~1/min via `ORDERS_EVERY`) + India equity day-change
+>   (60s, `EQUITY_MS`) over INDIAN + SWING holdings priced via keyless Yahoo. The
+>   loops have separate in-flight guards, so a slow Yahoo fetch never stalls the
+>   10s F&O capture. No Kite token in the loop — the delivery holdings come from
+>   the already-committed `broker-state.json`.
+> - `SESSION=us` (18:45 IST → 02:30 IST overnight) — US equity day-change (60s)
+>   in ₹, via keyless Yahoo (USD) × live USD/INR. Holdings from the private US
+>   sleeve. The session-date helper buckets the past-midnight tail under the
+>   evening's date so one US session is one tape entry.
 >
->     node scripts/capture-daemon.mjs                    # the live session loop (commits once at close)
->     CAPTURE_FORCE=1 node scripts/capture-daemon.mjs    # ignore the market-hours gate (debug)
+> **One-time registration** (PowerShell — registers both Task Scheduler jobs):
 >
-> `scripts/capture-intraday.mjs` is a **one-shot** for manual/debug use — captures a
-> single point to the local file + KV and does **not** git-commit (the daemon owns
-> the archive commit):
+>     powershell -ExecutionPolicy Bypass -File scripts\register-capture-daemons.ps1
 >
->     CAPTURE_FORCE=1 node scripts/capture-intraday.mjs  # one point → file + KV, no commit
+> **Manual / debug** (PowerShell):
+>
+>     # India session right now (gates on the clock)
+>     node scripts\capture-daemon.mjs
+>     # Force-launch outside market hours
+>     $env:CAPTURE_FORCE="1"; node scripts\capture-daemon.mjs; Remove-Item env:CAPTURE_FORCE
+>     # US session
+>     $env:SESSION="us"; node scripts\capture-daemon.mjs; Remove-Item env:SESSION
+>     # Run-now via the registered task (uses logs in scripts\capture-*.log)
+>     Start-ScheduledTask -TaskName CaptureIntradayIndia
+>     Start-ScheduledTask -TaskName CaptureIntradayUS
+>
+> `scripts/capture-intraday.mjs` is a **one-shot** for a single manual point —
+> writes the local file + KV and does NOT git-commit (the daemon owns the archive
+> commit):
+>
+>     $env:CAPTURE_FORCE="1"; node scripts\capture-intraday.mjs; Remove-Item env:CAPTURE_FORCE
 
 ---
 
