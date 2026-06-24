@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
+  scaleIntraday,
 } from './pnlDaily.js';
 
 const rows = [
@@ -68,6 +69,29 @@ describe('monthMatrix — Sun-first calendar', () => {
   });
   it('every non-null cell is a valid ISO in-month', () =>
     expect(wk.flat().filter(Boolean).every((d) => d.startsWith('2026-06-'))).toBe(true));
+});
+
+describe('scaleIntraday — Day-view chart geometry', () => {
+  it('returns null for an empty/too-short tape', () => {
+    expect(scaleIntraday([], 100, 100)).toBe(null);
+    expect(scaleIntraday([{ t: '09:20', net: 'x' }], 100, 100)).toBe(null);
+  });
+  it('always keeps 0 on-chart so the green/red split renders', () => {
+    const g = scaleIntraday([{ t: '09:20', net: 100 }, { t: '09:25', net: 300 }], 100, 100, 0);
+    expect(g.zeroY).toBe(100);        // 0 is the minimum → bottom of the 0..100 box
+    expect(g.curY).toBe(0);           // max value → top
+  });
+  it('cur is the last point and ud flags its sign', () => {
+    const up = scaleIntraday([{ t: '09:20', net: 5 }, { t: '15:30', net: 42 }], 200, 100);
+    expect(up.cur).toBe(42); expect(up.ud).toBe(true);
+    const dn = scaleIntraday([{ t: '09:20', net: 5 }, { t: '15:30', net: -42 }], 200, 100);
+    expect(dn.cur).toBe(-42); expect(dn.ud).toBe(false);
+  });
+  it('x spans the padded width left→right', () => {
+    const g = scaleIntraday([{ t: 'a', net: 1 }, { t: 'b', net: 2 }, { t: 'c', net: 3 }], 100, 100, 10);
+    expect(g.pts[0].x).toBe(10);
+    expect(g.pts[2].x).toBe(90);
+  });
 });
 
 describe('monthlyRollup — newest first', () => {

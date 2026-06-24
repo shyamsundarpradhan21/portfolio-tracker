@@ -10,6 +10,7 @@ import { APP } from '../../lib/appData';
 import { cl, SInrF, inrC, MON } from '../../lib/fmt';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
+  scaleIntraday,
 } from '../../lib/pnlDaily';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -206,12 +207,17 @@ function Week({ idx, w, byDate, buckets }) {
 
 function DayPanel({ date, byDate }) {
   const d = byDate.get(date);
+  const tape = APP.fnoIntraday?.days?.[date] || [];
+  const pending = tape.some((p) => p.pending);
   return (
     <div className="mini" style={{ padding: '16px 18px' }}>
       <div className="fxc">
-        <div className="lbl" style={{ margin: 0 }}>Realised P&amp;L · {prettyDate(date)}</div>
+        <div className="lbl" style={{ margin: 0 }}>{tape.length ? 'P&L' : 'Realised P&L'} · {prettyDate(date)}</div>
         <div className={'vmd ' + (d ? cl(d.net) : '')}>{d ? <SInrF n={d.net} /> : '—'}</div>
       </div>
+
+      {tape.length >= 2 ? <IntradayChart tape={tape} pending={pending} /> : null}
+
       {d ? (
         <div className="g4" style={{ marginTop: 12 }}>
           <Mini k="Gross" v={<SInrF n={d.gross} />} vc={cl(d.gross)} />
@@ -220,10 +226,43 @@ function DayPanel({ date, byDate }) {
           <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
       ) : <div className="sub">No trades captured this day.</div>}
-      <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
-        Intraday P&amp;L curve (fill-by-fill, green above 0 / red below) lands once the live broker capture is wired — it needs per-fill timestamps + a minute price feed, which the daily ledger doesn’t hold.
-      </div>
+
+      {tape.length < 2 ? (
+        <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
+          The intraday P&amp;L curve (green above 0 / red below) draws once the live capture has logged a few points — it snapshots realised + open MTM every few minutes through the session.
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+// Intraday tape → green-above-0 / red-below-0 line with a dashed line + pill at the
+// CURRENT P&L level (the live value), per the agreed Day-view spec. No index/NIFTY
+// reference; a faint target line is drawn only when the API flagged a pending order.
+function IntradayChart({ tape, pending }) {
+  const W = 660, H = 200;
+  const g = scaleIntraday(tape, W, H);
+  if (!g) return null;
+  const d = g.pts.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
+  const uid = `pnl-${tape.length}-${Math.round(g.curY)}`;
+  const curColor = g.ud ? 'var(--grn)' : 'var(--red)';
+  const first = tape[0].t, last = tape[tape.length - 1].t;
+  const mid = tape[Math.floor(tape.length / 2)].t;
+  return (
+    <svg viewBox={`0 0 ${W} ${H + 22}`} width="100%" height="auto" style={{ marginTop: 12, display: 'block' }} role="img" aria-label="Intraday P&L">
+      <clipPath id={`up-${uid}`}><rect x="0" y="0" width={W} height={g.zeroY} /></clipPath>
+      <clipPath id={`dn-${uid}`}><rect x="0" y={g.zeroY} width={W} height={H - g.zeroY} /></clipPath>
+      <line x1="0" y1={g.zeroY} x2={W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
+      <path d={d} fill="none" stroke="var(--grn)" strokeWidth="2" clipPath={`url(#up-${uid})`} />
+      <path d={d} fill="none" stroke="var(--red)" strokeWidth="2" clipPath={`url(#dn-${uid})`} />
+      {/* dashed reference line + pill at the current (latest) P&L */}
+      <line x1="0" y1={g.curY} x2={W} y2={g.curY} stroke={curColor} strokeWidth=".7" strokeDasharray="4 3" opacity=".55" />
+      <circle cx={g.pts[g.pts.length - 1].x} cy={g.curY} r="3.5" fill={curColor} />
+      {pending ? <line x1="0" y1={g.zeroY - 0.1} x2={W} y2={g.zeroY - 0.1} stroke="var(--acc)" strokeWidth=".7" strokeDasharray="6 4" opacity=".5" /> : null}
+      <text x="2" y={H + 16} className="pnl-axt">{first}</text>
+      <text x={W / 2} y={H + 16} className="pnl-axt" textAnchor="middle">{mid}</text>
+      <text x={W - 2} y={H + 16} className="pnl-axt" textAnchor="end">{last}{pending ? ' · pending order' : ''}</text>
+    </svg>
   );
 }
 const Mini = ({ k, v, vc }) => (

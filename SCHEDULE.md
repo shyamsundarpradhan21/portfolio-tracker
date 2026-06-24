@@ -19,6 +19,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
+| **IntradayCapture** (live F&O P&L tape → `fno-intraday.json`) | every 5 min, 09:15–15:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CloudFnoCapture** (Dhan S01 + Fyers S02 F&O realised, laptop-off) | ~18:45 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
@@ -26,6 +27,16 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 > **Dhan** has no scheduled job *by design* — the Dhan MCP server (`mcp/dhan/`)
 > self-mints its 24h access token on demand via DhanHQ's pure-API TOTP endpoint,
 > so there's nothing to schedule.
+
+> **IntradayCapture** reuses the daily tokens the login tasks already mint — it
+> reads them off disk and **never mints** (no browser, no rate-limit risk). A
+> broker without a token is skipped for that tick, so the curve degrades to the
+> brokers that are live rather than breaking. Outside 09:15–15:30 IST (or on a
+> weekend) it no-ops. `CAPTURE_FORCE=1` bypasses the gate for a manual run;
+> `SYNC_SKIP_GIT=1` captures without committing.
+>
+>     node scripts/capture-intraday.mjs              # capture + commit fno-intraday.json
+>     CAPTURE_FORCE=1 SYNC_SKIP_GIT=1 node scripts/capture-intraday.mjs   # one manual point
 
 ---
 

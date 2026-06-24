@@ -93,3 +93,14 @@ PnL-dashboard screenshot to match.
   themes via a throwaway /verify page (full page needs private data).
 - DEFERRED (needs new pipeline): intraday fill-by-fill P&L curve — per-fill
   timestamps + minute price feed from Fyers/Upstox/Dhan websockets.
+
+## Intraday capture pipeline (BUILT this session)
+- data/fno-intraday.json — committed tape: { days: { 'YYYY-MM-DD': [{t,net,dhan,upstox,fyers,pending}] } }.
+- scripts/lib/intraday.mjs — pure upsertPoint (minute-dedupe, time-sorted, no mutate) + appendIntraday disk wrapper. 6 tests.
+- scripts/lib/brokers.mjs — positions-only puller; reads daily tokens off disk, NEVER mints; sums realised+open MTM per broker + pending-order flag; AbortSignal timeouts; skips (never zeroes) a broker on failure. READ-ONLY.
+- scripts/capture-intraday.mjs — market-hours-gated (09:15–15:30 IST wkdys; CAPTURE_FORCE bypass), appends a point, commits/pushes to main like the sync. Verified: 3 scripts node --check; dry-run skips gracefully (no tokens) and the hours-gate no-ops.
+- Read path: route.js _app.fnoIntraday + appData default { days:{} }.
+- app/lib/pnlDaily.js scaleIntraday() — pure chart geometry (0 always on-chart, cur=last, ud=sign). 4 tests.
+- PnlDashboard DayPanel/IntradayChart — green-above-0/red-below curve, dashed line + dot at CURRENT P&L, time axis, pending-order line only when flagged; falls back to summary + note when <2 points. Verified: rendered in both themes.
+- SCHEDULE.md — IntradayCapture row + section.
+- FUTURE: dedupe token/pull layer shared with sync-brokers.mjs (left separate now to avoid touching the money-critical daily sync, which can't be run in this env).

@@ -120,6 +120,25 @@ export function monthMatrix(year, month0) {
   return weeks;
 }
 
+// Scale an intraday tape ([{ t:'HH:MM', net }]) into SVG geometry for the Day
+// view. Pure: returns coordinates only, the component draws them. The y-range is
+// padded and always includes 0 so the zero line (the green/red split) is on-chart.
+//   → { pts:[{x,y,t,net}], zeroY, cur, curY, ud } | null
+export function scaleIntraday(points, width, height, pad = 8) {
+  const pts = (points || []).filter((p) => p && p.t != null && Number.isFinite(+p.net));
+  if (!pts.length) return null;
+  const vals = pts.map((p) => +p.net);
+  let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  if (lo === hi) { lo -= 1; hi += 1; }        // flat tape → tiny band so it renders
+  const span = hi - lo;
+  const x0 = pad, x1 = width - pad, y0 = pad, y1 = height - pad;
+  const vx = (i) => (pts.length === 1 ? (x0 + x1) / 2 : x0 + (i / (pts.length - 1)) * (x1 - x0));
+  const vy = (v) => y0 + (hi - v) / span * (y1 - y0);
+  const out = pts.map((p, i) => ({ x: r2(vx(i)), y: r2(vy(+p.net)), t: p.t, net: +p.net }));
+  const cur = +pts[pts.length - 1].net;
+  return { pts: out, zeroY: r2(vy(0)), cur, curY: r2(vy(cur)), ud: cur >= 0 };
+}
+
 // Per-month rollup for a FY (Apr→Mar), for the monthly summary table.
 //   → [{ ym:'2026-06', label:'Jun 2026', net, gross, charges, orders, days }]
 export function monthlyRollup(series) {

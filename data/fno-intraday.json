@@ -1,0 +1,5 @@
+{
+  "note": "Intraday F&O P&L tape (realised + open MTM). Written by scripts/capture-intraday.mjs during market hours. Non-personal aggregate; safe to commit.",
+  "updatedAt": null,
+  "days": {}
+}
