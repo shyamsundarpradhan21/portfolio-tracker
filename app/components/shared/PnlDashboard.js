@@ -9,7 +9,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { APP } from '../../lib/appData';
 import { cl, SInrF, inrC, MON } from '../../lib/fmt';
 import {
-  dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
+  dailySeries, summaryStats, quantileBuckets, monthMatrix, fyOf,
 } from '../../lib/pnlDaily';
 import IntradayChart from './IntradayChart';
 
@@ -28,16 +28,34 @@ const Stat = ({ k, v, vc, sub }) => (
 );
 
 export default function PnlDashboard({ rows: rowsProp } = {}) {
-  const rows = rowsProp || APP.fnoLedger?.rows || [];
+  const allRows = rowsProp || APP.fnoLedger?.rows || [];
+  // Brokers present, busiest first — drives the broker toggle (All + each broker).
+  const brokers = useMemo(() => {
+    const days = {};
+    for (const r of allRows) days[r.broker] = (days[r.broker] || 0) + 1;
+    return Object.keys(days).sort((a, b) => days[b] - days[a]);
+  }, [allRows]);
+
+  const [view, setView] = useState('year');
+  const [broker, setBroker] = useState('all');
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year'].includes(v)) setView(v);
+      const b = localStorage.getItem('nwTracker.pnlBroker'); if (b) setBroker(b);
+    } catch {}
+  }, []);
+  const pick = (v) => { setView(v); try { localStorage.setItem('nwTracker.pnlView', v); } catch {} };
+  const pickBroker = (b) => { setBroker(b); try { localStorage.setItem('nwTracker.pnlBroker', b); } catch {} };
+  // Fall back to All if a persisted broker is no longer in the data.
+  const activeBroker = broker !== 'all' && brokers.includes(broker) ? broker : 'all';
+
+  const rows = useMemo(
+    () => (activeBroker === 'all' ? allRows : allRows.filter((r) => r.broker === activeBroker)),
+    [allRows, activeBroker],
+  );
   const series = useMemo(() => dailySeries(rows), [rows]);
   const byDate = useMemo(() => new Map(series.map((d) => [d.date, d])), [series]);
   const buckets = useMemo(() => quantileBuckets(series), [series]);
-
-  const [view, setView] = useState('year');
-  useEffect(() => {
-    try { const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year'].includes(v)) setView(v); } catch {}
-  }, []);
-  const pick = (v) => { setView(v); try { localStorage.setItem('nwTracker.pnlView', v); } catch {} };
 
   // Period lists (newest last) + a cursor per view; default to the latest data.
   const lists = useMemo(() => {
@@ -84,6 +102,19 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
         </div>
       </div>
 
+      {/* ── broker toggle (All + each broker) ── */}
+      {brokers.length > 1 && (
+        <div className="pnl-brokers">
+          <div className="seg" role="tablist" aria-label="Broker">
+            {['all', ...brokers].map((b) => (
+              <button key={b} role="tab" aria-selected={activeBroker === b} className={activeBroker === b ? 'on' : ''} onClick={() => pickBroker(b)}>
+                {b === 'all' ? 'All' : b}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── stat panel (FY in scope) ── */}
       <div className="pnl-stats">
         <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />} sub={`Gross ${inrC(stats.gross)} · charges ${inrC(stats.charges)}`} />
@@ -114,26 +145,6 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
       </div>
 
       {view !== 'day' && <Legend />}
-
-      {/* ── monthly table (FY in scope) ── */}
-      <div style={{ padding: '6px 20px 18px' }}>
-        <div className="lbl" style={{ marginBottom: 6 }}>Monthly trades — {scopeFy}</div>
-        <table className="tbl">
-          <thead><tr><th>Month</th><th className="ra">Orders</th><th className="ra">Days</th><th className="ra">Gross</th><th className="ra">Charges</th><th className="ra">Net</th></tr></thead>
-          <tbody>
-            {monthlyRollup(fySeries).map((m) => (
-              <tr key={m.ym}>
-                <td>{m.label}</td>
-                <td className="ra mono">{m.orders}</td>
-                <td className="ra mono">{m.days}</td>
-                <td className={'ra mono ' + cl(m.gross)}><SInrF n={m.gross} /></td>
-                <td className="ra mono red"><SInrF n={m.charges} /></td>
-                <td className={'ra mono ' + cl(m.net)}><SInrF n={m.net} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
