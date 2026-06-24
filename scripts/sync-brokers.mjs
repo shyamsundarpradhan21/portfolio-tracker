@@ -75,6 +75,21 @@ async function getJSON(url, headers) {
   return { ok: r.ok, status: r.status, json: j };
 }
 
+// Fyers v3/data REST helper. api-t1.fyers.in is the only live host; the bare
+// api.fyers.in mirror is DEAD — every path there 500s "Invalid Request, please
+// provide valid method" (confirmed for /api/v3/funds, /positions, /profile). The
+// old `if (s!=='ok') retry on api.fyers.in` fallback therefore turned a freshly-
+// minted token's occasional transient first-call blip on api-t1 into a hard
+// FAILED, masked behind that misleading message. Retry the SAME working host
+// instead — the token just needs a beat to propagate across Fyers' per-service
+// backends.
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+async function fyersGet(url, H, ok = (j) => j?.s === 'ok') {
+  let r = await getJSON(url, H);
+  if (!ok(r.json)) { await sleep(800); r = await getJSON(url, H); }
+  return r;
+}
+
 // Dhan: reuse the cached 24h token if still valid, else self-mint via TOTP.
 async function dhanToken() {
   const cache = readJSON(join(ROOT, 'mcp', 'dhan', '.token.json'));
@@ -233,12 +248,10 @@ async function pullFyers() {
   const tok = await fyersAccessToken();
   if (!tok || !appId) throw new Error('no token/app_id (run FyersDailyLogin or set refresh_token)');
   const H = { Authorization: `${appId}:${tok}` };
-  let fund = await getJSON('https://api-t1.fyers.in/api/v3/funds', H);
-  if (fund.json?.s !== 'ok') fund = await getJSON('https://api.fyers.in/api/v3/funds', H);
+  const fund = await fyersGet('https://api-t1.fyers.in/api/v3/funds', H);
   const avail = (fund.json?.fund_limit || []).find((f) => f.title === 'Available Balance')?.equityAmount;
   if (avail == null) throw new Error('funds: ' + JSON.stringify(fund.json).slice(0, 150));
-  let pos = await getJSON('https://api-t1.fyers.in/api/v3/positions', H);
-  if (pos.json?.s !== 'ok') pos = await getJSON('https://api.fyers.in/api/v3/positions', H);
+  const pos = await fyersGet('https://api-t1.fyers.in/api/v3/positions', H);
   const fnoRows = (Array.isArray(pos.json?.netPositions) ? pos.json.netPositions : []).map(normFnoFyers).filter(Boolean);
   return {
     funds: { available: +avail },
@@ -274,8 +287,7 @@ const FY_BREADTH = [
 async function fyersQuotes(symbols) {
   const H = { Authorization: `${fyersAppId()}:${await fyersAccessToken()}` };
   const qs = `symbols=${encodeURIComponent(symbols.join(','))}`;
-  let r = await getJSON(`https://api-t1.fyers.in/data/quotes?${qs}`, H);
-  if (r.json?.s !== 'ok') r = await getJSON(`https://api.fyers.in/data/quotes?${qs}`, H);
+  const r = await fyersGet(`https://api-t1.fyers.in/data/quotes?${qs}`, H);
   if (r.json?.s !== 'ok') throw new Error('quotes: ' + JSON.stringify(r.json).slice(0, 150));
   const by = {};
   for (const row of (r.json.d || [])) if (row.n && row.v) by[row.n] = row.v;
@@ -356,8 +368,7 @@ async function tradesFyers() {
   const appId = fyersAppId();
   const tok = await fyersAccessToken().catch(() => null);
   if (!tok || !appId) return [];
-  let r = await getJSON('https://api-t1.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
-  if (!r.json?.tradeBook) r = await getJSON('https://api.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` });
+  const r = await fyersGet('https://api-t1.fyers.in/api/v3/tradebook', { Authorization: `${appId}:${tok}` }, (j) => !!j?.tradeBook);
   return (r.json?.tradeBook || []).map((t) => ({
     id: String(t.tradeNumber ?? t.orderNumber ?? t.id ?? ''), sym: t.symbol,
     date: String(t.orderDateTime || '').slice(0, 10), side: t.side === 1 ? 'BUY' : t.side === -1 ? 'SELL' : t.side,
