@@ -56,8 +56,8 @@ next-env.d.ts
 /.playwright-mcp/
 /scripts/*.png
 
-# evening F&O capture task log (machine-specific run output)
-/scripts/sync-evening.log
+# script run logs (machine-specific output: sync, capture daemons, etc.)
+/scripts/*.log
 
 # python (mcp servers under mcp/)
 __pycache__/
