@@ -283,7 +283,7 @@ function DayPanel({ date, byDate }) {
         <div className="g4" style={{ marginTop: 12 }}>
           <Mini k="Gross" v={<SInrF n={d.gross} />} vc={cl(d.gross)} />
           <Mini k="Charges" v={<SInrF n={d.charges} />} vc="red" />
-          <Mini k="Orders" v={d.orders} />
+          <Mini k="Orders" v={d.orders || '—'} />
           <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
       ) : (tape.length ? null : <div className="sub">No trades captured this day.</div>)}
@@ -308,7 +308,7 @@ function PeriodSummary({ view, periodKey, byDate, series }) {
   const s = summaryStats(sub);
   return (
     <div className="pnl-psum">
-      <span><span className="lbl">Orders</span> <span className="mono">{s.orders}</span></span>
+      <span><span className="lbl">Orders</span> <span className="mono">{s.orders || '—'}</span></span>
       <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
       <span><span className="lbl">Charges</span> <span className="mono red"><SInrF n={s.charges} /></span></span>
       <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
