@@ -136,6 +136,7 @@ def parse_zerodha(path):
     tw = sheet_rows("Tradewise Exits")
     by_sym, exits, last_exit = {}, set(), None
     fno_by_day = {}                   # F&O section, bucketed by exact exit-date
+    sections_seen = set()             # for the diagnostic when F&O doesn't match
     section, in_table = None, False
     for r in tw:
         c1 = str(r[1]).strip() if len(r) > 1 and r[1] is not None else ""
@@ -147,6 +148,7 @@ def parse_zerodha(path):
         profit = num(r[8]) if len(r) > 8 else None
         if profit is None:            # a section title (or metadata) → new section
             section, in_table = c1, False
+            sections_seen.add(c1)
             continue
         sec_l = section.lower() if section else ""
         is_equity = bool(section) and (section.startswith("Equity") or section == "Non Equity")
@@ -170,12 +172,18 @@ def parse_zerodha(path):
         if ed and (last_exit is None or ed > last_exit):
             last_exit = ed
 
-    # Sanity: F&O daily sum should reconcile to the F&O sheet's options+futures total.
+    # Sanity / diagnostics. If there IS F&O for the FY (summary != 0) but nothing
+    # bucketed, the Tradewise section label didn't match — print the labels seen so
+    # the matcher can be fixed. If it bucketed but doesn't reconcile, warn too.
+    ssum = round(opt + fut)
     if fno_by_day:
-        dsum, ssum = round(sum(fno_by_day.values())), round(opt + fut)
+        dsum = round(sum(fno_by_day.values()))
         if abs(dsum - ssum) > max(50, abs(ssum) * 0.02):
             print(f"  ! {meta['label']} {fy}: F&O daily Σ{dsum} != summary {ssum} "
-                  f"(Tradewise F&O section label may differ — sections seen are logged with --debug)")
+                  f"(sections seen: {sorted(sections_seen)})")
+    elif ssum != 0:
+        print(f"  ! {meta['label']} {fy}: F&O summary ₹{ssum} but NO daily rows matched. "
+              f"Tradewise sections seen: {sorted(sections_seen)} — tell which is F&O.")
 
     return {
         "label": meta["label"], "owner": meta["owner"], "sleeve": meta["sleeve"], "fy": fy,
