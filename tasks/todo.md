@@ -179,3 +179,11 @@ delivery holdings are in broker-state.json under INDIAN).
 - EquityDayCurve generalized to {kind, archive, dateOf, title, note} — Indian tab
   uses kind=eq, US tab uses kind=us (US session date logic mirrors the daemon).
 - Verified: 159 tests; build clean; SESSION=us dry-run gates correctly.
+
+## Status — intraday capture LIVE (confirmed on laptop 24 Jun 2026)
+- CaptureIntradayUS daemon running on the Windows laptop; real ticks publishing
+  to KV, US tab curve rendering in preview. India daemon registered too.
+- OPEN (deferred, user's call): "little UI tweaks" on the live curves — to be
+  specified later. Candidates to confirm with user: curve height/density, axis
+  labels (US session times), the headline/curve spacing, day vs eq vs us visual
+  consistency, empty/pre-open state copy.
