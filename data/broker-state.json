@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-24T07:10:26+05:30",
+  "syncedAt": "2026-06-24T18:45:41+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -196,8 +196,53 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-24T07:10:27+05:30",
-      "rows": []
+      "syncedAt": "2026-06-24T18:45:44+05:30",
+      "rows": [
+        {
+          "sym": "NIFTY-Jun2026-23500-PE",
+          "type": "PUT",
+          "strike": 23500,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 31.55,
+          "realized": -3753.75,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-23900-PE",
+          "type": "PUT",
+          "strike": 23900,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 89.8,
+          "realized": 16721.25,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-23550-PE",
+          "type": "PUT",
+          "strike": 23550,
+          "expiry": "2026-06-30",
+          "status": "LONG",
+          "netQty": 325,
+          "avg": 28.8,
+          "realized": 0,
+          "unrealized": -3445
+        },
+        {
+          "sym": "NIFTY-Jun2026-23950-PE",
+          "type": "PUT",
+          "strike": 23950,
+          "expiry": "2026-06-30",
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 127.55,
+          "realized": 0,
+          "unrealized": 12447.5
+        }
+      ]
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
@@ -238,8 +283,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 664237.9,
-      "utilized": 137
+      "available": 404331,
+      "utilized": 290305
     },
     "upstox": {
       "available": 37876.93
