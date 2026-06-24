@@ -22,15 +22,19 @@ export function upsertPoint(json, date, point) {
   const out = json && typeof json === 'object' ? { ...json } : {};
   const days = { ...(out.days || {}) };
   const arr = Array.isArray(days[date]) ? days[date].slice() : [];
+  const i = arr.findIndex((x) => x.t === point.t);
+  const prev = i >= 0 ? arr[i] : null;
   const p = {
     t: point.t,
     net: round2(point.net),
     dhan: round2(point.byBroker?.dhan ?? null),
     upstox: round2(point.byBroker?.upstox ?? null),
     fyers: round2(point.byBroker?.fyers ?? null),
-    pending: point.pending ? 1 : undefined,
+    // `pending` is STICKY within a minute: the daemon only runs the order-book
+    // check ~1/min, so a later same-minute tick (which skips it → pending:false)
+    // must not clear a pending flag an earlier tick set. OR with the prior point.
+    pending: (point.pending || prev?.pending) ? 1 : undefined,
   };
-  const i = arr.findIndex((x) => x.t === p.t);
   if (i >= 0) arr[i] = p; else arr.push(p);
   arr.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
   days[date] = arr;

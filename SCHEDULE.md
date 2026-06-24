@@ -19,7 +19,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
-| **IntradayCapture** (live F&O P&L tape → `fno-intraday.json`) | every 5 min, 09:15–15:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
+| **IntradayDaemon** (live F&O P&L tape → KV + `fno-intraday.json`) | one long-running process, ~09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler (launch-at-login / keep-alive) |
 | **CloudFnoCapture** (Dhan S01 + Fyers S02 F&O realised, laptop-off) | ~18:45 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
@@ -28,15 +28,27 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 > self-mints its 24h access token on demand via DhanHQ's pure-API TOTP endpoint,
 > so there's nothing to schedule.
 
-> **IntradayCapture** reuses the daily tokens the login tasks already mint — it
-> reads them off disk and **never mints** (no browser, no rate-limit risk). A
-> broker without a token is skipped for that tick, so the curve degrades to the
-> brokers that are live rather than breaking. Outside 09:15–15:30 IST (or on a
-> weekend) it no-ops. `CAPTURE_FORCE=1` bypasses the gate for a manual run;
-> `SYNC_SKIP_GIT=1` captures without committing.
+> **IntradayDaemon** is the live path — ONE long-running process per session, not
+> a periodic job. Launch `node scripts/capture-daemon.mjs` near 09:10 IST (a
+> launch-at-login task or keep-alive wrapper that relaunches if it dies); it gates
+> on the IST clock, ticks every 10s, and exits itself after 15:33 IST. Each tick it
+> reuses the daily tokens the login tasks already mint — reads them off disk and
+> **never mints** (no browser, no rate-limit risk) — sums realised + open MTM across
+> the brokers that are live (a token-less broker is skipped, not zeroed), appends the
+> local archive, and republishes the day's tape to KV (`intraday:<date>`, 3-day TTL)
+> so the deployed app reads it near-live via `/api/intraday` with NO redeploy. Git is
+> touched exactly ONCE — a single archive commit+push at close (`--autostash`, so an
+> unrelated dirty tree can't strand it). The pending-order check is throttled to
+> ~1/min (`ORDERS_EVERY`).
 >
->     node scripts/capture-intraday.mjs              # capture + commit fno-intraday.json
->     CAPTURE_FORCE=1 SYNC_SKIP_GIT=1 node scripts/capture-intraday.mjs   # one manual point
+>     node scripts/capture-daemon.mjs                    # the live session loop (commits once at close)
+>     CAPTURE_FORCE=1 node scripts/capture-daemon.mjs    # ignore the market-hours gate (debug)
+>
+> `scripts/capture-intraday.mjs` is a **one-shot** for manual/debug use — captures a
+> single point to the local file + KV and does **not** git-commit (the daemon owns
+> the archive commit):
+>
+>     CAPTURE_FORCE=1 node scripts/capture-intraday.mjs  # one point → file + KV, no commit
 
 ---
 

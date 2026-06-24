@@ -42,6 +42,24 @@ describe('summaryStats — totals, win%, streaks', () => {
   it('empty series is all-zero, not NaN', () => {
     const z = summaryStats([]); expect(z.net).toBe(0); expect(z.winPct).toBe(0); expect(z.mostProfit).toBe(null);
   });
+  it('a flat latest day reads as no streak (0), not a 0-length win streak', () => {
+    const s = summaryStats([
+      { date: '2026-06-22', net: 100, gross: 100, charges: 0, orders: 1 },
+      { date: '2026-06-23', net: 200, gross: 200, charges: 0, orders: 1 },
+      { date: '2026-06-24', net: 0, gross: 0, charges: 0, orders: 1 }, // flat
+    ]);
+    expect(s.currentStreak).toBe(0);
+    expect(s.currentStreakWin).toBe(true); // direction from the last non-flat (wins), but streak is 0
+  });
+  it('trailing losses give a loss streak', () => {
+    const s = summaryStats([
+      { date: '2026-06-22', net: 100, gross: 100, charges: 0, orders: 1 },
+      { date: '2026-06-23', net: -50, gross: -50, charges: 0, orders: 1 },
+      { date: '2026-06-24', net: -30, gross: -30, charges: 0, orders: 1 },
+    ]);
+    expect(s.currentStreak).toBe(2);
+    expect(s.currentStreakWin).toBe(false);
+  });
 });
 
 describe('quantileBuckets — relative to own distribution', () => {

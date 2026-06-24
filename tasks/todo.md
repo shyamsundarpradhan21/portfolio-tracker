@@ -104,3 +104,22 @@ PnL-dashboard screenshot to match.
 - PnlDashboard DayPanel/IntradayChart — green-above-0/red-below curve, dashed line + dot at CURRENT P&L, time axis, pending-order line only when flagged; falls back to summary + note when <2 points. Verified: rendered in both themes.
 - SCHEDULE.md — IntradayCapture row + section.
 - FUTURE: dedupe token/pull layer shared with sync-brokers.mjs (left separate now to avoid touching the money-critical daily sync, which can't be run in this env).
+
+## Adversarial review fixes (applied)
+Reviewed the daemon/KV/API/client diff across 4 dimensions, each finding verified
+by a skeptical second pass (18 raised → 8 confirmed, 10 dismissed). Fixed:
+- intraday.mjs: pending flag now STICKY within a minute (OR with prior same-minute
+  point) — the ~1/min orders-check tick was being clobbered by later net-only ticks.
+- capture-daemon.mjs: set `committed` only after a successful push; `git rebase
+  --autostash origin/main` so a dirty tree at close can't strand the commit.
+- sync-brokers.mjs: same --autostash hardening (shared flaw).
+- PnlDashboard DayPanel: headline P&L now tracks the LIVE tape when present (no
+  longer contradicts the curve / shows "—" on the current day); keyed by date to
+  kill the stale-frame flash on day-switch.
+- pnlDaily.summaryStats: a flat latest day reads as "no streak", not a 0-len win.
+- SCHEDULE.md: rewrote IntradayCapture → IntradayDaemon (10s long-running loop,
+  KV publish, one commit at close); corrected the one-shot's no-commit note.
+- +11 tests (sticky pending, flat/loss streaks). 136 pass; build clean.
+Dismissed (verified non-issues): orders-throttle "drift", force-push claim (it's a
+fast-forward, not --force), date-param enumeration, two-writer/commit races (latent,
+single-writer topology), KV-TTL handoff, midnight-poll edge.

@@ -110,7 +110,7 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
       <div style={{ padding: '4px 20px 18px' }}>
         {view === 'year' && <YearHeat fy={scopeFy} byDate={byDate} buckets={buckets} />}
         {view === 'month' && <MonthCal ym={periodKey} byDate={byDate} buckets={buckets} />}
-        {view === 'day' && <DayPanel date={periodKey} byDate={byDate} />}
+        {view === 'day' && <DayPanel key={periodKey} date={periodKey} byDate={byDate} />}
       </div>
 
       {view !== 'day' && <Legend />}
@@ -211,9 +211,11 @@ function DayPanel({ date, byDate }) {
   // mutating APP) so re-renders are explicit; seeded from the hydrated archive so
   // the chart shows instantly, then refreshed. Only the CURRENT day keeps polling
   // — past days are static history, so one fetch is enough.
-  const [liveTape, setLiveTape] = useState(null);
+  // Seeded from the hydrated archive so the chart shows instantly; DayPanel is
+  // keyed by date at the call site, so this state resets cleanly per day (no
+  // stale-frame flash). Only the CURRENT day keeps polling — past days are static.
+  const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[date] || null);
   useEffect(() => {
-    setLiveTape(null);
     if (!date) return;
     let on = true;
     const poll = async () => {
@@ -230,11 +232,15 @@ function DayPanel({ date, byDate }) {
   }, [date]);
   const tape = liveTape != null ? liveTape : (APP.fnoIntraday?.days?.[date] || []);
   const pending = tape.some((p) => p.pending);
+  // The headline tracks the LIVE tape (realised + open MTM) when one exists, so it
+  // can never disagree with the curve below; falls back to the realised ledger row.
+  const liveNet = tape.length ? tape[tape.length - 1].net : null;
+  const headNet = liveNet != null ? liveNet : (d ? d.net : null);
   return (
     <div className="mini" style={{ padding: '16px 18px' }}>
       <div className="fxc">
         <div className="lbl" style={{ margin: 0 }}>{tape.length ? 'P&L' : 'Realised P&L'} · {prettyDate(date)}</div>
-        <div className={'vmd ' + (d ? cl(d.net) : '')}>{d ? <SInrF n={d.net} /> : '—'}</div>
+        <div className={'vmd ' + (headNet != null ? cl(headNet) : '')}>{headNet != null ? <SInrF n={headNet} /> : '—'}</div>
       </div>
 
       {tape.length >= 2 ? <IntradayChart tape={tape} pending={pending} /> : null}
@@ -246,7 +252,7 @@ function DayPanel({ date, byDate }) {
           <Mini k="Orders" v={d.orders} />
           <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
-      ) : <div className="sub">No trades captured this day.</div>}
+      ) : (tape.length ? null : <div className="sub">No trades captured this day.</div>)}
 
       {tape.length < 2 ? (
         <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>

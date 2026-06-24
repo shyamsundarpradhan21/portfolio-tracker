@@ -510,7 +510,8 @@ if (!process.env.SYNC_SKIP_GIT) {
     // append-conflict, abort cleanly (the ledger upsert is idempotent → next run heals).
     execSync('git fetch origin main', { cwd: ROOT });
     try {
-      execSync('git rebase origin/main', { cwd: ROOT, stdio: 'inherit' });
+      // --autostash so an unrelated dirty working tree doesn't abort the rebase.
+      execSync('git rebase --autostash origin/main', { cwd: ROOT, stdio: 'inherit' });
     } catch {
       try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
       throw new Error('rebase onto main conflicted — skipping push, next run retries');

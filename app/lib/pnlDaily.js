@@ -53,12 +53,15 @@ export function summaryStats(series) {
   // Longest run of profit days, and the trailing (current) run + its direction.
   let bestStreak = 0, run = 0;
   for (const d of series) { if (d.net > 0) { run++; bestStreak = Math.max(bestStreak, run); } else run = 0; }
-  const last = series[series.length - 1];
-  const currentStreakWin = last.net >= 0;
+  // Trailing run of same-direction days. A flat day (net === 0) is neither win nor
+  // loss, so it ends the streak; seed the direction from the most recent non-flat
+  // day so a flat latest day reads as "no streak" (0), not a 0-length win streak.
+  const lastNonFlat = [...series].reverse().find((d) => d.net !== 0);
+  const currentStreakWin = lastNonFlat ? lastNonFlat.net > 0 : true;
   let currentStreak = 0;
   for (let i = series.length - 1; i >= 0; i--) {
-    const w = series[i].net >= 0;
-    if (w === currentStreakWin && series[i].net !== 0) currentStreak++; else break;
+    if (series[i].net === 0) break;
+    if ((series[i].net > 0) === currentStreakWin) currentStreak++; else break;
   }
   const tradingDays = series.length;
   return {

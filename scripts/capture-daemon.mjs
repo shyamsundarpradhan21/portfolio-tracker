@@ -30,17 +30,23 @@ let timer = null;
 
 function commitArchive() {
   if (committed || process.env.SYNC_SKIP_GIT) return;
-  committed = true;
   try {
     execSync('git add data/fno-intraday.json', { cwd: ROOT });
-    if (!execSync('git status --porcelain data/fno-intraday.json', { cwd: ROOT }).toString().trim()) return;
+    if (!execSync('git status --porcelain data/fno-intraday.json', { cwd: ROOT }).toString().trim()) { committed = true; return; }
     const { date } = istParts(Date.now());
     execSync(`git commit -m "chore: intraday P&L tape ${date}"`, { cwd: ROOT, stdio: 'inherit' });
     execSync('git fetch origin main', { cwd: ROOT });
-    try { execSync('git rebase origin/main', { cwd: ROOT, stdio: 'inherit' }); }
-    catch { try { execSync('git rebase --abort', { cwd: ROOT }); } catch {} return; }
+    // --autostash so an unrelated dirty working tree (dev edits, other generated
+    // files) at the 15:32 close doesn't abort the rebase and strand the commit.
+    try { execSync('git rebase --autostash origin/main', { cwd: ROOT, stdio: 'inherit' }); }
+    catch {
+      try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
+      console.error('archive: rebase onto main conflicted — commit left local, next close bundles it');
+      return; // committed stays false: the local commit survives and next day's push carries it
+    }
     const ahead = +execSync('git rev-list --count origin/main..HEAD', { cwd: ROOT }).toString().trim();
     if (ahead > 0) { execSync('git push origin HEAD:main', { cwd: ROOT, stdio: 'inherit' }); console.log('archive pushed'); }
+    committed = true; // only now is the archive durably on origin/main
   } catch (e) { console.error('archive commit:', e.message); }
 }
 

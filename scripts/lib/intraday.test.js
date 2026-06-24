@@ -41,4 +41,14 @@ describe('upsertPoint', () => {
     const j = upsertPoint({}, '2026-06-24', pt('10:00', 5, {}, true));
     expect(j.days['2026-06-24'][0].pending).toBe(1);
   });
+
+  it('pending is STICKY within a minute — a later no-orders tick cannot clear it', () => {
+    // mirrors the daemon: the ~1/min orders-check tick sets pending, then several
+    // same-minute net-only ticks (pending:false) must not erase it.
+    let j = upsertPoint({}, '2026-06-24', pt('10:00', 100, {}, true));   // orders-check tick
+    j = upsertPoint(j, '2026-06-24', pt('10:00', 140, {}, false));        // net-only tick, same minute
+    j = upsertPoint(j, '2026-06-24', pt('10:00', 160, {}, false));
+    expect(j.days['2026-06-24'][0].pending).toBe(1);                      // still flagged
+    expect(j.days['2026-06-24'][0].net).toBe(160);                        // newest net still wins
+  });
 });
