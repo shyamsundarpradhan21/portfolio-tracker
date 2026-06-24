@@ -104,4 +104,4 @@ Rules:
 - Before deep graph traversal, prefer `graphify summary --graph .graphify/graph.json` for compact first-hop orientation
 - For review impact on changed files, use `graphify review-delta --graph .graphify/graph.json` instead of generic traversal
 - Read `.graphify/GRAPH_REPORT.md` only for broad architecture review or when `query` / `path` / `explain` do not surface enough context
-- After modifying code files in this session, run `npx graphify hook-rebuild` to keep the graph current
+- After modifying code files in this session, keep the graph current — but ONLY if graphify is actually installed: run `command -v graphify >/dev/null && graphify hook-rebuild`. NEVER `npx graphify` — graphify is a local-only tool (gitignored `.graphify/`, not published to npm), so `npx graphify` resolves to an UNRELATED public package ("RGG / Random Graph Generator") and would download + execute foreign code. If `graphify` is not on PATH (e.g. a fresh cloud clone where the tool and its `.graphify/` data don't exist), skip the rebuild silently — there is no graph to update in that environment.

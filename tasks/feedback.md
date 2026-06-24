@@ -100,14 +100,23 @@ The graphify CLI exists only in Claude Code cloud workspaces (the public npm
 `graphify` is an unrelated package — never `npm install` it). The user wants
 full use of the knowledge graph everywhere:
 
-- **In cloud sessions**: after code changes run `npx graphify hook-rebuild`;
-  before committing artifacts run `graphify portable-check .graphify`, then
-  commit the portable artifacts (`graph.json`, `GRAPH_REPORT.md`, `wiki/`)
-  to the repo. Never commit `branch.json`, `worktree.json`, `needs_update`,
-  or `cache/`.
-- **On local machines** (no CLI): read the committed `.graphify/graph.json`,
-  `GRAPH_REPORT.md` and `wiki/index.md` directly for architecture questions
-  instead of attempting CLI queries.
+- **NEVER `npx graphify`.** In cloud images graphify ships as a binary *on
+  PATH*, and `npx graphify` only works because it runs that PATH binary. When
+  the binary is absent (some cloud sessions provision without it), `npx` falls
+  through to the public registry and pulls an UNRELATED package ("RGG / Random
+  Graph Generator") — foreign code, downloaded and executed. Always invoke the
+  PATH binary directly behind a guard:
+  `command -v graphify >/dev/null && graphify <cmd>`. If it's not on PATH,
+  skip silently — there's no graph to update in that environment.
+- **In cloud sessions WITH the CLI**: after code changes run
+  `command -v graphify >/dev/null && graphify hook-rebuild`; before committing
+  artifacts run `graphify portable-check .graphify`, then commit the portable
+  artifacts (`graph.json`, `GRAPH_REPORT.md`, `wiki/`) to the repo. Never
+  commit `branch.json`, `worktree.json`, `needs_update`, or `cache/`.
+- **Without the CLI** (local machines, or a cloud session that didn't
+  provision it): read the committed `.graphify/graph.json`, `GRAPH_REPORT.md`
+  and `wiki/index.md` directly for architecture questions instead of
+  attempting CLI queries.
 
 ### This machine (Windows laptop) quirks
 - Wi-Fi DNS is set to Google (8.8.8.8/8.8.4.4) because the ISP resolver
