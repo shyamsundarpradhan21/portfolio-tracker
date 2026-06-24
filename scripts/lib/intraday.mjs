@@ -15,6 +15,13 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const round2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
 
+// Chronological rank for an 'HH:MM' within one portfolio session. A plain string
+// sort scrambles a midnight-crossing tape ('01:14' < '19:39'), so the US overnight
+// tail (00:00–05:59 IST) is ranked AFTER the evening it belongs to. F&O/equity sit
+// wholly in the day window (≥06:00 IST), so this leaves them untouched. Mirrors the
+// tRank used by app/lib/pnlDaily mergeLiveTapes so file, KV and UI agree on order.
+const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
+
 // Insert/replace a point on `date`'s tape. `point` = { t:'HH:MM', net, byBroker:{…}, pending }.
 // Pure given (json, …) → returns the next json object (no I/O), so it unit-tests
 // without touching disk. Keeps each day's array sorted by time.
@@ -36,7 +43,7 @@ export function upsertPoint(json, date, point) {
     pending: (point.pending || prev?.pending) ? 1 : undefined,
   };
   if (i >= 0) arr[i] = p; else arr.push(p);
-  arr.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
+  arr.sort((a, b) => tRank(a.t) - tRank(b.t));
   days[date] = arr;
   out.days = days;
   return out;

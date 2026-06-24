@@ -19,14 +19,23 @@ const SLEEVES = [
   { key: 'eq', c: '#5FC9B5', label: 'Equity' },
   { key: 'us', c: '#E0A35C', label: 'US' },
 ];
-// Today's date in IST (the Indian market's timezone).
-const todayIstIso = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+// The portfolio "day" the curve shows. The US sleeve runs overnight (IST), so
+// before 06:00 IST the live session still belongs to the PREVIOUS IST date — and
+// that same date also buckets that day's earlier India sleeves, so one date keys
+// all three. Matches scripts/lib/marketHours usSessionDate + EquityDayCurve; using
+// the plain IST date here meant the card vanished every night after IST midnight
+// while the US market was still open.
+const sessionIstIso = () => {
+  const d = new Date(Date.now() + 5.5 * 3600 * 1000);
+  if (d.getUTCHours() < 6) d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
 
 export default function PortfolioLiveCurve() {
   const [parts, setParts] = useState({ fno: [], eq: [], us: [] });
   useEffect(() => {
     let on = true;
-    const date = todayIstIso();
+    const date = sessionIstIso();
     const poll = async () => {
       try {
         const got = await Promise.all(['fno', 'eq', 'us'].map((kind) =>

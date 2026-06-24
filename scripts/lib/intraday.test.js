@@ -17,6 +17,18 @@ describe('upsertPoint', () => {
     expect(j.days['2026-06-24'].map((p) => p.t)).toEqual(['09:30', '10:00', '11:15']);
   });
 
+  it('orders a US overnight tail AFTER the evening it belongs to (no lexical scramble)', () => {
+    // US session crosses IST midnight: 19:39 evening … 01:14 next morning. A plain
+    // string sort would put '01:14' first; the tape must stay chronological so the
+    // curve draws right and tape[last] is the true latest point.
+    let j = upsertPoint({}, '2026-06-24', pt('19:39', -2960));
+    j = upsertPoint(j, '2026-06-24', pt('01:14', -8704));   // post-midnight, captured later
+    j = upsertPoint(j, '2026-06-24', pt('20:16', -3423));
+    const arr = j.days['2026-06-24'];
+    expect(arr.map((p) => p.t)).toEqual(['19:39', '20:16', '01:14']);
+    expect(arr[arr.length - 1].net).toBe(-8704);            // newest is last
+  });
+
   it('REPLACES a point captured in the same minute (latest read wins)', () => {
     let j = upsertPoint({}, '2026-06-24', pt('10:11', 250));
     j = upsertPoint(j, '2026-06-24', pt('10:11', 470));
