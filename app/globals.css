@@ -264,17 +264,18 @@ html {
   font-size: clamp(15px, 8px + 0.7vw, 21px);
 }
 
-/* Themed scrollbars — the OS default chrome bars clash with the dark surface.
-   Slim translucent thumbs, no track, slightly brighter on hover. */
-* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--txt3) 30%, transparent) transparent; }
+/* Themed scrollbars — slim translucent thumbs tinted with the ACTIVE TAB'S accent
+   (--acc is tab-scoped, day/night + macro-regime aware), so the scroll chrome reads
+   as part of each tab's theme; brighter on hover. No track. */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--acc) 42%, transparent) transparent; }
 *::-webkit-scrollbar { width: 7px; height: 7px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-corner { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--txt3) 30%, transparent);
+  background: color-mix(in srgb, var(--acc) 42%, transparent);
   border-radius: 8px;
 }
-*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--txt3) 55%, transparent); }
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--acc) 68%, transparent); }
 
 body {
   background: var(--bg);
