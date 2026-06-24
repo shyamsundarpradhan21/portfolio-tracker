@@ -28,3 +28,30 @@ the existing cash chart; no separate card; no grid restructure.
   on `{stale}` the strip simply doesn't render — the cash card is unaffected.
 - Deferred (not in chosen mock): the idxFut over-sessions sparkline trail. Data accrues
   forward if wired later; flagged to user as the next step.
+
+---
+
+# Next: Groww-style Trading tab + live broker reads (scoped, not started)
+
+Two linked workstreams, kicked off once the user supplies a real Groww
+PnL-dashboard screenshot to match.
+
+## A. Groww-style Trading tab (AlgoTab.js redesign)
+- [ ] Match the real Groww screenshot (user to provide); mock built at
+      scratchpad/trading-mock.html (day+night, approved as direction)
+- [ ] Hero net P&L card: realised / open-MTM / charges / win-days split
+- [ ] Headline **cumulative daily-realised P&L curve** — driven from logs
+      (fnoRealized / data/trades-log.json), per user's choice
+- [ ] Gross → charges → net waterfall (reuse FY.combinedVerified)
+- [ ] Keep per-strategy (S01/S02) rows + carryforward grid
+- [ ] Rules: color-only direction, --fs-* tokens, holds in day+night
+
+## B. Live broker reads (Groww Trade API + existing Dhan/Upstox/Fyers)
+- [ ] READ-ONLY only — never place/modify/cancel (project hard rule)
+- [ ] Goal: intraday-live MTM via day's token stashed server-side (KV/env),
+      not just the morning snapshot. Floor: once-daily token mint stays
+      (SEBI: no refresh tokens). Dhan self-mints; Upstox/Fyers need laptop.
+- [ ] Secrets stay out of client bundle + committed JSON; private route =
+      force-dynamic + no-store
+- [ ] Evaluate Groww Trade API read endpoints (positions/holdings/trades/LTP
+      ws) as a standardized feed for the cumulative-P&L curve
