@@ -55,3 +55,13 @@ PnL-dashboard screenshot to match.
       force-dynamic + no-store
 - [ ] Evaluate Groww Trade API read endpoints (positions/holdings/trades/LTP
       ws) as a standardized feed for the cumulative-P&L curve
+
+## Decisions (locked this session)
+- Layout: Groww dashboard (stat panel + daily heatmap + monthly table) becomes
+  the TOP of AlgoTab; existing strategy cards / ITR panels / carryforward stay below.
+- Heatmap buckets: intensity RELATIVE to user's own daily P&L distribution
+  (quantiles), not fixed ₹ thresholds.
+- Reference: real Groww 915 + Dhan Traders Diary screenshots; mock v2 at
+  scratchpad/trading-mock2.html (approved direction).
+- Data source: data/fno-ledger.json (per date×broker net + orders) → daily/monthly
+  aggregation; trades-log.json as fallback for order counts.
