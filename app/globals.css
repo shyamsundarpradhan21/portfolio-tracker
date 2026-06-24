@@ -1960,3 +1960,54 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .mac-bar .seg-lbl { width: 150px; display: flex; align-items: center; gap: 7px; }
 .mac-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .mac-note { border-top: .5px solid var(--brd); padding-top: 10px; color: var(--txt3); }
+
+/* ── Trading-tab P&L dashboard (Groww/Dhan-style) ──
+   Bucket tints derive from the theme-aware --grn/--red, so day & night Just Work. */
+:root {
+  --pnl-empty: color-mix(in srgb, var(--txt) 6%, transparent);
+  --pnl-be:    color-mix(in srgb, var(--acc) 22%, transparent);
+  --pnl-bp1:   color-mix(in srgb, var(--grn) 16%, transparent);
+  --pnl-bp2:   color-mix(in srgb, var(--grn) 34%, transparent);
+  --pnl-bp3:   color-mix(in srgb, var(--grn) 60%, transparent);
+  --pnl-bl1:   color-mix(in srgb, var(--red) 16%, transparent);
+  --pnl-bl2:   color-mix(in srgb, var(--red) 34%, transparent);
+  --pnl-bl3:   color-mix(in srgb, var(--red) 58%, transparent);
+}
+.pnl-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+  border-top: .5px solid var(--brd2); border-bottom: .5px solid var(--brd2); }
+.pnl-stat { padding: 13px 18px; border-right: .5px solid var(--brd2); }
+.pnl-stat:last-child { border-right: none; }
+.pnl-periodbar { padding: 14px 20px 10px; flex-wrap: wrap; gap: 10px; }
+.pnl-nav { width: 26px; height: 26px; border: .5px solid var(--brd); border-radius: 7px;
+  background: none; color: var(--txt2); cursor: pointer; font-size: var(--fs-md); line-height: 1; }
+.pnl-nav:disabled { opacity: .35; cursor: default; }
+.pnl-psum { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+.pnl-psum .lbl { display: inline; margin: 0; }
+.pnl-psum .mono { font-weight: 600; }
+
+/* year heatmap */
+.pnl-year { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px 16px; }
+.pnl-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.pnl-cell { aspect-ratio: 1; border-radius: 2px; }
+
+/* month calendar */
+.pnl-cal { display: grid; grid-template-columns: repeat(7, 1fr) 1.05fr; gap: 5px; }
+.pnl-dow { font-size: var(--fs-2xs); color: var(--txt3); text-transform: uppercase;
+  text-align: center; letter-spacing: .05em; padding-bottom: 2px; }
+.pnl-daycell { aspect-ratio: 1.2; border: .5px solid var(--brd2); border-radius: 8px;
+  padding: 6px 7px; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+.pnl-dn { font-size: var(--fs-2xs); color: var(--txt2); }
+.pnl-dp { font-size: var(--fs-2xs); font-weight: 600; font-family: var(--mono); }
+.pnl-wk { border: .5px solid var(--brd2); border-radius: 8px; padding: 6px 9px;
+  display: flex; flex-direction: column; justify-content: center; background: var(--pnl-empty); }
+
+.pnl-legend { display: flex; align-items: center; gap: 6px; padding: 0 20px 4px;
+  font-size: var(--fs-2xs); color: var(--txt2); }
+.pnl-sw { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+
+@media (max-width: 720px) {
+  .pnl-stats { grid-template-columns: repeat(2, 1fr); }
+  .pnl-stat { border-bottom: .5px solid var(--brd2); }
+  .pnl-year { grid-template-columns: repeat(3, 1fr); }
+  .pnl-dp { display: none; }
+}

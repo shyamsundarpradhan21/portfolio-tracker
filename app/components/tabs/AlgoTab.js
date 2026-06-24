@@ -8,6 +8,7 @@ import BrokerTable from '../shared/BrokerTable';
 import YtdFno from '../shared/YtdFno';
 import FnoHistory from '../shared/FnoHistory';
 import FnoPositions from '../shared/FnoPositions';
+import PnlDashboard from '../shared/PnlDashboard';
 import Skel from '../shared/Skel';
 import { fnoLive } from '../../lib/brokerState';
 
@@ -33,6 +34,9 @@ export default function AlgoTab({
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'} · est. charges · ${FY.labels.verified} ITR-verified`} />
       </div>
+
+      {/* Groww/Dhan-style P&L dashboard — realised-F&O calendar across Fyers/Upstox/Dhan */}
+      <div className="sec"><PnlDashboard /></div>
 
       <div className="g3 sec">
         <div className="csm">

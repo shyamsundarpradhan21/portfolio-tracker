@@ -78,3 +78,18 @@ PnL-dashboard screenshot to match.
   reports a pending order.
 - Buildable today on existing data: Year (heatmap) + Month (calendar) + day summary.
   Gated on new intraday capture: the full intraday P&L-Charts curve.
+
+## Review — Groww-style P&L dashboard (BUILT this session)
+- app/lib/pnlDaily.js — pure aggregation: dailySeries (broker merge), summaryStats
+  (net/win%/streaks/most-profitable), quantileBuckets (relative-to-own-days, strict
+  terciles), monthMatrix (Sun-first calendar), monthlyRollup, fyOf. 17 unit tests.
+- app/components/shared/PnlDashboard.js — Day/Month/Year views: stat panel, year
+  heatmap, month calendar + week-overview, day summary (+ intraday-pending note),
+  monthly table. Reads APP.fnoLedger at render; optional `rows` prop for tests.
+- app/globals.css — .pnl-* styles; bucket tints via color-mix off --grn/--red so
+  day+night Just Work. Colour-only direction, --fs-* tokens, mobile breakpoint.
+- Wired as the new TOP of AlgoTab; strategy/ITR/carryforward panels kept below.
+- Verified: prod build clean, 115/115 tests pass, rendered all 3 views x both
+  themes via a throwaway /verify page (full page needs private data).
+- DEFERRED (needs new pipeline): intraday fill-by-fill P&L curve — per-fill
+  timestamps + minute price feed from Fyers/Upstox/Dhan websockets.
