@@ -124,6 +124,46 @@ export function monthMatrix(year, month0) {
   return weeks;
 }
 
+// Scale several keys of an intraday tape onto ONE shared ₹ axis (always incl. 0),
+// for the aggregate net line + the per-broker overlay. Returns { byKey, zeroY }.
+// A key with no finite values → byKey[key] = null.
+export function scaleLines(points, keys, width, height, pad = 8) {
+  const pts = (points || []).filter((p) => p && p.t != null);
+  if (pts.length < 2) return null;
+  let lo = 0, hi = 0;
+  for (const p of pts) for (const k of keys) {
+    const v = +p[k]; if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  }
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const span = hi - lo, x0 = pad, x1 = width - pad, y0 = pad, y1 = height - pad;
+  const vx = (i) => (pts.length === 1 ? (x0 + x1) / 2 : x0 + (i / (pts.length - 1)) * (x1 - x0));
+  const vy = (v) => y0 + (hi - v) / span * (y1 - y0);
+  const byKey = {};
+  for (const k of keys) {
+    byKey[k] = pts.some((p) => Number.isFinite(+p[k]))
+      ? pts.map((p, i) => (Number.isFinite(+p[k]) ? { x: r2(vx(i)), y: r2(vy(+p[k])), t: p.t } : null))
+      : null;
+  }
+  return { byKey, zeroY: r2(vy(0)), n: pts.length };
+}
+
+// Normalize one key to its OWN min/max over the chart height — for the NIFTY
+// watermark, which lives on an index scale, not ₹. Aligned x with scaleLines.
+export function normalizeLine(points, key, width, height, pad = 8) {
+  const pts = (points || []).filter((p) => p && p.t != null);
+  const vals = pts.map((p) => +p[key]).filter(Number.isFinite);
+  if (vals.length < 2) return null;
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const x0 = pad, x1 = width - pad, y0 = pad, y1 = height - pad;
+  return pts.map((p, i) => {
+    const v = +p[key];
+    if (!Number.isFinite(v)) return null;
+    const x = pts.length === 1 ? (x0 + x1) / 2 : x0 + (i / (pts.length - 1)) * (x1 - x0);
+    return { x: r2(x), y: r2(y0 + (hi - v) / (hi - lo) * (y1 - y0)) };
+  });
+}
+
 // Scale an intraday tape ([{ t:'HH:MM', net }]) into SVG geometry for the Day
 // view. Pure: returns coordinates only, the component draws them. The y-range is
 // padded and always includes 0 so the zero line (the green/red split) is on-chart.

@@ -1,33 +1,74 @@
 'use client';
-// Shared intraday P&L line: green above 0 / red below, with a dashed reference
-// line + dot at the CURRENT value. Used by the Trading tab's F&O Day view and the
-// Indian tab's equity day-change curve. Axis labels derive from the SAME scaled
-// points the line uses (single source — no raw/filtered desync). `pending` draws a
-// faint marker only when the F&O API flagged an open order (equity passes false).
-import { scaleIntraday } from '../../lib/pnlDaily';
+// Shared intraday P&L chart. The bold line is the aggregate net P&L, green above
+// 0 / red below, with a dashed reference line + dot at the CURRENT value. When the
+// tape carries per-broker components (Dhan/Upstox/Fyers), each is overlaid as a
+// muted coloured line. A faint NIFTY 50 line sits behind as a market-direction
+// watermark (its own index scale — not the ₹ axis). Axis labels derive from the
+// same scaled points. Equity tapes (net only) degrade to just the bold line.
+import { scaleLines, normalizeLine } from '../../lib/pnlDaily';
+
+const BROKER = { dhan: { c: '#7C9CF0', label: 'Dhan' }, upstox: { c: '#C99BE8', label: 'Upstox' }, fyers: { c: '#5FC9B5', label: 'Fyers' } };
 
 export default function IntradayChart({ tape, pending = false, ariaLabel = 'Intraday P&L' }) {
   const W = 660, H = 200;
-  const g = scaleIntraday(tape, W, H);
-  if (!g) return null;
-  const d = g.pts.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
-  const uid = `iq-${g.pts.length}-${Math.round(g.curY)}`;
-  const curColor = g.ud ? 'var(--grn)' : 'var(--red)';
-  const last = g.pts[g.pts.length - 1];
-  const mid = g.pts[Math.floor(g.pts.length / 2)];
+  const brokerKeys = ['dhan', 'upstox', 'fyers'].filter((k) => (tape || []).some((p) => p && p[k] != null));
+  const overlay = brokerKeys.length > 1;                  // only overlay when there's a split to show
+  const g = scaleLines(tape, ['net', ...(overlay ? brokerKeys : [])], W, H);
+  if (!g || !g.byKey.net) return null;
+  const nifty = normalizeLine(tape, 'nifty', W, H);
+  const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
+
+  const net = g.byKey.net;
+  const dNet = path(net);
+  const uid = `iq-${net.length}-${Math.round(g.zeroY)}`;
+  const last = net[net.length - 1];
+  const ud = (tape[tape.length - 1]?.net ?? 0) >= 0;
+  const curColor = ud ? 'var(--grn)' : 'var(--red)';
+  const mid = net[Math.floor(net.length / 2)];
+
   return (
-    <svg viewBox={`0 0 ${W} ${H + 22}`} width="100%" height="auto" style={{ marginTop: 12, display: 'block' }} role="img" aria-label={ariaLabel}>
+    <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" height="auto" style={{ marginTop: 12, display: 'block' }} role="img" aria-label={ariaLabel}>
       <clipPath id={`up-${uid}`}><rect x="0" y="0" width={W} height={g.zeroY} /></clipPath>
       <clipPath id={`dn-${uid}`}><rect x="0" y={g.zeroY} width={W} height={H - g.zeroY} /></clipPath>
+
+      {/* NIFTY 50 watermark — faint, behind everything */}
+      {nifty ? <path d={path(nifty)} fill="none" stroke="var(--txt2)" strokeWidth="1.5" opacity=".13" /> : null}
+
       <line x1="0" y1={g.zeroY} x2={W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
-      <path d={d} fill="none" stroke="var(--grn)" strokeWidth="2" clipPath={`url(#up-${uid})`} />
-      <path d={d} fill="none" stroke="var(--red)" strokeWidth="2" clipPath={`url(#dn-${uid})`} />
-      <line x1="0" y1={g.curY} x2={W} y2={g.curY} stroke={curColor} strokeWidth=".7" strokeDasharray="4 3" opacity=".55" />
-      <circle cx={last.x} cy={g.curY} r="3.5" fill={curColor} />
+
+      {/* per-broker overlay (muted) */}
+      {overlay && brokerKeys.map((k) => g.byKey[k]
+        ? <path key={k} d={path(g.byKey[k])} fill="none" stroke={BROKER[k].c} strokeWidth="1.2" opacity=".75" />
+        : null)}
+
+      {/* aggregate net — bold, green/red split */}
+      <path d={dNet} fill="none" stroke="var(--grn)" strokeWidth="2" clipPath={`url(#up-${uid})`} />
+      <path d={dNet} fill="none" stroke="var(--red)" strokeWidth="2" clipPath={`url(#dn-${uid})`} />
+      <line x1="0" y1={last.y} x2={W} y2={last.y} stroke={curColor} strokeWidth=".7" strokeDasharray="4 3" opacity=".55" />
+      <circle cx={last.x} cy={last.y} r="3.5" fill={curColor} />
       {pending ? <line x1="0" y1={g.zeroY - 0.1} x2={W} y2={g.zeroY - 0.1} stroke="var(--acc)" strokeWidth=".7" strokeDasharray="6 4" opacity=".5" /> : null}
-      <text x="2" y={H + 16} className="pnl-axt">{g.pts[0].t}</text>
+
+      <text x="2" y={H + 16} className="pnl-axt">{net[0].t}</text>
       <text x={W / 2} y={H + 16} className="pnl-axt" textAnchor="middle">{mid.t}</text>
       <text x={W - 2} y={H + 16} className="pnl-axt" textAnchor="end">{last.t}{pending ? ' · pending order' : ''}</text>
+
+      {/* legend (only when overlaying) */}
+      {(overlay || nifty) && (
+        <g transform={`translate(2 ${H + 30})`} className="pnl-axt">
+          {overlay && brokerKeys.map((k, i) => (
+            <g key={k} transform={`translate(${i * 70} 0)`}>
+              <rect x="0" y="-7" width="9" height="3" rx="1" fill={BROKER[k].c} />
+              <text x="13" y="0">{BROKER[k].label}</text>
+            </g>
+          ))}
+          {nifty && (
+            <g transform={`translate(${overlay ? brokerKeys.length * 70 : 0} 0)`}>
+              <rect x="0" y="-7" width="9" height="3" rx="1" fill="var(--txt2)" opacity=".4" />
+              <text x="13" y="0">NIFTY 50</text>
+            </g>
+          )}
+        </g>
+      )}
     </svg>
   );
 }

@@ -71,6 +71,12 @@ async function yahooQuote(sym) {
   return null;
 }
 
+// NIFTY 50 spot for the intraday watermark. ^NSEI = the index on Yahoo. Returns
+// { price, prevClose } or null (→ the tick just omits nifty for that point).
+export async function niftyLtp() {
+  return yahooQuote('^NSEI');
+}
+
 // Resolve quotes for a symbol list (bounded concurrency to stay polite to Yahoo).
 async function fetchQuotes(syms) {
   const out = {};

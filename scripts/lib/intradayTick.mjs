@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
-import { pullEquityDayChange, pullUsDayChange } from './equity.mjs';
+import { pullEquityDayChange, pullUsDayChange, niftyLtp } from './equity.mjs';
 import { appendIntraday } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts, usSessionDate } from './marketHours.mjs';
@@ -51,7 +51,11 @@ export async function captureTick({ withOrders = true, nowMs = Date.now(), file 
   }
   if (!snap.any) return { ok: false, reason: 'no-tokens', date, t: hhmm };
 
-  const point = { t: hhmm, net: snap.net, byBroker: snap.byBroker, pending: snap.pending, istNow: iso };
+  // NIFTY 50 spot for the chart watermark — best-effort, never blocks the capture.
+  let nifty = null;
+  try { nifty = (await niftyLtp())?.price ?? null; } catch {}
+
+  const point = { t: hhmm, net: snap.net, byBroker: snap.byBroker, pending: snap.pending, nifty, istNow: iso };
   const { count, kvPromise } = publish(file, kvKey, date, point);
   const kv = await kvPromise;
   return { ok: true, kind: 'fno', date, t: hhmm, net: snap.net, brokers: Object.keys(snap.byBroker), pending: snap.pending, count, kv };
