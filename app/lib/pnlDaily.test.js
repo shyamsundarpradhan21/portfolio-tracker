@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
-  scaleIntraday, scaleCandles,
+  scaleIntraday, scaleCandles, mergeLiveTapes,
 } from './pnlDaily.js';
 
 const rows = [
@@ -136,6 +136,38 @@ describe('scaleCandles — NIFTY 1-min OHLC watermark geometry', () => {
     const g = scaleCandles(cs, 100, 100);
     expect(g.bars[0].up).toBe(true);    // 105 >= 100
     expect(g.bars[1].up).toBe(false);   // 102 < 105
+  });
+});
+
+describe('mergeLiveTapes — Overview portfolio curve', () => {
+  it('returns [] when no sleeve has data', () => {
+    expect(mergeLiveTapes({})).toEqual([]);
+    expect(mergeLiveTapes({ fno: [], eq: [{ t: '09:20', net: 'x' }] })).toEqual([]);
+  });
+  it('sums sleeves per tick, carrying each forward (0 before its first point)', () => {
+    const t = mergeLiveTapes({
+      fno: [{ t: '09:20', net: 100 }, { t: '09:30', net: 250 }],
+      eq: [{ t: '09:30', net: 40 }],
+    });
+    expect(t.map((p) => [p.t, p.net, p.fno, p.eq])).toEqual([
+      ['09:20', 100, 100, 0],     // eq hasn't started → 0
+      ['09:30', 290, 250, 40],    // 250 + 40
+    ]);
+  });
+  it('omits a sleeve with no points entirely (no overlay line)', () => {
+    const t = mergeLiveTapes({ fno: [{ t: '09:20', net: 5 }, { t: '09:21', net: 6 }] });
+    expect('us' in t[0]).toBe(false);
+    expect('eq' in t[0]).toBe(false);
+    expect(t[0].fno).toBe(5);
+  });
+  it('orders the Indian session before the US overnight (post-midnight last)', () => {
+    const t = mergeLiveTapes({
+      eq: [{ t: '09:20', net: 10 }, { t: '15:30', net: 20 }],
+      us: [{ t: '18:45', net: 5 }, { t: '01:30', net: 8 }],
+    });
+    expect(t.map((p) => p.t)).toEqual(['09:20', '15:30', '18:45', '01:30']);
+    // net carries the settled equity through the evening US session
+    expect(t[t.length - 1].net).toBe(28); // eq 20 + us 8
   });
 });
 

@@ -147,6 +147,44 @@ export function scaleLines(points, keys, width, height, pad = 8) {
   return { byKey, zeroY: r2(vy(0)), n: pts.length };
 }
 
+// Merge the per-sleeve intraday day-change tapes (F&O, India equity, US — each
+// [{ t:'HH:MM', net }]) into ONE portfolio tape for the Overview live curve.
+// Points are ordered chronologically across the portfolio's trading day: the
+// Indian session (09:13→15:32) first, then the US session that opens the same
+// evening (18:45→23:59) and runs past midnight (00:00→02:30, ranked after
+// evening). Each sleeve's value is carried forward (0 before its first point),
+// so net = Σ sleeves at every tick. A sleeve with NO points that day is omitted
+// entirely (its key never appears → the chart draws no line for it).
+//   parts = { fno:[…], eq:[…], us:[…] }  →  [{ t, net, fno?, eq?, us? }]
+const SLEEVE_KEYS = ['fno', 'eq', 'us'];
+// minutes-since-midnight, but pre-06:00 (US post-midnight) ranked after evening.
+const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
+export function mergeLiveTapes(parts = {}) {
+  const present = SLEEVE_KEYS.filter((k) => Array.isArray(parts[k]) && parts[k].some((p) => p && p.t != null && Number.isFinite(+p.net)));
+  if (!present.length) return [];
+  // time → { sleeve: net } from each present tape (last write per minute wins).
+  const at = new Map();
+  for (const k of present) {
+    for (const p of parts[k]) {
+      if (!p || p.t == null || !Number.isFinite(+p.net)) continue;
+      const slot = at.get(p.t) || {};
+      slot[k] = +p.net;
+      at.set(p.t, slot);
+    }
+  }
+  const times = [...at.keys()].sort((a, b) => tRank(a) - tRank(b));
+  const last = {}; // carried last-known net per sleeve
+  const out = [];
+  for (const t of times) {
+    Object.assign(last, at.get(t));
+    let net = 0; const row = { t };
+    for (const k of present) { const v = last[k] || 0; row[k] = r2(v); net += v; }
+    row.net = r2(net);
+    out.push(row);
+  }
+  return out;
+}
+
 // Scale REAL 1-minute OHLC candles ([{ t:'HH:MM', o, h, l, c }], from Yahoo's
 // ^NSEI 1m feed) into SVG geometry for the NIFTY 50 watermark. Evenly spaced by
 // index across the chart width, normalized to the candles' own price range (an

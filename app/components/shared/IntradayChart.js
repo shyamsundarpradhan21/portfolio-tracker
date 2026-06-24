@@ -7,13 +7,19 @@
 // same scaled points. Equity tapes (net only) degrade to just the bold line.
 import { scaleLines, scaleCandles } from '../../lib/pnlDaily';
 
-const BROKER = { dhan: { c: '#7C9CF0', label: 'Dhan' }, upstox: { c: '#C99BE8', label: 'Upstox' }, fyers: { c: '#5FC9B5', label: 'Fyers' } };
+// Default overlay = the three F&O brokers. The Overview live curve passes its own
+// (F&O / equity / US sleeves). Each entry: { key, c (colour), label }.
+const BROKER = [
+  { key: 'dhan', c: '#7C9CF0', label: 'Dhan' },
+  { key: 'upstox', c: '#C99BE8', label: 'Upstox' },
+  { key: 'fyers', c: '#5FC9B5', label: 'Fyers' },
+];
 
-export default function IntradayChart({ tape, candles = null, pending = false, ariaLabel = 'Intraday P&L' }) {
+export default function IntradayChart({ tape, candles = null, pending = false, overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
   const W = 660, H = 200;
-  const brokerKeys = ['dhan', 'upstox', 'fyers'].filter((k) => (tape || []).some((p) => p && p[k] != null));
-  const overlay = brokerKeys.length > 1;                  // only overlay when there's a split to show
-  const g = scaleLines(tape, ['net', ...(overlay ? brokerKeys : [])], W, H);
+  const present = overlays.filter((o) => (tape || []).some((p) => p && p[o.key] != null));
+  const overlay = present.length > 1;                     // only overlay when there's a split to show
+  const g = scaleLines(tape, ['net', ...(overlay ? present.map((o) => o.key) : [])], W, H);
   if (!g || !g.byKey.net) return null;
   const nifty = scaleCandles(candles, W, H);            // real 1-min OHLC watermark
   const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
@@ -49,9 +55,9 @@ export default function IntradayChart({ tape, candles = null, pending = false, a
 
       <line x1="0" y1={g.zeroY} x2={W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
 
-      {/* per-broker overlay (muted) */}
-      {overlay && brokerKeys.map((k) => g.byKey[k]
-        ? <path key={k} d={path(g.byKey[k])} fill="none" stroke={BROKER[k].c} strokeWidth="1.2" opacity=".75" />
+      {/* per-sleeve overlay (muted) */}
+      {overlay && present.map((o) => g.byKey[o.key]
+        ? <path key={o.key} d={path(g.byKey[o.key])} fill="none" stroke={o.c} strokeWidth="1.2" opacity=".75" />
         : null)}
 
       {/* aggregate net — bold, green/red split */}
@@ -68,14 +74,14 @@ export default function IntradayChart({ tape, candles = null, pending = false, a
       {/* legend (only when overlaying) */}
       {(overlay || nifty) && (
         <g transform={`translate(2 ${H + 30})`} className="pnl-axt">
-          {overlay && brokerKeys.map((k, i) => (
-            <g key={k} transform={`translate(${i * 70} 0)`}>
-              <rect x="0" y="-7" width="9" height="3" rx="1" fill={BROKER[k].c} />
-              <text x="13" y="0">{BROKER[k].label}</text>
+          {overlay && present.map((o, i) => (
+            <g key={o.key} transform={`translate(${i * 70} 0)`}>
+              <rect x="0" y="-7" width="9" height="3" rx="1" fill={o.c} />
+              <text x="13" y="0">{o.label}</text>
             </g>
           ))}
           {nifty && (
-            <g transform={`translate(${overlay ? brokerKeys.length * 70 : 0} 0)`}>
+            <g transform={`translate(${overlay ? present.length * 70 : 0} 0)`}>
               <rect x="0" y="-7" width="9" height="3" rx="1" fill="var(--txt2)" opacity=".4" />
               <text x="13" y="0">NIFTY 50</text>
             </g>
