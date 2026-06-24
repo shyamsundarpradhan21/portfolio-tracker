@@ -38,14 +38,18 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
 
   const [view, setView] = useState('year');
   const [broker, setBroker] = useState('all');
+  const [metric, setMetric] = useState('net');   // 'net' | 'gross' — what the whole dashboard counts
+  const [dayMode, setDayMode] = useState('most'); // 'most' | 'least' profitable day
   useEffect(() => {
     try {
       const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year'].includes(v)) setView(v);
       const b = localStorage.getItem('nwTracker.pnlBroker'); if (b) setBroker(b);
+      const m = localStorage.getItem('nwTracker.pnlMetric'); if (m === 'gross' || m === 'net') setMetric(m);
     } catch {}
   }, []);
   const pick = (v) => { setView(v); try { localStorage.setItem('nwTracker.pnlView', v); } catch {} };
   const pickBroker = (b) => { setBroker(b); try { localStorage.setItem('nwTracker.pnlBroker', b); } catch {} };
+  const pickMetric = (m) => { setMetric(m); try { localStorage.setItem('nwTracker.pnlMetric', m); } catch {} };
   // Fall back to All if a persisted broker is no longer in the data.
   const activeBroker = broker !== 'all' && brokers.includes(broker) ? broker : 'all';
 
@@ -53,7 +57,13 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
     () => (activeBroker === 'all' ? allRows : allRows.filter((r) => r.broker === activeBroker)),
     [allRows, activeBroker],
   );
-  const series = useMemo(() => dailySeries(rows), [rows]);
+  const base = useMemo(() => dailySeries(rows), [rows]);
+  // Gross mode swaps each day's `net` for its gross so every downstream view (stats,
+  // calendar buckets, period summary) recomputes on gross with no other changes.
+  const series = useMemo(
+    () => (metric === 'gross' ? base.map((d) => ({ ...d, net: d.gross })) : base),
+    [base, metric],
+  );
   const byDate = useMemo(() => new Map(series.map((d) => [d.date, d])), [series]);
   const buckets = useMemo(() => quantileBuckets(series), [series]);
 
@@ -105,9 +115,9 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
         </div>
       </div>
 
-      {/* ── broker toggle (All + each broker) ── */}
-      {brokers.length > 1 && (
-        <div className="pnl-brokers">
+      {/* ── controls: broker filter + Net/Gross metric ── */}
+      <div className="pnl-brokers">
+        {brokers.length > 1 && (
           <div className="seg" role="tablist" aria-label="Broker">
             {['all', ...brokers].map((b) => (
               <button key={b} role="tab" aria-selected={activeBroker === b} className={activeBroker === b ? 'on' : ''} onClick={() => pickBroker(b)}>
@@ -115,19 +125,24 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
               </button>
             ))}
           </div>
+        )}
+        <div className="seg" role="tablist" aria-label="Metric" style={{ marginLeft: 'auto' }}>
+          {['net', 'gross'].map((m) => (
+            <button key={m} role="tab" aria-selected={metric === m} className={metric === m ? 'on' : ''} onClick={() => pickMetric(m)}>
+              {m === 'net' ? 'Net' : 'Gross'}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* ── stat panel (FY in scope) ── */}
       <div className="pnl-stats">
-        <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />} sub={`Gross ${inrC(stats.gross)} · charges ${inrC(stats.charges)}`} />
-        <Stat k="Win rate"
-          v={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{stats.winPct}%<Donut pct={stats.winPct} /></span>}
-          sub={`${stats.winDays} win · ${stats.lossDays} loss days`} />
-        <Stat k="Most profitable day" vc="grn"
-          v={stats.mostProfit ? <SInrF n={stats.mostProfit.net} /> : '—'}
-          sub={stats.mostProfit ? prettyDate(stats.mostProfit.date) : ''} />
-        <Stat k="Orders" v={stats.orders} sub={`${stats.tradingDays ? (stats.orders / stats.tradingDays).toFixed(1) : 0} avg/day`} />
+        <Stat k={metric === 'gross' ? 'Gross P&L' : 'Net P&L'} vc={cl(stats.net)} v={<SInrF n={stats.net} />}
+          sub={`Gross ${inrC(stats.gross)} · charges ${inrC(stats.charges)} · avg ${inrC(stats.avgPerDay)}/day`} />
+        <WinRateStat stats={stats} />
+        <DayStat stats={stats} mode={dayMode} onToggle={() => setDayMode((m) => (m === 'most' ? 'least' : 'most'))} />
+        <Stat k="Orders" v={stats.orders || '—'}
+          sub={stats.orders ? `${(stats.orders / stats.tradingDays).toFixed(1)} avg/day` : 'not in this report'} />
         <Stat k="Trading days" v={stats.tradingDays}
           sub={`streak 🔥 ${stats.bestStreak} · now ${stats.currentStreak}${stats.currentStreakWin ? '' : ' loss'}`} />
       </div>
@@ -317,13 +332,42 @@ function Legend() {
   );
 }
 
+// Win rate, hover to flip to loss rate (red ring).
+function WinRateStat({ stats }) {
+  const [hover, setHover] = useState(false);
+  const pct = hover ? (100 - stats.winPct) : stats.winPct;
+  return (
+    <div className="pnl-stat" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ cursor: 'default' }}>
+      <div className="lbl" style={{ margin: 0 }}>{hover ? 'Loss rate' : 'Win rate'}</div>
+      <div className="vmd" style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        {pct}%<Donut pct={pct} color={hover ? 'var(--red)' : 'var(--grn)'} />
+      </div>
+      <div className="sub" style={{ marginTop: 3 }}>{stats.winDays} win · {stats.lossDays} loss days</div>
+    </div>
+  );
+}
+
+// Most / least profitable day, click to toggle.
+function DayStat({ stats, mode, onToggle }) {
+  const d = mode === 'most' ? stats.mostProfit : stats.leastProfit;
+  return (
+    <div className="pnl-stat" onClick={onToggle} style={{ cursor: 'pointer' }} title="Click to toggle most / least profitable day">
+      <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+        {mode === 'most' ? 'Most profitable day' : 'Least profitable day'} <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-sm)' }}>↻</span>
+      </div>
+      <div className={'vmd ' + (d ? cl(d.net) : '')} style={{ marginTop: 5 }}>{d ? <SInrF n={d.net} /> : '—'}</div>
+      <div className="sub" style={{ marginTop: 3 }}>{d ? prettyDate(d.date) : ''}</div>
+    </div>
+  );
+}
+
 // Win-rate ring (Groww-style). Green arc = win%.
-function Donut({ pct }) {
+function Donut({ pct, color = 'var(--grn)' }) {
   const r = 11, c = 2 * Math.PI * r;
   return (
     <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true">
       <circle cx="14" cy="14" r={r} fill="none" stroke="var(--pnl-empty)" strokeWidth="4" />
-      <circle cx="14" cy="14" r={r} fill="none" stroke="var(--grn)" strokeWidth="4"
+      <circle cx="14" cy="14" r={r} fill="none" stroke={color} strokeWidth="4"
         strokeDasharray={c} strokeDashoffset={c * (1 - (pct || 0) / 100)}
         strokeLinecap="round" transform="rotate(-90 14 14)" />
     </svg>

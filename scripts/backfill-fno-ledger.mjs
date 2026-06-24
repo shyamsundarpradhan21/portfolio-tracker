@@ -34,7 +34,7 @@ export function dailyToLedgerRows(fnoDaily) {
       grossRealised: r.gross,
       estCharges: r.net != null ? +(r.gross - r.net).toFixed(2) : 0,
       turnover: 0,
-      orders: null,
+      orders: r.orders ?? null,   // = closed-trade count that day (reports have no order count)
       source: 'report',
     }));
 }

@@ -44,11 +44,12 @@ export function summaryStats(series) {
       currentStreakWin: true, avgPerDay: 0 };
   }
   let net = 0, gross = 0, charges = 0, orders = 0, winDays = 0, lossDays = 0;
-  let mostProfit = null;
+  let mostProfit = null, leastProfit = null;
   for (const d of series) {
     net += d.net; gross += d.gross; charges += d.charges; orders += d.orders;
     if (d.net > 0) winDays++; else if (d.net < 0) lossDays++;
     if (!mostProfit || d.net > mostProfit.net) mostProfit = { date: d.date, net: d.net };
+    if (!leastProfit || d.net < leastProfit.net) leastProfit = { date: d.date, net: d.net };
   }
   // Longest run of profit days, and the trailing (current) run + its direction.
   let bestStreak = 0, run = 0;
@@ -68,7 +69,7 @@ export function summaryStats(series) {
     net: r2(net), gross: r2(gross), charges: r2(charges), orders, tradingDays,
     winDays, lossDays,
     winPct: tradingDays ? Math.round((winDays / tradingDays) * 100) : 0,
-    mostProfit,
+    mostProfit, leastProfit,
     bestStreak, currentStreak, currentStreakWin,
     avgPerDay: r2(net / tradingDays),
   };

@@ -136,12 +136,15 @@ def fno_daily_reconciled(data_rows, target):
         peek = [_peekrow(r) for r in data_rows[:4]]
         closest = f"closest col Σ{round(best_sum)}" if best_sum is not None else "no numeric column"
         return {}, (f"no column reconciles to {round(target)} ({closest})", peek)
-    out = {}
+    out = {}                                    # date -> {gross, net, n(trades)}
     for r in data_rows:
         d = _exit_date(r)
         p = num(r[best]) if best < len(r) else None
         if d and p is not None:
-            out[d] = round(out.get(d, 0.0) + p, 2)
+            cur = out.setdefault(d, {"gross": 0.0, "net": 0.0, "n": 0})
+            cur["gross"] = round(cur["gross"] + p, 2)
+            cur["net"] = cur["gross"]
+            cur["n"] += 1
     return out, f"pnl=col{best}"
 
 def tradewise_fno_daily(tw, target):
@@ -295,10 +298,13 @@ def parse_fyers(path):
         pnl = num(r[1])
         if d and pnl is not None and seg == "Derivatives":
             k = d.date().isoformat()
-            fno_by_day[k] = round(fno_by_day.get(k, 0.0) + pnl, 2)
+            cur = fno_by_day.setdefault(k, {"gross": 0.0, "net": 0.0, "n": 0})
+            cur["gross"] = round(cur["gross"] + pnl, 2)
+            cur["net"] = cur["gross"]
+            cur["n"] += 1
     # Sanity: the daily sum should reconcile to the FY F&O summary (options+futures).
     if fno_by_day:
-        dsum, ssum = round(sum(fno_by_day.values())), round(opt + fut)
+        dsum, ssum = round(sum(v["gross"] for v in fno_by_day.values())), round(opt + fut)
         if abs(dsum - ssum) > max(50, abs(ssum) * 0.02):
             print(f"  ! fyers {fy}: F&O daily Σ{dsum} != summary {ssum} (check Segment/P&L cols)")
     return {
@@ -368,13 +374,14 @@ def parse_dhan(path):
                 b = fno_by_fy.setdefault(fy_of(sell), {"gross": 0.0, "net": 0.0})
                 b["gross"] += g
                 b["net"] += nv if nv is not None else g
-                day = fno_by_day.setdefault(sell.date().isoformat(), {"gross": 0.0, "net": 0.0})
+                day = fno_by_day.setdefault(sell.date().isoformat(), {"gross": 0.0, "net": 0.0, "n": 0})
                 day["gross"] += g
                 day["net"] += nv if nv is not None else g
+                day["n"] += 1
     return {"label": "dhan", "owner": "self", "sleeve": "trading", "allTime": out,
             "fnoByFY": {k: {"gross": round(v["gross"]), "net": round(v["net"])}
                         for k, v in fno_by_fy.items()},
-            "fnoByDay": {k: {"gross": round(v["gross"], 2), "net": round(v["net"], 2)}
+            "fnoByDay": {k: {"gross": round(v["gross"], 2), "net": round(v["net"], 2), "n": v["n"]}
                          for k, v in sorted(fno_by_day.items())}}
 
 # ── Vested/DriveWealth P&L statement (.xlsx) — Realized breakdown by Date Sold ─
@@ -626,18 +633,21 @@ def main():
     # stay in fno_realized above.) Per-FY brokers (fyers, zerodha_self) contribute
     # a flat date→P&L dict; Dhan gives gross+net per day. Aggregate across all FYs.
     DAILY_SLEEVE = {"dhan": "S01", "fyers": "S02", "zerodha_self": "S02", "upstox": "S02"}
-    daily = {}                                  # (date, broker) -> {gross, net}
+    daily = {}                                  # (date, broker) -> {gross, net, n(trades)}
+    def add_daily(d, broker, v):
+        cur = daily.setdefault((d, broker), {"gross": 0.0, "net": 0.0, "n": 0})
+        cur["gross"] += v["gross"]; cur["net"] += v["net"]; cur["n"] += v.get("n", 0)
     if dhan and dhan.get("fnoByDay"):
         for d, v in dhan["fnoByDay"].items():
-            daily[(d, "dhan")] = {"gross": v["gross"], "net": v["net"]}
-    for a in accounts:                          # fyers + zerodha_self (sleeve 'trading')
+            add_daily(d, "dhan", v)
+    for a in accounts:                          # fyers + zerodha_self + upstox (sleeve 'trading')
         if a.get("sleeve") == "trading" and a.get("fnoByDay") and a["label"] in DAILY_SLEEVE:
-            for d, amt in a["fnoByDay"].items():
-                cur = daily.setdefault((d, a["label"]), {"gross": 0.0, "net": 0.0})
-                cur["gross"] += amt
-                cur["net"] += amt              # no per-trade charge split → net == gross
+            for d, v in a["fnoByDay"].items():
+                add_daily(d, a["label"], v)
+    # `orders` here = number of closed trades that day (the reports have no order
+    # count; trade count is the closest real proxy and beats the old hard 0).
     fno_daily = [{"date": d, "broker": b, "sleeve": DAILY_SLEEVE[b],
-                  "gross": round(v["gross"], 2), "net": round(v["net"], 2)}
+                  "gross": round(v["gross"], 2), "net": round(v["net"], 2), "orders": v["n"]}
                  for (d, b), v in daily.items()]
     fno_daily.sort(key=lambda x: (x["date"], x["broker"]))
 
