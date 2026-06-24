@@ -80,6 +80,74 @@ def parse_date(x):
     except ValueError:
         return None
 
+# ── Column detection BY HEADER NAME — robust to per-broker / per-segment layouts
+# (F&O rows carry expiry/strike, shifting the date & P&L columns vs equity). ──
+def _find_col(hdr, *subs):
+    for i, c in enumerate(hdr):
+        cl = str(c or "").strip().lower()
+        if cl and any(s in cl for s in subs):
+            return i
+    return None
+
+def _date_col(hdr):
+    c = _find_col(hdr, "sell date", "exit date", "sold date", "close date")
+    if c is None:                              # fall back to any 'date' that isn't the buy/open one
+        c = next((j for j, x in enumerate(hdr)
+                  if "date" in str(x or "").lower() and not any(
+                      b in str(x or "").lower() for b in ("buy", "open", "acqu", "entry"))), None)
+    return c
+
+def _pnl_col(hdr):
+    return _find_col(hdr, "realized p&l", "realised p&l", "net p&l", "net pnl",
+                     "realized", "realised", "pnl", "p&l", "profit")
+
+def _peekrow(r):
+    out = []
+    for i, c in enumerate(r):
+        if c in (None, ""):
+            continue
+        s = str(c).strip()
+        if num(s) is not None:
+            s = "#"
+        elif re.match(r"^[A-Z]{5}\d{4}[A-Z]$", s):
+            s = "<id>"
+        elif len(s) > 20:
+            s = s[:18] + "…"
+        out.append(f"{i}:{s}")
+    return out
+
+# Bucket a 'Tradewise Exits'-style sheet's F&O sections into date -> realised P&L,
+# detecting the date & P&L columns by header name. Returns (by_day, peek_rows).
+def tradewise_fno_daily(tw):
+    out, peek = {}, []
+    in_fno, date_c, pnl_c = False, None, None
+    for r in tw:
+        nonempty = [c for c in r if c not in (None, "")]
+        first = str(nonempty[0]).strip() if nonempty else ""
+        fl = first.lower()
+        if len(nonempty) <= 2 and first:               # a section title / metadata row
+            if ("f&o" in fl or "future" in fl or "option" in fl) and "curren" not in fl and "commod" not in fl:
+                in_fno, date_c, pnl_c = True, None, None
+            elif "symbol" not in fl:
+                in_fno = False
+            continue
+        if not in_fno:
+            continue
+        if date_c is None:                             # the F&O sub-table header row
+            dc, pc = _date_col(r), _pnl_col(r)
+            if dc is not None and pc is not None:
+                date_c, pnl_c = dc, pc
+            elif len(peek) < 5:
+                peek.append(_peekrow(r))
+            continue
+        d = parse_date(r[date_c]) if date_c < len(r) else None
+        p = num(r[pnl_c]) if pnl_c < len(r) else None
+        if d and p is not None:
+            out[d.date().isoformat()] = round(out.get(d.date().isoformat(), 0.0) + p, 2)
+        elif len(peek) < 5:
+            peek.append(_peekrow(r))
+    return out, peek
+
 def top_movers(by_sym, k=3, usd=False):
     rnd = (lambda a: round(a, 2)) if usd else (lambda a: round(a))
     items = sorted(by_sym.items(), key=lambda kv: kv[1], reverse=True)
@@ -135,10 +203,8 @@ def parse_zerodha(path):
     # n = distinct (symbol, exit-date) = positions closed (not lot rows).
     tw = sheet_rows("Tradewise Exits")
     by_sym, exits, last_exit = {}, set(), None
-    fno_by_day = {}                   # F&O section, bucketed by exact exit-date
-    sections_seen = set()             # for the diagnostic when F&O doesn't match
     section, in_table = None, False
-    for r in tw:
+    for r in tw:                      # EQUITY (+ ETF/SGB) per-symbol — F&O handled below
         c1 = str(r[1]).strip() if len(r) > 1 and r[1] is not None else ""
         if not c1:
             continue
@@ -148,42 +214,33 @@ def parse_zerodha(path):
         profit = num(r[8]) if len(r) > 8 else None
         if profit is None:            # a section title (or metadata) → new section
             section, in_table = c1, False
-            sections_seen.add(c1)
             continue
-        sec_l = section.lower() if section else ""
-        is_equity = bool(section) and (section.startswith("Equity") or section == "Non Equity")
-        # F&O = the derivatives sections (F&O / Futures / Options), NOT currency or
-        # commodity (different segments) and NOT equity. Bucket those by exit-date.
-        is_fno = (in_table and section and not is_equity
-                  and ("f&o" in sec_l or "future" in sec_l or "option" in sec_l)
-                  and "curren" not in sec_l and "commod" not in sec_l)
-        if is_fno:
-            ed = parse_date(r[4]) if len(r) > 4 else None
-            if ed:
-                k = ed.date().isoformat()
-                fno_by_day[k] = round(fno_by_day.get(k, 0.0) + profit, 2)
-                if last_exit is None or ed > last_exit:
-                    last_exit = ed
-        if not in_table or not is_equity:
-            continue                  # equity + ETF/SGB only past here; F&O handled above
+        if not in_table or not section or not (section.startswith("Equity") or section == "Non Equity"):
+            continue                  # equity + ETF/SGB only; skip F&O / currency / commodity / MF
         by_sym[c1] = by_sym.get(c1, 0.0) + profit
         ed = parse_date(r[4]) if len(r) > 4 else None
         exits.add((c1, ed.date() if ed else None))
         if ed and (last_exit is None or ed > last_exit):
             last_exit = ed
 
-    # Sanity / diagnostics. If there IS F&O for the FY (summary != 0) but nothing
-    # bucketed, the Tradewise section label didn't match — print the labels seen so
-    # the matcher can be fixed. If it bucketed but doesn't reconcile, warn too.
+    # F&O daily — header-name detection over the Tradewise F&O sections (their
+    # columns differ from equity: expiry/strike shift the date & P&L positions).
+    fno_by_day, fno_peek = tradewise_fno_daily(tw)
+    for k in fno_by_day:
+        ed = parse_date(k)
+        if ed and (last_exit is None or ed > last_exit):
+            last_exit = ed
+
+    # Sanity: F&O daily should reconcile to the F&O sheet's options+futures total.
     ssum = round(opt + fut)
     if fno_by_day:
         dsum = round(sum(fno_by_day.values()))
         if abs(dsum - ssum) > max(50, abs(ssum) * 0.02):
-            print(f"  ! {meta['label']} {fy}: F&O daily Σ{dsum} != summary {ssum} "
-                  f"(sections seen: {sorted(sections_seen)})")
+            print(f"  ! {meta['label']} {fy}: F&O daily Σ{dsum} != summary {ssum}")
     elif ssum != 0:
-        print(f"  ! {meta['label']} {fy}: F&O summary ₹{ssum} but NO daily rows matched. "
-              f"Tradewise sections seen: {sorted(sections_seen)} — tell which is F&O.")
+        print(f"  ! {meta['label']} {fy}: F&O summary ₹{ssum} but no daily rows matched.")
+        for pr in fno_peek:
+            print(f"      {'  '.join(pr)}")
 
     return {
         "label": meta["label"], "owner": meta["owner"], "sleeve": meta["sleeve"], "fy": fy,
@@ -358,8 +415,37 @@ def parse_upstox_zip(path):
     if net is None or round(net) == 0:
         return None        # empty FY (no F&O activity that year) — skip the noise
     gross = find_value_after(rows, "Gross P&L")
+
+    # Per-trade daily F&O: the REALIZED_PNL sheet has a trade table. Detect its
+    # date & P&L columns BY HEADER NAME (layout-agnostic), then bucket by sell date.
+    # The whole account is F&O (UCC 7BB93B), so no equity filtering is needed.
+    fno_by_day = {}
+    hdr_i = date_c = pnl_c = None
+    for i, r in enumerate(rows):
+        dc, pc = _date_col(r), _pnl_col(r)
+        if dc is not None and pc is not None:
+            hdr_i, date_c, pnl_c = i, dc, pc
+            break
+    if hdr_i is not None:
+        for r in rows[hdr_i + 1:]:
+            d = parse_date(r[date_c]) if date_c < len(r) else None
+            p = num(r[pnl_c]) if pnl_c < len(r) else None
+            if d and p is not None:
+                k = d.date().isoformat()
+                fno_by_day[k] = round(fno_by_day.get(k, 0.0) + p, 2)
+    if fno_by_day:
+        dsum = round(sum(fno_by_day.values()))
+        if abs(dsum - round(net)) > max(50, abs(round(net)) * 0.02):
+            print(f"  ! upstox {fy}: daily Σ{dsum} != Net P&L {round(net)} (date c{date_c}, pnl c{pnl_c})")
+    elif round(net) != 0:
+        print(f"  ! upstox {fy}: Net P&L ₹{round(net)} but no per-trade table found. First rows:")
+        for r in rows[:8]:
+            pr = _peekrow(r)
+            if pr:
+                print(f"      {'  '.join(pr)}")
     return {"label": "upstox", "owner": "self", "sleeve": "trading", "fy": fy,
-            "fno": {"realized": round(net), "gross": round(gross) if gross is not None else None}}
+            "fno": {"realized": round(net), "gross": round(gross) if gross is not None else None},
+            "fnoByDay": fno_by_day}
 
 # ── Astha Credit & Securities F&O P&L (.csv, one per FY) — old F&O trading ─────
 def parse_astha(path):
@@ -546,7 +632,7 @@ def main():
     # exports carry no per-trade trade-date, so they can't be bucketed daily and
     # stay in fno_realized above.) Per-FY brokers (fyers, zerodha_self) contribute
     # a flat date→P&L dict; Dhan gives gross+net per day. Aggregate across all FYs.
-    DAILY_SLEEVE = {"dhan": "S01", "fyers": "S02", "zerodha_self": "S02"}
+    DAILY_SLEEVE = {"dhan": "S01", "fyers": "S02", "zerodha_self": "S02", "upstox": "S02"}
     daily = {}                                  # (date, broker) -> {gross, net}
     if dhan and dhan.get("fnoByDay"):
         for d, v in dhan["fnoByDay"].items():
