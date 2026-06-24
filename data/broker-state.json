@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-24T06:44:10+05:30",
+  "syncedAt": "2026-06-24T07:10:26+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -22,7 +22,7 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-24T06:35:30+05:30",
+      "syncedAt": "2026-06-24T07:10:27+05:30",
       "rows": [
         {
           "sym": "BANKBARODA",
@@ -196,12 +196,12 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-24T06:35:31+05:30",
+      "syncedAt": "2026-06-24T07:10:27+05:30",
       "rows": []
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-06-24T06:35:30+05:30",
+      "syncedAt": "2026-06-24T07:10:27+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL300PE",
@@ -229,7 +229,7 @@
     },
     "FYERS_FNO": {
       "source": "Fyers",
-      "syncedAt": "2026-06-24T06:35:31+05:30",
+      "syncedAt": "2026-06-24T07:10:27+05:30",
       "rows": []
     }
   },
@@ -242,7 +242,7 @@
       "utilized": 137
     },
     "upstox": {
-      "available": 187012.69
+      "available": 37876.93
     }
   }
 }
