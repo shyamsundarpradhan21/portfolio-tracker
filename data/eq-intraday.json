@@ -1,0 +1,5 @@
+{
+  "note": "Intraday EQUITY day-change tape (Σ qty×(price−prevClose), INDIAN + SWING). Written by scripts/capture-daemon.mjs during market hours via keyless Yahoo quotes. Non-personal aggregate; safe to commit.",
+  "updatedAt": null,
+  "days": {}
+}

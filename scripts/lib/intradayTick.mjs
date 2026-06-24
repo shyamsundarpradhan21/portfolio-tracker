@@ -8,14 +8,33 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
+import { pullEquityDayChange } from './equity.mjs';
 import { appendIntraday } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts } from './marketHours.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const INTRADAY_FILE = join(ROOT, 'data', 'fno-intraday.json');
-export const kvKey = (date) => `intraday:${date}`;
+export const EQUITY_FILE = join(ROOT, 'data', 'eq-intraday.json');
+export const kvKey = (date) => `intraday:${date}`;          // F&O (back-compat key)
+export const kvKeyEq = (date) => `intraday:eq:${date}`;     // equity day-change
 const KV_TTL = 3 * 24 * 3600; // recent days live in KV; older history served from the committed file
+
+// Append a point to a tape file and publish that day's tape to KV. Shared by the
+// F&O and equity capture paths; never throws (file/KV failures degrade to a skip).
+function publish(file, keyFn, date, point) {
+  let count = 0;
+  try { count = appendIntraday(file, date, point); } catch { /* archive best-effort */ }
+  let kv = false;
+  if (kvConfigured()) {
+    try {
+      const tape = JSON.parse(readFileSync(file, 'utf8'))?.days?.[date] || [];
+      // kvSetJSON is async; fire-and-return its promise via the caller.
+      return { count, kvPromise: kvSetJSON(keyFn(date), tape, KV_TTL) };
+    } catch { /* KV best-effort */ }
+  }
+  return { count, kvPromise: Promise.resolve(kv) };
+}
 
 // Captures one point. `withOrders` controls the (heavier) pending-order check —
 // the daemon passes true only ~once/min. Returns a result object; never throws
@@ -31,17 +50,23 @@ export async function captureTick({ withOrders = true, nowMs = Date.now(), file 
   if (!snap.any) return { ok: false, reason: 'no-tokens', date, t: hhmm };
 
   const point = { t: hhmm, net: snap.net, byBroker: snap.byBroker, pending: snap.pending, istNow: iso };
-  let count = 0;
-  try { count = appendIntraday(file, date, point); } catch (e) { /* archive write best-effort */ }
+  const { count, kvPromise } = publish(file, kvKey, date, point);
+  const kv = await kvPromise;
+  return { ok: true, kind: 'fno', date, t: hhmm, net: snap.net, brokers: Object.keys(snap.byBroker), pending: snap.pending, count, kv };
+}
 
-  // Publish the full day's tape to KV for the live read path.
-  let kv = false;
-  if (kvConfigured()) {
-    try {
-      const json = JSON.parse(readFileSync(file, 'utf8'));
-      const tape = json?.days?.[date] || [];
-      kv = await kvSetJSON(kvKey(date), tape, KV_TTL);
-    } catch { /* KV best-effort */ }
-  }
-  return { ok: true, date, t: hhmm, net: snap.net, brokers: Object.keys(snap.byBroker), pending: snap.pending, count, kv };
+// Equity day-change tick: committed holdings × live Yahoo prices → today's MTM
+// vs prev close. Slower cadence than F&O (the daemon throttles it ~1/min) to stay
+// polite to Yahoo. Same skip-not-zero contract.
+export async function captureEquityTick({ nowMs = Date.now(), file = EQUITY_FILE } = {}) {
+  const { date, hhmm, iso } = istParts(nowMs);
+  let dc;
+  try { dc = await pullEquityDayChange(); }
+  catch (e) { return { ok: false, kind: 'eq', reason: 'pull-failed', error: String(e?.message || e), date, t: hhmm }; }
+  if (!dc) return { ok: false, kind: 'eq', reason: 'no-data', date, t: hhmm };
+
+  const point = { t: hhmm, net: dc.net, byBroker: dc.bySleeve, pending: false, istNow: iso };
+  const { count, kvPromise } = publish(file, kvKeyEq, date, point);
+  const kv = await kvPromise;
+  return { ok: true, kind: 'eq', date, t: hhmm, net: dc.net, covered: dc.covered, missing: dc.missing, count, kv };
 }

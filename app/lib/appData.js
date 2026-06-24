@@ -10,7 +10,8 @@
 export const APP = {
   fySeed: {},
   fnoLedger: { rows: [] },
-  fnoIntraday: { days: {} },   // intraday P&L tape per day (data/fno-intraday.json)
+  fnoIntraday: { days: {} },   // intraday F&O P&L tape per day (data/fno-intraday.json)
+  eqIntraday: { days: {} },    // intraday equity day-change tape (data/eq-intraday.json)
   volPnl: [],
   brokerState: {},
   usTrades: [],

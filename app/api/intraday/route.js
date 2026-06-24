@@ -6,10 +6,14 @@
 // force-dynamic + no-store like the other private-data routes.
 
 import fnoIntraday from '../../../data/fno-intraday.json';
+import eqIntraday from '../../../data/eq-intraday.json';
 
 export const dynamic = 'force-dynamic';
 
 const isoDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+// kind selects the tape: F&O position P&L (default) or equity day-change.
+const ARCHIVE = { fno: fnoIntraday, eq: eqIntraday };
+const kvKeyOf = (kind, date) => (kind === 'eq' ? `intraday:eq:${date}` : `intraday:${date}`);
 
 function kvCreds() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -17,14 +21,14 @@ function kvCreds() {
   return url && token ? { url, token } : null;
 }
 
-async function fromKV(date) {
+async function fromKV(kind, date) {
   const creds = kvCreds();
   if (!creds) return null;
   try {
     const r = await fetch(creds.url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(['GET', `intraday:${date}`]),
+      body: JSON.stringify(['GET', kvKeyOf(kind, date)]),
       cache: 'no-store',
       signal: AbortSignal.timeout(6000),
     });
@@ -34,13 +38,15 @@ async function fromKV(date) {
 }
 
 export async function GET(req) {
-  const date = new URL(req.url).searchParams.get('date');
+  const params = new URL(req.url).searchParams;
+  const date = params.get('date');
+  const kind = params.get('kind') === 'eq' ? 'eq' : 'fno';
   if (!isoDate(date)) {
     return Response.json({ error: 'date must be YYYY-MM-DD' }, { status: 400 });
   }
-  const live = await fromKV(date);
-  const tape = Array.isArray(live) ? live : (fnoIntraday?.days?.[date] || []);
-  return new Response(JSON.stringify({ date, tape, source: live ? 'kv' : 'archive' }), {
+  const live = await fromKV(kind, date);
+  const tape = Array.isArray(live) ? live : (ARCHIVE[kind]?.days?.[date] || []);
+  return new Response(JSON.stringify({ date, kind, tape, source: live ? 'kv' : 'archive' }), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }

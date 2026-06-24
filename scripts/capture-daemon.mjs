@@ -15,24 +15,28 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { captureTick } from './lib/intradayTick.mjs';
+import { captureTick, captureEquityTick } from './lib/intradayTick.mjs';
 import { marketState, istParts } from './lib/marketHours.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const TICK_MS = +process.env.TICK_MS || 10_000;        // 10s default
+const TICK_MS = +process.env.TICK_MS || 10_000;        // F&O cadence (10s)
+const EQUITY_MS = +process.env.EQUITY_MS || 60_000;     // equity cadence (60s, Yahoo-polite)
 const ORDERS_EVERY = +process.env.ORDERS_EVERY || 6;    // pending-order check ~1/min at 10s
 const FORCE = !!process.env.CAPTURE_FORCE;
 
-let inFlight = false;   // never let a slow poll stack onto the next tick
-let n = 0;              // tick counter (drives the orders throttle)
+// F&O and equity run on INDEPENDENT loops with their own in-flight guards, so a
+// slow equity quote-fetch can never stall (or skip) the 10s F&O capture.
+let fnoBusy = false, eqBusy = false;
+let n = 0;              // F&O tick counter (drives the orders throttle)
+const timers = [];
 let committed = false;  // archive committed once at close
 let timer = null;
 
 function commitArchive() {
   if (committed || process.env.SYNC_SKIP_GIT) return;
   try {
-    execSync('git add data/fno-intraday.json', { cwd: ROOT });
-    if (!execSync('git status --porcelain data/fno-intraday.json', { cwd: ROOT }).toString().trim()) { committed = true; return; }
+    execSync('git add data/fno-intraday.json data/eq-intraday.json', { cwd: ROOT });
+    if (!execSync('git status --porcelain data/fno-intraday.json data/eq-intraday.json', { cwd: ROOT }).toString().trim()) { committed = true; return; }
     const { date } = istParts(Date.now());
     execSync(`git commit -m "chore: intraday P&L tape ${date}"`, { cwd: ROOT, stdio: 'inherit' });
     execSync('git fetch origin main', { cwd: ROOT });
@@ -51,32 +55,50 @@ function commitArchive() {
 }
 
 function stop(reason) {
-  if (timer) clearInterval(timer);
+  timers.forEach(clearInterval);
   commitArchive();
   console.log(`capture-daemon: ${reason} — exiting`);
   process.exit(0);
 }
 
-async function tick() {
-  const now = Date.now();
-  const state = marketState(now);
-  if (!FORCE && (state === 'post' || state === 'weekend')) return stop(`market ${state}`);
-  if (!FORCE && state === 'pre') return; // launched early — idle until the open
+// Returns true while the market window is open (or FORCE); calls stop() once the
+// session is over. Shared by both loops so either can wind the daemon down.
+function windowOpen() {
+  const state = marketState(Date.now());
+  if (!FORCE && (state === 'post' || state === 'weekend')) { stop(`market ${state}`); return false; }
+  if (!FORCE && state === 'pre') return false; // launched early — idle until the open
+  return true;
+}
 
-  if (inFlight) { console.log(`${istParts(now).hhmm} tick skipped (in-flight)`); return; }
-  inFlight = true;
+async function fnoTick() {
+  if (!windowOpen() || fnoBusy) return;
+  fnoBusy = true;
+  const now = Date.now();
   try {
     const withOrders = n % ORDERS_EVERY === 0;   // heavier pending-order check ~1/min
     const r = await captureTick({ withOrders, nowMs: now });
-    if (r.ok) console.log(`${r.t} net ₹${r.net} · ${r.brokers.join('+') || 'none'}${r.pending ? ' · pending' : ''} · ${r.count} pts${r.kv ? ' · kv' : ''}`);
-    else console.log(`${r.t || istParts(now).hhmm} ${r.reason}`);
-  } catch (e) { console.error('tick error:', e?.message || e); }
-  finally { inFlight = false; n++; }
+    if (r.ok) console.log(`${r.t} F&O net ₹${r.net} · ${r.brokers.join('+') || 'none'}${r.pending ? ' · pending' : ''} · ${r.count} pts${r.kv ? ' · kv' : ''}`);
+    else console.log(`${r.t || istParts(now).hhmm} F&O ${r.reason}`);
+  } catch (e) { console.error('F&O tick error:', e?.message || e); }
+  finally { fnoBusy = false; n++; }
+}
+
+async function eqTick() {
+  if (!windowOpen() || eqBusy) return;
+  eqBusy = true;
+  const now = Date.now();
+  try {
+    const e = await captureEquityTick({ nowMs: now });
+    if (e.ok) console.log(`${e.t} EQ  net ₹${e.net} · ${e.covered} held${e.missing?.length ? ` · ${e.missing.length} no-quote` : ''} · ${e.count} pts${e.kv ? ' · kv' : ''}`);
+    else console.log(`${e.t || istParts(now).hhmm} EQ  ${e.reason}`);
+  } catch (e) { console.error('EQ tick error:', e?.message || e); }
+  finally { eqBusy = false; }
 }
 
 process.on('SIGTERM', () => stop('SIGTERM'));
 process.on('SIGINT', () => stop('SIGINT'));
 
-console.log(`capture-daemon: starting (tick ${TICK_MS}ms, orders 1/${ORDERS_EVERY}, force=${FORCE})`);
-await tick();                         // immediate first point
-timer = setInterval(tick, TICK_MS);
+console.log(`capture-daemon: starting (F&O ${TICK_MS}ms, EQ ${EQUITY_MS}ms, orders 1/${ORDERS_EVERY}, force=${FORCE})`);
+await fnoTick();                      // immediate first F&O point
+eqTick();                            // kick equity (independent; don't await — it's slower)
+timers.push(setInterval(fnoTick, TICK_MS), setInterval(eqTick, EQUITY_MS));

@@ -137,3 +137,26 @@ per-FY and discarded the day.
   → python scripts/parse-broker-tax.py → node scripts/backfill-fno-ledger.mjs →
   commit data/fno-ledger.json. Only Dhan (S01) has per-trade dates today; other
   brokers stay FY-level until their tradewise sheets are wired.
+
+## Live equities — day-change tape + Indian-tab curve (BUILT)
+Answers "KV can do the same for equities" + "did you forget Kite MCP?".
+Finding: Kite is a hosted-OAuth MCP (interactive) — a headless 10s daemon can't
+drive it. It doesn't need to: the delivery holdings (qty/avg) are already in
+broker-state.json, and live prices come keyless from Yahoo (the /api/quotes source).
+So the curve is Σ qty×(price−prevClose), no Kite token in the loop. P&L meaning:
+intraday day-change (vs prev close), per the user's pick.
+- scripts/lib/equity.mjs: equityHoldings (INDIAN+SWING from broker-state),
+  computeDayChange (pure, skip-not-zero on missing quote), pullEquityDayChange
+  (keyless Yahoo v8, bounded concurrency). 6 unit tests.
+- intradayTick.mjs: captureEquityTick + shared publish(); kvKeyEq intraday:eq:<date>.
+- capture-daemon.mjs: INDEPENDENT loops — F&O 10s, equity 60s (EQUITY_MS), separate
+  in-flight guards so a slow Yahoo fetch can't stall F&O. Commits both archives at close.
+- data/eq-intraday.json seed; /api/intraday?kind=eq (KV + archive fallback); appData
+  eqIntraday + portfolio route hydration.
+- IntradayChart extracted to shared/ (axis labels now from scaled pts — single source);
+  reused by the F&O Day view and the new shared/EquityDayCurve.js (polls kind=eq every
+  15s, current-day only), mounted on the Indian tab.
+- Verified: 147 tests; build clean; daemon dual-loop dry-run (F&O unblocked by blocked
+  Yahoo); equity curve rendered end-to-end via the live read path in both themes.
+- US sleeve (Vested + FX) is the remaining follow-up. Live Yahoo is proxy-blocked in
+  cloud (degrades to null gracefully); fetches real on the laptop.

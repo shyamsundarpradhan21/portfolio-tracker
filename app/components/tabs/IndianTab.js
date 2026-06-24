@@ -11,6 +11,7 @@ import Skel from '../shared/Skel';
 import SunburstMix from '../SunburstMix';
 import RealizedPanel from '../RealizedPanel';
 import InsightsCard from '../InsightsCard';
+import EquityDayCurve from '../shared/EquityDayCurve';
 
 const IN_COLS = [
   { key: 'sym',  label: 'Stock',    num: false },
@@ -55,6 +56,9 @@ export default function IndianTab({
         <SyncBadge rec={indianRec} />
         <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
+
+      {/* Live intraday equity day-change curve (holdings × keyless quotes; daemon → KV) */}
+      <EquityDayCurve />
 
       <div className="g3 sec">
         <div className="csm">

@@ -19,7 +19,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
-| **IntradayDaemon** (live F&O P&L tape → KV + `fno-intraday.json`) | one long-running process, ~09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler (launch-at-login / keep-alive) |
+| **IntradayDaemon** (live F&O P&L + equity day-change tapes → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, ~09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler (launch-at-login / keep-alive) |
 | **CloudFnoCapture** (Dhan S01 + Fyers S02 F&O realised, laptop-off) | ~18:45 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
 | **Monthly stratzy algo briefing** | ~day 26, 09:00 IST | this laptop (Local) | Claude Routines panel |
@@ -40,6 +40,13 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 > touched exactly ONCE — a single archive commit+push at close (`--autostash`, so an
 > unrelated dirty tree can't strand it). The pending-order check is throttled to
 > ~1/min (`ORDERS_EVERY`).
+>
+> It also captures an **equity day-change** tape on an independent 60s loop
+> (`EQUITY_MS`) — Σ qty×(price−prevClose) over INDIAN + SWING holdings priced via
+> keyless Yahoo, published to `intraday:eq:<date>` and read by the Indian tab's live
+> curve (`/api/intraday?kind=eq`). The two loops have separate in-flight guards, so a
+> slow Yahoo fetch never stalls the 10s F&O capture. No Kite token needed — the
+> delivery holdings come from the already-committed `broker-state.json`.
 >
 >     node scripts/capture-daemon.mjs                    # the live session loop (commits once at close)
 >     CAPTURE_FORCE=1 node scripts/capture-daemon.mjs    # ignore the market-hours gate (debug)
