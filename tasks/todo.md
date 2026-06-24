@@ -65,3 +65,16 @@ PnL-dashboard screenshot to match.
   scratchpad/trading-mock2.html (approved direction).
 - Data source: data/fno-ledger.json (per date×broker net + orders) → daily/monthly
   aggregation; trades-log.json as fallback for order counts.
+
+## Scope correction (this session)
+- BUILD TARGET: Fyers, Upstox, Dhan only — that's where the F&O runs. Groww 915
+  dashboard + Groww Trade API were REFERENCE ONLY, not a dependency.
+- These three already expose everything the views need: on-demand positions/funds,
+  intraday quotes + websocket feed, and timestamped fills (trade book). The only
+  new work is OUR pipeline capturing intraday price + fill-time data.
+- Daily (P&L Charts) view rules: single "Your P&L" line, green above 0 / red below;
+  NO NIFTY-50 reference line; NO fixed target. Dashed reference line tracks the
+  CURRENT P&L level (pill = live P&L). A target line appears ONLY when the API
+  reports a pending order.
+- Buildable today on existing data: Year (heatmap) + Month (calendar) + day summary.
+  Gated on new intraday capture: the full intraday P&L-Charts curve.
