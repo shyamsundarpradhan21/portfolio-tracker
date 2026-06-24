@@ -1,8 +1,9 @@
 // Headless daily reconcile for the THREE zero-touch brokers (Upstox, Dhan,
 // Fyers). Reads their daily tokens, pulls holdings/positions/funds via REST, and
 // MERGES into data/broker-state.json — preserving the Kite/INDIAN sleeve, which
-// only the Claude `/sync` can refresh (Kite is a hosted-OAuth MCP with no token
-// file a script could read). Commits + pushes so the deployed app reads it.
+// no sync touches: that delivery-equity sleeve is hand-maintained in
+// app/portfolio.js after trades / corp actions. Commits + pushes so the deployed
+// app reads it.
 //
 // Run by the Windows task BrokerDailySync (08:30 IST, -StartWhenAvailable → it
 // catches up on your first logon of the day when a slot was missed).
@@ -259,16 +260,15 @@ async function pullFyers() {
   };
 }
 
-// ── Market Wrap fallback (Fyers index quotes) ────────────────────────────────
-// The Macro Wrap is authoritatively built from Kite by scripts/merge-market.mjs
-// during /sync — but Kite is hosted-OAuth (a daily interactive click), so on days
-// that step isn't run the Wrap goes stale. Fyers carries the same NSE index quotes
-// (pre-computed `chp` % change) and authenticates from the laptop's daily token, so
-// it backfills the Wrap zero-touch on this sync. KITE ALWAYS WINS WHEN FRESH: this
-// only writes when the on-disk wrap is not from today, and tags itself as fallback.
-// Symbol format confirmed in mcp/fyers/server.py ('NSE:NIFTY50-INDEX'); the sector/
-// breadth strings + /data/quotes shape self-validate via the resolved-count log on
-// the first live run (anything that doesn't resolve is silently dropped, never fatal).
+// ── Market Wrap (Fyers index quotes) ─────────────────────────────────────────
+// The Macro Wrap (NSE sector heatmap + breadth + India VIX) is built zero-touch
+// from Fyers index quotes (pre-computed `chp` % change), authenticated from the
+// laptop's daily token. This is the sole Wrap source — Kite was dropped from the
+// sync (its hosted-OAuth daily click). Writes only when the on-disk wrap is not
+// from today, so repeat same-day syncs skip. Symbol format confirmed in
+// mcp/fyers/server.py ('NSE:NIFTY50-INDEX'); the sector/breadth strings +
+// /data/quotes shape self-validate via the resolved-count log on the first live
+// run (anything that doesn't resolve is silently dropped, never fatal).
 const WRAP_PATH = join(ROOT, 'data', 'market-wrap.json');
 const FY_NIFTY = 'NSE:NIFTY50-INDEX';
 const FY_VIX   = 'NSE:INDIAVIX-INDEX';
@@ -297,7 +297,7 @@ async function fyersQuotes(symbols) {
 async function wrapFyers() {
   const today = nowIst().slice(0, 10);
   const existing = readJSON(WRAP_PATH);
-  if (existing?.asOf?.slice(0, 10) === today) return { skipped: 'kite wrap already fresh today' };
+  if (existing?.asOf?.slice(0, 10) === today) return { skipped: 'market wrap already fresh today' };
 
   const all = [FY_NIFTY, FY_VIX, ...FY_SECTORS.map((s) => s[0]), ...FY_BREADTH.map((b) => b[0])];
   const q = await fyersQuotes(all);
@@ -313,8 +313,8 @@ async function wrapFyers() {
   if (!nifty && !sectors.length) throw new Error('no index quotes resolved (check symbol strings)');
 
   writeFileSync(WRAP_PATH, JSON.stringify({
-    note: 'NSE market wrap — FALLBACK from Fyers index quotes (laptop token), written when the authoritative Kite wrap (scripts/merge-market.mjs) has not run today. day pct = Fyers chp. Non-personal; safe to commit.',
-    asOf: `${today}T${nowIst().slice(11)}`, capturedAt: nowIst(), source: 'Fyers · NSE indices (fallback)',
+    note: 'NSE market wrap from Fyers index quotes (laptop token). day pct = Fyers chp. Non-personal; safe to commit.',
+    asOf: `${today}T${nowIst().slice(11)}`, capturedAt: nowIst(), source: 'Fyers · NSE indices',
     nifty, vix, sectors, breadth,
   }, null, 2) + '\n');
   return { resolved: Object.keys(q).length, total: all.length, sectors: sectors.length, breadth: breadth.length };
@@ -466,13 +466,13 @@ if (ledgerRows.length) {
   if (added || updated) log.push(`fno-ledger: ${added} new · ${updated} updated`);
 }
 
-// Market Wrap fallback — only on laptop runs where Fyers authed (the cloud routine
-// sets SYNC_ONLY=dhan, so want('fyers') is false there). Backfills the Macro Wrap
-// from Fyers index quotes when Kite's authoritative wrap hasn't run today.
+// Market Wrap — only on laptop runs where Fyers authed (the cloud routine sets
+// SYNC_ONLY=dhan, so want('fyers') is false there). Builds the Macro Wrap from
+// Fyers index quotes (the sole Wrap source now that Kite is out of the sync).
 if (want('fyers') && state.brokers.fyers?.ok) {
   try {
     const w = await wrapFyers();
-    log.push(w.skipped ? `wrap: ${w.skipped}` : `wrap (Fyers fallback): ${w.sectors} sectors · ${w.breadth} breadth · ${w.resolved}/${w.total} symbols resolved`);
+    log.push(w.skipped ? `wrap: ${w.skipped}` : `wrap (Fyers): ${w.sectors} sectors · ${w.breadth} breadth · ${w.resolved}/${w.total} symbols resolved`);
   } catch (e) { log.push(`wrap (Fyers): skipped (${e.message || e})`); }
 }
 
@@ -487,8 +487,9 @@ try {
   }
 } catch (e) { log.push(`fyers KV handoff: skipped (${e.message || e})`); }
 
-// Kite / INDIAN is never touched here — only /sync refreshes it.
-state.brokers.kite = state.brokers.kite || { ok: false, note: 'hosted MCP — refreshed only by /sync' };
+// Kite / INDIAN is never touched by any sync — the delivery-equity sleeve is
+// hand-maintained in app/portfolio.js after trades / corp actions.
+state.brokers.kite = state.brokers.kite || { ok: false, note: 'hand-maintained — not synced' };
 
 writeFileSync(STATE_PATH, JSON.stringify(state, null, 2) + '\n');
 console.log('broker sync @', ts);
