@@ -924,9 +924,12 @@ function Dashboard() {
   // No fabricated fallbacks: until live prices land, unvalued sleeves are 0
   // (the projection/allocation simply under-represent them for a few seconds)
   // rather than showing stale hardcoded figures as if they were real.
+  // Order: Indian leads (left-aligned), with FD between Indian and US so the two
+  // close hues (Indian blue / US indigo) are NEVER adjacent in any allocation chart.
+  // CMPF (pf) is still forced right-most by AllocBar's sort.
   const donutSegs = [
-    { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,      color: ALLOC_COLORS.fd     },
     { key: 'indian', label: 'Indian Stocks',  value: indianEq.val || 0, color: ALLOC_COLORS.indian },
+    { key: 'fd',     label: 'Fixed Deposits', value: ov.fdValue,      color: ALLOC_COLORS.fd     },
     { key: 'us',     label: 'US Stocks',      value: ov.usInr   || 0, color: ALLOC_COLORS.us     },
     { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,    color: ALLOC_COLORS.mf     },
     { key: 'elss',   label: 'ELSS',           value: mf.elss.value,   color: ALLOC_COLORS.elss   },

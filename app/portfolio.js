@@ -44,9 +44,14 @@ export const REALIZED_PNL = -27862;
 // HTML backgrounds use it directly; SunburstMix maps it to an SVG pattern.
 export const CMPF_HATCH = 'repeating-linear-gradient(45deg, #9e9e9e 0, #9e9e9e 2.5px, #161616 2.5px, #161616 6.5px)';
 export const ALLOC_COLORS = {
-  indian: 'var(--blu)', us: 'var(--cyn)', fd: 'var(--gld)',
-  mf: 'var(--pur)', elss: 'var(--pnk)', pf: CMPF_HATCH,
-  algo: 'var(--pnk)', // no NW sleeve — kept for completeness
+  // Each sleeve coloured by its LINKED TAB's accent (the global --tab-* palette in
+  // globals.css), so the allocation bar matches the Overview header cards. Indian
+  // (blue) and US (indigo) read close, so the sleeve ORDER keeps them non-adjacent
+  // (Indian leads, FD sits between it and US) rather than recolouring either. ELSS
+  // keeps its magenta; CMPF (pension) stays the diagonal hatch.
+  indian: 'var(--tab-indian)', us: 'var(--tab-us)', fd: 'var(--tab-fd)',
+  mf: 'var(--tab-mf)', elss: 'var(--pnk)', pf: CMPF_HATCH,
+  algo: 'var(--tab-algo)', // no NW sleeve — kept for completeness
 };
 export const CAT_COLORS = {
   ETF: '#4F8FE8', Crypto: '#F59E0B', Bond: '#9090A8', Tech: '#8F7FE8',

@@ -981,17 +981,18 @@ body::before {
    one line. Scoped to Overview — on a sleeve's own tab the cards unify to that
    tab's theme. The iridescent hero blends these same hues; the cards separate them. */
 :root[data-tab="overview"] .hdr-card .lbl { color: var(--acc); }
-/* Each Overview header card takes its LINKED TAB's own accent — these mirror the
-   :root[data-tab=…] tab accents (night + day) so a card reads as that tab's theme
-   (Indian blue · US violet · FD green · MF pink · Trading yellow). */
-:root[data-tab="overview"] {
+/* Per-sleeve TAB accents as a GLOBAL palette (mirror the :root[data-tab=…] values,
+   night + day). Both the Overview header cards AND the allocation bar (ALLOC_COLORS)
+   colour each sleeve by its linked tab's theme — Indian blue · US violet · FD green ·
+   MF pink · Trading yellow. */
+:root {
   --tab-indian: #5479EE; --tab-indian2: #7A98F5;
   --tab-us:     #7370FF; --tab-us2:     #948FFF;
   --tab-fd:     #34E0A1; --tab-fd2:     #7CEFC4;
   --tab-mf:     #CB5189; --tab-mf2:     #E47BAB;
   --tab-algo:   #FCDB32; --tab-algo2:   #FDE87A;
 }
-:root[data-time="day"][data-tab="overview"] {
+:root[data-time="day"] {
   --tab-indian: #3447AA; --tab-indian2: #5A6BD0;
   --tab-us:     #4F4DE0; --tab-us2:     #6E6CEC;
   --tab-fd:     #0E9E72; --tab-fd2:     #14B884;
