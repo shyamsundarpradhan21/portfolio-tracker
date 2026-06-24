@@ -207,7 +207,28 @@ function Week({ idx, w, byDate, buckets }) {
 
 function DayPanel({ date, byDate }) {
   const d = byDate.get(date);
-  const tape = APP.fnoIntraday?.days?.[date] || [];
+  // Live tape: poll /api/intraday for the selected day. Held in local state (never
+  // mutating APP) so re-renders are explicit; seeded from the hydrated archive so
+  // the chart shows instantly, then refreshed. Only the CURRENT day keeps polling
+  // — past days are static history, so one fetch is enough.
+  const [liveTape, setLiveTape] = useState(null);
+  useEffect(() => {
+    setLiveTape(null);
+    if (!date) return;
+    let on = true;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/intraday?date=${date}`, { cache: 'no-store' });
+        if (!res.ok || !on) return;
+        const j = await res.json();
+        if (on && Array.isArray(j.tape)) setLiveTape(j.tape);
+      } catch {}
+    };
+    poll();
+    const id = date === todayIstIso() ? setInterval(poll, 12_000) : null;
+    return () => { on = false; if (id) clearInterval(id); };
+  }, [date]);
+  const tape = liveTape != null ? liveTape : (APP.fnoIntraday?.days?.[date] || []);
   const pending = tape.some((p) => p.pending);
   return (
     <div className="mini" style={{ padding: '16px 18px' }}>
@@ -302,6 +323,8 @@ function Legend() {
 }
 
 const prettyDate = (iso) => `${+iso.slice(8)} ${MON[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)}`;
+// Today's date in IST (the market's timezone), for deciding when to keep polling.
+const todayIstIso = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 const periodLabel = (view, key) =>
   view === 'year' ? key
   : view === 'month' ? `${MON[+key.slice(5, 7) - 1]} ${key.slice(0, 4)}`
