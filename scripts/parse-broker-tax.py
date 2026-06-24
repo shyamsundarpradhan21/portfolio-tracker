@@ -135,6 +135,7 @@ def parse_zerodha(path):
     # n = distinct (symbol, exit-date) = positions closed (not lot rows).
     tw = sheet_rows("Tradewise Exits")
     by_sym, exits, last_exit = {}, set(), None
+    fno_by_day = {}                   # F&O section, bucketed by exact exit-date
     section, in_table = None, False
     for r in tw:
         c1 = str(r[1]).strip() if len(r) > 1 and r[1] is not None else ""
@@ -147,19 +148,41 @@ def parse_zerodha(path):
         if profit is None:            # a section title (or metadata) → new section
             section, in_table = c1, False
             continue
-        if not in_table or not section or not (section.startswith("Equity") or section == "Non Equity"):
-            continue                  # equity + ETF/SGB only; skip F&O / currency / commodity / MF
+        sec_l = section.lower() if section else ""
+        is_equity = bool(section) and (section.startswith("Equity") or section == "Non Equity")
+        # F&O = the derivatives sections (F&O / Futures / Options), NOT currency or
+        # commodity (different segments) and NOT equity. Bucket those by exit-date.
+        is_fno = (in_table and section and not is_equity
+                  and ("f&o" in sec_l or "future" in sec_l or "option" in sec_l)
+                  and "curren" not in sec_l and "commod" not in sec_l)
+        if is_fno:
+            ed = parse_date(r[4]) if len(r) > 4 else None
+            if ed:
+                k = ed.date().isoformat()
+                fno_by_day[k] = round(fno_by_day.get(k, 0.0) + profit, 2)
+                if last_exit is None or ed > last_exit:
+                    last_exit = ed
+        if not in_table or not is_equity:
+            continue                  # equity + ETF/SGB only past here; F&O handled above
         by_sym[c1] = by_sym.get(c1, 0.0) + profit
         ed = parse_date(r[4]) if len(r) > 4 else None
         exits.add((c1, ed.date() if ed else None))
         if ed and (last_exit is None or ed > last_exit):
             last_exit = ed
 
+    # Sanity: F&O daily sum should reconcile to the F&O sheet's options+futures total.
+    if fno_by_day:
+        dsum, ssum = round(sum(fno_by_day.values())), round(opt + fut)
+        if abs(dsum - ssum) > max(50, abs(ssum) * 0.02):
+            print(f"  ! {meta['label']} {fy}: F&O daily Σ{dsum} != summary {ssum} "
+                  f"(Tradewise F&O section label may differ — sections seen are logged with --debug)")
+
     return {
         "label": meta["label"], "owner": meta["owner"], "sleeve": meta["sleeve"], "fy": fy,
         "equity": {"stcg": round(stcg), "ltcg": round(ltcg), "intraday": round(intra),
                    "nonequity": round(noneq), "realized": round(stcg + ltcg + intra + noneq)},
         "fno": {"options": round(opt), "futures": round(fut), "realized": round(opt + fut)},
+        "fnoByDay": fno_by_day,
         "n": len(exits), "by_sym": by_sym, "lastExit": last_exit,
     }
 
@@ -183,18 +206,35 @@ def parse_fyers(path):
     fut = find_value_after(rows, "Taxable Future P&L") or 0.0
     stcg = find_value_after(rows, "Net STCG P&L") or 0.0
     ltcg = find_value_after(rows, "Net LTCG P&L") or 0.0
-    # last sell date across trade rows (col8 = Sell date)
+    # Per-trade F&O daily: the report lists each closed trade with col1 = P&L,
+    # col3 = Segment ('Derivatives' for F&O, 'Equity' otherwise), col8 = Sell date.
+    # Bucket the Derivatives rows by their exact sell-date for the calendar backfill.
+    # (col1 is realised P&L per trade; treated as gross — Fyers gives no per-trade
+    # charge split. Equity rows are skipped so only F&O lands in the F&O calendar.)
     last = None
+    fno_by_day = {}
     for r in rows:
-        if len(r) > 8:
-            d = parse_date(r[8])
-            if d and (last is None or d > last):
-                last = d
+        if len(r) <= 8:
+            continue
+        d = parse_date(r[8])
+        if d and (last is None or d > last):
+            last = d
+        seg = str(r[3]).strip() if len(r) > 3 and r[3] is not None else ""
+        pnl = num(r[1])
+        if d and pnl is not None and seg == "Derivatives":
+            k = d.date().isoformat()
+            fno_by_day[k] = round(fno_by_day.get(k, 0.0) + pnl, 2)
+    # Sanity: the daily sum should reconcile to the FY F&O summary (options+futures).
+    if fno_by_day:
+        dsum, ssum = round(sum(fno_by_day.values())), round(opt + fut)
+        if abs(dsum - ssum) > max(50, abs(ssum) * 0.02):
+            print(f"  ! fyers {fy}: F&O daily Σ{dsum} != summary {ssum} (check Segment/P&L cols)")
     return {
         "label": meta["label"], "owner": meta["owner"], "sleeve": meta["sleeve"], "fy": fy,
         "equity": {"stcg": round(stcg), "ltcg": round(ltcg), "intraday": 0,
                    "realized": round(stcg + ltcg)},
         "fno": {"options": round(opt), "futures": round(fut), "realized": round(opt + fut)},
+        "fnoByDay": fno_by_day,
         "realizedNet": round(realized), "lastExit": last,
     }
 
@@ -494,12 +534,24 @@ def main():
     # here (Dhan today); FY-only brokers stay in fno_realized above. sleeve = S01
     # for Dhan (matches the live sync's mapping). scripts/backfill-fno-ledger.mjs
     # upserts these into data/fno-ledger.json. ──
-    DAILY_SLEEVE = {"dhan": "S01"}
-    fno_daily = []
+    # Dhan = S01; Fyers + the user's own Zerodha (Kite) F&O = S02. (Astha + Upstox
+    # exports carry no per-trade trade-date, so they can't be bucketed daily and
+    # stay in fno_realized above.) Per-FY brokers (fyers, zerodha_self) contribute
+    # a flat date→P&L dict; Dhan gives gross+net per day. Aggregate across all FYs.
+    DAILY_SLEEVE = {"dhan": "S01", "fyers": "S02", "zerodha_self": "S02"}
+    daily = {}                                  # (date, broker) -> {gross, net}
     if dhan and dhan.get("fnoByDay"):
         for d, v in dhan["fnoByDay"].items():
-            fno_daily.append({"date": d, "broker": "dhan", "sleeve": DAILY_SLEEVE["dhan"],
-                              "gross": v["gross"], "net": v["net"]})
+            daily[(d, "dhan")] = {"gross": v["gross"], "net": v["net"]}
+    for a in accounts:                          # fyers + zerodha_self (sleeve 'trading')
+        if a.get("sleeve") == "trading" and a.get("fnoByDay") and a["label"] in DAILY_SLEEVE:
+            for d, amt in a["fnoByDay"].items():
+                cur = daily.setdefault((d, a["label"]), {"gross": 0.0, "net": 0.0})
+                cur["gross"] += amt
+                cur["net"] += amt              # no per-trade charge split → net == gross
+    fno_daily = [{"date": d, "broker": b, "sleeve": DAILY_SLEEVE[b],
+                  "gross": round(v["gross"], 2), "net": round(v["net"], 2)}
+                 for (d, b), v in daily.items()]
     fno_daily.sort(key=lambda x: (x["date"], x["broker"]))
 
     out = {
