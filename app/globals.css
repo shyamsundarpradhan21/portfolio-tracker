@@ -555,18 +555,9 @@ body::before {
   /* RSP-002: OWN the overflow — a wide table (even pathological unbreakable content)
      can never push the document; it scrolls inside .ovx instead of breaking out. */
   max-width: 100%; min-width: 0;
-  /* Faint, state-driven scroll shadow (Lea Verou technique): a right/left shadow
-     shows only while there is more table to reveal that way. The cover gradients
-     (background-attachment: local) ride with the content to mask the shadow at the
-     true edges; the shadows (scroll) stay pinned to the container. --bg follows theme. */
-  background:
-    linear-gradient(90deg, var(--bg), transparent 70%) 0 0,
-    linear-gradient(270deg, var(--bg), transparent 70%) 100% 0,
-    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.20), transparent) 0 0,
-    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.20), transparent) 100% 0;
-  background-repeat: no-repeat;
-  background-size: 30px 100%, 30px 100%, 14px 100%, 14px 100%;
-  background-attachment: local, local, scroll, scroll;
+  /* No edge scroll-shadow: the faint dark radial tint pinned to both table edges read
+     as a smudge (live feedback) — reverted to the plain original look; the native
+     scrollbar is the affordance. (RSP-002 overflow ownership above is retained.) */
 }
 .ovx thead th {
   position: sticky; top: 0; z-index: 1;
