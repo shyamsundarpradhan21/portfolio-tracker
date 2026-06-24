@@ -688,6 +688,55 @@
   },
   "fno_daily": [
     {
+      "date": "2023-08-14",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": 1885.0,
+      "net": 1885.0
+    },
+    {
+      "date": "2023-08-16",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": -148.5,
+      "net": -148.5
+    },
+    {
+      "date": "2023-08-17",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": -3631.25,
+      "net": -3631.25
+    },
+    {
+      "date": "2023-08-18",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": 1117.5,
+      "net": 1117.5
+    },
+    {
+      "date": "2023-08-21",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": -5295.0,
+      "net": -5295.0
+    },
+    {
+      "date": "2023-08-22",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": -465.0,
+      "net": -465.0
+    },
+    {
+      "date": "2023-08-28",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": -1600.0,
+      "net": -1600.0
+    },
+    {
       "date": "2023-09-06",
       "broker": "dhan",
       "sleeve": "S01",
@@ -926,6 +975,13 @@
       "net": 909.28
     },
     {
+      "date": "2023-11-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -3300.0,
+      "net": -3300.0
+    },
+    {
       "date": "2023-11-28",
       "broker": "dhan",
       "sleeve": "S01",
@@ -938,6 +994,13 @@
       "sleeve": "S01",
       "gross": -896.25,
       "net": -1307.9
+    },
+    {
+      "date": "2023-11-29",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -3325.0,
+      "net": -3325.0
     },
     {
       "date": "2023-11-30",
@@ -954,11 +1017,25 @@
       "net": -2648.92
     },
     {
+      "date": "2023-12-01",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5781.25,
+      "net": 5781.25
+    },
+    {
       "date": "2023-12-04",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 3825.75,
       "net": 3509.02
+    },
+    {
+      "date": "2023-12-04",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 6825.0,
+      "net": 6825.0
     },
     {
       "date": "2023-12-05",
@@ -980,6 +1057,13 @@
       "sleeve": "S01",
       "gross": 3090.25,
       "net": 2861.62
+    },
+    {
+      "date": "2023-12-08",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 6062.5,
+      "net": 6062.5
     },
     {
       "date": "2023-12-11",
@@ -1043,6 +1127,13 @@
       "sleeve": "S01",
       "gross": 3938.5,
       "net": 3661.64
+    },
+    {
+      "date": "2023-12-22",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -29700.0,
+      "net": -29700.0
     },
     {
       "date": "2023-12-26",
@@ -2459,6 +2550,13 @@
       "net": -3793.58
     },
     {
+      "date": "2025-01-20",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 3325.0,
+      "net": 3325.0
+    },
+    {
       "date": "2025-01-21",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2473,6 +2571,13 @@
       "net": -5558.61
     },
     {
+      "date": "2025-01-22",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -13050.0,
+      "net": -13050.0
+    },
+    {
       "date": "2025-01-23",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2480,11 +2585,25 @@
       "net": -12805.05
     },
     {
+      "date": "2025-01-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 1968.75,
+      "net": 1968.75
+    },
+    {
       "date": "2025-01-27",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 2686.25,
       "net": 2558.42
+    },
+    {
+      "date": "2025-01-27",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 38.5,
+      "net": 38.5
     },
     {
       "date": "2025-01-28",
@@ -2501,6 +2620,13 @@
       "net": 1977.56
     },
     {
+      "date": "2025-01-29",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 3000.0,
+      "net": 3000.0
+    },
+    {
       "date": "2025-01-30",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2513,6 +2639,13 @@
       "sleeve": "S01",
       "gross": -3183.75,
       "net": -3337.25
+    },
+    {
+      "date": "2025-01-31",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -16637.5,
+      "net": -16637.5
     },
     {
       "date": "2025-02-01",
@@ -2543,11 +2676,25 @@
       "net": -4341.17
     },
     {
+      "date": "2025-02-05",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10070.0,
+      "net": 10070.0
+    },
+    {
       "date": "2025-02-06",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -2580.0,
       "net": -2699.11
+    },
+    {
+      "date": "2025-02-06",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -12338.75,
+      "net": -12338.75
     },
     {
       "date": "2025-02-07",
@@ -2557,11 +2704,53 @@
       "net": -1955.25
     },
     {
+      "date": "2025-02-07",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 12755.0,
+      "net": 12755.0
+    },
+    {
       "date": "2025-02-10",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -982.5,
       "net": -1150.23
+    },
+    {
+      "date": "2025-02-10",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -15587.5,
+      "net": -15587.5
+    },
+    {
+      "date": "2025-02-11",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 25313.75,
+      "net": 25313.75
+    },
+    {
+      "date": "2025-02-12",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -13338.75,
+      "net": -13338.75
+    },
+    {
+      "date": "2025-02-13",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 2330.0,
+      "net": 2330.0
+    },
+    {
+      "date": "2025-02-14",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -19065.0,
+      "net": -19065.0
     },
     {
       "date": "2025-02-17",
@@ -2571,6 +2760,13 @@
       "net": -1875.0
     },
     {
+      "date": "2025-02-18",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -18187.5,
+      "net": -18187.5
+    },
+    {
       "date": "2025-02-19",
       "broker": "fyers",
       "sleeve": "S02",
@@ -2578,11 +2774,39 @@
       "net": 7231.25
     },
     {
+      "date": "2025-02-19",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -67410.0,
+      "net": -67410.0
+    },
+    {
+      "date": "2025-02-20",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 2585.0,
+      "net": 2585.0
+    },
+    {
+      "date": "2025-02-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -14505.0,
+      "net": -14505.0
+    },
+    {
       "date": "2025-02-28",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -18095.0,
       "net": -18095.0
+    },
+    {
+      "date": "2025-03-04",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -23645.0,
+      "net": -23645.0
     },
     {
       "date": "2025-03-05",
@@ -2767,6 +2991,13 @@
       "net": 19120.0
     },
     {
+      "date": "2025-05-12",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 11587.5,
+      "net": 11587.5
+    },
+    {
       "date": "2025-05-14",
       "broker": "fyers",
       "sleeve": "S02",
@@ -2781,6 +3012,13 @@
       "net": -13272.5
     },
     {
+      "date": "2025-05-15",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 2025.0,
+      "net": 2025.0
+    },
+    {
       "date": "2025-05-16",
       "broker": "fyers",
       "sleeve": "S02",
@@ -2788,11 +3026,25 @@
       "net": 22087.5
     },
     {
+      "date": "2025-05-16",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5287.5,
+      "net": 5287.5
+    },
+    {
       "date": "2025-05-21",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -11812.5,
       "net": -11812.5
+    },
+    {
+      "date": "2025-05-21",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5005.0,
+      "net": 5005.0
     },
     {
       "date": "2025-05-23",
@@ -2858,11 +3110,25 @@
       "net": 43193.8
     },
     {
+      "date": "2025-06-09",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5190.0,
+      "net": 5190.0
+    },
+    {
       "date": "2025-06-10",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 2878.5,
       "net": 2878.5
+    },
+    {
+      "date": "2025-06-11",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 2835.0,
+      "net": 2835.0
     },
     {
       "date": "2025-06-12",
@@ -3138,6 +3404,13 @@
       "net": -22970.0
     },
     {
+      "date": "2025-08-25",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -40672.5,
+      "net": -40672.5
+    },
+    {
       "date": "2025-08-29",
       "broker": "fyers",
       "sleeve": "S02",
@@ -3152,11 +3425,25 @@
       "net": 3100.0
     },
     {
+      "date": "2025-09-01",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 6100.0,
+      "net": 6100.0
+    },
+    {
       "date": "2025-09-02",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 30592.5,
       "net": 30592.5
+    },
+    {
+      "date": "2025-09-02",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 6900.0,
+      "net": 6900.0
     },
     {
       "date": "2025-09-03",
@@ -3166,11 +3453,25 @@
       "net": 18267.5
     },
     {
+      "date": "2025-09-03",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10800.0,
+      "net": 10800.0
+    },
+    {
       "date": "2025-09-05",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -256.25,
       "net": -256.25
+    },
+    {
+      "date": "2025-09-05",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -7005.0,
+      "net": -7005.0
     },
     {
       "date": "2025-09-08",
@@ -3180,11 +3481,25 @@
       "net": -8341.25
     },
     {
+      "date": "2025-09-08",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 11215.0,
+      "net": 11215.0
+    },
+    {
       "date": "2025-09-09",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 24052.5,
       "net": 24052.5
+    },
+    {
+      "date": "2025-09-09",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -19077.5,
+      "net": -19077.5
     },
     {
       "date": "2025-09-10",
@@ -3194,11 +3509,25 @@
       "net": 47743.75
     },
     {
+      "date": "2025-09-10",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -8637.5,
+      "net": -8637.5
+    },
+    {
       "date": "2025-09-11",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 20858.75,
       "net": 20858.75
+    },
+    {
+      "date": "2025-09-11",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 35462.5,
+      "net": 35462.5
     },
     {
       "date": "2025-09-12",
@@ -3208,11 +3537,25 @@
       "net": 2013.75
     },
     {
+      "date": "2025-09-12",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -2643.75,
+      "net": -2643.75
+    },
+    {
       "date": "2025-09-15",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 27307.5,
       "net": 27307.5
+    },
+    {
+      "date": "2025-09-15",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10090.0,
+      "net": 10090.0
     },
     {
       "date": "2025-09-16",
@@ -3222,11 +3565,25 @@
       "net": -34105.0
     },
     {
+      "date": "2025-09-16",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 44691.25,
+      "net": 44691.25
+    },
+    {
       "date": "2025-09-17",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 5587.5,
       "net": 5587.5
+    },
+    {
+      "date": "2025-09-17",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5566.25,
+      "net": 5566.25
     },
     {
       "date": "2025-09-18",
@@ -3236,11 +3593,25 @@
       "net": 15296.25
     },
     {
+      "date": "2025-09-18",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 22830.0,
+      "net": 22830.0
+    },
+    {
       "date": "2025-09-19",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -9405.0,
       "net": -9405.0
+    },
+    {
+      "date": "2025-09-19",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 38735.0,
+      "net": 38735.0
     },
     {
       "date": "2025-09-22",
@@ -3250,6 +3621,13 @@
       "net": 10125.0
     },
     {
+      "date": "2025-09-22",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 23465.0,
+      "net": 23465.0
+    },
+    {
       "date": "2025-09-23",
       "broker": "fyers",
       "sleeve": "S02",
@@ -3257,11 +3635,25 @@
       "net": -54888.75
     },
     {
+      "date": "2025-09-23",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -18687.5,
+      "net": -18687.5
+    },
+    {
       "date": "2025-09-24",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -3065.0,
       "net": -3065.0
+    },
+    {
+      "date": "2025-09-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -55472.5,
+      "net": -55472.5
     },
     {
       "date": "2025-09-25",
@@ -3278,11 +3670,32 @@
       "net": -13703.75
     },
     {
+      "date": "2025-09-26",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -77830.0,
+      "net": -77830.0
+    },
+    {
+      "date": "2025-09-26",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": 12701.25,
+      "net": 12701.25
+    },
+    {
       "date": "2025-09-29",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": -33633.75,
       "net": -33633.75
+    },
+    {
+      "date": "2025-09-29",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10042.5,
+      "net": 10042.5
     },
     {
       "date": "2025-09-30",
@@ -3292,6 +3705,20 @@
       "net": 5118.75
     },
     {
+      "date": "2025-09-30",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -18628.75,
+      "net": -18628.75
+    },
+    {
+      "date": "2025-09-30",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": 5962.5,
+      "net": 5962.5
+    },
+    {
       "date": "2025-10-01",
       "broker": "fyers",
       "sleeve": "S02",
@@ -3299,11 +3726,32 @@
       "net": 2941.25
     },
     {
+      "date": "2025-10-01",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5328.75,
+      "net": 5328.75
+    },
+    {
+      "date": "2025-10-01",
+      "broker": "zerodha_self",
+      "sleeve": "S02",
+      "gross": 4365.0,
+      "net": 4365.0
+    },
+    {
       "date": "2025-10-03",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 4945.0,
       "net": 4945.0
+    },
+    {
+      "date": "2025-10-03",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 4968.75,
+      "net": 4968.75
     },
     {
       "date": "2025-10-06",
@@ -3320,6 +3768,13 @@
       "net": 16705.0
     },
     {
+      "date": "2025-10-06",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 30907.5,
+      "net": 30907.5
+    },
+    {
       "date": "2025-10-07",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3332,6 +3787,13 @@
       "sleeve": "S02",
       "gross": 10312.5,
       "net": 10312.5
+    },
+    {
+      "date": "2025-10-07",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 46243.75,
+      "net": 46243.75
     },
     {
       "date": "2025-10-08",
@@ -3348,6 +3810,13 @@
       "net": -28525.0
     },
     {
+      "date": "2025-10-08",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10500.0,
+      "net": 10500.0
+    },
+    {
       "date": "2025-10-09",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3360,6 +3829,13 @@
       "sleeve": "S02",
       "gross": 5223.75,
       "net": 5223.75
+    },
+    {
+      "date": "2025-10-09",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 28558.75,
+      "net": 28558.75
     },
     {
       "date": "2025-10-10",
@@ -3376,6 +3852,13 @@
       "net": 2415.0
     },
     {
+      "date": "2025-10-10",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -8032.5,
+      "net": -8032.5
+    },
+    {
       "date": "2025-10-13",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3388,6 +3871,13 @@
       "sleeve": "S02",
       "gross": -11762.5,
       "net": -11762.5
+    },
+    {
+      "date": "2025-10-13",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 33755.0,
+      "net": 33755.0
     },
     {
       "date": "2025-10-14",
@@ -3404,6 +3894,13 @@
       "net": 16208.75
     },
     {
+      "date": "2025-10-14",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -33691.0,
+      "net": -33691.0
+    },
+    {
       "date": "2025-10-15",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3416,6 +3913,13 @@
       "sleeve": "S02",
       "gross": 16942.5,
       "net": 16942.5
+    },
+    {
+      "date": "2025-10-15",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 19031.25,
+      "net": 19031.25
     },
     {
       "date": "2025-10-16",
@@ -3446,6 +3950,13 @@
       "net": -23158.75
     },
     {
+      "date": "2025-10-17",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -3815.0,
+      "net": -3815.0
+    },
+    {
       "date": "2025-10-20",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3458,6 +3969,13 @@
       "sleeve": "S02",
       "gross": -30812.5,
       "net": -30812.5
+    },
+    {
+      "date": "2025-10-20",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 9130.0,
+      "net": 9130.0
     },
     {
       "date": "2025-10-21",
@@ -3481,6 +3999,13 @@
       "net": 7052.5
     },
     {
+      "date": "2025-10-23",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -3508.75,
+      "net": -3508.75
+    },
+    {
       "date": "2025-10-24",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3495,11 +4020,25 @@
       "net": -41542.5
     },
     {
+      "date": "2025-10-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -16732.5,
+      "net": -16732.5
+    },
+    {
       "date": "2025-10-27",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 61053.75,
       "net": 60733.09
+    },
+    {
+      "date": "2025-10-27",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 20570.0,
+      "net": 20570.0
     },
     {
       "date": "2025-10-28",
@@ -3514,6 +4053,13 @@
       "sleeve": "S02",
       "gross": 925.0,
       "net": 925.0
+    },
+    {
+      "date": "2025-10-28",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -710.0,
+      "net": -710.0
     },
     {
       "date": "2025-10-29",
@@ -3675,6 +4221,13 @@
       "sleeve": "S01",
       "gross": 70980.0,
       "net": 70625.51
+    },
+    {
+      "date": "2025-11-14",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 30135.0,
+      "net": 30135.0
     },
     {
       "date": "2025-11-17",
@@ -3866,6 +4419,13 @@
       "net": 30267.23
     },
     {
+      "date": "2025-12-08",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 595.0,
+      "net": 595.0
+    },
+    {
       "date": "2025-12-09",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3894,6 +4454,13 @@
       "net": -17934.33
     },
     {
+      "date": "2025-12-11",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 7590.0,
+      "net": 7590.0
+    },
+    {
       "date": "2025-12-12",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3915,6 +4482,13 @@
       "net": 5000.0
     },
     {
+      "date": "2025-12-15",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 8126.25,
+      "net": 8126.25
+    },
+    {
       "date": "2025-12-16",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3934,6 +4508,13 @@
       "sleeve": "S01",
       "gross": 27240.0,
       "net": 26898.54
+    },
+    {
+      "date": "2025-12-17",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 9500.0,
+      "net": 9500.0
     },
     {
       "date": "2025-12-18",
@@ -3985,6 +4566,13 @@
       "net": -4713.69
     },
     {
+      "date": "2025-12-24",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 8325.0,
+      "net": 8325.0
+    },
+    {
       "date": "2025-12-26",
       "broker": "dhan",
       "sleeve": "S01",
@@ -4027,11 +4615,25 @@
       "net": 51048.25
     },
     {
+      "date": "2025-12-31",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 910.0,
+      "net": 910.0
+    },
+    {
       "date": "2026-01-01",
       "broker": "fyers",
       "sleeve": "S02",
       "gross": 5110.0,
       "net": 5110.0
+    },
+    {
+      "date": "2026-01-01",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 5307.5,
+      "net": 5307.5
     },
     {
       "date": "2026-01-02",
@@ -4053,6 +4655,13 @@
       "sleeve": "S02",
       "gross": 19833.75,
       "net": 19833.75
+    },
+    {
+      "date": "2026-01-06",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10780.0,
+      "net": 10780.0
     },
     {
       "date": "2026-01-07",
@@ -4132,6 +4741,13 @@
       "net": 11622.5
     },
     {
+      "date": "2026-01-16",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10091.25,
+      "net": 10091.25
+    },
+    {
       "date": "2026-01-19",
       "broker": "dhan",
       "sleeve": "S01",
@@ -4144,6 +4760,13 @@
       "sleeve": "S02",
       "gross": 5006.25,
       "net": 5006.25
+    },
+    {
+      "date": "2026-01-19",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 8122.5,
+      "net": 8122.5
     },
     {
       "date": "2026-01-20",
@@ -4181,6 +4804,13 @@
       "net": -14196.88
     },
     {
+      "date": "2026-01-23",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 10023.75,
+      "net": 10023.75
+    },
+    {
       "date": "2026-01-27",
       "broker": "fyers",
       "sleeve": "S02",
@@ -4193,6 +4823,13 @@
       "sleeve": "S01",
       "gross": 19240.0,
       "net": 18860.05
+    },
+    {
+      "date": "2026-01-28",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -390.0,
+      "net": -390.0
     },
     {
       "date": "2026-01-29",
@@ -4230,11 +4867,25 @@
       "net": -37931.25
     },
     {
+      "date": "2026-02-02",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -61728.75,
+      "net": -61728.75
+    },
+    {
       "date": "2026-02-03",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 6808.75,
       "net": 6687.55
+    },
+    {
+      "date": "2026-02-03",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 52663.75,
+      "net": 52663.75
     },
     {
       "date": "2026-02-04",
@@ -4244,11 +4895,32 @@
       "net": 38749.74
     },
     {
+      "date": "2026-02-04",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 23945.0,
+      "net": 23945.0
+    },
+    {
       "date": "2026-02-05",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -11147.5,
       "net": -11247.68
+    },
+    {
+      "date": "2026-02-05",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": 4066.25,
+      "net": 4066.25
+    },
+    {
+      "date": "2026-02-06",
+      "broker": "upstox",
+      "sleeve": "S02",
+      "gross": -2667.5,
+      "net": -2667.5
     },
     {
       "date": "2026-02-09",

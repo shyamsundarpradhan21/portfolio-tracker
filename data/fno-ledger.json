@@ -1,7 +1,84 @@
 {
   "note": "Daily-accumulated realised F&O P&L ledger. Each evening sync appends one row per (date, broker) with that day's gross realised (broker-native or same-day round-trip), modeled charges (est., snapped to exact at the annual ITR ritual), and net. app/page.js rolls these up on top of the FY seed into the Trading tab's current-FY S01/S02 blocks — so the only manual touch left is the yearly ITR-verified prior-FY pass. Sleeve map: Dhan/Zerodha→S01, Upstox/Fyers→S02. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-06-24T22:05:32+05:30",
+  "updatedAt": "2026-06-24T22:42:41+05:30",
   "rows": [
+    {
+      "date": "2023-08-14",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": 1885,
+      "estCharges": 0,
+      "net": 1885,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-16",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": -148.5,
+      "estCharges": 0,
+      "net": -148.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-17",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": -3631.25,
+      "estCharges": 0,
+      "net": -3631.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-18",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": 1117.5,
+      "estCharges": 0,
+      "net": 1117.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-21",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": -5295,
+      "estCharges": 0,
+      "net": -5295,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-22",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": -465,
+      "estCharges": 0,
+      "net": -465,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-08-28",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": -1600,
+      "estCharges": 0,
+      "net": -1600,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
     {
       "date": "2023-09-06",
       "broker": "Dhan",
@@ -377,6 +454,17 @@
       "source": "report"
     },
     {
+      "date": "2023-11-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -3300,
+      "estCharges": 0,
+      "net": -3300,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2023-11-28",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -394,6 +482,17 @@
       "grossRealised": -896.25,
       "estCharges": 411.65,
       "net": -1307.9,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-11-29",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -3325,
+      "estCharges": 0,
+      "net": -3325,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -421,12 +520,34 @@
       "source": "report"
     },
     {
+      "date": "2023-12-01",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5781.25,
+      "estCharges": 0,
+      "net": 5781.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2023-12-04",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 3825.75,
       "estCharges": 316.73,
       "net": 3509.02,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-12-04",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 6825,
+      "estCharges": 0,
+      "net": 6825,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -460,6 +581,17 @@
       "grossRealised": 3090.25,
       "estCharges": 228.63,
       "net": 2861.62,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-12-08",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 6062.5,
+      "estCharges": 0,
+      "net": 6062.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -559,6 +691,17 @@
       "grossRealised": 3938.5,
       "estCharges": 276.86,
       "net": 3661.64,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2023-12-22",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -29700,
+      "estCharges": 0,
+      "net": -29700,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2786,6 +2929,17 @@
       "source": "report"
     },
     {
+      "date": "2025-01-20",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 3325,
+      "estCharges": 0,
+      "net": 3325,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-01-21",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -2808,6 +2962,17 @@
       "source": "report"
     },
     {
+      "date": "2025-01-22",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -13050,
+      "estCharges": 0,
+      "net": -13050,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-01-23",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -2819,12 +2984,34 @@
       "source": "report"
     },
     {
+      "date": "2025-01-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 1968.75,
+      "estCharges": 0,
+      "net": 1968.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-01-27",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 2686.25,
       "estCharges": 127.83,
       "net": 2558.42,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-01-27",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 38.5,
+      "estCharges": 0,
+      "net": 38.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2852,6 +3039,17 @@
       "source": "report"
     },
     {
+      "date": "2025-01-29",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 3000,
+      "estCharges": 0,
+      "net": 3000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-01-30",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -2869,6 +3067,17 @@
       "grossRealised": -3183.75,
       "estCharges": 153.5,
       "net": -3337.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-01-31",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -16637.5,
+      "estCharges": 0,
+      "net": -16637.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2918,12 +3127,34 @@
       "source": "report"
     },
     {
+      "date": "2025-02-05",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10070,
+      "estCharges": 0,
+      "net": 10070,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-02-06",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -2580,
       "estCharges": 119.11,
       "net": -2699.11,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-06",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -12338.75,
+      "estCharges": 0,
+      "net": -12338.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2940,12 +3171,78 @@
       "source": "report"
     },
     {
+      "date": "2025-02-07",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 12755,
+      "estCharges": 0,
+      "net": 12755,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-02-10",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -982.5,
       "estCharges": 167.73,
       "net": -1150.23,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-10",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -15587.5,
+      "estCharges": 0,
+      "net": -15587.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-11",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 25313.75,
+      "estCharges": 0,
+      "net": 25313.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-12",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -13338.75,
+      "estCharges": 0,
+      "net": -13338.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-13",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 2330,
+      "estCharges": 0,
+      "net": 2330,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-14",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -19065,
+      "estCharges": 0,
+      "net": -19065,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2962,6 +3259,17 @@
       "source": "report"
     },
     {
+      "date": "2025-02-18",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -18187.5,
+      "estCharges": 0,
+      "net": -18187.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-02-19",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -2973,12 +3281,56 @@
       "source": "report"
     },
     {
+      "date": "2025-02-19",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -67410,
+      "estCharges": 0,
+      "net": -67410,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-20",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 2585,
+      "estCharges": 0,
+      "net": 2585,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -14505,
+      "estCharges": 0,
+      "net": -14505,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-02-28",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -18095,
       "estCharges": 0,
       "net": -18095,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-04",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -23645,
+      "estCharges": 0,
+      "net": -23645,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3270,6 +3622,17 @@
       "source": "report"
     },
     {
+      "date": "2025-05-12",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 11587.5,
+      "estCharges": 0,
+      "net": 11587.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-05-14",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -3292,6 +3655,17 @@
       "source": "report"
     },
     {
+      "date": "2025-05-15",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 2025,
+      "estCharges": 0,
+      "net": 2025,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-05-16",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -3303,12 +3677,34 @@
       "source": "report"
     },
     {
+      "date": "2025-05-16",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5287.5,
+      "estCharges": 0,
+      "net": 5287.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-05-21",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -11812.5,
       "estCharges": 0,
       "net": -11812.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-21",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5005,
+      "estCharges": 0,
+      "net": 5005,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3413,12 +3809,34 @@
       "source": "report"
     },
     {
+      "date": "2025-06-09",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5190,
+      "estCharges": 0,
+      "net": 5190,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-06-10",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 2878.5,
       "estCharges": 0,
       "net": 2878.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-11",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 2835,
+      "estCharges": 0,
+      "net": 2835,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3853,6 +4271,17 @@
       "source": "report"
     },
     {
+      "date": "2025-08-25",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -40672.5,
+      "estCharges": 0,
+      "net": -40672.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-08-29",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -3875,12 +4304,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-01",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 6100,
+      "estCharges": 0,
+      "net": 6100,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-02",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 30592.5,
       "estCharges": 0,
       "net": 30592.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-02",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 6900,
+      "estCharges": 0,
+      "net": 6900,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3897,12 +4348,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-03",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10800,
+      "estCharges": 0,
+      "net": 10800,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-05",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -256.25,
       "estCharges": 0,
       "net": -256.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-05",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -7005,
+      "estCharges": 0,
+      "net": -7005,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3919,12 +4392,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-08",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 11215,
+      "estCharges": 0,
+      "net": 11215,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-09",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 24052.5,
       "estCharges": 0,
       "net": 24052.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-09",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -19077.5,
+      "estCharges": 0,
+      "net": -19077.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3941,12 +4436,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-10",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -8637.5,
+      "estCharges": 0,
+      "net": -8637.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-11",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 20858.75,
       "estCharges": 0,
       "net": 20858.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-11",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 35462.5,
+      "estCharges": 0,
+      "net": 35462.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3963,12 +4480,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-12",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -2643.75,
+      "estCharges": 0,
+      "net": -2643.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-15",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 27307.5,
       "estCharges": 0,
       "net": 27307.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-15",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10090,
+      "estCharges": 0,
+      "net": 10090,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3985,12 +4524,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-16",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 44691.25,
+      "estCharges": 0,
+      "net": 44691.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-17",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 5587.5,
       "estCharges": 0,
       "net": 5587.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-17",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5566.25,
+      "estCharges": 0,
+      "net": 5566.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4007,12 +4568,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-18",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 22830,
+      "estCharges": 0,
+      "net": 22830,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-19",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -9405,
       "estCharges": 0,
       "net": -9405,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-19",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 38735,
+      "estCharges": 0,
+      "net": 38735,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4029,6 +4612,17 @@
       "source": "report"
     },
     {
+      "date": "2025-09-22",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 23465,
+      "estCharges": 0,
+      "net": 23465,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-23",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -4040,12 +4634,34 @@
       "source": "report"
     },
     {
+      "date": "2025-09-23",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -18687.5,
+      "estCharges": 0,
+      "net": -18687.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-24",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -3065,
       "estCharges": 0,
       "net": -3065,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -55472.5,
+      "estCharges": 0,
+      "net": -55472.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4073,12 +4689,45 @@
       "source": "report"
     },
     {
+      "date": "2025-09-26",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -77830,
+      "estCharges": 0,
+      "net": -77830,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-26",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": 12701.25,
+      "estCharges": 0,
+      "net": 12701.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-09-29",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": -33633.75,
       "estCharges": 0,
       "net": -33633.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-29",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10042.5,
+      "estCharges": 0,
+      "net": 10042.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4095,6 +4744,28 @@
       "source": "report"
     },
     {
+      "date": "2025-09-30",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -18628.75,
+      "estCharges": 0,
+      "net": -18628.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-30",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": 5962.5,
+      "estCharges": 0,
+      "net": 5962.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-01",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -4106,12 +4777,45 @@
       "source": "report"
     },
     {
+      "date": "2025-10-01",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5328.75,
+      "estCharges": 0,
+      "net": 5328.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-01",
+      "broker": "Zerodha",
+      "sleeve": "S02",
+      "grossRealised": 4365,
+      "estCharges": 0,
+      "net": 4365,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-03",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 4945,
       "estCharges": 0,
       "net": 4945,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-03",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 4968.75,
+      "estCharges": 0,
+      "net": 4968.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4139,6 +4843,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-06",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 30907.5,
+      "estCharges": 0,
+      "net": 30907.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-07",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4156,6 +4871,17 @@
       "grossRealised": 10312.5,
       "estCharges": 0,
       "net": 10312.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-07",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 46243.75,
+      "estCharges": 0,
+      "net": 46243.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4183,6 +4909,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-08",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10500,
+      "estCharges": 0,
+      "net": 10500,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-09",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4200,6 +4937,17 @@
       "grossRealised": 5223.75,
       "estCharges": 0,
       "net": 5223.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-09",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 28558.75,
+      "estCharges": 0,
+      "net": 28558.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4227,6 +4975,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-10",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -8032.5,
+      "estCharges": 0,
+      "net": -8032.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-13",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4244,6 +5003,17 @@
       "grossRealised": -11762.5,
       "estCharges": 0,
       "net": -11762.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-13",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 33755,
+      "estCharges": 0,
+      "net": 33755,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4271,6 +5041,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-14",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -33691,
+      "estCharges": 0,
+      "net": -33691,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-15",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4288,6 +5069,17 @@
       "grossRealised": 16942.5,
       "estCharges": 0,
       "net": 16942.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-15",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 19031.25,
+      "estCharges": 0,
+      "net": 19031.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4337,6 +5129,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-17",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -3815,
+      "estCharges": 0,
+      "net": -3815,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-20",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4354,6 +5157,17 @@
       "grossRealised": -30812.5,
       "estCharges": 0,
       "net": -30812.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-20",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 9130,
+      "estCharges": 0,
+      "net": 9130,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4392,6 +5206,17 @@
       "source": "report"
     },
     {
+      "date": "2025-10-23",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -3508.75,
+      "estCharges": 0,
+      "net": -3508.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-24",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4414,12 +5239,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -16732.5,
+      "estCharges": 0,
+      "net": -16732.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-27",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 61053.75,
       "estCharges": 320.66,
       "net": 60733.09,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-27",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 20570,
+      "estCharges": 0,
+      "net": 20570,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4442,6 +5289,17 @@
       "grossRealised": 925,
       "estCharges": 0,
       "net": 925,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-28",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -710,
+      "estCharges": 0,
+      "net": -710,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4695,6 +5553,17 @@
       "grossRealised": 70980,
       "estCharges": 354.49,
       "net": 70625.51,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-14",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 30135,
+      "estCharges": 0,
+      "net": 30135,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4997,6 +5866,17 @@
       "source": "report"
     },
     {
+      "date": "2025-12-08",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 595,
+      "estCharges": 0,
+      "net": 595,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-09",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -5041,6 +5921,17 @@
       "source": "report"
     },
     {
+      "date": "2025-12-11",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 7590,
+      "estCharges": 0,
+      "net": 7590,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-12",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -5074,6 +5965,17 @@
       "source": "report"
     },
     {
+      "date": "2025-12-15",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 8126.25,
+      "estCharges": 0,
+      "net": 8126.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-16",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -5102,6 +6004,17 @@
       "grossRealised": 27240,
       "estCharges": 341.46,
       "net": 26898.54,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-17",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 9500,
+      "estCharges": 0,
+      "net": 9500,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5173,6 +6086,17 @@
       "source": "report"
     },
     {
+      "date": "2025-12-24",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 8325,
+      "estCharges": 0,
+      "net": 8325,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-26",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -5239,12 +6163,34 @@
       "source": "report"
     },
     {
+      "date": "2025-12-31",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 910,
+      "estCharges": 0,
+      "net": 910,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-01",
       "broker": "Fyers",
       "sleeve": "S02",
       "grossRealised": 5110,
       "estCharges": 0,
       "net": 5110,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-01",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 5307.5,
+      "estCharges": 0,
+      "net": 5307.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5278,6 +6224,17 @@
       "grossRealised": 19833.75,
       "estCharges": 0,
       "net": 19833.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-06",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10780,
+      "estCharges": 0,
+      "net": 10780,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5404,6 +6361,17 @@
       "source": "report"
     },
     {
+      "date": "2026-01-16",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10091.25,
+      "estCharges": 0,
+      "net": 10091.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-19",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -5421,6 +6389,17 @@
       "grossRealised": 5006.25,
       "estCharges": 0,
       "net": 5006.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-19",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 8122.5,
+      "estCharges": 0,
+      "net": 8122.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5481,6 +6460,17 @@
       "source": "report"
     },
     {
+      "date": "2026-01-23",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 10023.75,
+      "estCharges": 0,
+      "net": 10023.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-27",
       "broker": "Fyers",
       "sleeve": "S02",
@@ -5498,6 +6488,17 @@
       "grossRealised": 19240,
       "estCharges": 379.95,
       "net": 18860.05,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-28",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -390,
+      "estCharges": 0,
+      "net": -390,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5558,12 +6559,34 @@
       "source": "report"
     },
     {
+      "date": "2026-02-02",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -61728.75,
+      "estCharges": 0,
+      "net": -61728.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-03",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 6808.75,
       "estCharges": 121.2,
       "net": 6687.55,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-03",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 52663.75,
+      "estCharges": 0,
+      "net": 52663.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -5580,12 +6603,45 @@
       "source": "report"
     },
     {
+      "date": "2026-02-04",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 23945,
+      "estCharges": 0,
+      "net": 23945,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-05",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -11147.5,
       "estCharges": 100.18,
       "net": -11247.68,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-05",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": 4066.25,
+      "estCharges": 0,
+      "net": 4066.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-06",
+      "broker": "Upstox",
+      "sleeve": "S02",
+      "grossRealised": -2667.5,
+      "estCharges": 0,
+      "net": -2667.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
