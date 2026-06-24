@@ -8,16 +8,18 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
-import { pullEquityDayChange } from './equity.mjs';
+import { pullEquityDayChange, pullUsDayChange } from './equity.mjs';
 import { appendIntraday } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
-import { istParts } from './marketHours.mjs';
+import { istParts, usSessionDate } from './marketHours.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const INTRADAY_FILE = join(ROOT, 'data', 'fno-intraday.json');
 export const EQUITY_FILE = join(ROOT, 'data', 'eq-intraday.json');
+export const US_FILE = join(ROOT, 'data', 'us-intraday.json');
 export const kvKey = (date) => `intraday:${date}`;          // F&O (back-compat key)
-export const kvKeyEq = (date) => `intraday:eq:${date}`;     // equity day-change
+export const kvKeyEq = (date) => `intraday:eq:${date}`;     // equity day-change (India)
+export const kvKeyUs = (date) => `intraday:us:${date}`;     // US equity day-change (INR)
 const KV_TTL = 3 * 24 * 3600; // recent days live in KV; older history served from the committed file
 
 // Append a point to a tape file and publish that day's tape to KV. Shared by the
@@ -69,4 +71,20 @@ export async function captureEquityTick({ nowMs = Date.now(), file = EQUITY_FILE
   const { count, kvPromise } = publish(file, kvKeyEq, date, point);
   const kv = await kvPromise;
   return { ok: true, kind: 'eq', date, t: hhmm, net: dc.net, covered: dc.covered, missing: dc.missing, count, kv };
+}
+
+// US equity day-change tick (INR). Keyed by usSessionDate so the overnight IST
+// session is one tape entry. net is INR (USD day-change × live USD/INR).
+export async function captureUsTick({ nowMs = Date.now(), file = US_FILE } = {}) {
+  const { hhmm, iso } = istParts(nowMs);
+  const date = usSessionDate(nowMs);
+  let dc;
+  try { dc = await pullUsDayChange(); }
+  catch (e) { return { ok: false, kind: 'us', reason: 'pull-failed', error: String(e?.message || e), date, t: hhmm }; }
+  if (!dc) return { ok: false, kind: 'us', reason: 'no-data', date, t: hhmm };
+
+  const point = { t: hhmm, net: dc.net, usd: dc.usd, fx: dc.fx, pending: false, istNow: iso };
+  const { count, kvPromise } = publish(file, kvKeyUs, date, point);
+  const kv = await kvPromise;
+  return { ok: true, kind: 'us', date, t: hhmm, net: dc.net, usd: dc.usd, covered: dc.covered, missing: dc.missing, count, kv };
 }

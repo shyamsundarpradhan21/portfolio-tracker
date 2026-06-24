@@ -1,33 +1,36 @@
-// Intraday P&L capture DAEMON — the live path. One long-running process for the
-// trading session: every 10s it snapshots F&O P&L (realised + open MTM) across
-// Dhan/Upstox/Fyers, appends to the local archive, and publishes the day's tape
-// to KV (intraday:<date>) so the deployed app reads it near-live with NO git /
-// redeploy in the loop. Git is touched exactly ONCE — a single archive commit at
-// market close. Launch it near 09:10 IST (Task Scheduler / launchd); it gates on
-// the clock, exits cleanly after 15:32 IST, and is relaunched fresh each day.
+// Intraday P&L capture DAEMON — the live path. One long-running process per
+// session that snapshots P&L, appends a local archive, and publishes each day's
+// tape to KV so the deployed app reads it near-live with NO git/redeploy in the
+// loop. Git is touched exactly ONCE — a single archive commit at the session close.
 //
-//   node scripts/capture-daemon.mjs            # run the session loop
-//   CAPTURE_FORCE=1 node scripts/capture-daemon.mjs   # ignore the market gate (debug)
-//   TICK_MS=10000 ORDERS_EVERY=6 …             # tune cadence / orders throttle
+// Two session modes (run as two scheduled instances):
+//   SESSION=in  (default) — 09:13–15:32 IST: F&O (10s) + Indian equity (60s)
+//   SESSION=us            — 18:45 IST→02:30 IST: US equity day-change (60s, INR)
+//
+//   node scripts/capture-daemon.mjs                 # India session (default)
+//   SESSION=us node scripts/capture-daemon.mjs      # US session (evening)
+//   CAPTURE_FORCE=1 …                               # ignore the market gate (debug)
 //
 // READ-ONLY broker access — only GETs positions/orders.
 
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { captureTick, captureEquityTick } from './lib/intradayTick.mjs';
-import { marketState, istParts } from './lib/marketHours.mjs';
+import { captureTick, captureEquityTick, captureUsTick } from './lib/intradayTick.mjs';
+import { marketState, usMarketState, istParts } from './lib/marketHours.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SESSION = process.env.SESSION === 'us' ? 'us' : 'in';
 const TICK_MS = +process.env.TICK_MS || 10_000;        // F&O cadence (10s)
 const EQUITY_MS = +process.env.EQUITY_MS || 60_000;     // equity cadence (60s, Yahoo-polite)
 const ORDERS_EVERY = +process.env.ORDERS_EVERY || 6;    // pending-order check ~1/min at 10s
 const FORCE = !!process.env.CAPTURE_FORCE;
 
-// F&O and equity run on INDEPENDENT loops with their own in-flight guards, so a
-// slow equity quote-fetch can never stall (or skip) the 10s F&O capture.
-let fnoBusy = false, eqBusy = false;
-let n = 0;              // F&O tick counter (drives the orders throttle)
+// Each capture runs on its own loop with its own in-flight guard, so a slow
+// quote-fetch can never stall (or skip) another loop's cadence.
+let fnoBusy = false, eqBusy = false, usBusy = false;
+let started = false;   // US session: has the window opened yet (to detect close)?
+let n = 0;             // F&O tick counter (drives the orders throttle)
 const timers = [];
 let committed = false;  // archive committed once at close
 let timer = null;
@@ -35,8 +38,9 @@ let timer = null;
 function commitArchive() {
   if (committed || process.env.SYNC_SKIP_GIT) return;
   try {
-    execSync('git add data/fno-intraday.json data/eq-intraday.json', { cwd: ROOT });
-    if (!execSync('git status --porcelain data/fno-intraday.json data/eq-intraday.json', { cwd: ROOT }).toString().trim()) { committed = true; return; }
+    const FILES = 'data/fno-intraday.json data/eq-intraday.json data/us-intraday.json';
+    execSync(`git add ${FILES}`, { cwd: ROOT });
+    if (!execSync(`git status --porcelain ${FILES}`, { cwd: ROOT }).toString().trim()) { committed = true; return; }
     const { date } = istParts(Date.now());
     execSync(`git commit -m "chore: intraday P&L tape ${date}"`, { cwd: ROOT, stdio: 'inherit' });
     execSync('git fetch origin main', { cwd: ROOT });
@@ -61,10 +65,19 @@ function stop(reason) {
   process.exit(0);
 }
 
-// Returns true while the market window is open (or FORCE); calls stop() once the
-// session is over. Shared by both loops so either can wind the daemon down.
+// Returns true while this session's market window is open (or FORCE); calls stop()
+// once the session is over. India gates on marketState (pre/open/post/weekend);
+// US gates on usMarketState (open/closed) over its evening→overnight window.
 function windowOpen() {
-  const state = marketState(Date.now());
+  const now = Date.now();
+  if (SESSION === 'us') {
+    if (FORCE) return true;
+    if (usMarketState(now) === 'open') { started = true; return true; }
+    // Before the evening open we idle; once it has opened and then closed, stop.
+    if (started) { stop('US session closed'); return false; }
+    return false; // launched early — idle until the US open
+  }
+  const state = marketState(now);
   if (!FORCE && (state === 'post' || state === 'weekend')) { stop(`market ${state}`); return false; }
   if (!FORCE && state === 'pre') return false; // launched early — idle until the open
   return true;
@@ -95,10 +108,28 @@ async function eqTick() {
   finally { eqBusy = false; }
 }
 
+async function usTick() {
+  if (!windowOpen() || usBusy) return;
+  usBusy = true;
+  const now = Date.now();
+  try {
+    const e = await captureUsTick({ nowMs: now });
+    if (e.ok) console.log(`${e.t} US  net ₹${e.net} ($${e.usd}) · ${e.covered} held${e.missing?.length ? ` · ${e.missing.length} no-quote` : ''} · ${e.count} pts${e.kv ? ' · kv' : ''}`);
+    else console.log(`${e.t || istParts(now).hhmm} US  ${e.reason}`);
+  } catch (e) { console.error('US tick error:', e?.message || e); }
+  finally { usBusy = false; }
+}
+
 process.on('SIGTERM', () => stop('SIGTERM'));
 process.on('SIGINT', () => stop('SIGINT'));
 
-console.log(`capture-daemon: starting (F&O ${TICK_MS}ms, EQ ${EQUITY_MS}ms, orders 1/${ORDERS_EVERY}, force=${FORCE})`);
-await fnoTick();                      // immediate first F&O point
-eqTick();                            // kick equity (independent; don't await — it's slower)
-timers.push(setInterval(fnoTick, TICK_MS), setInterval(eqTick, EQUITY_MS));
+if (SESSION === 'us') {
+  console.log(`capture-daemon: starting US session (EQ ${EQUITY_MS}ms, force=${FORCE})`);
+  usTick();
+  timers.push(setInterval(usTick, EQUITY_MS));
+} else {
+  console.log(`capture-daemon: starting India session (F&O ${TICK_MS}ms, EQ ${EQUITY_MS}ms, orders 1/${ORDERS_EVERY}, force=${FORCE})`);
+  await fnoTick();                    // immediate first F&O point
+  eqTick();                          // kick equity (independent; don't await — it's slower)
+  timers.push(setInterval(fnoTick, TICK_MS), setInterval(eqTick, EQUITY_MS));
+}

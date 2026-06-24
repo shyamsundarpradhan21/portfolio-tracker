@@ -13,6 +13,7 @@ import brokerTax from '../../../data/broker-tax.json';
 import fnoLedger from '../../../data/fno-ledger.json';
 import fnoIntraday from '../../../data/fno-intraday.json';
 import eqIntraday from '../../../data/eq-intraday.json';
+import usIntraday from '../../../data/us-intraday.json';
 import volPnl from '../../../data/vol_pnl.json';
 import brokerState from '../../../data/broker-state.json';
 import usTrades from '../../../data/us_trades.json';
@@ -29,7 +30,7 @@ export async function GET() {
   }
   const payload = {
     ...data,
-    _app: { fySeed, fnoLedger, fnoIntraday, eqIntraday, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd, fnoRealized: brokerTax.fno_realized },
+    _app: { fySeed, fnoLedger, fnoIntraday, eqIntraday, usIntraday, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd, fnoRealized: brokerTax.fno_realized },
   };
   return new Response(JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

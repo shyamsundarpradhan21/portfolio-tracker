@@ -8,6 +8,7 @@ import FreshnessTag from '../shared/FreshnessTag';
 import CFMemo from '../shared/CFMemo';
 import SunburstMix from '../SunburstMix';
 import RealizedPanel from '../RealizedPanel';
+import EquityDayCurve from '../shared/EquityDayCurve';
 import Skel from '../shared/Skel';
 
 
@@ -22,6 +23,9 @@ export default function USTab({
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
       </div>
+
+      {/* Live intraday US-equity day-change curve (₹), captured during US hours */}
+      <EquityDayCurve kind="us" />
 
       <div className="g3 sec">
         <div className="csm">

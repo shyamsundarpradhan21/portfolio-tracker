@@ -1,6 +1,6 @@
 // Tests for the equity day-change math (the pure core of the equity capture).
 import { describe, it, expect } from 'vitest';
-import { yahooSym, equityHoldings, computeDayChange } from './equity.mjs';
+import { yahooSym, equityHoldings, computeDayChange, usHoldings, computeUsDayChange } from './equity.mjs';
 
 describe('yahooSym', () => {
   it('suffixes NSE tickers for Yahoo', () => {
@@ -55,5 +55,32 @@ describe('computeDayChange — Σ qty×(price−prevClose)', () => {
     expect(r.covered).toBe(1);
     expect(r.missing).toEqual(['AURIONPRO']);
     expect(r.net).toBe(-56);
+  });
+});
+
+describe('usHoldings — shape-tolerant pull from the private portfolio', () => {
+  it('accepts sym|ticker|symbol and qty|units|shares, drops zero-qty', () => {
+    const priv = { US: [{ ticker: 'aapl', shares: 10 }, { sym: 'MSFT', qty: 5 }, { symbol: 'X', units: 0 }] };
+    expect(usHoldings(priv)).toEqual([{ sym: 'AAPL', qty: 10 }, { sym: 'MSFT', qty: 5 }]);
+  });
+  it('empty/missing → []', () => { expect(usHoldings(null)).toEqual([]); expect(usHoldings({})).toEqual([]); });
+});
+
+describe('computeUsDayChange — USD day-change × FX → INR', () => {
+  const holdings = [{ sym: 'AAPL', qty: 10 }, { sym: 'MSFT', qty: 5 }];
+  const quotes = { AAPL: { price: 232, prevClose: 230 }, MSFT: { price: 410, prevClose: 414 } };
+  it('nets USD then converts at the FX rate', () => {
+    // AAPL +2×10=+20 ; MSFT −4×5=−20 ; usd 0 → inr 0
+    const r = computeUsDayChange(holdings, quotes, 86);
+    expect(r.usd).toBe(0); expect(r.net).toBe(0); expect(r.covered).toBe(2);
+  });
+  it('applies FX to a non-zero day-change', () => {
+    const r = computeUsDayChange([{ sym: 'AAPL', qty: 10 }], { AAPL: { price: 235, prevClose: 230 } }, 86);
+    expect(r.usd).toBe(50);            // +5 × 10
+    expect(r.net).toBe(4300);          // 50 × 86
+  });
+  it('net is null when FX is unavailable (→ daemon skips)', () => {
+    const r = computeUsDayChange([{ sym: 'AAPL', qty: 10 }], { AAPL: { price: 235, prevClose: 230 } }, null);
+    expect(r.usd).toBe(50); expect(r.net).toBe(null); expect(r.fx).toBe(null);
   });
 });

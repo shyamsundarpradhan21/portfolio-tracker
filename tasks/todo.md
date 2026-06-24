@@ -160,3 +160,22 @@ intraday day-change (vs prev close), per the user's pick.
   Yahoo); equity curve rendered end-to-end via the live read path in both themes.
 - US sleeve (Vested + FX) is the remaining follow-up. Live Yahoo is proxy-blocked in
   cloud (degrades to null gracefully); fetches real on the laptop.
+
+## US sleeve added to the live equity capture (BUILT)
+Extends the previous India-equity build (which already includes Kite — those
+delivery holdings are in broker-state.json under INDIAN).
+- marketHours.mjs: usMarketState (NSE 18:45 IST → 02:30 IST window, absorbs DST)
+  and usSessionDate (overnight buckets under the evening date so one US session
+  is one tape entry). 5 unit tests.
+- equity.mjs: usHoldings (shape-tolerant pull from private US sleeve),
+  computeUsDayChange (pure, USD × FX → INR, skip-not-zero on missing quote/FX),
+  pullUsDayChange (keyless Yahoo + INR=X FX in parallel). 4 unit tests.
+- intradayTick.mjs: captureUsTick + kvKeyUs intraday:us:<date>.
+- capture-daemon.mjs: SESSION=us mode — runs ONLY usTick on its own loop with
+  session-aware windowOpen() that idles before the open and stops after the
+  past-midnight close. India session (default) still does F&O + Indian equity.
+  Schedule TWO instances: morning (default) + evening (SESSION=us).
+- data/us-intraday.json seed; route gains kind=us; appData usIntraday hydration.
+- EquityDayCurve generalized to {kind, archive, dateOf, title, note} — Indian tab
+  uses kind=eq, US tab uses kind=us (US session date logic mirrors the daemon).
+- Verified: 159 tests; build clean; SESSION=us dry-run gates correctly.

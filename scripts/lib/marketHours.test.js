@@ -2,7 +2,7 @@
 // the cases are unambiguous; IST = UTC + 5:30. 2026-06-24 is a Wednesday,
 // 2026-06-27 a Saturday.
 import { describe, it, expect } from 'vitest';
-import { istParts, marketState } from './marketHours.mjs';
+import { istParts, marketState, usMarketState, usSessionDate } from './marketHours.mjs';
 
 const at = (y, mo, d, h, mi) => Date.UTC(y, mo, d, h, mi); // mo 0-indexed
 
@@ -34,4 +34,21 @@ describe('marketState — NSE 09:13–15:32 IST gate, Mon–Fri', () => {
     expect(marketState(at(2026, 5, 24, 10, 1))).toBe('open'); // 15:31 IST
     expect(marketState(at(2026, 5, 24, 10, 3))).toBe('post'); // 15:33 IST
   });
+});
+
+describe('usMarketState — NYSE in IST (evening → overnight)', () => {
+  // 2026-06-24 Wed, 2026-06-26 Fri, 2026-06-27 Sat, 2026-06-28 Sun (IST)
+  it('open Wed evening IST (20:00 = 14:30Z)', () => expect(usMarketState(at(2026, 5, 24, 14, 30))).toBe('open'));
+  it('open in the past-midnight tail (Thu 01:00 IST = Wed 19:30Z) — still Wed US session', () =>
+    expect(usMarketState(at(2026, 5, 24, 19, 30))).toBe('open'));
+  it('closed in IST daytime (Wed 11:00 IST = 05:30Z)', () => expect(usMarketState(at(2026, 5, 24, 5, 30))).toBe('closed'));
+  it('closed Sat evening IST (no US session)', () => expect(usMarketState(at(2026, 5, 27, 15, 0))).toBe('closed'));
+  it('open Sat early-AM IST tail (Fri US session): Sat 01:00 IST', () =>
+    expect(usMarketState(at(2026, 5, 26, 19, 30))).toBe('open')); // 2026-06-26 19:30Z = Sat 01:00 IST
+});
+
+describe('usSessionDate — overnight buckets under the evening date', () => {
+  it('Wed 20:00 IST → 2026-06-24', () => expect(usSessionDate(at(2026, 5, 24, 14, 30))).toBe('2026-06-24'));
+  it('Thu 01:00 IST → still 2026-06-24 (the Wed-evening session)', () =>
+    expect(usSessionDate(at(2026, 5, 24, 19, 30))).toBe('2026-06-24'));
 });

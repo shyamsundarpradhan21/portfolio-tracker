@@ -7,13 +7,15 @@
 
 import fnoIntraday from '../../../data/fno-intraday.json';
 import eqIntraday from '../../../data/eq-intraday.json';
+import usIntraday from '../../../data/us-intraday.json';
 
 export const dynamic = 'force-dynamic';
 
 const isoDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
-// kind selects the tape: F&O position P&L (default) or equity day-change.
-const ARCHIVE = { fno: fnoIntraday, eq: eqIntraday };
-const kvKeyOf = (kind, date) => (kind === 'eq' ? `intraday:eq:${date}` : `intraday:${date}`);
+// kind selects the tape: F&O position P&L (default), India equity, or US equity.
+const ARCHIVE = { fno: fnoIntraday, eq: eqIntraday, us: usIntraday };
+const kvKeyOf = (kind, date) => (kind === 'fno' ? `intraday:${date}` : `intraday:${kind}:${date}`);
+const KINDS = new Set(['fno', 'eq', 'us']);
 
 function kvCreds() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -40,7 +42,7 @@ async function fromKV(kind, date) {
 export async function GET(req) {
   const params = new URL(req.url).searchParams;
   const date = params.get('date');
-  const kind = params.get('kind') === 'eq' ? 'eq' : 'fno';
+  const kind = KINDS.has(params.get('kind')) ? params.get('kind') : 'fno';
   if (!isoDate(date)) {
     return Response.json({ error: 'date must be YYYY-MM-DD' }, { status: 400 });
   }

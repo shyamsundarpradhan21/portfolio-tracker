@@ -83,6 +83,56 @@ async function fetchQuotes(syms) {
   return out;
 }
 
+// ── US sleeve ── US holdings live in the private portfolio (not broker-state),
+// priced in USD then converted to INR at the live USD/INR rate. Symbols are plain
+// US tickers (AAPL), no suffix. Shape-tolerant: accepts sym|ticker|symbol and
+// qty|units|shares so it survives the private file's exact layout.
+export function usHoldings(priv) {
+  const arr = priv?.US || priv?.us || [];
+  const out = [];
+  for (const r of Array.isArray(arr) ? arr : []) {
+    const sym = r?.sym || r?.ticker || r?.symbol;
+    const qty = +(r?.qty ?? r?.units ?? r?.shares ?? 0);
+    if (sym && qty) out.push({ sym: String(sym).trim().toUpperCase(), qty });
+  }
+  return out;
+}
+
+// Pure: US holdings + USD quotes + USD/INR → today's day-change in INR.
+// dcInr = Σ qty×(price−prevClose) × fx. Missing quotes are reported, not zeroed.
+export function computeUsDayChange(holdings, quotes, fx) {
+  let usd = 0, covered = 0; const missing = [];
+  for (const h of holdings) {
+    const q = quotes[h.sym];
+    if (!q || q.price == null || q.prevClose == null) { missing.push(h.sym); continue; }
+    usd += h.qty * (q.price - q.prevClose);
+    covered++;
+  }
+  const rate = fx || null;
+  return { usd: r2(usd), net: rate ? r2(usd * rate) : null, fx: rate, covered, missing };
+}
+
+// One US snapshot: private US holdings × live Yahoo (USD) × live USD/INR → INR
+// day-change. Returns null if holdings/quotes/FX unavailable (→ daemon skips).
+export async function pullUsDayChange() {
+  let priv;
+  try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
+  catch { return null; }
+  const holdings = usHoldings(priv);
+  if (!holdings.length) return null;
+  let quotes, fxq;
+  try {
+    [quotes, fxq] = await Promise.all([
+      fetchQuotes([...new Set(holdings.map((h) => h.sym))]),
+      fetchQuotes(['INR=X']),
+    ]);
+  } catch { return null; }
+  const fx = fxq['INR=X']?.price ?? null;
+  const dc = computeUsDayChange(holdings, quotes, fx);
+  if (!dc.covered || dc.net == null) return null;
+  return { net: dc.net, usd: dc.usd, fx: dc.fx, covered: dc.covered, missing: dc.missing };
+}
+
 // One equity snapshot: committed holdings × live Yahoo prices → today's day-change.
 // Returns null if holdings/quotes are unavailable (→ daemon skips the tick).
 export async function pullEquityDayChange() {

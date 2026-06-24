@@ -1,0 +1,5 @@
+{
+  "note": "Intraday US-equity day-change tape in INR (Σ qty×(price−prevClose)×USD/INR). Written by SESSION=us scripts/capture-daemon.mjs during US hours (overnight IST) via keyless Yahoo. Non-personal aggregate; safe to commit.",
+  "updatedAt": null,
+  "days": {}
+}
