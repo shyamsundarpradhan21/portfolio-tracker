@@ -92,7 +92,10 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
       {/* ── header ── */}
       <div className="fxc" style={{ padding: '16px 20px 12px' }}>
-        <div className="ctitle" style={{ margin: 0 }}>P&amp;L Dashboard <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O · realised</span></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="ctitle" style={{ margin: 0 }}>P&amp;L Dashboard <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O · realised</span></div>
+          <LivePnl broker={activeBroker} />
+        </div>
         <div className="seg" role="tablist" aria-label="P&L period">
           {['day', 'month', 'year'].map((v) => (
             <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'on' : ''} onClick={() => pick(v)}>
@@ -118,7 +121,9 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
       {/* ── stat panel (FY in scope) ── */}
       <div className="pnl-stats">
         <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />} sub={`Gross ${inrC(stats.gross)} · charges ${inrC(stats.charges)}`} />
-        <Stat k="Win rate" v={`${stats.winPct}%`} sub={`${stats.winDays} win · ${stats.lossDays} loss days`} />
+        <Stat k="Win rate"
+          v={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{stats.winPct}%<Donut pct={stats.winPct} /></span>}
+          sub={`${stats.winDays} win · ${stats.lossDays} loss days`} />
         <Stat k="Most profitable day" vc="grn"
           v={stats.mostProfit ? <SInrF n={stats.mostProfit.net} /> : '—'}
           sub={stats.mostProfit ? prettyDate(stats.mostProfit.date) : ''} />
@@ -300,13 +305,60 @@ function Legend() {
       <span className="pnl-sw" style={{ background: 'var(--pnl-bl3)' }} />
       <span className="pnl-sw" style={{ background: 'var(--pnl-bl2)' }} />
       <span className="pnl-sw" style={{ background: 'var(--pnl-bl1)' }} />
-      <span className="pnl-sw" style={{ background: 'var(--pnl-be)' }} />
       <span className="pnl-sw" style={{ background: 'var(--pnl-bp1)' }} />
       <span className="pnl-sw" style={{ background: 'var(--pnl-bp2)' }} />
       <span className="pnl-sw" style={{ background: 'var(--pnl-bp3)' }} />
       <span>Profit</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 16 }}>
+        <span className="pnl-sw" style={{ background: 'var(--pnl-be)' }} /> Breakeven / carry
+      </span>
       <span style={{ marginLeft: 'auto', color: 'var(--txt3)' }}>intensity ∝ your own daily range</span>
     </div>
+  );
+}
+
+// Win-rate ring (Groww-style). Green arc = win%.
+function Donut({ pct }) {
+  const r = 11, c = 2 * Math.PI * r;
+  return (
+    <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r={r} fill="none" stroke="var(--pnl-empty)" strokeWidth="4" />
+      <circle cx="14" cy="14" r={r} fill="none" stroke="var(--grn)" strokeWidth="4"
+        strokeDasharray={c} strokeDashoffset={c * (1 - (pct || 0) / 100)}
+        strokeLinecap="round" transform="rotate(-90 14 14)" />
+    </svg>
+  );
+}
+
+// Live P&L for today, polled from the intraday tape (broker-aware). Hidden until a
+// point exists today (market hours), so it never shows a stale/zero ticker.
+function LivePnl({ broker }) {
+  const [net, setNet] = useState(null);
+  useEffect(() => {
+    let on = true;
+    const today = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/intraday?kind=fno&date=${today}`, { cache: 'no-store' });
+        if (!r.ok || !on) return;
+        const pts = (await r.json()).tape || [];
+        if (!pts.length) { if (on) setNet(null); return; }
+        const last = pts[pts.length - 1];
+        const v = broker === 'all' ? last.net : (last[broker] ?? null);
+        if (on) setNet(Number.isFinite(v) ? v : null);
+      } catch {}
+    };
+    poll();
+    const id = setInterval(poll, 12_000);
+    return () => { on = false; clearInterval(id); };
+  }, [broker]);
+  if (net == null) return null;
+  return (
+    <span className="pnl-live">
+      <span className="pnl-livedot" />
+      <span className="lbl" style={{ margin: 0 }}>Live</span>
+      <span className={'mono ' + cl(net)} style={{ fontWeight: 700 }}><SInrF n={net} /></span>
+    </span>
   );
 }
 

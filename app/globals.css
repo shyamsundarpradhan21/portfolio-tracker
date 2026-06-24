@@ -1965,13 +1965,22 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
    Bucket tints derive from the theme-aware --grn/--red, so day & night Just Work. */
 :root {
   --pnl-empty: color-mix(in srgb, var(--txt) 6%, transparent);
-  --pnl-be:    color-mix(in srgb, var(--acc) 22%, transparent);
+  --pnl-be:    color-mix(in srgb, #5b8def 34%, transparent);   /* breakeven / carry-forward (blue) */
   --pnl-bp1:   color-mix(in srgb, var(--grn) 16%, transparent);
   --pnl-bp2:   color-mix(in srgb, var(--grn) 34%, transparent);
   --pnl-bp3:   color-mix(in srgb, var(--grn) 60%, transparent);
   --pnl-bl1:   color-mix(in srgb, var(--red) 16%, transparent);
   --pnl-bl2:   color-mix(in srgb, var(--red) 34%, transparent);
   --pnl-bl3:   color-mix(in srgb, var(--red) 58%, transparent);
+}
+.pnl-live { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border: .5px solid var(--brd); border-radius: 20px; font-size: var(--fs-xs); }
+.pnl-livedot { width: 7px; height: 7px; border-radius: 50%; background: var(--grn);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--grn) 60%, transparent); animation: pnl-pulse 1.8s infinite; }
+@keyframes pnl-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--grn) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 5px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 .pnl-brokers { padding: 0 20px 12px; display: flex; }
 .pnl-brokers .seg { flex-wrap: wrap; }
