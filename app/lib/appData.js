@@ -13,6 +13,7 @@ export const APP = {
   fnoIntraday: { days: {} },   // intraday F&O P&L tape per day (data/fno-intraday.json)
   eqIntraday: { days: {} },    // intraday India-equity day-change tape (data/eq-intraday.json)
   usIntraday: { days: {} },    // intraday US-equity day-change tape, INR (data/us-intraday.json)
+  niftyOhlc: { days: {} },     // NIFTY 50 1-min OHLC candles per day (data/nifty-ohlc.json)
   volPnl: [],
   brokerState: {},
   usTrades: [],

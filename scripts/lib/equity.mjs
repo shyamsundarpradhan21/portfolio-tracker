@@ -71,10 +71,30 @@ async function yahooQuote(sym) {
   return null;
 }
 
-// NIFTY 50 spot for the intraday watermark. ^NSEI = the index on Yahoo. Returns
-// { price, prevClose } or null (→ the tick just omits nifty for that point).
-export async function niftyLtp() {
-  return yahooQuote('^NSEI');
+// NIFTY 50 intraday 1-MINUTE OHLC candles (^NSEI) for the chart watermark. Yahoo's
+// finest intraday granularity is 1m. Returns [{ t:'HH:MM'(IST), o, h, l, c }] for
+// today, or null. The whole-day array is re-fetched each refresh (cheap, overwrite).
+export async function niftyCandles() {
+  const path = '/v8/finance/chart/%5ENSEI?interval=1m&range=1d&includePrePost=false';
+  for (const host of YH_HOSTS) {
+    try {
+      const r = await fetch(host + path, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const res = (await r.json())?.chart?.result?.[0];
+      const ts = res?.timestamp, q = res?.indicators?.quote?.[0];
+      if (!Array.isArray(ts) || !q) continue;
+      const out = [];
+      for (let i = 0; i < ts.length; i++) {
+        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i];
+        if ([o, h, l, c].some((v) => typeof v !== 'number')) continue;
+        const d = new Date((ts[i] + 5.5 * 3600) * 1000);   // shift epoch to IST wall-clock
+        const t = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+        out.push({ t, o: r2(o), h: r2(h), l: r2(l), c: r2(c) });
+      }
+      return out.length ? out : null;
+    } catch { /* try next host */ }
+  }
+  return null;
 }
 
 // Resolve quotes for a symbol list (bounded concurrency to stay polite to Yahoo).

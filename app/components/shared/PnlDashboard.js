@@ -246,15 +246,18 @@ function DayPanel({ date, byDate }) {
   // keyed by date at the call site, so this state resets cleanly per day (no
   // stale-frame flash). Only the CURRENT day keeps polling — past days are static.
   const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[date] || null);
+  const [candles, setCandles] = useState(() => APP.niftyOhlc?.days?.[date] || null);
   useEffect(() => {
     if (!date) return;
     let on = true;
     const poll = async () => {
       try {
-        const res = await fetch(`/api/intraday?date=${date}`, { cache: 'no-store' });
-        if (!res.ok || !on) return;
-        const j = await res.json();
-        if (on && Array.isArray(j.tape)) setLiveTape(j.tape);
+        const [res, niftyRes] = await Promise.all([
+          fetch(`/api/intraday?date=${date}`, { cache: 'no-store' }),
+          fetch(`/api/intraday?kind=nifty&date=${date}`, { cache: 'no-store' }),
+        ]);
+        if (on && res.ok) { const j = await res.json(); if (Array.isArray(j.tape)) setLiveTape(j.tape); }
+        if (on && niftyRes.ok) { const j = await niftyRes.json(); if (Array.isArray(j.tape)) setCandles(j.tape); }
       } catch {}
     };
     poll();
@@ -274,7 +277,7 @@ function DayPanel({ date, byDate }) {
         <div className={'vmd ' + (headNet != null ? cl(headNet) : '')}>{headNet != null ? <SInrF n={headNet} /> : '—'}</div>
       </div>
 
-      {tape.length >= 2 ? <IntradayChart tape={tape} pending={pending} /> : null}
+      {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} /> : null}
 
       {d ? (
         <div className="g4" style={{ marginTop: 12 }}>

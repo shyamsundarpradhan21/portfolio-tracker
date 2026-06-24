@@ -5,17 +5,17 @@
 // muted coloured line. A faint NIFTY 50 line sits behind as a market-direction
 // watermark (its own index scale — not the ₹ axis). Axis labels derive from the
 // same scaled points. Equity tapes (net only) degrade to just the bold line.
-import { scaleLines, ohlcCandles } from '../../lib/pnlDaily';
+import { scaleLines, scaleCandles } from '../../lib/pnlDaily';
 
 const BROKER = { dhan: { c: '#7C9CF0', label: 'Dhan' }, upstox: { c: '#C99BE8', label: 'Upstox' }, fyers: { c: '#5FC9B5', label: 'Fyers' } };
 
-export default function IntradayChart({ tape, pending = false, ariaLabel = 'Intraday P&L' }) {
+export default function IntradayChart({ tape, candles = null, pending = false, ariaLabel = 'Intraday P&L' }) {
   const W = 660, H = 200;
   const brokerKeys = ['dhan', 'upstox', 'fyers'].filter((k) => (tape || []).some((p) => p && p[k] != null));
   const overlay = brokerKeys.length > 1;                  // only overlay when there's a split to show
   const g = scaleLines(tape, ['net', ...(overlay ? brokerKeys : [])], W, H);
   if (!g || !g.byKey.net) return null;
-  const nifty = ohlcCandles(tape, 'nifty', 28, W, H);   // faint OHLC watermark
+  const nifty = scaleCandles(candles, W, H);            // real 1-min OHLC watermark
   const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
 
   const net = g.byKey.net;

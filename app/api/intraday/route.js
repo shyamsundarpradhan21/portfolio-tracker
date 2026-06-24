@@ -8,14 +8,16 @@
 import fnoIntraday from '../../../data/fno-intraday.json';
 import eqIntraday from '../../../data/eq-intraday.json';
 import usIntraday from '../../../data/us-intraday.json';
+import niftyOhlc from '../../../data/nifty-ohlc.json';
 
 export const dynamic = 'force-dynamic';
 
 const isoDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
-// kind selects the tape: F&O position P&L (default), India equity, or US equity.
-const ARCHIVE = { fno: fnoIntraday, eq: eqIntraday, us: usIntraday };
+// kind selects the tape: F&O position P&L (default), India equity, US equity, or
+// the NIFTY 50 1-min OHLC candles (the Day-view watermark).
+const ARCHIVE = { fno: fnoIntraday, eq: eqIntraday, us: usIntraday, nifty: niftyOhlc };
 const kvKeyOf = (kind, date) => (kind === 'fno' ? `intraday:${date}` : `intraday:${kind}:${date}`);
-const KINDS = new Set(['fno', 'eq', 'us']);
+const KINDS = new Set(['fno', 'eq', 'us', 'nifty']);
 
 function kvCreds() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;

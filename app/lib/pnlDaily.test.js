@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
-  scaleIntraday,
+  scaleIntraday, scaleCandles,
 } from './pnlDaily.js';
 
 const rows = [
@@ -109,6 +109,33 @@ describe('scaleIntraday — Day-view chart geometry', () => {
     const g = scaleIntraday([{ t: 'a', net: 1 }, { t: 'b', net: 2 }, { t: 'c', net: 3 }], 100, 100, 10);
     expect(g.pts[0].x).toBe(10);
     expect(g.pts[2].x).toBe(90);
+  });
+});
+
+describe('scaleCandles — NIFTY 1-min OHLC watermark geometry', () => {
+  const cs = [
+    { t: '09:15', o: 100, h: 110, l: 95, c: 105 },
+    { t: '09:16', o: 105, h: 108, l: 100, c: 102 },
+    { t: '09:17', o: 102, h: 120, l: 101, c: 118 },
+  ];
+  it('returns null for too few / malformed candles', () => {
+    expect(scaleCandles([], 100, 100)).toBe(null);
+    expect(scaleCandles([{ t: 'a', o: 1, h: 2, l: 0, c: 'x' }, { t: 'b', o: 1, h: 2, l: 0, c: 1 }], 100, 100)).toBe(null);
+  });
+  it('spans the padded width left→right by index', () => {
+    const g = scaleCandles(cs, 100, 100, 10);
+    expect(g.bars[0].x).toBe(10);
+    expect(g.bars[2].x).toBe(90);
+  });
+  it('maps the range high to the top and low to the bottom', () => {
+    const g = scaleCandles(cs, 100, 100, 0);
+    expect(g.bars[2].highY).toBe(0);    // 120 is the overall high → top
+    expect(g.bars[0].lowY).toBe(100);   // 95 is the overall low → bottom
+  });
+  it('flags up/down candles by close vs open', () => {
+    const g = scaleCandles(cs, 100, 100);
+    expect(g.bars[0].up).toBe(true);    // 105 >= 100
+    expect(g.bars[1].up).toBe(false);   // 102 < 105
   });
 });
 

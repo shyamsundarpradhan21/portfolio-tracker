@@ -1,0 +1,5 @@
+{
+  "note": "NIFTY 50 (^NSEI) intraday 1-minute OHLC candles per trading day, for the Trading tab Day-view watermark. Public index data; safe to commit. Written by the capture daemon (~1/min) from Yahoo's 1m feed.",
+  "updatedAt": null,
+  "days": {}
+}

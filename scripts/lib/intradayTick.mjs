@@ -4,11 +4,11 @@
 // so the deployed app reads it near-live WITHOUT a git commit / redeploy in the
 // loop. Git is the daemon's once-at-close job, not per-tick.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
-import { pullEquityDayChange, pullUsDayChange, niftyLtp } from './equity.mjs';
+import { pullEquityDayChange, pullUsDayChange, niftyCandles } from './equity.mjs';
 import { appendIntraday } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts, usSessionDate } from './marketHours.mjs';
@@ -17,10 +17,28 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const INTRADAY_FILE = join(ROOT, 'data', 'fno-intraday.json');
 export const EQUITY_FILE = join(ROOT, 'data', 'eq-intraday.json');
 export const US_FILE = join(ROOT, 'data', 'us-intraday.json');
+export const NIFTY_FILE = join(ROOT, 'data', 'nifty-ohlc.json');
 export const kvKey = (date) => `intraday:${date}`;          // F&O (back-compat key)
 export const kvKeyEq = (date) => `intraday:eq:${date}`;     // equity day-change (India)
 export const kvKeyUs = (date) => `intraday:us:${date}`;     // US equity day-change (INR)
+export const kvKeyNifty = (date) => `intraday:nifty:${date}`; // NIFTY 50 1-min OHLC watermark
 const KV_TTL = 3 * 24 * 3600; // recent days live in KV; older history served from the committed file
+
+// Overwrite a day's NIFTY OHLC array (Yahoo returns the WHOLE day each fetch, so
+// the latest read wins) and publish it to KV. Best-effort; never throws.
+function publishNifty(date, candles, istNow) {
+  if (!Array.isArray(candles) || !candles.length) return Promise.resolve(false);
+  try {
+    let json;
+    try { json = JSON.parse(readFileSync(NIFTY_FILE, 'utf8')); } catch { json = { days: {} }; }
+    json.days = { ...(json.days || {}), [date]: candles };
+    json.updatedAt = istNow || json.updatedAt || null;
+    json.note = json.note || 'NIFTY 50 (^NSEI) intraday 1-minute OHLC candles per trading day. Public index data; safe to commit.';
+    writeFileSync(NIFTY_FILE, JSON.stringify(json, null, 2) + '\n');
+  } catch { /* archive best-effort */ }
+  if (kvConfigured()) { try { return kvSetJSON(kvKeyNifty(date), candles, KV_TTL); } catch {} }
+  return Promise.resolve(false);
+}
 
 // Append a point to a tape file and publish that day's tape to KV. Shared by the
 // F&O and equity capture paths; never throws (file/KV failures degrade to a skip).
@@ -51,13 +69,16 @@ export async function captureTick({ withOrders = true, nowMs = Date.now(), file 
   }
   if (!snap.any) return { ok: false, reason: 'no-tokens', date, t: hhmm };
 
-  // NIFTY 50 spot for the chart watermark — best-effort, never blocks the capture.
-  let nifty = null;
-  try { nifty = (await niftyLtp())?.price ?? null; } catch {}
-
-  const point = { t: hhmm, net: snap.net, byBroker: snap.byBroker, pending: snap.pending, nifty, istNow: iso };
+  const point = { t: hhmm, net: snap.net, byBroker: snap.byBroker, pending: snap.pending, istNow: iso };
   const { count, kvPromise } = publish(file, kvKey, date, point);
-  const kv = await kvPromise;
+
+  // NIFTY 50 1-min OHLC watermark — refreshed on the heavier ~1/min pass only
+  // (withOrders), best-effort, never blocks the capture.
+  let niftyKv = Promise.resolve(false);
+  if (withOrders) {
+    try { const candles = await niftyCandles(); niftyKv = publishNifty(date, candles, iso); } catch {}
+  }
+  const [kv] = await Promise.all([kvPromise, niftyKv]);
   return { ok: true, kind: 'fno', date, t: hhmm, net: snap.net, brokers: Object.keys(snap.byBroker), pending: snap.pending, count, kv };
 }
 
