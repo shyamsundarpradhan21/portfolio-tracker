@@ -207,6 +207,7 @@ def parse_dhan(path):
     wb = xlrd.open_workbook(path)
     out = {}
     fno_by_fy = {}
+    fno_by_day = {}
     for seg, sheet in (("equity", "Equity"), ("fno", "F&O")):
         if sheet not in wb.sheet_names():
             continue
@@ -230,7 +231,10 @@ def parse_dhan(path):
             elif c0 and gp is None:            # section title (e.g. 'Tradewise Details')
                 break
         out[seg] = round(total)
-        # F&O per-FY: bucket each tradewise row by Sell-Date FY (cols by header label)
+        # F&O per-FY AND per-day: bucket each tradewise row by Sell-Date. The day
+        # bucket (date → gross+net) is what backfills the Trading-tab daily calendar
+        # via scripts/backfill-fno-ledger.mjs; it is non-PII (date + ₹ only, no
+        # symbol/account), same privacy class as the per-FY totals.
         if seg == "fno":
             sd = gpc = npc = None
             for r in rows:
@@ -252,9 +256,14 @@ def parse_dhan(path):
                 b = fno_by_fy.setdefault(fy_of(sell), {"gross": 0.0, "net": 0.0})
                 b["gross"] += g
                 b["net"] += nv if nv is not None else g
+                day = fno_by_day.setdefault(sell.date().isoformat(), {"gross": 0.0, "net": 0.0})
+                day["gross"] += g
+                day["net"] += nv if nv is not None else g
     return {"label": "dhan", "owner": "self", "sleeve": "trading", "allTime": out,
             "fnoByFY": {k: {"gross": round(v["gross"]), "net": round(v["net"])}
-                        for k, v in fno_by_fy.items()}}
+                        for k, v in fno_by_fy.items()},
+            "fnoByDay": {k: {"gross": round(v["gross"], 2), "net": round(v["net"], 2)}
+                         for k, v in sorted(fno_by_day.items())}}
 
 # ── Vested/DriveWealth P&L statement (.xlsx) — Realized breakdown by Date Sold ─
 def parse_vested(path):
@@ -480,6 +489,19 @@ def main():
                for fy in sorted(fno_by_fy, key=lambda x: int(x[2:4]))],
     } if fno_by_fy else None
 
+    # ── F&O DAILY: per-trade exits bucketed by exact sell-date, for the Trading-tab
+    # calendar backfill. Only brokers whose report carries a per-trade table land
+    # here (Dhan today); FY-only brokers stay in fno_realized above. sleeve = S01
+    # for Dhan (matches the live sync's mapping). scripts/backfill-fno-ledger.mjs
+    # upserts these into data/fno-ledger.json. ──
+    DAILY_SLEEVE = {"dhan": "S01"}
+    fno_daily = []
+    if dhan and dhan.get("fnoByDay"):
+        for d, v in dhan["fnoByDay"].items():
+            fno_daily.append({"date": d, "broker": "dhan", "sleeve": DAILY_SLEEVE["dhan"],
+                              "gross": v["gross"], "net": v["net"]})
+    fno_daily.sort(key=lambda x: (x["date"], x["broker"]))
+
     out = {
         "generatedFrom": "data/reports/* (broker tax/P&L exports)",
         "asOf": fmt_asof(asof),
@@ -493,6 +515,7 @@ def main():
         "indian_realized": indian_realized,
         "us_realized": us_realized,
         "fno_realized": fno_realized,
+        "fno_daily": fno_daily,
         "dhan_allTime": dhan["allTime"] if dhan else None,
         "groww_alltime": groww["allTime"] if groww else None,
     }

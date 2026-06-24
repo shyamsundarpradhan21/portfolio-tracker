@@ -123,3 +123,17 @@ by a skeptical second pass (18 raised → 8 confirmed, 10 dismissed). Fixed:
 Dismissed (verified non-issues): orders-throttle "drift", force-push claim (it's a
 fast-forward, not --force), date-param enumeration, two-writer/commit races (latent,
 single-writer topology), KV-TTL handoff, midnight-poll edge.
+
+## F&O daily backfill from reports (BUILT) — answers "fill the vacuum"
+The daily calendar was empty because fno-ledger only captures forward; historical
+daily detail lived in the raw Dhan report but parse-broker-tax.py collapsed it to
+per-FY and discarded the day.
+- parse-broker-tax.py: parse_dhan now also buckets each F&O trade by exact sell-DATE
+  (fnoByDay); main() emits non-PII `fno_daily` [{date,broker,sleeve,gross,net}].
+- scripts/backfill-fno-ledger.mjs: upserts fno_daily into fno-ledger.json (broker
+  label matched to the sync so no double-count; estCharges = gross−net → real net).
+  Idempotent. 5 unit tests + e2e fixture run verified.
+- RUN LOCALLY (reports are gitignored, not in cloud): drop reports in data/reports/
+  → python scripts/parse-broker-tax.py → node scripts/backfill-fno-ledger.mjs →
+  commit data/fno-ledger.json. Only Dhan (S01) has per-trade dates today; other
+  brokers stay FY-level until their tradewise sheets are wired.
