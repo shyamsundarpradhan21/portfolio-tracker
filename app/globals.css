@@ -981,11 +981,28 @@ body::before {
    one line. Scoped to Overview — on a sleeve's own tab the cards unify to that
    tab's theme. The iridescent hero blends these same hues; the cards separate them. */
 :root[data-tab="overview"] .hdr-card .lbl { color: var(--acc); }
-:root[data-tab="overview"] .hdr-card.hc-indian { --acc: var(--blu); --acc2: var(--cyn); }
-:root[data-tab="overview"] .hdr-card.hc-us     { --acc: var(--cyn); --acc2: var(--blu); }
-:root[data-tab="overview"] .hdr-card.hc-fd     { --acc: var(--gld); --acc2: var(--gld); }
-:root[data-tab="overview"] .hdr-card.hc-mf     { --acc: var(--pur); --acc2: var(--pnk); }
-:root[data-tab="overview"] .hdr-card.hc-algo   { --acc: var(--pnk); --acc2: var(--pur); }
+/* Each Overview header card takes its LINKED TAB's own accent — these mirror the
+   :root[data-tab=…] tab accents (night + day) so a card reads as that tab's theme
+   (Indian blue · US violet · FD green · MF pink · Trading yellow). */
+:root[data-tab="overview"] {
+  --tab-indian: #5479EE; --tab-indian2: #7A98F5;
+  --tab-us:     #7370FF; --tab-us2:     #948FFF;
+  --tab-fd:     #34E0A1; --tab-fd2:     #7CEFC4;
+  --tab-mf:     #CB5189; --tab-mf2:     #E47BAB;
+  --tab-algo:   #FCDB32; --tab-algo2:   #FDE87A;
+}
+:root[data-time="day"][data-tab="overview"] {
+  --tab-indian: #3447AA; --tab-indian2: #5A6BD0;
+  --tab-us:     #4F4DE0; --tab-us2:     #6E6CEC;
+  --tab-fd:     #0E9E72; --tab-fd2:     #14B884;
+  --tab-mf:     #7C2F54; --tab-mf2:     #94476C;
+  --tab-algo:   #B68A00; --tab-algo2:   #D1A50A;
+}
+:root[data-tab="overview"] .hdr-card.hc-indian { --acc: var(--tab-indian); --acc2: var(--tab-indian2); }
+:root[data-tab="overview"] .hdr-card.hc-us     { --acc: var(--tab-us);     --acc2: var(--tab-us2); }
+:root[data-tab="overview"] .hdr-card.hc-fd     { --acc: var(--tab-fd);     --acc2: var(--tab-fd2); }
+:root[data-tab="overview"] .hdr-card.hc-mf     { --acc: var(--tab-mf);     --acc2: var(--tab-mf2); }
+:root[data-tab="overview"] .hdr-card.hc-algo   { --acc: var(--tab-algo);   --acc2: var(--tab-algo2); }
 @keyframes nw-shine {
   0%   { background-position: 0% 0; }
   50%  { background-position: 100% 0; }
