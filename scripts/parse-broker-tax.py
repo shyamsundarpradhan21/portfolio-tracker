@@ -431,7 +431,7 @@ def parse_upstox_zip(path):
     target = round(gross) if gross is not None else round(net)
     data = [r for r in rows if _row_dates(r) and sum(1 for c in r if num(c) is not None) >= 2]
     fno_by_day, info = fno_daily_reconciled(data, target)
-    if not fno_by_day:
+    if not fno_by_day and target != 0:        # target 0 = empty/duplicate report, not an error
         msg, peek = info if isinstance(info, tuple) else (info, [])
         print(f"  ! upstox {fy}: Gross P&L ₹{target} but no daily ({msg}).")
         for pr in peek:
