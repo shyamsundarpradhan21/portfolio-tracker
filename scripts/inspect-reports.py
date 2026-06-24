@@ -42,8 +42,9 @@ def show_row(cells):
     out = [f"{i}:{mask(c)}" for i, c in enumerate(cells) if mask(c) != ""]
     return "  ".join(out)
 
-def inspect_xlsx(path):
-    wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
+def inspect_xlsx(src):
+    # src is a path or a file-like (BytesIO from inside a zip)
+    wb = openpyxl.load_workbook(src, data_only=True, read_only=True)
     print(f"  sheets: {wb.sheetnames}")
     for sn in wb.sheetnames:
         ws = wb[sn]
@@ -71,6 +72,32 @@ def inspect_csv(path):
             print(f"    r{ri}: {line}")
             shown += 1
 
+def inspect_zip(path):
+    import zipfile, io
+    with zipfile.ZipFile(path) as zf:
+        inner = [n for n in zf.namelist() if n.lower().endswith((".xlsx", ".csv"))]
+        if not inner:
+            print(f"  (zip has no xlsx/csv — contents: {zf.namelist()})")
+            return
+        for n in inner:
+            print(f"  ── inner: {n} ──")
+            data = zf.read(n)
+            try:
+                if n.lower().endswith(".xlsx"):
+                    inspect_xlsx(io.BytesIO(data))
+                else:
+                    rows = list(csv.reader(io.StringIO(data.decode("utf-8", "replace"))))
+                    print(f"  rows: {len(rows)}")
+                    shown = 0
+                    for ri, r in enumerate(rows[:MAXSHEETROWS]):
+                        line = show_row(r)
+                        strs = sum(1 for c in r if mask(c) not in ("", "#") and not DATEISH.search(str(c or "")))
+                        if line and strs >= 2 and shown < MAXROWS:
+                            print(f"    r{ri}: {line}")
+                            shown += 1
+            except Exception as e:
+                print(f"    ERROR reading inner: {e}")
+
 def main():
     files = sorted(glob.glob(os.path.join(REPORTS, "*")))
     if not files:
@@ -84,6 +111,8 @@ def main():
                 inspect_xlsx(p)
             elif ext == ".csv":
                 inspect_csv(p)
+            elif ext == ".zip":
+                inspect_zip(p)
             else:
                 print(f"  (skipped — {ext})")
         except Exception as e:
