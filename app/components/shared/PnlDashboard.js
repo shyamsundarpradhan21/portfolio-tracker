@@ -332,15 +332,14 @@ function Legend() {
   );
 }
 
-// Win rate, hover to flip to loss rate (red ring).
+// Win rate — shows the % number, hover swaps it for the donut ring.
 function WinRateStat({ stats }) {
   const [hover, setHover] = useState(false);
-  const pct = hover ? (100 - stats.winPct) : stats.winPct;
   return (
     <div className="pnl-stat" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ cursor: 'default' }}>
-      <div className="lbl" style={{ margin: 0 }}>{hover ? 'Loss rate' : 'Win rate'}</div>
-      <div className="vmd" style={{ marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-        {pct}%<Donut pct={pct} color={hover ? 'var(--red)' : 'var(--grn)'} />
+      <div className="lbl" style={{ margin: 0 }}>Win rate</div>
+      <div className="vmd" style={{ marginTop: 5, minHeight: 26, display: 'flex', alignItems: 'center' }}>
+        {hover ? <Donut pct={stats.winPct} size={26} /> : `${stats.winPct}%`}
       </div>
       <div className="sub" style={{ marginTop: 3 }}>{stats.winDays} win · {stats.lossDays} loss days</div>
     </div>
@@ -362,10 +361,10 @@ function DayStat({ stats, mode, onToggle }) {
 }
 
 // Win-rate ring (Groww-style). Green arc = win%.
-function Donut({ pct, color = 'var(--grn)' }) {
+function Donut({ pct, color = 'var(--grn)', size = 26 }) {
   const r = 11, c = 2 * Math.PI * r;
   return (
-    <svg width="26" height="26" viewBox="0 0 28 28" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true">
       <circle cx="14" cy="14" r={r} fill="none" stroke="var(--pnl-empty)" strokeWidth="4" />
       <circle cx="14" cy="14" r={r} fill="none" stroke={color} strokeWidth="4"
         strokeDasharray={c} strokeDashoffset={c * (1 - (pct || 0) / 100)}

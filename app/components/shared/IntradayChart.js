@@ -5,7 +5,7 @@
 // muted coloured line. A faint NIFTY 50 line sits behind as a market-direction
 // watermark (its own index scale — not the ₹ axis). Axis labels derive from the
 // same scaled points. Equity tapes (net only) degrade to just the bold line.
-import { scaleLines, normalizeLine } from '../../lib/pnlDaily';
+import { scaleLines, ohlcCandles } from '../../lib/pnlDaily';
 
 const BROKER = { dhan: { c: '#7C9CF0', label: 'Dhan' }, upstox: { c: '#C99BE8', label: 'Upstox' }, fyers: { c: '#5FC9B5', label: 'Fyers' } };
 
@@ -15,7 +15,7 @@ export default function IntradayChart({ tape, pending = false, ariaLabel = 'Intr
   const overlay = brokerKeys.length > 1;                  // only overlay when there's a split to show
   const g = scaleLines(tape, ['net', ...(overlay ? brokerKeys : [])], W, H);
   if (!g || !g.byKey.net) return null;
-  const nifty = normalizeLine(tape, 'nifty', W, H);
+  const nifty = ohlcCandles(tape, 'nifty', 28, W, H);   // faint OHLC watermark
   const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
 
   const net = g.byKey.net;
@@ -31,8 +31,21 @@ export default function IntradayChart({ tape, pending = false, ariaLabel = 'Intr
       <clipPath id={`up-${uid}`}><rect x="0" y="0" width={W} height={g.zeroY} /></clipPath>
       <clipPath id={`dn-${uid}`}><rect x="0" y={g.zeroY} width={W} height={H - g.zeroY} /></clipPath>
 
-      {/* NIFTY 50 watermark — faint, behind everything */}
-      {nifty ? <path d={path(nifty)} fill="none" stroke="var(--txt2)" strokeWidth="1.5" opacity=".13" /> : null}
+      {/* NIFTY 50 watermark — faint OHLC candlesticks behind everything */}
+      {nifty && (
+        <g opacity=".22">
+          {nifty.bars.map((c, i) => {
+            const col = c.up ? 'var(--grn)' : 'var(--red)';
+            const top = Math.min(c.openY, c.closeY), h = Math.max(1, Math.abs(c.closeY - c.openY));
+            return (
+              <g key={i}>
+                <line x1={c.x} y1={c.highY} x2={c.x} y2={c.lowY} stroke={col} strokeWidth=".6" />
+                <rect x={c.x - nifty.bw / 2} y={top} width={nifty.bw} height={h} fill={col} />
+              </g>
+            );
+          })}
+        </g>
+      )}
 
       <line x1="0" y1={g.zeroY} x2={W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
 

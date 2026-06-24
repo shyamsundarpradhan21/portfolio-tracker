@@ -164,6 +164,32 @@ export function normalizeLine(points, key, width, height, pad = 8) {
   });
 }
 
+// Aggregate one key's intraday points into OHLC candlesticks for the NIFTY 50
+// watermark. Bins the points into ~`bars` equal groups (10s ticks → readable
+// candles), each {x, openY, closeY, highY, lowY, up}, normalized to the key's own
+// range. `bw` is the body width. Returns null if too few points.
+export function ohlcCandles(points, key, bars, width, height, pad = 8) {
+  const pts = (points || []).filter((p) => p && p.t != null && Number.isFinite(+p[key]));
+  if (pts.length < 2) return null;
+  const vals = pts.map((p) => +p[key]);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const x0 = pad, x1 = width - pad, y0 = pad, y1 = height - pad;
+  const vy = (v) => r2(y0 + (hi - v) / (hi - lo) * (y1 - y0));
+  const n = Math.max(1, Math.min(bars, pts.length));
+  const per = Math.ceil(pts.length / n);
+  const out = [];
+  for (let i = 0; i < pts.length; i += per) {
+    const grp = pts.slice(i, i + per).map((p) => +p[key]);
+    if (!grp.length) continue;
+    const open = grp[0], close = grp[grp.length - 1];
+    const center = (i + Math.min(i + per, pts.length) - 1) / 2;
+    const x = pts.length === 1 ? (x0 + x1) / 2 : r2(x0 + (center / (pts.length - 1)) * (x1 - x0));
+    out.push({ x, openY: vy(open), closeY: vy(close), highY: vy(Math.max(...grp)), lowY: vy(Math.min(...grp)), up: close >= open });
+  }
+  return { bars: out, bw: Math.max(2, ((x1 - x0) / out.length) * 0.55) };
+}
+
 // Scale an intraday tape ([{ t:'HH:MM', net }]) into SVG geometry for the Day
 // view. Pure: returns coordinates only, the component draws them. The y-range is
 // padded and always includes 0 so the zero line (the green/red split) is on-chart.
