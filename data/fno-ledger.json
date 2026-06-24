@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated realised F&O P&L ledger. Each evening sync appends one row per (date, broker) with that day's gross realised (broker-native or same-day round-trip), modeled charges (est., snapped to exact at the annual ITR ritual), and net. app/page.js rolls these up on top of the FY seed into the Trading tab's current-FY S01/S02 blocks — so the only manual touch left is the yearly ITR-verified prior-FY pass. Sleeve map: Dhan/Zerodha→S01, Upstox/Fyers→S02. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-06-24T20:30:55+05:30",
+  "updatedAt": "2026-06-24T22:05:32+05:30",
   "rows": [
     {
       "date": "2023-09-06",
@@ -2951,12 +2951,1189 @@
       "source": "report"
     },
     {
+      "date": "2025-02-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -1875,
+      "estCharges": 0,
+      "net": -1875,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7231.25,
+      "estCharges": 0,
+      "net": 7231.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-02-28",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -18095,
+      "estCharges": 0,
+      "net": -18095,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 8418.75,
+      "estCharges": 0,
+      "net": 8418.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5040,
+      "estCharges": 0,
+      "net": 5040,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7118.75,
+      "estCharges": 0,
+      "net": 7118.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -33497.5,
+      "estCharges": 0,
+      "net": -33497.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5000,
+      "estCharges": 0,
+      "net": 5000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -19560,
+      "estCharges": 0,
+      "net": -19560,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 15736.3,
+      "estCharges": 0,
+      "net": 15736.3,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 6037.5,
+      "estCharges": 0,
+      "net": 6037.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-03-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2756.25,
+      "estCharges": 0,
+      "net": 2756.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10867.5,
+      "estCharges": 0,
+      "net": 10867.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -10627.5,
+      "estCharges": 0,
+      "net": -10627.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16431.25,
+      "estCharges": 0,
+      "net": 16431.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10121.25,
+      "estCharges": 0,
+      "net": 10121.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2525,
+      "estCharges": 0,
+      "net": 2525,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5225,
+      "estCharges": 0,
+      "net": 5225,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 12587.5,
+      "estCharges": 0,
+      "net": 12587.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-22",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 6125,
+      "estCharges": 0,
+      "net": 6125,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4990,
+      "estCharges": 0,
+      "net": 4990,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-28",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 18910,
+      "estCharges": 0,
+      "net": 18910,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-04-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10125,
+      "estCharges": 0,
+      "net": 10125,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -1537.5,
+      "estCharges": 0,
+      "net": -1537.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -15000,
+      "estCharges": 0,
+      "net": -15000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -27630,
+      "estCharges": 0,
+      "net": -27630,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 19912.5,
+      "estCharges": 0,
+      "net": 19912.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3000,
+      "estCharges": 0,
+      "net": 3000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 19120,
+      "estCharges": 0,
+      "net": 19120,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 17290,
+      "estCharges": 0,
+      "net": 17290,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13272.5,
+      "estCharges": 0,
+      "net": -13272.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 22087.5,
+      "estCharges": 0,
+      "net": 22087.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -11812.5,
+      "estCharges": 0,
+      "net": -11812.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 11110,
+      "estCharges": 0,
+      "net": 11110,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4200,
+      "estCharges": 0,
+      "net": 4200,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3990,
+      "estCharges": 0,
+      "net": 3990,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-05-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -12407.5,
+      "estCharges": 0,
+      "net": -12407.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10270,
+      "estCharges": 0,
+      "net": 10270,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 14570,
+      "estCharges": 0,
+      "net": 14570,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13425,
+      "estCharges": 0,
+      "net": -13425,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 28295,
+      "estCharges": 0,
+      "net": 28295,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 43193.8,
+      "estCharges": 0,
+      "net": 43193.8,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2878.5,
+      "estCharges": 0,
+      "net": 2878.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -51158.75,
+      "estCharges": 0,
+      "net": -51158.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2220,
+      "estCharges": 0,
+      "net": 2220,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 6002.5,
+      "estCharges": 0,
+      "net": 6002.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 193.75,
+      "estCharges": 0,
+      "net": 193.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-18",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5002.5,
+      "estCharges": 0,
+      "net": 5002.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -14770,
+      "estCharges": 0,
+      "net": -14770,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -18652.5,
+      "estCharges": 0,
+      "net": -18652.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 25063.75,
+      "estCharges": 0,
+      "net": 25063.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-24",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7930.65,
+      "estCharges": 0,
+      "net": 7930.65,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-25",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 9858.75,
+      "estCharges": 0,
+      "net": 9858.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10105,
+      "estCharges": 0,
+      "net": 10105,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-06-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 28790,
+      "estCharges": 0,
+      "net": 28790,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -6582.5,
+      "estCharges": 0,
+      "net": -6582.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10105,
+      "estCharges": 0,
+      "net": 10105,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -50720,
+      "estCharges": 0,
+      "net": -50720,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -32857.5,
+      "estCharges": 0,
+      "net": -32857.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3060,
+      "estCharges": 0,
+      "net": 3060,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 18335,
+      "estCharges": 0,
+      "net": 18335,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -5065,
+      "estCharges": 0,
+      "net": -5065,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -19476.25,
+      "estCharges": 0,
+      "net": -19476.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4073.75,
+      "estCharges": 0,
+      "net": 4073.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16405,
+      "estCharges": 0,
+      "net": 16405,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7383.75,
+      "estCharges": 0,
+      "net": 7383.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -135.5,
+      "estCharges": 0,
+      "net": -135.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 11275.25,
+      "estCharges": 0,
+      "net": 11275.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-22",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -48110.75,
+      "estCharges": 0,
+      "net": -48110.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -28473.75,
+      "estCharges": 0,
+      "net": -28473.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -25637.5,
+      "estCharges": 0,
+      "net": -25637.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-07-31",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2100,
+      "estCharges": 0,
+      "net": 2100,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -72978.25,
+      "estCharges": 0,
+      "net": -72978.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5100,
+      "estCharges": 0,
+      "net": 5100,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -12118.75,
+      "estCharges": 0,
+      "net": -12118.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5010,
+      "estCharges": 0,
+      "net": 5010,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 8985,
+      "estCharges": 0,
+      "net": 8985,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -8216.25,
+      "estCharges": 0,
+      "net": -8216.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7187.5,
+      "estCharges": 0,
+      "net": 7187.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7645,
+      "estCharges": 0,
+      "net": 7645,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2460,
+      "estCharges": 0,
+      "net": 2460,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -22970,
+      "estCharges": 0,
+      "net": -22970,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-08-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -14570,
+      "estCharges": 0,
+      "net": -14570,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3100,
+      "estCharges": 0,
+      "net": 3100,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 30592.5,
+      "estCharges": 0,
+      "net": 30592.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 18267.5,
+      "estCharges": 0,
+      "net": 18267.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -256.25,
+      "estCharges": 0,
+      "net": -256.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -8341.25,
+      "estCharges": 0,
+      "net": -8341.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 24052.5,
+      "estCharges": 0,
+      "net": 24052.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 47743.75,
+      "estCharges": 0,
+      "net": 47743.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 20858.75,
+      "estCharges": 0,
+      "net": 20858.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2013.75,
+      "estCharges": 0,
+      "net": 2013.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 27307.5,
+      "estCharges": 0,
+      "net": 27307.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -34105,
+      "estCharges": 0,
+      "net": -34105,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5587.5,
+      "estCharges": 0,
+      "net": 5587.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-18",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 15296.25,
+      "estCharges": 0,
+      "net": 15296.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -9405,
+      "estCharges": 0,
+      "net": -9405,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-22",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10125,
+      "estCharges": 0,
+      "net": 10125,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -54888.75,
+      "estCharges": 0,
+      "net": -54888.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-24",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -3065,
+      "estCharges": 0,
+      "net": -3065,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-25",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5500,
+      "estCharges": 0,
+      "net": 5500,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13703.75,
+      "estCharges": 0,
+      "net": -13703.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -33633.75,
+      "estCharges": 0,
+      "net": -33633.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-09-30",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5118.75,
+      "estCharges": 0,
+      "net": 5118.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2941.25,
+      "estCharges": 0,
+      "net": 2941.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4945,
+      "estCharges": 0,
+      "net": 4945,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-06",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -23835,
       "estCharges": 285.17,
       "net": -24120.17,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16705,
+      "estCharges": 0,
+      "net": 16705,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2973,12 +4150,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10312.5,
+      "estCharges": 0,
+      "net": 10312.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-08",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -24225,
       "estCharges": 422.83,
       "net": -24647.83,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -28525,
+      "estCharges": 0,
+      "net": -28525,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -2995,12 +4194,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5223.75,
+      "estCharges": 0,
+      "net": 5223.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-10",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -16020,
       "estCharges": 131.89,
       "net": -16151.89,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2415,
+      "estCharges": 0,
+      "net": 2415,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3017,12 +4238,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -11762.5,
+      "estCharges": 0,
+      "net": -11762.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-14",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -23131.88,
       "estCharges": 316.7,
       "net": -23448.58,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16208.75,
+      "estCharges": 0,
+      "net": 16208.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3039,12 +4282,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16942.5,
+      "estCharges": 0,
+      "net": 16942.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -4215,
       "estCharges": 105.07,
       "net": -4320.07,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -24736.25,
+      "estCharges": 0,
+      "net": -24736.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3061,12 +4326,45 @@
       "source": "report"
     },
     {
+      "date": "2025-10-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -23158.75,
+      "estCharges": 0,
+      "net": -23158.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-20",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 15615,
       "estCharges": 264.18,
       "net": 15350.82,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -30812.5,
+      "estCharges": 0,
+      "net": -30812.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 11603.75,
+      "estCharges": 0,
+      "net": 11603.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3083,12 +4381,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 7052.5,
+      "estCharges": 0,
+      "net": 7052.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-24",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -18168.75,
       "estCharges": 173.59,
       "net": -18342.34,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-24",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -41542.5,
+      "estCharges": 0,
+      "net": -41542.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3116,12 +4436,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-28",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 925,
+      "estCharges": 0,
+      "net": 925,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-29",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -23568.75,
       "estCharges": 340.64,
       "net": -23909.39,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 39541.25,
+      "estCharges": 0,
+      "net": 39541.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3138,12 +4480,34 @@
       "source": "report"
     },
     {
+      "date": "2025-10-30",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3143.75,
+      "estCharges": 0,
+      "net": 3143.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-10-31",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 47201.25,
       "estCharges": 341.68,
       "net": 46859.57,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-10-31",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 10012.5,
+      "estCharges": 0,
+      "net": 10012.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3160,12 +4524,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -25947.25,
+      "estCharges": 0,
+      "net": -25947.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-04",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 2100,
       "estCharges": 325.76,
       "net": 1774.24,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -15213.5,
+      "estCharges": 0,
+      "net": -15213.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3182,12 +4568,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4939.5,
+      "estCharges": 0,
+      "net": 4939.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-07",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 16935,
       "estCharges": 493.61,
       "net": 16441.39,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -26211.25,
+      "estCharges": 0,
+      "net": -26211.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3204,12 +4612,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -4650,
+      "estCharges": 0,
+      "net": -4650,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-11",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -24176.25,
       "estCharges": 487.68,
       "net": -24663.93,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4630,
+      "estCharges": 0,
+      "net": 4630,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3226,12 +4656,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 6000,
+      "estCharges": 0,
+      "net": 6000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-13",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -15123.75,
       "estCharges": 477.04,
       "net": -15600.79,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -14652,
+      "estCharges": 0,
+      "net": -14652,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3259,6 +4711,17 @@
       "source": "report"
     },
     {
+      "date": "2025-11-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -38470.25,
+      "estCharges": 0,
+      "net": -38470.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-18",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3270,12 +4733,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-18",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -17640,
+      "estCharges": 0,
+      "net": -17640,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-19",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 17587.5,
       "estCharges": 483.99,
       "net": 17103.51,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 300,
+      "estCharges": 0,
+      "net": 300,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3303,12 +4788,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3386.25,
+      "estCharges": 0,
+      "net": 3386.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-24",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 31050,
       "estCharges": 305.67,
       "net": 30744.33,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-24",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5000,
+      "estCharges": 0,
+      "net": 5000,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3325,12 +4832,34 @@
       "source": "report"
     },
     {
+      "date": "2025-11-25",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13450,
+      "estCharges": 0,
+      "net": -13450,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-11-26",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -7256.25,
       "estCharges": 833.44,
       "net": -8089.69,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-11-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5000,
+      "estCharges": 0,
+      "net": 5000,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3358,6 +4887,17 @@
       "source": "report"
     },
     {
+      "date": "2025-11-28",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13807.5,
+      "estCharges": 0,
+      "net": -13807.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-01",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3375,6 +4915,17 @@
       "grossRealised": 20715,
       "estCharges": 316.68,
       "net": 20398.32,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3000,
+      "estCharges": 0,
+      "net": 3000,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3402,12 +4953,34 @@
       "source": "report"
     },
     {
+      "date": "2025-12-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -12154.5,
+      "estCharges": 0,
+      "net": -12154.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-05",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -33937.5,
       "estCharges": 993.15,
       "net": -34930.65,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -10925,
+      "estCharges": 0,
+      "net": -10925,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3430,6 +5003,17 @@
       "grossRealised": -13507.5,
       "estCharges": 273.65,
       "net": -13781.15,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -9818.75,
+      "estCharges": 0,
+      "net": -9818.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3479,12 +5063,34 @@
       "source": "report"
     },
     {
+      "date": "2025-12-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5000,
+      "estCharges": 0,
+      "net": 5000,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 12498.75,
       "estCharges": 256.72,
       "net": 12242.03,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2150,
+      "estCharges": 0,
+      "net": 2150,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3534,6 +5140,17 @@
       "source": "report"
     },
     {
+      "date": "2025-12-22",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4420,
+      "estCharges": 0,
+      "net": 4420,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-23",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3567,12 +5184,34 @@
       "source": "report"
     },
     {
+      "date": "2025-12-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 37405,
+      "estCharges": 0,
+      "net": 37405,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2025-12-29",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 28593.75,
       "estCharges": 234.27,
       "net": 28359.48,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2025-12-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -11818.75,
+      "estCharges": 0,
+      "net": -11818.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3600,6 +5239,28 @@
       "source": "report"
     },
     {
+      "date": "2026-01-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5110,
+      "estCharges": 0,
+      "net": 5110,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 13780,
+      "estCharges": 0,
+      "net": 13780,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-06",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3611,12 +5272,34 @@
       "source": "report"
     },
     {
+      "date": "2026-01-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 19833.75,
+      "estCharges": 0,
+      "net": 19833.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-07",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 44898.75,
       "estCharges": 310.9,
       "net": 44587.85,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -9625,
+      "estCharges": 0,
+      "net": -9625,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3655,6 +5338,17 @@
       "source": "report"
     },
     {
+      "date": "2026-01-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -41786.5,
+      "estCharges": 0,
+      "net": -41786.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-13",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3677,12 +5371,34 @@
       "source": "report"
     },
     {
+      "date": "2026-01-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -24085,
+      "estCharges": 0,
+      "net": -24085,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -78009.75,
       "estCharges": 570.65,
       "net": -78580.4,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 11622.5,
+      "estCharges": 0,
+      "net": 11622.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3699,12 +5415,34 @@
       "source": "report"
     },
     {
+      "date": "2026-01-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 5006.25,
+      "estCharges": 0,
+      "net": 5006.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-20",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 9616.75,
       "estCharges": 161.59,
       "net": 9455.16,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-01-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -19725.75,
+      "estCharges": 0,
+      "net": -19725.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3743,6 +5481,17 @@
       "source": "report"
     },
     {
+      "date": "2026-01-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -12825,
+      "estCharges": 0,
+      "net": -12825,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-28",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3765,6 +5514,17 @@
       "source": "report"
     },
     {
+      "date": "2026-01-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 27437.5,
+      "estCharges": 0,
+      "net": 27437.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-01-30",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3782,6 +5542,17 @@
       "grossRealised": 10156.25,
       "estCharges": 467.02,
       "net": 9689.23,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -37931.25,
+      "estCharges": 0,
+      "net": -37931.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3831,12 +5602,34 @@
       "source": "report"
     },
     {
+      "date": "2026-02-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 37745,
+      "estCharges": 0,
+      "net": 37745,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-10",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -1573,
       "estCharges": 97.17,
       "net": -1670.17,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 27009.7,
+      "estCharges": 0,
+      "net": 27009.7,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3853,12 +5646,34 @@
       "source": "report"
     },
     {
+      "date": "2026-02-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 61163,
+      "estCharges": 0,
+      "net": 61163,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-12",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -4988.75,
       "estCharges": 84.25,
       "net": -5073,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 13440,
+      "estCharges": 0,
+      "net": 13440,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3875,12 +5690,34 @@
       "source": "report"
     },
     {
+      "date": "2026-02-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -97791.25,
+      "estCharges": 0,
+      "net": -97791.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -6467.5,
       "estCharges": 82.48,
       "net": -6549.98,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -52166.25,
+      "estCharges": 0,
+      "net": -52166.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3897,12 +5734,34 @@
       "source": "report"
     },
     {
+      "date": "2026-02-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -36813.75,
+      "estCharges": 0,
+      "net": -36813.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-18",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -27443,
       "estCharges": 421.19,
       "net": -27864.19,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-18",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -19486,
+      "estCharges": 0,
+      "net": -19486,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3919,12 +5778,45 @@
       "source": "report"
     },
     {
+      "date": "2026-02-19",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 649.25,
+      "estCharges": 0,
+      "net": 649.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -5845,
+      "estCharges": 0,
+      "net": -5845,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-23",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -1430,
       "estCharges": 335.02,
       "net": -1765.02,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -17527.5,
+      "estCharges": 0,
+      "net": -17527.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3941,6 +5833,17 @@
       "source": "report"
     },
     {
+      "date": "2026-02-24",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -23358.5,
+      "estCharges": 0,
+      "net": -23358.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-25",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -3952,12 +5855,56 @@
       "source": "report"
     },
     {
+      "date": "2026-02-25",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -3437.5,
+      "estCharges": 0,
+      "net": -3437.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-02-26",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -4176.25,
       "estCharges": 58.08,
       "net": -4234.33,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 12375,
+      "estCharges": 0,
+      "net": 12375,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-02-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -23046.5,
+      "estCharges": 0,
+      "net": -23046.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-03-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -41596,
+      "estCharges": 0,
+      "net": -41596,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -3985,12 +5932,34 @@
       "source": "report"
     },
     {
+      "date": "2026-03-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -20493.75,
+      "estCharges": 0,
+      "net": -20493.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-03-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -25216.75,
       "estCharges": 445.33,
       "net": -25662.08,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-03-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -27130,
+      "estCharges": 0,
+      "net": -27130,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4040,6 +6009,17 @@
       "source": "report"
     },
     {
+      "date": "2026-03-25",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -2100,
+      "estCharges": 0,
+      "net": -2100,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-06",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4073,12 +6053,45 @@
       "source": "report"
     },
     {
+      "date": "2026-04-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4883.75,
+      "estCharges": 0,
+      "net": 4883.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 8520,
+      "estCharges": 0,
+      "net": 8520,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-16",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 13250.25,
       "estCharges": 496.72,
       "net": 12753.53,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 2668.75,
+      "estCharges": 0,
+      "net": 2668.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4095,12 +6108,34 @@
       "source": "report"
     },
     {
+      "date": "2026-04-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 9442.5,
+      "estCharges": 0,
+      "net": 9442.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-20",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -4416.75,
       "estCharges": 104.55,
       "net": -4521.3,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 12487.5,
+      "estCharges": 0,
+      "net": 12487.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4117,6 +6152,17 @@
       "source": "report"
     },
     {
+      "date": "2026-04-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3371.25,
+      "estCharges": 0,
+      "net": 3371.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-22",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4128,12 +6174,34 @@
       "source": "report"
     },
     {
+      "date": "2026-04-22",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 21326.55,
+      "estCharges": 0,
+      "net": 21326.55,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-23",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -10273.25,
       "estCharges": 125.35,
       "net": -10398.6,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-23",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 14130,
+      "estCharges": 0,
+      "net": 14130,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4161,12 +6229,45 @@
       "source": "report"
     },
     {
+      "date": "2026-04-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 15045,
+      "estCharges": 0,
+      "net": 15045,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-04-28",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -2125.5,
       "estCharges": 48.21,
       "net": -2173.71,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-28",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -20453.75,
+      "estCharges": 0,
+      "net": -20453.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-04-29",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 15536.25,
+      "estCharges": 0,
+      "net": 15536.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4194,12 +6295,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 22213.5,
+      "estCharges": 0,
+      "net": 22213.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-05",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 1612,
       "estCharges": 99.81,
       "net": 1512.19,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -51688.75,
+      "estCharges": 0,
+      "net": -51688.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4216,12 +6339,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-06",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 21755,
+      "estCharges": 0,
+      "net": 21755,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-07",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 4163.25,
       "estCharges": 367.57,
       "net": 3795.68,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-07",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 13970,
+      "estCharges": 0,
+      "net": 13970,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4238,12 +6383,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 20005,
+      "estCharges": 0,
+      "net": 20005,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-11",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -15171,
       "estCharges": 305.11,
       "net": -15476.11,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 11275,
+      "estCharges": 0,
+      "net": 11275,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4260,12 +6427,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -19792.5,
+      "estCharges": 0,
+      "net": -19792.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-13",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -1911,
       "estCharges": 259.5,
       "net": -2170.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-13",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 21637.5,
+      "estCharges": 0,
+      "net": 21637.5,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4282,12 +6471,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-14",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -22770.75,
+      "estCharges": 0,
+      "net": -22770.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-15",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -5148,
       "estCharges": 594.15,
       "net": -5742.15,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -105,
+      "estCharges": 0,
+      "net": -105,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4326,12 +6537,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-20",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -75555,
+      "estCharges": 0,
+      "net": -75555,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-21",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -14859,
       "estCharges": 626.37,
       "net": -15485.37,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-21",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 4106.25,
+      "estCharges": 0,
+      "net": 4106.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4359,12 +6592,34 @@
       "source": "report"
     },
     {
+      "date": "2026-05-26",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13750,
+      "estCharges": 0,
+      "net": -13750,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-05-27",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 29558.75,
       "estCharges": 165.52,
       "net": 29393.23,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-05-27",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 12740,
+      "estCharges": 0,
+      "net": 12740,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4392,12 +6647,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-01",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 6093.75,
+      "estCharges": 0,
+      "net": 6093.75,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-02",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -3601,
       "estCharges": 100.9,
       "net": -3701.9,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-02",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 26163.75,
+      "estCharges": 0,
+      "net": 26163.75,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4414,12 +6691,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-03",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 1895.5,
+      "estCharges": 0,
+      "net": 1895.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-04",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": -1641.25,
       "estCharges": 329.14,
       "net": -1970.39,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-04",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 16106.25,
+      "estCharges": 0,
+      "net": 16106.25,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4436,12 +6735,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-05",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 20010,
+      "estCharges": 0,
+      "net": 20010,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-08",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 10049,
       "estCharges": 326.48,
       "net": 9722.52,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-08",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3500,
+      "estCharges": 0,
+      "net": 3500,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4458,12 +6779,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-09",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -48360,
+      "estCharges": 0,
+      "net": -48360,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-10",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 46592,
       "estCharges": 403.62,
       "net": 46188.38,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-10",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -13050,
+      "estCharges": 0,
+      "net": -13050,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4480,12 +6823,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-11",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 3806.25,
+      "estCharges": 0,
+      "net": 3806.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-12",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 47872.5,
       "estCharges": 394.43,
       "net": 47478.07,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-12",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -23600,
+      "estCharges": 0,
+      "net": -23600,
       "turnover": 0,
       "orders": null,
       "source": "report"
@@ -4502,6 +6867,17 @@
       "source": "report"
     },
     {
+      "date": "2026-06-15",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -26883.25,
+      "estCharges": 0,
+      "net": -26883.25,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-16",
       "broker": "Dhan",
       "sleeve": "S01",
@@ -4513,12 +6889,34 @@
       "source": "report"
     },
     {
+      "date": "2026-06-16",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": -39811.5,
+      "estCharges": 0,
+      "net": -39811.5,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
       "date": "2026-06-17",
       "broker": "Dhan",
       "sleeve": "S01",
       "grossRealised": 5616,
       "estCharges": 489.89,
       "net": 5126.11,
+      "turnover": 0,
+      "orders": null,
+      "source": "report"
+    },
+    {
+      "date": "2026-06-17",
+      "broker": "Fyers",
+      "sleeve": "S02",
+      "grossRealised": 26830.75,
+      "estCharges": 0,
+      "net": 26830.75,
       "turnover": 0,
       "orders": null,
       "source": "report"

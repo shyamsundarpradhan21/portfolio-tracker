@@ -2564,11 +2564,760 @@
       "net": -1150.23
     },
     {
+      "date": "2025-02-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -1875.0,
+      "net": -1875.0
+    },
+    {
+      "date": "2025-02-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7231.25,
+      "net": 7231.25
+    },
+    {
+      "date": "2025-02-28",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -18095.0,
+      "net": -18095.0
+    },
+    {
+      "date": "2025-03-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 8418.75,
+      "net": 8418.75
+    },
+    {
+      "date": "2025-03-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5040.0,
+      "net": 5040.0
+    },
+    {
+      "date": "2025-03-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7118.75,
+      "net": 7118.75
+    },
+    {
+      "date": "2025-03-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -33497.5,
+      "net": -33497.5
+    },
+    {
+      "date": "2025-03-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5000.0,
+      "net": 5000.0
+    },
+    {
+      "date": "2025-03-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -19560.0,
+      "net": -19560.0
+    },
+    {
+      "date": "2025-03-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 15736.3,
+      "net": 15736.3
+    },
+    {
+      "date": "2025-03-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 6037.5,
+      "net": 6037.5
+    },
+    {
+      "date": "2025-03-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2756.25,
+      "net": 2756.25
+    },
+    {
+      "date": "2025-04-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10867.5,
+      "net": 10867.5
+    },
+    {
+      "date": "2025-04-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -10627.5,
+      "net": -10627.5
+    },
+    {
+      "date": "2025-04-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16431.25,
+      "net": 16431.25
+    },
+    {
+      "date": "2025-04-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10121.25,
+      "net": 10121.25
+    },
+    {
+      "date": "2025-04-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2525.0,
+      "net": 2525.0
+    },
+    {
+      "date": "2025-04-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5225.0,
+      "net": 5225.0
+    },
+    {
+      "date": "2025-04-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 12587.5,
+      "net": 12587.5
+    },
+    {
+      "date": "2025-04-22",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 6125.0,
+      "net": 6125.0
+    },
+    {
+      "date": "2025-04-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4990.0,
+      "net": 4990.0
+    },
+    {
+      "date": "2025-04-28",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 18910.0,
+      "net": 18910.0
+    },
+    {
+      "date": "2025-04-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10125.0,
+      "net": 10125.0
+    },
+    {
+      "date": "2025-05-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -1537.5,
+      "net": -1537.5
+    },
+    {
+      "date": "2025-05-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -15000.0,
+      "net": -15000.0
+    },
+    {
+      "date": "2025-05-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -27630.0,
+      "net": -27630.0
+    },
+    {
+      "date": "2025-05-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 19912.5,
+      "net": 19912.5
+    },
+    {
+      "date": "2025-05-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3000.0,
+      "net": 3000.0
+    },
+    {
+      "date": "2025-05-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 19120.0,
+      "net": 19120.0
+    },
+    {
+      "date": "2025-05-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 17290.0,
+      "net": 17290.0
+    },
+    {
+      "date": "2025-05-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13272.5,
+      "net": -13272.5
+    },
+    {
+      "date": "2025-05-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 22087.5,
+      "net": 22087.5
+    },
+    {
+      "date": "2025-05-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -11812.5,
+      "net": -11812.5
+    },
+    {
+      "date": "2025-05-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 11110.0,
+      "net": 11110.0
+    },
+    {
+      "date": "2025-05-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4200.0,
+      "net": 4200.0
+    },
+    {
+      "date": "2025-05-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3990.0,
+      "net": 3990.0
+    },
+    {
+      "date": "2025-05-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -12407.5,
+      "net": -12407.5
+    },
+    {
+      "date": "2025-06-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10270.0,
+      "net": 10270.0
+    },
+    {
+      "date": "2025-06-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 14570.0,
+      "net": 14570.0
+    },
+    {
+      "date": "2025-06-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13425.0,
+      "net": -13425.0
+    },
+    {
+      "date": "2025-06-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 28295.0,
+      "net": 28295.0
+    },
+    {
+      "date": "2025-06-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 43193.8,
+      "net": 43193.8
+    },
+    {
+      "date": "2025-06-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2878.5,
+      "net": 2878.5
+    },
+    {
+      "date": "2025-06-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -51158.75,
+      "net": -51158.75
+    },
+    {
+      "date": "2025-06-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2220.0,
+      "net": 2220.0
+    },
+    {
+      "date": "2025-06-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 6002.5,
+      "net": 6002.5
+    },
+    {
+      "date": "2025-06-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 193.75,
+      "net": 193.75
+    },
+    {
+      "date": "2025-06-18",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5002.5,
+      "net": 5002.5
+    },
+    {
+      "date": "2025-06-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -14770.0,
+      "net": -14770.0
+    },
+    {
+      "date": "2025-06-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -18652.5,
+      "net": -18652.5
+    },
+    {
+      "date": "2025-06-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 25063.75,
+      "net": 25063.75
+    },
+    {
+      "date": "2025-06-24",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7930.65,
+      "net": 7930.65
+    },
+    {
+      "date": "2025-06-25",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 9858.75,
+      "net": 9858.75
+    },
+    {
+      "date": "2025-06-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10105.0,
+      "net": 10105.0
+    },
+    {
+      "date": "2025-06-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 28790.0,
+      "net": 28790.0
+    },
+    {
+      "date": "2025-07-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -6582.5,
+      "net": -6582.5
+    },
+    {
+      "date": "2025-07-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10105.0,
+      "net": 10105.0
+    },
+    {
+      "date": "2025-07-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -50720.0,
+      "net": -50720.0
+    },
+    {
+      "date": "2025-07-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -32857.5,
+      "net": -32857.5
+    },
+    {
+      "date": "2025-07-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3060.0,
+      "net": 3060.0
+    },
+    {
+      "date": "2025-07-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 18335.0,
+      "net": 18335.0
+    },
+    {
+      "date": "2025-07-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -5065.0,
+      "net": -5065.0
+    },
+    {
+      "date": "2025-07-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -19476.25,
+      "net": -19476.25
+    },
+    {
+      "date": "2025-07-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4073.75,
+      "net": 4073.75
+    },
+    {
+      "date": "2025-07-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16405.0,
+      "net": 16405.0
+    },
+    {
+      "date": "2025-07-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7383.75,
+      "net": 7383.75
+    },
+    {
+      "date": "2025-07-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -135.5,
+      "net": -135.5
+    },
+    {
+      "date": "2025-07-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 11275.25,
+      "net": 11275.25
+    },
+    {
+      "date": "2025-07-22",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -48110.75,
+      "net": -48110.75
+    },
+    {
+      "date": "2025-07-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -28473.75,
+      "net": -28473.75
+    },
+    {
+      "date": "2025-07-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -25637.5,
+      "net": -25637.5
+    },
+    {
+      "date": "2025-07-31",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2100.0,
+      "net": 2100.0
+    },
+    {
+      "date": "2025-08-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -72978.25,
+      "net": -72978.25
+    },
+    {
+      "date": "2025-08-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5100.0,
+      "net": 5100.0
+    },
+    {
+      "date": "2025-08-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -12118.75,
+      "net": -12118.75
+    },
+    {
+      "date": "2025-08-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5010.0,
+      "net": 5010.0
+    },
+    {
+      "date": "2025-08-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 8985.0,
+      "net": 8985.0
+    },
+    {
+      "date": "2025-08-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -8216.25,
+      "net": -8216.25
+    },
+    {
+      "date": "2025-08-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7187.5,
+      "net": 7187.5
+    },
+    {
+      "date": "2025-08-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7645.0,
+      "net": 7645.0
+    },
+    {
+      "date": "2025-08-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2460.0,
+      "net": 2460.0
+    },
+    {
+      "date": "2025-08-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -22970.0,
+      "net": -22970.0
+    },
+    {
+      "date": "2025-08-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -14570.0,
+      "net": -14570.0
+    },
+    {
+      "date": "2025-09-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3100.0,
+      "net": 3100.0
+    },
+    {
+      "date": "2025-09-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 30592.5,
+      "net": 30592.5
+    },
+    {
+      "date": "2025-09-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 18267.5,
+      "net": 18267.5
+    },
+    {
+      "date": "2025-09-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -256.25,
+      "net": -256.25
+    },
+    {
+      "date": "2025-09-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -8341.25,
+      "net": -8341.25
+    },
+    {
+      "date": "2025-09-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 24052.5,
+      "net": 24052.5
+    },
+    {
+      "date": "2025-09-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 47743.75,
+      "net": 47743.75
+    },
+    {
+      "date": "2025-09-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 20858.75,
+      "net": 20858.75
+    },
+    {
+      "date": "2025-09-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2013.75,
+      "net": 2013.75
+    },
+    {
+      "date": "2025-09-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 27307.5,
+      "net": 27307.5
+    },
+    {
+      "date": "2025-09-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -34105.0,
+      "net": -34105.0
+    },
+    {
+      "date": "2025-09-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5587.5,
+      "net": 5587.5
+    },
+    {
+      "date": "2025-09-18",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 15296.25,
+      "net": 15296.25
+    },
+    {
+      "date": "2025-09-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -9405.0,
+      "net": -9405.0
+    },
+    {
+      "date": "2025-09-22",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10125.0,
+      "net": 10125.0
+    },
+    {
+      "date": "2025-09-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -54888.75,
+      "net": -54888.75
+    },
+    {
+      "date": "2025-09-24",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -3065.0,
+      "net": -3065.0
+    },
+    {
+      "date": "2025-09-25",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5500.0,
+      "net": 5500.0
+    },
+    {
+      "date": "2025-09-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13703.75,
+      "net": -13703.75
+    },
+    {
+      "date": "2025-09-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -33633.75,
+      "net": -33633.75
+    },
+    {
+      "date": "2025-09-30",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5118.75,
+      "net": 5118.75
+    },
+    {
+      "date": "2025-10-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2941.25,
+      "net": 2941.25
+    },
+    {
+      "date": "2025-10-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4945.0,
+      "net": 4945.0
+    },
+    {
       "date": "2025-10-06",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -23835.0,
       "net": -24120.17
+    },
+    {
+      "date": "2025-10-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16705.0,
+      "net": 16705.0
     },
     {
       "date": "2025-10-07",
@@ -2578,11 +3327,25 @@
       "net": 8420.31
     },
     {
+      "date": "2025-10-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10312.5,
+      "net": 10312.5
+    },
+    {
       "date": "2025-10-08",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -24225.0,
       "net": -24647.83
+    },
+    {
+      "date": "2025-10-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -28525.0,
+      "net": -28525.0
     },
     {
       "date": "2025-10-09",
@@ -2592,11 +3355,25 @@
       "net": 18887.51
     },
     {
+      "date": "2025-10-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5223.75,
+      "net": 5223.75
+    },
+    {
       "date": "2025-10-10",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -16020.0,
       "net": -16151.89
+    },
+    {
+      "date": "2025-10-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2415.0,
+      "net": 2415.0
     },
     {
       "date": "2025-10-13",
@@ -2606,11 +3383,25 @@
       "net": 16854.17
     },
     {
+      "date": "2025-10-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -11762.5,
+      "net": -11762.5
+    },
+    {
       "date": "2025-10-14",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -23131.88,
       "net": -23448.58
+    },
+    {
+      "date": "2025-10-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16208.75,
+      "net": 16208.75
     },
     {
       "date": "2025-10-15",
@@ -2620,11 +3411,25 @@
       "net": 37871.12
     },
     {
+      "date": "2025-10-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16942.5,
+      "net": 16942.5
+    },
+    {
       "date": "2025-10-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -4215.0,
       "net": -4320.07
+    },
+    {
+      "date": "2025-10-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -24736.25,
+      "net": -24736.25
     },
     {
       "date": "2025-10-17",
@@ -2634,11 +3439,32 @@
       "net": -60951.51
     },
     {
+      "date": "2025-10-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -23158.75,
+      "net": -23158.75
+    },
+    {
       "date": "2025-10-20",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 15615.0,
       "net": 15350.82
+    },
+    {
+      "date": "2025-10-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -30812.5,
+      "net": -30812.5
+    },
+    {
+      "date": "2025-10-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 11603.75,
+      "net": 11603.75
     },
     {
       "date": "2025-10-23",
@@ -2648,11 +3474,25 @@
       "net": 18422.04
     },
     {
+      "date": "2025-10-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 7052.5,
+      "net": 7052.5
+    },
+    {
       "date": "2025-10-24",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -18168.75,
       "net": -18342.34
+    },
+    {
+      "date": "2025-10-24",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -41542.5,
+      "net": -41542.5
     },
     {
       "date": "2025-10-27",
@@ -2669,11 +3509,25 @@
       "net": -5016.72
     },
     {
+      "date": "2025-10-28",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 925.0,
+      "net": 925.0
+    },
+    {
       "date": "2025-10-29",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -23568.75,
       "net": -23909.39
+    },
+    {
+      "date": "2025-10-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 39541.25,
+      "net": 39541.25
     },
     {
       "date": "2025-10-30",
@@ -2683,11 +3537,25 @@
       "net": -15610.95
     },
     {
+      "date": "2025-10-30",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3143.75,
+      "net": 3143.75
+    },
+    {
       "date": "2025-10-31",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 47201.25,
       "net": 46859.57
+    },
+    {
+      "date": "2025-10-31",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 10012.5,
+      "net": 10012.5
     },
     {
       "date": "2025-11-03",
@@ -2697,11 +3565,25 @@
       "net": -4025.6
     },
     {
+      "date": "2025-11-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -25947.25,
+      "net": -25947.25
+    },
+    {
       "date": "2025-11-04",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 2100.0,
       "net": 1774.24
+    },
+    {
+      "date": "2025-11-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -15213.5,
+      "net": -15213.5
     },
     {
       "date": "2025-11-06",
@@ -2711,11 +3593,25 @@
       "net": 987.45
     },
     {
+      "date": "2025-11-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4939.5,
+      "net": 4939.5
+    },
+    {
       "date": "2025-11-07",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 16935.0,
       "net": 16441.39
+    },
+    {
+      "date": "2025-11-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -26211.25,
+      "net": -26211.25
     },
     {
       "date": "2025-11-10",
@@ -2725,11 +3621,25 @@
       "net": 12414.73
     },
     {
+      "date": "2025-11-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -4650.0,
+      "net": -4650.0
+    },
+    {
       "date": "2025-11-11",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -24176.25,
       "net": -24663.93
+    },
+    {
+      "date": "2025-11-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4630.0,
+      "net": 4630.0
     },
     {
       "date": "2025-11-12",
@@ -2739,11 +3649,25 @@
       "net": -20797.64
     },
     {
+      "date": "2025-11-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 6000.0,
+      "net": 6000.0
+    },
+    {
       "date": "2025-11-13",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -15123.75,
       "net": -15600.79
+    },
+    {
+      "date": "2025-11-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -14652.0,
+      "net": -14652.0
     },
     {
       "date": "2025-11-14",
@@ -2760,6 +3684,13 @@
       "net": -4594.05
     },
     {
+      "date": "2025-11-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -38470.25,
+      "net": -38470.25
+    },
+    {
       "date": "2025-11-18",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2767,11 +3698,25 @@
       "net": 11701.59
     },
     {
+      "date": "2025-11-18",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -17640.0,
+      "net": -17640.0
+    },
+    {
       "date": "2025-11-19",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 17587.5,
       "net": 17103.51
+    },
+    {
+      "date": "2025-11-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 300.0,
+      "net": 300.0
     },
     {
       "date": "2025-11-20",
@@ -2788,11 +3733,25 @@
       "net": -58034.9
     },
     {
+      "date": "2025-11-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3386.25,
+      "net": 3386.25
+    },
+    {
       "date": "2025-11-24",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 31050.0,
       "net": 30744.33
+    },
+    {
+      "date": "2025-11-24",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5000.0,
+      "net": 5000.0
     },
     {
       "date": "2025-11-25",
@@ -2802,11 +3761,25 @@
       "net": -10787.6
     },
     {
+      "date": "2025-11-25",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13450.0,
+      "net": -13450.0
+    },
+    {
       "date": "2025-11-26",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -7256.25,
       "net": -8089.69
+    },
+    {
+      "date": "2025-11-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5000.0,
+      "net": 5000.0
     },
     {
       "date": "2025-11-27",
@@ -2823,6 +3796,13 @@
       "net": 52066.12
     },
     {
+      "date": "2025-11-28",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13807.5,
+      "net": -13807.5
+    },
+    {
       "date": "2025-12-01",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2835,6 +3815,13 @@
       "sleeve": "S01",
       "gross": 20715.0,
       "net": 20398.32
+    },
+    {
+      "date": "2025-12-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3000.0,
+      "net": 3000.0
     },
     {
       "date": "2025-12-03",
@@ -2851,11 +3838,25 @@
       "net": -11607.08
     },
     {
+      "date": "2025-12-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -12154.5,
+      "net": -12154.5
+    },
+    {
       "date": "2025-12-05",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -33937.5,
       "net": -34930.65
+    },
+    {
+      "date": "2025-12-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -10925.0,
+      "net": -10925.0
     },
     {
       "date": "2025-12-08",
@@ -2870,6 +3871,13 @@
       "sleeve": "S01",
       "gross": -13507.5,
       "net": -13781.15
+    },
+    {
+      "date": "2025-12-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -9818.75,
+      "net": -9818.75
     },
     {
       "date": "2025-12-10",
@@ -2900,11 +3908,25 @@
       "net": -3401.96
     },
     {
+      "date": "2025-12-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5000.0,
+      "net": 5000.0
+    },
+    {
       "date": "2025-12-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 12498.75,
       "net": 12242.03
+    },
+    {
+      "date": "2025-12-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2150.0,
+      "net": 2150.0
     },
     {
       "date": "2025-12-17",
@@ -2921,6 +3943,13 @@
       "net": -8079.31
     },
     {
+      "date": "2025-12-18",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 0.0,
+      "net": 0.0
+    },
+    {
       "date": "2025-12-19",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2933,6 +3962,13 @@
       "sleeve": "S01",
       "gross": 3322.51,
       "net": 2904.18
+    },
+    {
+      "date": "2025-12-22",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4420.0,
+      "net": 4420.0
     },
     {
       "date": "2025-12-23",
@@ -2956,11 +3992,25 @@
       "net": 8735.24
     },
     {
+      "date": "2025-12-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 37405.0,
+      "net": 37405.0
+    },
+    {
       "date": "2025-12-29",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 28593.75,
       "net": 28359.48
+    },
+    {
+      "date": "2025-12-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -11818.75,
+      "net": -11818.75
     },
     {
       "date": "2025-12-30",
@@ -2977,6 +4027,20 @@
       "net": 51048.25
     },
     {
+      "date": "2026-01-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5110.0,
+      "net": 5110.0
+    },
+    {
+      "date": "2026-01-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 13780.0,
+      "net": 13780.0
+    },
+    {
       "date": "2026-01-06",
       "broker": "dhan",
       "sleeve": "S01",
@@ -2984,11 +4048,25 @@
       "net": -5785.86
     },
     {
+      "date": "2026-01-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 19833.75,
+      "net": 19833.75
+    },
+    {
       "date": "2026-01-07",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 44898.75,
       "net": 44587.85
+    },
+    {
+      "date": "2026-01-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -9625.0,
+      "net": -9625.0
     },
     {
       "date": "2026-01-08",
@@ -3012,6 +4090,13 @@
       "net": 503.76
     },
     {
+      "date": "2026-01-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -41786.5,
+      "net": -41786.5
+    },
+    {
       "date": "2026-01-13",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3026,11 +4111,25 @@
       "net": -16297.54
     },
     {
+      "date": "2026-01-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -24085.0,
+      "net": -24085.0
+    },
+    {
       "date": "2026-01-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -78009.75,
       "net": -78580.4
+    },
+    {
+      "date": "2026-01-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 11622.5,
+      "net": 11622.5
     },
     {
       "date": "2026-01-19",
@@ -3040,11 +4139,25 @@
       "net": -26868.48
     },
     {
+      "date": "2026-01-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 5006.25,
+      "net": 5006.25
+    },
+    {
       "date": "2026-01-20",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 9616.75,
       "net": 9455.16
+    },
+    {
+      "date": "2026-01-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -19725.75,
+      "net": -19725.75
     },
     {
       "date": "2026-01-21",
@@ -3068,6 +4181,13 @@
       "net": -14196.88
     },
     {
+      "date": "2026-01-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -12825.0,
+      "net": -12825.0
+    },
+    {
       "date": "2026-01-28",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3082,6 +4202,13 @@
       "net": -22096.05
     },
     {
+      "date": "2026-01-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 27437.5,
+      "net": 27437.5
+    },
+    {
       "date": "2026-01-30",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3094,6 +4221,13 @@
       "sleeve": "S01",
       "gross": 10156.25,
       "net": 9689.23
+    },
+    {
+      "date": "2026-02-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -37931.25,
+      "net": -37931.25
     },
     {
       "date": "2026-02-03",
@@ -3124,11 +4258,25 @@
       "net": -23684.59
     },
     {
+      "date": "2026-02-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 37745.0,
+      "net": 37745.0
+    },
+    {
       "date": "2026-02-10",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -1573.0,
       "net": -1670.17
+    },
+    {
+      "date": "2026-02-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 27009.7,
+      "net": 27009.7
     },
     {
       "date": "2026-02-11",
@@ -3138,11 +4286,25 @@
       "net": 47666.46
     },
     {
+      "date": "2026-02-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 61163.0,
+      "net": 61163.0
+    },
+    {
       "date": "2026-02-12",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -4988.75,
       "net": -5073.0
+    },
+    {
+      "date": "2026-02-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 13440.0,
+      "net": 13440.0
     },
     {
       "date": "2026-02-13",
@@ -3152,11 +4314,25 @@
       "net": 28607.99
     },
     {
+      "date": "2026-02-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -97791.25,
+      "net": -97791.25
+    },
+    {
       "date": "2026-02-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -6467.5,
       "net": -6549.98
+    },
+    {
+      "date": "2026-02-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -52166.25,
+      "net": -52166.25
     },
     {
       "date": "2026-02-17",
@@ -3166,11 +4342,25 @@
       "net": -2886.09
     },
     {
+      "date": "2026-02-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -36813.75,
+      "net": -36813.75
+    },
+    {
       "date": "2026-02-18",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -27443.0,
       "net": -27864.19
+    },
+    {
+      "date": "2026-02-18",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -19486.0,
+      "net": -19486.0
     },
     {
       "date": "2026-02-19",
@@ -3180,11 +4370,32 @@
       "net": 35751.05
     },
     {
+      "date": "2026-02-19",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 649.25,
+      "net": 649.25
+    },
+    {
+      "date": "2026-02-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -5845.0,
+      "net": -5845.0
+    },
+    {
       "date": "2026-02-23",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -1430.0,
       "net": -1765.02
+    },
+    {
+      "date": "2026-02-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -17527.5,
+      "net": -17527.5
     },
     {
       "date": "2026-02-24",
@@ -3194,6 +4405,13 @@
       "net": -4623.94
     },
     {
+      "date": "2026-02-24",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -23358.5,
+      "net": -23358.5
+    },
+    {
       "date": "2026-02-25",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3201,11 +4419,39 @@
       "net": 22161.43
     },
     {
+      "date": "2026-02-25",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -3437.5,
+      "net": -3437.5
+    },
+    {
       "date": "2026-02-26",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -4176.25,
       "net": -4234.33
+    },
+    {
+      "date": "2026-02-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 12375.0,
+      "net": 12375.0
+    },
+    {
+      "date": "2026-02-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -23046.5,
+      "net": -23046.5
+    },
+    {
+      "date": "2026-03-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -41596.0,
+      "net": -41596.0
     },
     {
       "date": "2026-03-06",
@@ -3222,11 +4468,25 @@
       "net": -14666.49
     },
     {
+      "date": "2026-03-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -20493.75,
+      "net": -20493.75
+    },
+    {
       "date": "2026-03-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -25216.75,
       "net": -25662.08
+    },
+    {
+      "date": "2026-03-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -27130.0,
+      "net": -27130.0
     },
     {
       "date": "2026-03-17",
@@ -3257,6 +4517,13 @@
       "net": -8749.69
     },
     {
+      "date": "2026-03-25",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -2100.0,
+      "net": -2100.0
+    },
+    {
       "date": "2026-04-06",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3278,11 +4545,32 @@
       "net": -7164.84
     },
     {
+      "date": "2026-04-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4883.75,
+      "net": 4883.75
+    },
+    {
+      "date": "2026-04-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 8520.0,
+      "net": 8520.0
+    },
+    {
       "date": "2026-04-16",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 13250.25,
       "net": 12753.53
+    },
+    {
+      "date": "2026-04-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 2668.75,
+      "net": 2668.75
     },
     {
       "date": "2026-04-17",
@@ -3292,11 +4580,25 @@
       "net": -10919.48
     },
     {
+      "date": "2026-04-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 9442.5,
+      "net": 9442.5
+    },
+    {
       "date": "2026-04-20",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -4416.75,
       "net": -4521.3
+    },
+    {
+      "date": "2026-04-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 12487.5,
+      "net": 12487.5
     },
     {
       "date": "2026-04-21",
@@ -3306,6 +4608,13 @@
       "net": -3158.78
     },
     {
+      "date": "2026-04-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3371.25,
+      "net": 3371.25
+    },
+    {
       "date": "2026-04-22",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3313,11 +4622,25 @@
       "net": 20854.02
     },
     {
+      "date": "2026-04-22",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 21326.55,
+      "net": 21326.55
+    },
+    {
       "date": "2026-04-23",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -10273.25,
       "net": -10398.6
+    },
+    {
+      "date": "2026-04-23",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 14130.0,
+      "net": 14130.0
     },
     {
       "date": "2026-04-24",
@@ -3334,11 +4657,32 @@
       "net": 16250.52
     },
     {
+      "date": "2026-04-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 15045.0,
+      "net": 15045.0
+    },
+    {
       "date": "2026-04-28",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -2125.5,
       "net": -2173.71
+    },
+    {
+      "date": "2026-04-28",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -20453.75,
+      "net": -20453.75
+    },
+    {
+      "date": "2026-04-29",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 15536.25,
+      "net": 15536.25
     },
     {
       "date": "2026-04-30",
@@ -3355,11 +4699,25 @@
       "net": 2585.86
     },
     {
+      "date": "2026-05-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 22213.5,
+      "net": 22213.5
+    },
+    {
       "date": "2026-05-05",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 1612.0,
       "net": 1512.19
+    },
+    {
+      "date": "2026-05-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -51688.75,
+      "net": -51688.75
     },
     {
       "date": "2026-05-06",
@@ -3369,11 +4727,25 @@
       "net": 9579.14
     },
     {
+      "date": "2026-05-06",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 21755.0,
+      "net": 21755.0
+    },
+    {
       "date": "2026-05-07",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 4163.25,
       "net": 3795.68
+    },
+    {
+      "date": "2026-05-07",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 13970.0,
+      "net": 13970.0
     },
     {
       "date": "2026-05-08",
@@ -3383,11 +4755,25 @@
       "net": 158.91
     },
     {
+      "date": "2026-05-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 20005.0,
+      "net": 20005.0
+    },
+    {
       "date": "2026-05-11",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -15171.0,
       "net": -15476.11
+    },
+    {
+      "date": "2026-05-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 11275.0,
+      "net": 11275.0
     },
     {
       "date": "2026-05-12",
@@ -3397,11 +4783,25 @@
       "net": -5882.79
     },
     {
+      "date": "2026-05-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -19792.5,
+      "net": -19792.5
+    },
+    {
       "date": "2026-05-13",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -1911.0,
       "net": -2170.5
+    },
+    {
+      "date": "2026-05-13",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 21637.5,
+      "net": 21637.5
     },
     {
       "date": "2026-05-14",
@@ -3411,11 +4811,25 @@
       "net": 4836.8
     },
     {
+      "date": "2026-05-14",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -22770.75,
+      "net": -22770.75
+    },
+    {
       "date": "2026-05-15",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -5148.0,
       "net": -5742.15
+    },
+    {
+      "date": "2026-05-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -105.0,
+      "net": -105.0
     },
     {
       "date": "2026-05-18",
@@ -3439,11 +4853,25 @@
       "net": -7185.51
     },
     {
+      "date": "2026-05-20",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -75555.0,
+      "net": -75555.0
+    },
+    {
       "date": "2026-05-21",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -14859.0,
       "net": -15485.37
+    },
+    {
+      "date": "2026-05-21",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 4106.25,
+      "net": 4106.25
     },
     {
       "date": "2026-05-25",
@@ -3460,11 +4888,25 @@
       "net": -1998.16
     },
     {
+      "date": "2026-05-26",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13750.0,
+      "net": -13750.0
+    },
+    {
       "date": "2026-05-27",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 29558.75,
       "net": 29393.23
+    },
+    {
+      "date": "2026-05-27",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 12740.0,
+      "net": 12740.0
     },
     {
       "date": "2026-05-29",
@@ -3481,11 +4923,25 @@
       "net": -12836.74
     },
     {
+      "date": "2026-06-01",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 6093.75,
+      "net": 6093.75
+    },
+    {
       "date": "2026-06-02",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -3601.0,
       "net": -3701.9
+    },
+    {
+      "date": "2026-06-02",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 26163.75,
+      "net": 26163.75
     },
     {
       "date": "2026-06-03",
@@ -3495,11 +4951,25 @@
       "net": 34677.86
     },
     {
+      "date": "2026-06-03",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 1895.5,
+      "net": 1895.5
+    },
+    {
       "date": "2026-06-04",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": -1641.25,
       "net": -1970.39
+    },
+    {
+      "date": "2026-06-04",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 16106.25,
+      "net": 16106.25
     },
     {
       "date": "2026-06-05",
@@ -3509,11 +4979,25 @@
       "net": 57785.74
     },
     {
+      "date": "2026-06-05",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 20010.0,
+      "net": 20010.0
+    },
+    {
       "date": "2026-06-08",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 10049.0,
       "net": 9722.52
+    },
+    {
+      "date": "2026-06-08",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3500.0,
+      "net": 3500.0
     },
     {
       "date": "2026-06-09",
@@ -3523,11 +5007,25 @@
       "net": 1986.79
     },
     {
+      "date": "2026-06-09",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -48360.0,
+      "net": -48360.0
+    },
+    {
       "date": "2026-06-10",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 46592.0,
       "net": 46188.38
+    },
+    {
+      "date": "2026-06-10",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -13050.0,
+      "net": -13050.0
     },
     {
       "date": "2026-06-11",
@@ -3537,11 +5035,25 @@
       "net": -13271.86
     },
     {
+      "date": "2026-06-11",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 3806.25,
+      "net": 3806.25
+    },
+    {
       "date": "2026-06-12",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 47872.5,
       "net": 47478.07
+    },
+    {
+      "date": "2026-06-12",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -23600.0,
+      "net": -23600.0
     },
     {
       "date": "2026-06-15",
@@ -3551,6 +5063,13 @@
       "net": 12953.29
     },
     {
+      "date": "2026-06-15",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -26883.25,
+      "net": -26883.25
+    },
+    {
       "date": "2026-06-16",
       "broker": "dhan",
       "sleeve": "S01",
@@ -3558,11 +5077,25 @@
       "net": 5524.59
     },
     {
+      "date": "2026-06-16",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": -39811.5,
+      "net": -39811.5
+    },
+    {
       "date": "2026-06-17",
       "broker": "dhan",
       "sleeve": "S01",
       "gross": 5616.0,
       "net": 5126.11
+    },
+    {
+      "date": "2026-06-17",
+      "broker": "fyers",
+      "sleeve": "S02",
+      "gross": 26830.75,
+      "net": 26830.75
     },
     {
       "date": "2026-06-18",
