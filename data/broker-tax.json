@@ -686,6 +686,2899 @@
       }
     ]
   },
+  "fno_daily": [
+    {
+      "date": "2023-09-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1142.0,
+      "net": 1031.54
+    },
+    {
+      "date": "2023-09-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 150.0,
+      "net": 92.09
+    },
+    {
+      "date": "2023-09-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1000.0,
+      "net": 933.76
+    },
+    {
+      "date": "2023-09-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 520.0,
+      "net": 460.62
+    },
+    {
+      "date": "2023-09-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2039.0,
+      "net": -2241.18
+    },
+    {
+      "date": "2023-09-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2800.0,
+      "net": 2618.93
+    },
+    {
+      "date": "2023-09-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 822.75,
+      "net": 737.74
+    },
+    {
+      "date": "2023-09-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1027.5,
+      "net": -1239.62
+    },
+    {
+      "date": "2023-09-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 120.0,
+      "net": 58.76
+    },
+    {
+      "date": "2023-09-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -219.25,
+      "net": -399.52
+    },
+    {
+      "date": "2023-09-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2757.5,
+      "net": -2924.53
+    },
+    {
+      "date": "2023-09-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 495.0,
+      "net": 384.15
+    },
+    {
+      "date": "2023-09-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 19.5,
+      "net": -195.28
+    },
+    {
+      "date": "2023-09-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1698.0,
+      "net": 1648.45
+    },
+    {
+      "date": "2023-10-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3156.0,
+      "net": -3207.25
+    },
+    {
+      "date": "2023-10-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 747.5,
+      "net": 681.01
+    },
+    {
+      "date": "2023-10-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1335.0,
+      "net": -1442.85
+    },
+    {
+      "date": "2023-10-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 10500.0,
+      "net": 10384.86
+    },
+    {
+      "date": "2023-10-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4050.0,
+      "net": 3964.34
+    },
+    {
+      "date": "2023-10-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9324.0,
+      "net": -9605.48
+    },
+    {
+      "date": "2023-10-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -31322.5,
+      "net": -31486.62
+    },
+    {
+      "date": "2023-10-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4000.0,
+      "net": 3888.26
+    },
+    {
+      "date": "2023-10-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9000.0,
+      "net": -9167.15
+    },
+    {
+      "date": "2023-11-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -17025.0,
+      "net": -17089.54
+    },
+    {
+      "date": "2023-11-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3575.0,
+      "net": -3725.69
+    },
+    {
+      "date": "2023-11-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7215.75,
+      "net": -7414.82
+    },
+    {
+      "date": "2023-11-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 833.25,
+      "net": 706.06
+    },
+    {
+      "date": "2023-11-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2061.0,
+      "net": 1702.05
+    },
+    {
+      "date": "2023-11-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -906.0,
+      "net": -1222.74
+    },
+    {
+      "date": "2023-11-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1736.25,
+      "net": 1598.88
+    },
+    {
+      "date": "2023-11-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3034.5,
+      "net": 2673.19
+    },
+    {
+      "date": "2023-11-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3653.25,
+      "net": 3377.82
+    },
+    {
+      "date": "2023-11-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4968.75,
+      "net": -5329.98
+    },
+    {
+      "date": "2023-11-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1045.5,
+      "net": 909.28
+    },
+    {
+      "date": "2023-11-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6268.5,
+      "net": -6643.34
+    },
+    {
+      "date": "2023-11-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -896.25,
+      "net": -1307.9
+    },
+    {
+      "date": "2023-11-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8892.0,
+      "net": -8962.35
+    },
+    {
+      "date": "2023-12-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2571.0,
+      "net": -2648.92
+    },
+    {
+      "date": "2023-12-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3825.75,
+      "net": 3509.02
+    },
+    {
+      "date": "2023-12-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 192.0,
+      "net": -114.97
+    },
+    {
+      "date": "2023-12-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -268.5,
+      "net": -540.51
+    },
+    {
+      "date": "2023-12-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3090.25,
+      "net": 2861.62
+    },
+    {
+      "date": "2023-12-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7743.0,
+      "net": -7902.02
+    },
+    {
+      "date": "2023-12-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1006.5,
+      "net": 892.61
+    },
+    {
+      "date": "2023-12-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6612.75,
+      "net": -6829.91
+    },
+    {
+      "date": "2023-12-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 626.25,
+      "net": 538.05
+    },
+    {
+      "date": "2023-12-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -827.0,
+      "net": -1055.23
+    },
+    {
+      "date": "2023-12-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 524.0,
+      "net": 311.38
+    },
+    {
+      "date": "2023-12-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -958.25,
+      "net": -1303.82
+    },
+    {
+      "date": "2023-12-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1897.5,
+      "net": -2049.82
+    },
+    {
+      "date": "2023-12-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3938.5,
+      "net": 3661.64
+    },
+    {
+      "date": "2023-12-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2025.75,
+      "net": 1764.07
+    },
+    {
+      "date": "2023-12-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 184.75,
+      "net": -226.09
+    },
+    {
+      "date": "2023-12-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1471.5,
+      "net": 1378.6
+    },
+    {
+      "date": "2023-12-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1088.5,
+      "net": 906.03
+    },
+    {
+      "date": "2024-01-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 219.0,
+      "net": 65.15
+    },
+    {
+      "date": "2024-01-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 806.0,
+      "net": 653.39
+    },
+    {
+      "date": "2024-01-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1363.5,
+      "net": 1207.11
+    },
+    {
+      "date": "2024-01-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -179.5,
+      "net": -518.05
+    },
+    {
+      "date": "2024-01-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1341.75,
+      "net": -1806.36
+    },
+    {
+      "date": "2024-01-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4484.25,
+      "net": 4203.79
+    },
+    {
+      "date": "2024-01-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3888.75,
+      "net": 3673.03
+    },
+    {
+      "date": "2024-01-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2414.5,
+      "net": 2224.18
+    },
+    {
+      "date": "2024-01-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1952.5,
+      "net": 1699.84
+    },
+    {
+      "date": "2024-01-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3804.0,
+      "net": -3937.4
+    },
+    {
+      "date": "2024-01-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 217.5,
+      "net": 76.51
+    },
+    {
+      "date": "2024-01-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1024.0,
+      "net": 942.45
+    },
+    {
+      "date": "2024-01-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3354.75,
+      "net": 3082.01
+    },
+    {
+      "date": "2024-01-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 467.75,
+      "net": 233.85
+    },
+    {
+      "date": "2024-01-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 422.0,
+      "net": 369.18
+    },
+    {
+      "date": "2024-01-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -112.0,
+      "net": -186.63
+    },
+    {
+      "date": "2024-01-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1575.0,
+      "net": 1469.51
+    },
+    {
+      "date": "2024-02-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 595.0,
+      "net": 185.17
+    },
+    {
+      "date": "2024-02-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1712.0,
+      "net": -2181.73
+    },
+    {
+      "date": "2024-02-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9510.0,
+      "net": -9802.64
+    },
+    {
+      "date": "2024-02-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7905.5,
+      "net": -8898.75
+    },
+    {
+      "date": "2024-02-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1282.5,
+      "net": -1667.08
+    },
+    {
+      "date": "2024-02-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1547.25,
+      "net": 1141.43
+    },
+    {
+      "date": "2024-02-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 11892.0,
+      "net": 11235.46
+    },
+    {
+      "date": "2024-02-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2952.5,
+      "net": 2626.62
+    },
+    {
+      "date": "2024-02-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2000.0,
+      "net": 1753.02
+    },
+    {
+      "date": "2024-02-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 6888.0,
+      "net": 6608.13
+    },
+    {
+      "date": "2024-02-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9867.0,
+      "net": -10381.69
+    },
+    {
+      "date": "2024-02-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8582.5,
+      "net": -8789.24
+    },
+    {
+      "date": "2024-02-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4584.0,
+      "net": -4690.14
+    },
+    {
+      "date": "2024-02-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2782.5,
+      "net": 2633.56
+    },
+    {
+      "date": "2024-03-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3575.0,
+      "net": -3713.62
+    },
+    {
+      "date": "2024-03-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7040.0,
+      "net": -7147.87
+    },
+    {
+      "date": "2024-03-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 325.0,
+      "net": 221.56
+    },
+    {
+      "date": "2024-03-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -319.5,
+      "net": -410.2
+    },
+    {
+      "date": "2024-03-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1968.75,
+      "net": -2277.11
+    },
+    {
+      "date": "2024-03-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2078.25,
+      "net": -2560.59
+    },
+    {
+      "date": "2024-04-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 6039.75,
+      "net": 5772.74
+    },
+    {
+      "date": "2024-04-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3425.0,
+      "net": -3512.99
+    },
+    {
+      "date": "2024-04-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3967.25,
+      "net": 3489.99
+    },
+    {
+      "date": "2024-04-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1245.75,
+      "net": 530.87
+    },
+    {
+      "date": "2024-04-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 720.75,
+      "net": 659.87
+    },
+    {
+      "date": "2024-04-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 855.0,
+      "net": 767.71
+    },
+    {
+      "date": "2024-04-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3396.25,
+      "net": -3595.45
+    },
+    {
+      "date": "2024-05-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -218.75,
+      "net": -301.5
+    },
+    {
+      "date": "2024-05-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4135.0,
+      "net": 3780.21
+    },
+    {
+      "date": "2024-05-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4827.5,
+      "net": -5081.32
+    },
+    {
+      "date": "2024-05-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -465.0,
+      "net": -636.48
+    },
+    {
+      "date": "2024-05-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4016.0,
+      "net": 3717.6
+    },
+    {
+      "date": "2024-05-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1540.0,
+      "net": 1435.29
+    },
+    {
+      "date": "2024-05-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2237.5,
+      "net": 2114.86
+    },
+    {
+      "date": "2024-05-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2996.0,
+      "net": -3259.15
+    },
+    {
+      "date": "2024-05-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1818.75,
+      "net": 1707.6
+    },
+    {
+      "date": "2024-05-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2536.25,
+      "net": 2354.98
+    },
+    {
+      "date": "2024-05-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1530.0,
+      "net": 1418.84
+    },
+    {
+      "date": "2024-05-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5104.0,
+      "net": -5424.25
+    },
+    {
+      "date": "2024-05-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1101.75,
+      "net": 1014.32
+    },
+    {
+      "date": "2024-05-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 746.25,
+      "net": 543.55
+    },
+    {
+      "date": "2024-05-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1927.5,
+      "net": 1789.54
+    },
+    {
+      "date": "2024-05-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1011.25,
+      "net": 888.46
+    },
+    {
+      "date": "2024-05-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2156.0,
+      "net": 1727.39
+    },
+    {
+      "date": "2024-05-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3797.75,
+      "net": 3380.59
+    },
+    {
+      "date": "2024-05-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -963.0,
+      "net": -1076.0
+    },
+    {
+      "date": "2024-06-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1596.0,
+      "net": 1485.19
+    },
+    {
+      "date": "2024-06-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2237.25,
+      "net": -2308.69
+    },
+    {
+      "date": "2024-06-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3115.0,
+      "net": 2857.19
+    },
+    {
+      "date": "2024-06-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1348.5,
+      "net": 1078.82
+    },
+    {
+      "date": "2024-06-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -11744.25,
+      "net": -12283.82
+    },
+    {
+      "date": "2024-06-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3723.75,
+      "net": 3469.48
+    },
+    {
+      "date": "2024-06-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1296.5,
+      "net": -1514.99
+    },
+    {
+      "date": "2024-06-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -889.75,
+      "net": -1154.9
+    },
+    {
+      "date": "2024-06-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 982.5,
+      "net": 793.66
+    },
+    {
+      "date": "2024-06-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3876.75,
+      "net": 3696.68
+    },
+    {
+      "date": "2024-06-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1012.5,
+      "net": 901.1
+    },
+    {
+      "date": "2024-06-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2424.0,
+      "net": 2254.51
+    },
+    {
+      "date": "2024-06-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2418.0,
+      "net": 2281.27
+    },
+    {
+      "date": "2024-06-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 664.5,
+      "net": 465.81
+    },
+    {
+      "date": "2024-06-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4606.5,
+      "net": -4686.16
+    },
+    {
+      "date": "2024-06-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1207.0,
+      "net": -1488.1
+    },
+    {
+      "date": "2024-06-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 6530.25,
+      "net": 6147.71
+    },
+    {
+      "date": "2024-07-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2757.75,
+      "net": -2842.28
+    },
+    {
+      "date": "2024-07-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 974.0,
+      "net": 867.68
+    },
+    {
+      "date": "2024-07-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2400.0,
+      "net": 2311.07
+    },
+    {
+      "date": "2024-07-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -103.74,
+      "net": -416.37
+    },
+    {
+      "date": "2024-07-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2823.75,
+      "net": -2904.65
+    },
+    {
+      "date": "2024-07-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1740.0,
+      "net": -1799.25
+    },
+    {
+      "date": "2024-07-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2829.25,
+      "net": -3125.6
+    },
+    {
+      "date": "2024-07-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4338.75,
+      "net": 4108.23
+    },
+    {
+      "date": "2024-07-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2630.0,
+      "net": 2395.24
+    },
+    {
+      "date": "2024-07-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1028.75,
+      "net": 917.66
+    },
+    {
+      "date": "2024-07-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 641.24,
+      "net": 534.61
+    },
+    {
+      "date": "2024-07-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1840.0,
+      "net": -1896.8
+    },
+    {
+      "date": "2024-07-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2451.0,
+      "net": 2155.69
+    },
+    {
+      "date": "2024-08-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -960.0,
+      "net": -1015.96
+    },
+    {
+      "date": "2024-08-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 688.75,
+      "net": 604.27
+    },
+    {
+      "date": "2024-08-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5796.0,
+      "net": 5295.98
+    },
+    {
+      "date": "2024-08-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2196.51,
+      "net": 1641.54
+    },
+    {
+      "date": "2024-08-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -144.25,
+      "net": -550.15
+    },
+    {
+      "date": "2024-08-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4321.76,
+      "net": 3756.76
+    },
+    {
+      "date": "2024-08-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3792.76,
+      "net": -4279.16
+    },
+    {
+      "date": "2024-08-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6437.51,
+      "net": -6821.25
+    },
+    {
+      "date": "2024-08-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 11155.0,
+      "net": 10513.39
+    },
+    {
+      "date": "2024-08-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -19497.25,
+      "net": -19748.6
+    },
+    {
+      "date": "2024-08-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4710.75,
+      "net": -4867.45
+    },
+    {
+      "date": "2024-08-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 466.27,
+      "net": 90.09
+    },
+    {
+      "date": "2024-08-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1530.97,
+      "net": 891.17
+    },
+    {
+      "date": "2024-08-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1969.8,
+      "net": 1665.35
+    },
+    {
+      "date": "2024-08-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2746.0,
+      "net": 2680.47
+    },
+    {
+      "date": "2024-08-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2831.5,
+      "net": 2365.23
+    },
+    {
+      "date": "2024-08-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4446.25,
+      "net": 3901.42
+    },
+    {
+      "date": "2024-08-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5777.25,
+      "net": -6381.32
+    },
+    {
+      "date": "2024-08-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1751.5,
+      "net": -1808.28
+    },
+    {
+      "date": "2024-09-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -10545.09,
+      "net": -11392.75
+    },
+    {
+      "date": "2024-09-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5132.0,
+      "net": 4152.65
+    },
+    {
+      "date": "2024-09-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2938.89,
+      "net": -3273.58
+    },
+    {
+      "date": "2024-09-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 885.74,
+      "net": 443.33
+    },
+    {
+      "date": "2024-09-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3233.5,
+      "net": 2470.22
+    },
+    {
+      "date": "2024-09-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3608.84,
+      "net": 2971.83
+    },
+    {
+      "date": "2024-09-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5850.0,
+      "net": 5353.34
+    },
+    {
+      "date": "2024-09-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2459.0,
+      "net": 2266.48
+    },
+    {
+      "date": "2024-09-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1246.25,
+      "net": 1112.42
+    },
+    {
+      "date": "2024-09-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 14216.39,
+      "net": 13798.33
+    },
+    {
+      "date": "2024-09-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2750.0,
+      "net": -2923.22
+    },
+    {
+      "date": "2024-09-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 12531.25,
+      "net": 12038.79
+    },
+    {
+      "date": "2024-09-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8289.25,
+      "net": -8828.09
+    },
+    {
+      "date": "2024-09-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -10444.25,
+      "net": -10887.39
+    },
+    {
+      "date": "2024-09-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -24282.75,
+      "net": -24906.28
+    },
+    {
+      "date": "2024-09-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 11.25,
+      "net": -294.69
+    },
+    {
+      "date": "2024-09-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 6328.75,
+      "net": 5583.61
+    },
+    {
+      "date": "2024-09-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5898.75,
+      "net": -6324.32
+    },
+    {
+      "date": "2024-09-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5966.25,
+      "net": 5721.93
+    },
+    {
+      "date": "2024-09-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -87534.8,
+      "net": -87924.22
+    },
+    {
+      "date": "2024-10-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4573.75,
+      "net": -5046.99
+    },
+    {
+      "date": "2024-10-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5024.0,
+      "net": -5274.61
+    },
+    {
+      "date": "2024-10-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2948.25,
+      "net": -3140.02
+    },
+    {
+      "date": "2024-10-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 486.0,
+      "net": 375.14
+    },
+    {
+      "date": "2024-10-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5264.25,
+      "net": 4961.69
+    },
+    {
+      "date": "2024-10-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1799.5,
+      "net": 1605.99
+    },
+    {
+      "date": "2024-10-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2583.19,
+      "net": -3157.07
+    },
+    {
+      "date": "2024-10-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -28694.06,
+      "net": -29628.87
+    },
+    {
+      "date": "2024-10-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -157.5,
+      "net": -242.63
+    },
+    {
+      "date": "2024-10-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4347.49,
+      "net": -4547.41
+    },
+    {
+      "date": "2024-10-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2071.0,
+      "net": -2258.85
+    },
+    {
+      "date": "2024-10-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4470.0,
+      "net": 4171.91
+    },
+    {
+      "date": "2024-10-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2635.5,
+      "net": 1971.11
+    },
+    {
+      "date": "2024-10-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1038.75,
+      "net": -1122.7
+    },
+    {
+      "date": "2024-10-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2121.01,
+      "net": 1322.85
+    },
+    {
+      "date": "2024-10-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5388.0,
+      "net": -5903.38
+    },
+    {
+      "date": "2024-10-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2954.25,
+      "net": -3240.04
+    },
+    {
+      "date": "2024-10-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5264.49,
+      "net": -5659.1
+    },
+    {
+      "date": "2024-10-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9818.25,
+      "net": -10243.38
+    },
+    {
+      "date": "2024-10-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1833.75,
+      "net": 1722.07
+    },
+    {
+      "date": "2024-10-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -542.5,
+      "net": -626.26
+    },
+    {
+      "date": "2024-11-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1980.0,
+      "net": -2049.95
+    },
+    {
+      "date": "2024-11-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2266.25,
+      "net": 1548.75
+    },
+    {
+      "date": "2024-11-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3797.25,
+      "net": -4024.14
+    },
+    {
+      "date": "2024-11-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 731.0,
+      "net": 316.51
+    },
+    {
+      "date": "2024-11-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 805.51,
+      "net": 346.8
+    },
+    {
+      "date": "2024-11-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5473.74,
+      "net": -5835.0
+    },
+    {
+      "date": "2024-11-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3797.5,
+      "net": 3358.62
+    },
+    {
+      "date": "2024-11-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -18495.75,
+      "net": -18867.85
+    },
+    {
+      "date": "2024-11-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1122.74,
+      "net": -1457.48
+    },
+    {
+      "date": "2024-11-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8202.5,
+      "net": -8770.04
+    },
+    {
+      "date": "2024-11-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1406.0,
+      "net": 1198.09
+    },
+    {
+      "date": "2024-11-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4846.75,
+      "net": 4270.76
+    },
+    {
+      "date": "2024-11-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3610.0,
+      "net": 3252.61
+    },
+    {
+      "date": "2024-11-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1495.5,
+      "net": 1364.34
+    },
+    {
+      "date": "2024-11-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2815.98,
+      "net": 2074.74
+    },
+    {
+      "date": "2024-11-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2015.73,
+      "net": 1252.5
+    },
+    {
+      "date": "2024-11-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4471.5,
+      "net": -5054.35
+    },
+    {
+      "date": "2024-11-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8806.75,
+      "net": -9158.29
+    },
+    {
+      "date": "2024-12-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4249.25,
+      "net": 3872.88
+    },
+    {
+      "date": "2024-12-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2932.25,
+      "net": 2266.57
+    },
+    {
+      "date": "2024-12-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1889.25,
+      "net": 1677.39
+    },
+    {
+      "date": "2024-12-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3081.5,
+      "net": 2343.17
+    },
+    {
+      "date": "2024-12-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8324.5,
+      "net": -8578.57
+    },
+    {
+      "date": "2024-12-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2476.25,
+      "net": 2139.05
+    },
+    {
+      "date": "2024-12-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1348.99,
+      "net": -1929.35
+    },
+    {
+      "date": "2024-12-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3730.0,
+      "net": 3637.67
+    },
+    {
+      "date": "2024-12-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -287.5,
+      "net": -376.08
+    },
+    {
+      "date": "2024-12-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 21630.0,
+      "net": 21507.85
+    },
+    {
+      "date": "2024-12-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3567.98,
+      "net": -3886.38
+    },
+    {
+      "date": "2024-12-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -13037.48,
+      "net": -13467.93
+    },
+    {
+      "date": "2024-12-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2042.5,
+      "net": -2208.34
+    },
+    {
+      "date": "2024-12-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 517.75,
+      "net": 140.44
+    },
+    {
+      "date": "2024-12-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5532.51,
+      "net": 5437.02
+    },
+    {
+      "date": "2024-12-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 11820.02,
+      "net": 11352.56
+    },
+    {
+      "date": "2024-12-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7878.75,
+      "net": -8140.05
+    },
+    {
+      "date": "2024-12-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1578.75,
+      "net": -1813.15
+    },
+    {
+      "date": "2024-12-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9382.5,
+      "net": -9471.85
+    },
+    {
+      "date": "2025-01-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1417.0,
+      "net": -1582.45
+    },
+    {
+      "date": "2025-01-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1937.0,
+      "net": 1686.74
+    },
+    {
+      "date": "2025-01-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7737.0,
+      "net": -7974.42
+    },
+    {
+      "date": "2025-01-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5343.75,
+      "net": -5429.01
+    },
+    {
+      "date": "2025-01-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1607.25,
+      "net": -1782.78
+    },
+    {
+      "date": "2025-01-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -570.99,
+      "net": -707.03
+    },
+    {
+      "date": "2025-01-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 682.5,
+      "net": 588.35
+    },
+    {
+      "date": "2025-01-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3564.75,
+      "net": -3793.58
+    },
+    {
+      "date": "2025-01-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2385.0,
+      "net": 2310.79
+    },
+    {
+      "date": "2025-01-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5415.0,
+      "net": -5558.61
+    },
+    {
+      "date": "2025-01-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -12547.5,
+      "net": -12805.05
+    },
+    {
+      "date": "2025-01-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2686.25,
+      "net": 2558.42
+    },
+    {
+      "date": "2025-01-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1545.0,
+      "net": 1460.87
+    },
+    {
+      "date": "2025-01-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2083.75,
+      "net": 1977.56
+    },
+    {
+      "date": "2025-01-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1898.75,
+      "net": 1795.33
+    },
+    {
+      "date": "2025-01-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3183.75,
+      "net": -3337.25
+    },
+    {
+      "date": "2025-02-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5347.5,
+      "net": -5417.29
+    },
+    {
+      "date": "2025-02-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -330.0,
+      "net": -515.55
+    },
+    {
+      "date": "2025-02-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3048.75,
+      "net": 2949.56
+    },
+    {
+      "date": "2025-02-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4188.75,
+      "net": -4341.17
+    },
+    {
+      "date": "2025-02-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2580.0,
+      "net": -2699.11
+    },
+    {
+      "date": "2025-02-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1788.75,
+      "net": -1955.25
+    },
+    {
+      "date": "2025-02-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -982.5,
+      "net": -1150.23
+    },
+    {
+      "date": "2025-10-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -23835.0,
+      "net": -24120.17
+    },
+    {
+      "date": "2025-10-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 8527.5,
+      "net": 8420.31
+    },
+    {
+      "date": "2025-10-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -24225.0,
+      "net": -24647.83
+    },
+    {
+      "date": "2025-10-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 19020.0,
+      "net": 18887.51
+    },
+    {
+      "date": "2025-10-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -16020.0,
+      "net": -16151.89
+    },
+    {
+      "date": "2025-10-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 17094.38,
+      "net": 16854.17
+    },
+    {
+      "date": "2025-10-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -23131.88,
+      "net": -23448.58
+    },
+    {
+      "date": "2025-10-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 38040.0,
+      "net": 37871.12
+    },
+    {
+      "date": "2025-10-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4215.0,
+      "net": -4320.07
+    },
+    {
+      "date": "2025-10-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -60360.0,
+      "net": -60951.51
+    },
+    {
+      "date": "2025-10-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 15615.0,
+      "net": 15350.82
+    },
+    {
+      "date": "2025-10-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 18697.5,
+      "net": 18422.04
+    },
+    {
+      "date": "2025-10-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -18168.75,
+      "net": -18342.34
+    },
+    {
+      "date": "2025-10-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 61053.75,
+      "net": 60733.09
+    },
+    {
+      "date": "2025-10-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4920.0,
+      "net": -5016.72
+    },
+    {
+      "date": "2025-10-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -23568.75,
+      "net": -23909.39
+    },
+    {
+      "date": "2025-10-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -15255.0,
+      "net": -15610.95
+    },
+    {
+      "date": "2025-10-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 47201.25,
+      "net": 46859.57
+    },
+    {
+      "date": "2025-11-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3975.0,
+      "net": -4025.6
+    },
+    {
+      "date": "2025-11-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2100.0,
+      "net": 1774.24
+    },
+    {
+      "date": "2025-11-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1395.0,
+      "net": 987.45
+    },
+    {
+      "date": "2025-11-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 16935.0,
+      "net": 16441.39
+    },
+    {
+      "date": "2025-11-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 12678.75,
+      "net": 12414.73
+    },
+    {
+      "date": "2025-11-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -24176.25,
+      "net": -24663.93
+    },
+    {
+      "date": "2025-11-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -20550.0,
+      "net": -20797.64
+    },
+    {
+      "date": "2025-11-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -15123.75,
+      "net": -15600.79
+    },
+    {
+      "date": "2025-11-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 70980.0,
+      "net": 70625.51
+    },
+    {
+      "date": "2025-11-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4365.0,
+      "net": -4594.05
+    },
+    {
+      "date": "2025-11-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 12116.25,
+      "net": 11701.59
+    },
+    {
+      "date": "2025-11-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 17587.5,
+      "net": 17103.51
+    },
+    {
+      "date": "2025-11-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -9930.0,
+      "net": -10346.15
+    },
+    {
+      "date": "2025-11-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -57382.5,
+      "net": -58034.9
+    },
+    {
+      "date": "2025-11-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 31050.0,
+      "net": 30744.33
+    },
+    {
+      "date": "2025-11-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -10575.0,
+      "net": -10787.6
+    },
+    {
+      "date": "2025-11-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7256.25,
+      "net": -8089.69
+    },
+    {
+      "date": "2025-11-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4335.0,
+      "net": 4054.08
+    },
+    {
+      "date": "2025-11-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 52410.0,
+      "net": 52066.12
+    },
+    {
+      "date": "2025-12-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2295.0,
+      "net": -2392.49
+    },
+    {
+      "date": "2025-12-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 20715.0,
+      "net": 20398.32
+    },
+    {
+      "date": "2025-12-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 13035.0,
+      "net": 12615.57
+    },
+    {
+      "date": "2025-12-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -11220.0,
+      "net": -11607.08
+    },
+    {
+      "date": "2025-12-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -33937.5,
+      "net": -34930.65
+    },
+    {
+      "date": "2025-12-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 30562.5,
+      "net": 30267.23
+    },
+    {
+      "date": "2025-12-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -13507.5,
+      "net": -13781.15
+    },
+    {
+      "date": "2025-12-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -45746.26,
+      "net": -46540.35
+    },
+    {
+      "date": "2025-12-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -17523.75,
+      "net": -17934.33
+    },
+    {
+      "date": "2025-12-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2107.5,
+      "net": 1756.99
+    },
+    {
+      "date": "2025-12-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3179.99,
+      "net": -3401.96
+    },
+    {
+      "date": "2025-12-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 12498.75,
+      "net": 12242.03
+    },
+    {
+      "date": "2025-12-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 27240.0,
+      "net": 26898.54
+    },
+    {
+      "date": "2025-12-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7920.0,
+      "net": -8079.31
+    },
+    {
+      "date": "2025-12-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -55927.5,
+      "net": -56148.12
+    },
+    {
+      "date": "2025-12-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 3322.51,
+      "net": 2904.18
+    },
+    {
+      "date": "2025-12-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -967.5,
+      "net": -1109.62
+    },
+    {
+      "date": "2025-12-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4305.0,
+      "net": -4713.69
+    },
+    {
+      "date": "2025-12-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 8932.5,
+      "net": 8735.24
+    },
+    {
+      "date": "2025-12-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 28593.75,
+      "net": 28359.48
+    },
+    {
+      "date": "2025-12-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1001.25,
+      "net": -1096.16
+    },
+    {
+      "date": "2025-12-31",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 51216.75,
+      "net": 51048.25
+    },
+    {
+      "date": "2026-01-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5736.25,
+      "net": -5785.86
+    },
+    {
+      "date": "2026-01-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 44898.75,
+      "net": 44587.85
+    },
+    {
+      "date": "2026-01-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 17933.5,
+      "net": 17696.69
+    },
+    {
+      "date": "2026-01-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 17559.75,
+      "net": 17289.39
+    },
+    {
+      "date": "2026-01-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1027.0,
+      "net": 503.76
+    },
+    {
+      "date": "2026-01-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2847.0,
+      "net": -2943.03
+    },
+    {
+      "date": "2026-01-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -15843.75,
+      "net": -16297.54
+    },
+    {
+      "date": "2026-01-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -78009.75,
+      "net": -78580.4
+    },
+    {
+      "date": "2026-01-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -26568.75,
+      "net": -26868.48
+    },
+    {
+      "date": "2026-01-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 9616.75,
+      "net": 9455.16
+    },
+    {
+      "date": "2026-01-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -37027.25,
+      "net": -37492.38
+    },
+    {
+      "date": "2026-01-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 61490.0,
+      "net": 61027.38
+    },
+    {
+      "date": "2026-01-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -14088.75,
+      "net": -14196.88
+    },
+    {
+      "date": "2026-01-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 19240.0,
+      "net": 18860.05
+    },
+    {
+      "date": "2026-01-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -21586.5,
+      "net": -22096.05
+    },
+    {
+      "date": "2026-01-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2765.75,
+      "net": 2440.4
+    },
+    {
+      "date": "2026-02-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 10156.25,
+      "net": 9689.23
+    },
+    {
+      "date": "2026-02-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 6808.75,
+      "net": 6687.55
+    },
+    {
+      "date": "2026-02-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 39000.0,
+      "net": 38749.74
+    },
+    {
+      "date": "2026-02-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -11147.5,
+      "net": -11247.68
+    },
+    {
+      "date": "2026-02-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -23497.5,
+      "net": -23684.59
+    },
+    {
+      "date": "2026-02-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1573.0,
+      "net": -1670.17
+    },
+    {
+      "date": "2026-02-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 47882.25,
+      "net": 47666.46
+    },
+    {
+      "date": "2026-02-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4988.75,
+      "net": -5073.0
+    },
+    {
+      "date": "2026-02-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 28811.25,
+      "net": 28607.99
+    },
+    {
+      "date": "2026-02-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6467.5,
+      "net": -6549.98
+    },
+    {
+      "date": "2026-02-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2661.75,
+      "net": -2886.09
+    },
+    {
+      "date": "2026-02-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -27443.0,
+      "net": -27864.19
+    },
+    {
+      "date": "2026-02-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 36283.0,
+      "net": 35751.05
+    },
+    {
+      "date": "2026-02-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1430.0,
+      "net": -1765.02
+    },
+    {
+      "date": "2026-02-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4524.0,
+      "net": -4623.94
+    },
+    {
+      "date": "2026-02-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 22587.5,
+      "net": 22161.43
+    },
+    {
+      "date": "2026-02-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4176.25,
+      "net": -4234.33
+    },
+    {
+      "date": "2026-03-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 57018.0,
+      "net": 56878.5
+    },
+    {
+      "date": "2026-03-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -14608.75,
+      "net": -14666.49
+    },
+    {
+      "date": "2026-03-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -25216.75,
+      "net": -25662.08
+    },
+    {
+      "date": "2026-03-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7403.51,
+      "net": -7525.93
+    },
+    {
+      "date": "2026-03-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 40066.0,
+      "net": 39940.01
+    },
+    {
+      "date": "2026-03-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -11680.5,
+      "net": -11739.68
+    },
+    {
+      "date": "2026-03-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -8619.0,
+      "net": -8749.69
+    },
+    {
+      "date": "2026-04-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -21043.75,
+      "net": -21584.89
+    },
+    {
+      "date": "2026-04-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -14332.5,
+      "net": -14538.17
+    },
+    {
+      "date": "2026-04-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6955.0,
+      "net": -7164.84
+    },
+    {
+      "date": "2026-04-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 13250.25,
+      "net": 12753.53
+    },
+    {
+      "date": "2026-04-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -10793.25,
+      "net": -10919.48
+    },
+    {
+      "date": "2026-04-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4416.75,
+      "net": -4521.3
+    },
+    {
+      "date": "2026-04-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3110.25,
+      "net": -3158.78
+    },
+    {
+      "date": "2026-04-22",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 20982.0,
+      "net": 20854.02
+    },
+    {
+      "date": "2026-04-23",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -10273.25,
+      "net": -10398.6
+    },
+    {
+      "date": "2026-04-24",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5703.75,
+      "net": -5837.32
+    },
+    {
+      "date": "2026-04-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 16480.76,
+      "net": 16250.52
+    },
+    {
+      "date": "2026-04-28",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -2125.5,
+      "net": -2173.71
+    },
+    {
+      "date": "2026-04-30",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -21937.5,
+      "net": -22437.77
+    },
+    {
+      "date": "2026-05-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2700.75,
+      "net": 2585.86
+    },
+    {
+      "date": "2026-05-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 1612.0,
+      "net": 1512.19
+    },
+    {
+      "date": "2026-05-06",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 10058.75,
+      "net": 9579.14
+    },
+    {
+      "date": "2026-05-07",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 4163.25,
+      "net": 3795.68
+    },
+    {
+      "date": "2026-05-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 497.25,
+      "net": 158.91
+    },
+    {
+      "date": "2026-05-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -15171.0,
+      "net": -15476.11
+    },
+    {
+      "date": "2026-05-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5768.75,
+      "net": -5882.79
+    },
+    {
+      "date": "2026-05-13",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1911.0,
+      "net": -2170.5
+    },
+    {
+      "date": "2026-05-14",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5307.25,
+      "net": 4836.8
+    },
+    {
+      "date": "2026-05-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5148.0,
+      "net": -5742.15
+    },
+    {
+      "date": "2026-05-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 15102.75,
+      "net": 14956.82
+    },
+    {
+      "date": "2026-05-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -5915.0,
+      "net": -6030.41
+    },
+    {
+      "date": "2026-05-20",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -6922.5,
+      "net": -7185.51
+    },
+    {
+      "date": "2026-05-21",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -14859.0,
+      "net": -15485.37
+    },
+    {
+      "date": "2026-05-25",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 27053.0,
+      "net": 26947.18
+    },
+    {
+      "date": "2026-05-26",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1950.0,
+      "net": -1998.16
+    },
+    {
+      "date": "2026-05-27",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 29558.75,
+      "net": 29393.23
+    },
+    {
+      "date": "2026-05-29",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -7150.0,
+      "net": -7210.88
+    },
+    {
+      "date": "2026-06-01",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -12454.0,
+      "net": -12836.74
+    },
+    {
+      "date": "2026-06-02",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -3601.0,
+      "net": -3701.9
+    },
+    {
+      "date": "2026-06-03",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 35077.25,
+      "net": 34677.86
+    },
+    {
+      "date": "2026-06-04",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -1641.25,
+      "net": -1970.39
+    },
+    {
+      "date": "2026-06-05",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 58158.75,
+      "net": 57785.74
+    },
+    {
+      "date": "2026-06-08",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 10049.0,
+      "net": 9722.52
+    },
+    {
+      "date": "2026-06-09",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 2145.0,
+      "net": 1986.79
+    },
+    {
+      "date": "2026-06-10",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 46592.0,
+      "net": 46188.38
+    },
+    {
+      "date": "2026-06-11",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -12987.0,
+      "net": -13271.86
+    },
+    {
+      "date": "2026-06-12",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 47872.5,
+      "net": 47478.07
+    },
+    {
+      "date": "2026-06-15",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 13247.0,
+      "net": 12953.29
+    },
+    {
+      "date": "2026-06-16",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5635.5,
+      "net": 5524.59
+    },
+    {
+      "date": "2026-06-17",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 5616.0,
+      "net": 5126.11
+    },
+    {
+      "date": "2026-06-18",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": 14868.75,
+      "net": 14570.91
+    },
+    {
+      "date": "2026-06-19",
+      "broker": "dhan",
+      "sleeve": "S01",
+      "gross": -4322.5,
+      "net": -4512.29
+    }
+  ],
   "dhan_allTime": {
     "equity": -44456,
     "fno": 103584
