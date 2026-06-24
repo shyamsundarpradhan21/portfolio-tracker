@@ -59,3 +59,47 @@ export function appendIntraday(file, date, point) {
   writeFileSync(file, JSON.stringify(next, null, 2) + '\n');
   return next.days[date].length;
 }
+
+// ── Daily growth snapshot ── ONE record per day holding each sleeve's day-change
+// (the resilient end-of-day fallback, distinct from the per-minute intraday tape).
+// `partial` carries only the sleeves a run captured: { eq?, us?, fno?, mf?, istNow }.
+// Merge-upsert so several runs build one record AND a sleeve that's absent/null is
+// LEFT AS-IS (skip-not-zero — a failed fetch never wipes a good prior value).
+// Pure given (json, …) → returns the next json (no I/O), so it unit-tests on its own.
+// Net-worth ASSET sleeves, by growth cadence (same record, different feed):
+//   eq/us     — market day-change (intraday tick)
+//   fd        — daily accrued interest (deterministic from principal×rate, no fetch)
+//   mf        — daily NAV (once-daily, AMFI)
+//   cmpf/cmps — monthly step from the salary-slip upload
+// F&O is deliberately EXCLUDED: it's BUSINESS INCOME (non-speculative), not asset
+// appreciation, and the trading capital is off-NW — it lives in the F&O pipeline
+// (fno-ledger / intraday tape / Trading tab), never summed into asset growth.
+const GROWTH_SLEEVES = ['eq', 'us', 'fd', 'mf', 'cmpf', 'cmps'];
+export function upsertGrowth(json, date, partial) {
+  const out = json && typeof json === 'object' ? { ...json } : {};
+  const days = { ...(out.days || {}) };
+  const prev = days[date] && typeof days[date] === 'object' ? days[date] : {};
+  const next = { ...prev, d: date };
+  const asOf = { ...(prev.asOf || {}) };
+  for (const k of GROWTH_SLEEVES) {
+    const v = partial?.[k];
+    if (v == null) continue;                 // not captured this run → carry forward
+    next[k] = v;
+    if (partial?.istNow) asOf[k] = partial.istNow;
+  }
+  next.asOf = asOf;
+  days[date] = next;
+  out.days = days;
+  return out;
+}
+
+// Disk wrapper around upsertGrowth. Returns the merged day record after write.
+export function writeGrowth(file, date, partial) {
+  let json;
+  try { json = JSON.parse(readFileSync(file, 'utf8')); } catch { json = { days: {} }; }
+  const next = upsertGrowth(json, date, partial);
+  next.updatedAt = partial?.istNow || next.updatedAt || null;
+  next.note = next.note || 'Daily per-sleeve day-change snapshot (eq/us/fno/mf) — the resilient end-of-day fallback. Non-personal aggregate; safe to commit.';
+  writeFileSync(file, JSON.stringify(next, null, 2) + '\n');
+  return next.days[date];
+}

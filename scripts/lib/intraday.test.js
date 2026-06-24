@@ -1,6 +1,6 @@
 // Tests for the intraday tape upsert — the pure core of capture-intraday.
 import { describe, it, expect } from 'vitest';
-import { upsertPoint } from './intraday.mjs';
+import { upsertPoint, upsertGrowth } from './intraday.mjs';
 
 const pt = (t, net, byBroker = {}, pending = false) => ({ t, net, byBroker, pending });
 
@@ -62,5 +62,36 @@ describe('upsertPoint', () => {
     j = upsertPoint(j, '2026-06-24', pt('10:00', 160, {}, false));
     expect(j.days['2026-06-24'][0].pending).toBe(1);                      // still flagged
     expect(j.days['2026-06-24'][0].net).toBe(160);                        // newest net still wins
+  });
+});
+
+describe('upsertGrowth', () => {
+  it('writes the sleeves a run captured and stamps asOf', () => {
+    const j = upsertGrowth({}, '2026-06-25', { eq: { net: 100 }, istNow: '2026-06-25T16:00:00+05:30' });
+    expect(j.days['2026-06-25'].d).toBe('2026-06-25');
+    expect(j.days['2026-06-25'].eq).toEqual({ net: 100 });
+    expect(j.days['2026-06-25'].asOf.eq).toBe('2026-06-25T16:00:00+05:30');
+  });
+
+  it('carries forward sleeves a later run did not capture (builds one record)', () => {
+    let j = upsertGrowth({}, '2026-06-25', { eq: { net: 100 }, fd: { net: 50 } }); // Indian-close run
+    j = upsertGrowth(j, '2026-06-25', { us: { net: 200 } });                        // US-close run
+    expect(j.days['2026-06-25'].eq).toEqual({ net: 100 });   // carried
+    expect(j.days['2026-06-25'].fd).toEqual({ net: 50 });    // carried
+    expect(j.days['2026-06-25'].us).toEqual({ net: 200 });   // added
+  });
+
+  it('a null/absent sleeve never wipes a good prior value (skip-not-zero)', () => {
+    let j = upsertGrowth({}, '2026-06-25', { eq: { net: 100 } });
+    j = upsertGrowth(j, '2026-06-25', { eq: null, us: { net: 9 } }); // eq fetch failed this run
+    expect(j.days['2026-06-25'].eq).toEqual({ net: 100 });          // not wiped
+    expect(j.days['2026-06-25'].us).toEqual({ net: 9 });
+  });
+
+  it('does not mutate the input json', () => {
+    const j0 = { days: { '2026-06-25': { d: '2026-06-25', eq: { net: 1 } } } };
+    const j1 = upsertGrowth(j0, '2026-06-25', { us: { net: 2 } });
+    expect(j0.days['2026-06-25'].us).toBeUndefined();
+    expect(j1.days['2026-06-25'].us).toEqual({ net: 2 });
   });
 });

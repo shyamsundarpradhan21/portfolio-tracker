@@ -1,0 +1,31 @@
+{
+  "note": "Daily per-sleeve day-change snapshot for net-worth ASSET sleeves (eq/us/fd/mf/cmpf/cmps) — the resilient end-of-day fallback the app reads when no intraday tape exists. Written by scripts/snapshot-growth.mjs. F&O is excluded (business income, lives in fno-ledger). Non-personal aggregate; safe to commit.",
+  "updatedAt": "2026-06-25T03:39:50+05:30",
+  "days": {
+    "2026-06-25": {
+      "d": "2026-06-25",
+      "eq": {
+        "net": 799.69,
+        "bySleeve": {
+          "INDIAN": 1934.45,
+          "SWING": -1134.76
+        },
+        "covered": 20
+      },
+      "us": {
+        "net": -6360.34,
+        "usd": -67.2,
+        "fx": 94.655,
+        "covered": 49
+      },
+      "asOf": {
+        "eq": "2026-06-25T03:39:50+05:30",
+        "us": "2026-06-25T03:39:50+05:30",
+        "fd": "2026-06-25T03:39:50+05:30"
+      },
+      "fd": {
+        "net": 120.56
+      }
+    }
+  }
+}

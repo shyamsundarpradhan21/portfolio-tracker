@@ -187,3 +187,87 @@ delivery holdings are in broker-state.json under INDIAN).
   specified later. Candidates to confirm with user: curve height/density, axis
   labels (US session times), the headline/curve spacing, day vs eq vs us visual
   consistency, empty/pre-open state copy.
+
+---
+
+# PLAN (NOT STARTED) — Resilient two-tier capture + schedule consolidation
+
+## Goal (from the user, this session)
+All sleeves' growth captured reliably and laptop-independent where possible;
+broker auth all mint-on-demand; fewer/cleaner schedules; the app reads captured
+values instead of fetching prices separately. Survive a fully-laptop-off day.
+
+## Target architecture — two tiers
+- **Cloud baseline (always-on, Vercel cron):** daily day-change snapshot per sleeve
+  → KV. Covers equity / US / MF (Yahoo/NAV, no auth) + **Dhan & Fyers F&O**
+  (Dhan TOTP self-mint, Fyers refresh-token — both headless). Acts as the FALLBACK
+  for laptop-off days AND the catch-up source. Only **Upstox F&O** can't go cloud.
+- **Laptop intraday (when on):** F&O (all 3) + equity + US tick-level → KV, finer
+  resolution. All broker auth mint-on-demand.
+- The app reads these KV values; the duplicate live-Yahoo fetches are retired (phased).
+
+## Findings that shaped this
+- `/api/premarket` = Market Wrap (indices/sectors/movers/VIX/FII-DII). Its cron's only
+  persistent job is the KV FII/DII trail; `lib/fiidii.js` is a client fallback trail.
+  → DROP the cron, keep the route (Wrap still works on demand). Not covered by — and
+  not redundant with — the captures (different feature).
+- Cloud F&O feasible for **Dhan** (pure-API TOTP) + **Fyers** (refresh-token, ~15-day,
+  laptop refreshes it); **Upstox** can't (browser-only). Tradeoff: broker secrets move
+  to Vercel env/KV (read-only).
+
+## OPEN DECISION (confirm before Phase 0b)
+- [ ] **Broker secrets in Vercel** for cloud Dhan+Fyers F&O (strictly read-only). Yes/No.
+      If No: cloud baseline = equity/US/MF only; ALL F&O stays laptop-bound.
+
+## DEPLOYMENT PIVOT (decided this session)
+Build PORTABLE now (option D), self-host on the user's own always-on box as the
+production target (option A) — see [[production-cross-platform-target]]. Consequence:
+NO Vercel cron / NO cloud secrets needed; the always-on box mints tokens like the
+laptop. Trigger = Task Scheduler now → systemd/cron on the box later; store = KV via
+scripts/lib/kv.mjs (env or mcp/.kv.env) + committed archive. Same Node code runs on
+laptop / box / Vercel unchanged.
+
+GROWTH = net-worth ASSET sleeves ONLY (eq/us/fd/mf/cmpf/cmps). F&O is EXCLUDED — it's
+business income (non-speculative), trading capital is off-NW; it stays in the F&O
+pipeline (fno-ledger via the evening sync + intraday tape + Trading tab), never summed
+into asset growth.
+
+## Phase 0 — portable daily GROWTH snapshot (the resilient fallback)
+- [x] 0a. **DONE** — `scripts/lib/intraday.mjs` upsertGrowth/writeGrowth (merge, carry-
+      forward, skip-not-zero) + `intradayTick.mjs` captureGrowth (eq + us asset sleeves;
+      F&O excluded) + `scripts/snapshot-growth.mjs` entry + `app/api/growth` read route +
+      `data/growth.json` seed. 12 tests; live run captured real eq/us; route serves
+      KV→archive. Schema reserves fd/mf/cmpf/cmps keys.
+- [ ] 0b. Slow sleeves into captureGrowth (each its own cadence):
+      - [ ] **fd**  — daily accrued interest from `FDS[]` (deterministic, no fetch)
+      - [ ] **mf**  — daily NAV (extract AMFI resolution from `app/api/mf-nav` to a shared lib)
+      - [ ] **cmpf/cmps** — monthly step from `CMPF_/CMPS_CONTRIBUTIONS` (salary-slip fed)
+- [ ] 0c. Fold the daily **FII/DII** capture into the snapshot routine → KV
+      `premarket:fiidiiTrail` (20-session) + committed `data/fiidii-trail.json`.
+      REMOVE the Vercel premarket cron; KEEP the `/api/premarket` route (live Wrap).
+- [ ] 0d. Register `snapshot-growth` on a daily schedule (Task Scheduler now), hardened
+      like the capture tasks; app reads `growth:<date>` as the fallback when no intraday
+      tape exists. Monthly: salary-slip upload (PII-safe `data/reports/` method) refreshes
+      cmpf/cmps/salary.
+
+## Phase 1 — Mint-on-demand + schedule consolidation
+- [ ] 1a. Lift the `MINT` map from sync-brokers.mjs into shared brokers.mjs so the
+      capture daemon self-mints too.
+- [ ] 1b. Register BrokerSyncEvening (Mon–Fri 18:30) + hardening (WakeToRun/battery/keep-awake).
+- [ ] 1c. DELETE tasks: DailyBrokerSync, UpstoxDailyLogin, FyersDailyLogin.
+- [ ] 1d. Drop the local market-wrap refresh from the sync.
+
+## Phase 2 — Single price source / retire duplicate Yahoo (PHASED, recommended)
+- [ ] 2a. Pipeline becomes the single writer of per-sleeve values to KV.
+- [ ] 2b. Migrate app readers (frontend day-change + API routes) to read KV, not live Yahoo.
+- [ ] 2c. Retire the redundant live-Yahoo fetches (Yahoo still used once, inside the pipeline).
+
+## Phase 3 — Catch-up on laptop-off
+- [ ] 3a. StartWhenAvailable on remaining laptop tasks.
+- [ ] 3b. On wake, run the daily-growth snapshot for missed days (NOT an intraday replay);
+      mostly already covered by the Phase-0 cloud baseline.
+
+## Verification per phase
+- Unit tests for new pure calc; full `vitest run` green each phase.
+- Confirm captures still mint with the login tasks removed; deleted tasks gone.
+- Render-check affected tabs; confirm app renders the `growth` fallback when intraday absent.

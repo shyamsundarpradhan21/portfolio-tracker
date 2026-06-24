@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
 import { pullEquityDayChange, pullUsDayChange, niftyCandles } from './equity.mjs';
-import { appendIntraday } from './intraday.mjs';
+import { pullFdDayChange } from './fd.mjs';
+import { appendIntraday, writeGrowth } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts, usSessionDate } from './marketHours.mjs';
 
@@ -112,4 +113,39 @@ export async function captureUsTick({ nowMs = Date.now(), file = US_FILE } = {})
   const { count, kvPromise } = publish(file, kvKeyUs, date, point);
   const kv = await kvPromise;
   return { ok: true, kind: 'us', date, t: hhmm, net: dc.net, usd: dc.usd, covered: dc.covered, missing: dc.missing, count, kv };
+}
+
+// ── Daily growth snapshot ── one end-of-day record per day with each net-worth
+// ASSET sleeve's day-change (data/growth.json + KV growth:<date>). The resilient
+// fallback: it RE-COMPUTES fresh (never reads the intraday tape), so it stands alone
+// on days the intraday daemon never ran — the whole point of the catch-up tier.
+// Each sleeve is independent + skip-not-zero (a failed sleeve is omitted → carried
+// forward by upsertGrowth, never drawn as a fake ₹0). fd/mf/cmpf/cmps added separately.
+// F&O is NOT here — it's business income, captured by the F&O pipeline (fno-ledger).
+// Host-agnostic & READ-ONLY: same Yahoo reads the daemon uses; KV via kv.mjs.
+export const GROWTH_FILE = join(ROOT, 'data', 'growth.json');
+export const kvKeyGrowth = (date) => `growth:${date}`;
+const GROWTH_TTL = 35 * 24 * 3600; // recent records live in KV; older served from the committed file
+
+export async function captureGrowth({ nowMs = Date.now() } = {}) {
+  const { date, iso } = istParts(nowMs);
+  // Asset sleeves in parallel; a rejection/empty → null → omitted (carry-forward).
+  const [eqR, usR] = await Promise.allSettled([
+    pullEquityDayChange(),
+    pullUsDayChange(),
+  ]);
+  const val = (r) => (r.status === 'fulfilled' ? r.value : null);
+  const eqS = val(eqR), usS = val(usR);
+  const eq = eqS ? { net: eqS.net, bySleeve: eqS.bySleeve, covered: eqS.covered } : null;
+  const us = usS ? { net: usS.net, usd: usS.usd, fx: usS.fx, covered: usS.covered } : null;
+  // FD is deterministic (accrued interest), computed not fetched — no await, no network.
+  let fd = null;
+  try { fd = pullFdDayChange(date); } catch { /* private FDS unavailable → omit */ }
+
+  const partial = { eq, us, fd, istNow: iso };
+  let record = null;
+  try { record = writeGrowth(GROWTH_FILE, date, partial); } catch { /* archive best-effort */ }
+  let kv = false;
+  if (record && kvConfigured()) { try { kv = await kvSetJSON(kvKeyGrowth(date), record, GROWTH_TTL); } catch {} }
+  return { ok: true, date, eq, us, fd, kv, captured: ['eq', 'us', 'fd'].filter((k) => partial[k]) };
 }
