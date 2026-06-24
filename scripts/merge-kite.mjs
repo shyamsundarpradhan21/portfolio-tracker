@@ -29,6 +29,7 @@ if (!state) { console.error('broker-state.json missing/unreadable — run sync-b
 
 // Map + merge the Kite sleeve, if a fresh dump is present.
 let merged = 'skipped (no login this run)';
+let kiteMerged = false;
 const raw = readJSON(KITE_TMP);
 if (raw) {
   const list = Array.isArray(raw) ? raw : (raw.data || raw.holdings || []);
@@ -46,6 +47,7 @@ if (raw) {
     state.holdings.INDIAN = { source: 'Zerodha', syncedAt: nowIst(), rows };
     state.brokers.kite = { ok: true, note: '' };
     merged = `${rows.length} holdings`;
+    kiteMerged = true;
   } else {
     merged = 'empty payload — INDIAN left stale';
   }
@@ -78,8 +80,17 @@ if (ktRaw) {
 
 if (!process.env.SYNC_SKIP_GIT) {
   try {
-    execSync('git add data/broker-state.json data/trades-log.json', { cwd: ROOT });
-    if (execSync('git status --porcelain data/broker-state.json data/trades-log.json', { cwd: ROOT }).toString().trim()) {
+    // Commit the full set sync-brokers.mjs writes under SYNC_SKIP_GIT=1 — step 1 defers
+    // every commit to here. fno-ledger (new Dhan F&O fills) is owned by no other step,
+    // so it must land here or it orphans. market-wrap is owned by merge-market.mjs on
+    // Kite-success runs (it writes the authoritative Kite wrap right after this), so only
+    // commit the step-1 Fyers-fallback wrap here when Kite was skipped — otherwise we'd
+    // commit a wrap that merge-market overwrites a moment later.
+    const paths = ['data/broker-state.json', 'data/trades-log.json', 'data/fno-ledger.json'];
+    if (!kiteMerged) paths.push('data/market-wrap.json');
+    const files = paths.join(' ');
+    execSync(`git add ${files}`, { cwd: ROOT });
+    if (execSync(`git status --porcelain ${files}`, { cwd: ROOT }).toString().trim()) {
       execSync(`git commit -m "chore: broker sync ${nowIst().slice(0, 10)}"`, { cwd: ROOT, stdio: 'inherit' });
       execSync('git push', { cwd: ROOT, stdio: 'inherit' });
       console.log('committed + pushed');
