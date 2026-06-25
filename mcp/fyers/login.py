@@ -199,15 +199,28 @@ def run():
             page.route(re.compile(r"127\.0\.0\.1/fyers"), _on_route)
             try:
                 page.goto(auth_url, wait_until="domcontentloaded")
-                page.get_by_role("radio", name="Client ID").click()
-                page.get_by_role("textbox", name="Client ID").fill(FY_ID)
+                # Switch to the Client ID login method. Fyers' radio is a styled custom
+                # control — clicking the <input> (via role) doesn't fire React's state
+                # swap, so the field stays the mobile input. Clicking the LABEL does swap
+                # it: the field becomes <input name="fy_client_id" placeholder="Client ID">.
+                # Wait for the form to hydrate first, else the click misses on a cold load.
+                page.get_by_text("Client ID", exact=True).wait_for(state="visible", timeout=15000)
+                page.locator("label", has_text="Client ID").click()
+                # Scope to the login form: a hidden #forgotPinForm reuses the same
+                # placeholder + (duplicate) id="fy_client_id", so an unscoped match is
+                # ambiguous (strict-mode violation).
+                cid = page.locator("#clientIdForm").get_by_placeholder("Client ID")
+                cid.wait_for(state="visible", timeout=8000)
+                cid.fill(FY_ID)
                 if not _click_continue(page):
                     _log(f"attempt {attempt}: human-check did not clear, retrying")
                     page.close()
                     continue
 
                 # TOTP — fresh code typed in-process (sub-second, beats the 30s window).
-                page.wait_for_selector("input[type='number']", state="visible", timeout=15000)
+                # :visible scopes past the many hidden OTP widgets in the DOM (TOTP +
+                # PIN + forgot-pin all ship single-char number boxes; ~26 total).
+                page.wait_for_selector("input[type='number']:visible", timeout=15000)
                 _type_digits(page, pyotp.TOTP(TOTP_SEED).now())
                 try:
                     _confirm(page)

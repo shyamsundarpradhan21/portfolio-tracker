@@ -111,20 +111,31 @@ async function fyers(withOrders) {
   return { net, pending };
 }
 
-// Pull all three concurrently. Returns { byBroker:{dhan,upstox,fyers}, bySleeve:
-// {S01,S02}, net, pending } — brokers that returned null are omitted from byBroker
-// and excluded from the totals (skipped, never zeroed).
+// Pull the ACTIVE brokers concurrently. Returns { byBroker, bySleeve:{S01,S02},
+// net, pending } — brokers that returned null are omitted from byBroker and
+// excluded from the totals (skipped, never zeroed).
 const SLEEVE = { dhan: 'S01', upstox: 'S02', fyers: 'S02' };
+// Fyers is PARKED (2026-06-25): its unattended login is dead — Cloudflare silently
+// blocks the send-OTP API (api-t2 vagator/send_login_otp_v3 → net::ERR_FAILED) for
+// automated browsers, and SEBI disabled the refresh-token API, so there's no headless
+// way to mint a token. Flip enabled:true (and re-enable the FyersDailyLogin task) when
+// it's solvable, or after a manual mint (mcp/fyers/exchange-code.py).
+const BROKERS = [
+  { name: 'dhan', pull: dhan, enabled: true },
+  { name: 'upstox', pull: upstox, enabled: true },
+  { name: 'fyers', pull: fyers, enabled: false },
+];
 export async function pullPositions({ withOrders = true } = {}) {
-  const results = await Promise.all([dhan(withOrders), upstox(withOrders), fyers(withOrders)]);
-  const names = ['dhan', 'upstox', 'fyers'];
+  const active = BROKERS.filter((b) => b.enabled);
+  const results = await Promise.all(active.map((b) => b.pull(withOrders)));
   const byBroker = {}, bySleeve = { S01: 0, S02: 0 };
   let net = 0, pending = false, any = false;
   results.forEach((r, i) => {
     if (!r) return;
     any = true;
-    byBroker[names[i]] = Math.round(r.net * 100) / 100;
-    bySleeve[SLEEVE[names[i]]] += r.net;
+    const name = active[i].name;
+    byBroker[name] = Math.round(r.net * 100) / 100;
+    bySleeve[SLEEVE[name]] += r.net;
     net += r.net;
     pending = pending || !!r.pending;
   });

@@ -200,6 +200,28 @@ research agent, or ask the user (who knows their own account) — or explicitly 
 "unconfirmed." Repeated confident-but-wrong claims erode trust and cause churn.
 (Pairs with "Check for the easy/official path".)
 
+### Broker refresh-token APIs are SEBI-disabled — Fyers needs the daily browser login
+Do NOT propose a "headless refresh-mint" for Fyers, and don't treat `sync-brokers.mjs`
+`fyersRefreshMint` (or its optimistic "works headless for ~15 days" comment) as live.
+The Fyers `/validate-refresh-token` endpoint returns **code -16 "Refresh token API is
+currently disabled to comply with SEBI regulations."** The ONLY Fyers auth is the daily
+TOTP **browser login** (`mcp/fyers/login.py`, headed — Cloudflare blocks headless). So
+Fyers can't go cloud/headless even on the self-host box — it needs a daily headed browser
+session. (Dhan = clean headless pure-API TOTP self-mint; Upstox = headless Playwright;
+Kite = hosted OAuth, interactive.) Caught: I recommended a headless Fyers refresh path from
+a stale code comment, then the live API returned -16 — the [[broker-mcp-unattended-auth]]
+memory already said "SEBI killed refresh tokens." Trust that; verify before recommending.
+(Pairs with "Verify external facts before asserting them".)
+
+UPDATE 2026-06-25: the BROWSER login is dead too. Fyers redesigned the login page AND
+Cloudflare now silently blocks the send-OTP API (`api-t2 .../vagator/v2/send_login_otp_v3`
+→ `net::ERR_FAILED`) for any automated browser — NO Turnstile widget to solve; only a real
+human browser's `cf_clearance` gets through (confirmed by driving it live + capturing the
+network). So there is NO unattended Fyers auth left. Fyers is PARKED: `enabled:false` in
+`scripts/lib/brokers.mjs` pullPositions + the `FyersDailyLogin` task is Disabled. The only
+way to a token now is a MANUAL login + `mcp/fyers/exchange-code.py`. Don't burn time
+re-automating it; the user is not trading on Fyers anyway.
+
 ### /sync drift check: apply corp actions before flagging INDIAN qty drift
 The INDIAN ledger (`data/portfolio.private.json`) stores **pre-corp-action**
 quantities by design; the app reconstructs the live broker position at render
