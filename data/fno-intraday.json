@@ -1,5 +1,3296 @@
 {
   "note": "Intraday F&O P&L tape (realised + open MTM). Written by scripts/capture-intraday.mjs during market hours. Non-personal aggregate; safe to commit.",
-  "updatedAt": null,
-  "days": {}
+  "updatedAt": "2026-06-25T15:32:59+05:30",
+  "days": {
+    "2026-06-25": [
+      {
+        "t": "09:45",
+        "net": -2625,
+        "dhan": 0,
+        "upstox": -2625,
+        "fyers": null
+      },
+      {
+        "t": "09:46",
+        "net": -2625,
+        "dhan": 0,
+        "upstox": -2625,
+        "fyers": null
+      },
+      {
+        "t": "09:47",
+        "net": -2750,
+        "dhan": 0,
+        "upstox": -2750,
+        "fyers": null
+      },
+      {
+        "t": "09:58",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "09:59",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:00",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:01",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:02",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:03",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:04",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:05",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:06",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:07",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:08",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:09",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:10",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:11",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:12",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:13",
+        "net": -12875,
+        "dhan": 0,
+        "upstox": -12875,
+        "fyers": null
+      },
+      {
+        "t": "10:14",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:15",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:16",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:17",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:18",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:19",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:20",
+        "net": -13000,
+        "dhan": 0,
+        "upstox": -13000,
+        "fyers": null
+      },
+      {
+        "t": "10:21",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:22",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:23",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:24",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:25",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:26",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:27",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:28",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:29",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:30",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:31",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:32",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:33",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:34",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:35",
+        "net": -12750,
+        "dhan": 0,
+        "upstox": -12750,
+        "fyers": null
+      },
+      {
+        "t": "10:36",
+        "net": -13125,
+        "dhan": 0,
+        "upstox": -13125,
+        "fyers": null
+      },
+      {
+        "t": "10:37",
+        "net": -7000,
+        "dhan": 0,
+        "upstox": -7000,
+        "fyers": null
+      },
+      {
+        "t": "10:38",
+        "net": -8125,
+        "dhan": 0,
+        "upstox": -8125,
+        "fyers": null
+      },
+      {
+        "t": "10:39",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:40",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:41",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:42",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:43",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:44",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:45",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:46",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:47",
+        "net": -6875,
+        "dhan": 0,
+        "upstox": -6875,
+        "fyers": null
+      },
+      {
+        "t": "10:48",
+        "net": -6250,
+        "dhan": 0,
+        "upstox": -6250,
+        "fyers": null
+      },
+      {
+        "t": "10:49",
+        "net": -6250,
+        "dhan": 0,
+        "upstox": -6250,
+        "fyers": null
+      },
+      {
+        "t": "10:50",
+        "net": -6000,
+        "dhan": 0,
+        "upstox": -6000,
+        "fyers": null
+      },
+      {
+        "t": "10:51",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:52",
+        "net": -7500,
+        "dhan": null,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:55",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:56",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:57",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:58",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "10:59",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:00",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:01",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:02",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:03",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:04",
+        "net": -7500,
+        "dhan": 0,
+        "upstox": -7500,
+        "fyers": null
+      },
+      {
+        "t": "11:05",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:06",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:07",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:08",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:09",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:10",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:11",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:12",
+        "net": -9250,
+        "dhan": 0,
+        "upstox": -9250,
+        "fyers": null
+      },
+      {
+        "t": "11:13",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:14",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:15",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:16",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:17",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:18",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:19",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:20",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:21",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:22",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:23",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:24",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:25",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:26",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:27",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:28",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:29",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:30",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:31",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:32",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:33",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:34",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:35",
+        "net": -7125,
+        "dhan": 0,
+        "upstox": -7125,
+        "fyers": null
+      },
+      {
+        "t": "11:36",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:37",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:38",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:39",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:40",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:41",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:42",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:43",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:44",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:45",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:46",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:47",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:48",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:49",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:50",
+        "net": -6750,
+        "dhan": 0,
+        "upstox": -6750,
+        "fyers": null
+      },
+      {
+        "t": "11:51",
+        "net": -6625,
+        "dhan": 0,
+        "upstox": -6625,
+        "fyers": null
+      },
+      {
+        "t": "11:52",
+        "net": -6375,
+        "dhan": 0,
+        "upstox": -6375,
+        "fyers": null
+      },
+      {
+        "t": "11:53",
+        "net": -6375,
+        "dhan": 0,
+        "upstox": -6375,
+        "fyers": null
+      },
+      {
+        "t": "11:54",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "11:55",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "11:56",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "11:57",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "11:58",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "11:59",
+        "net": -6500,
+        "dhan": 0,
+        "upstox": -6500,
+        "fyers": null
+      },
+      {
+        "t": "12:00",
+        "net": -9125,
+        "dhan": 0,
+        "upstox": -9125,
+        "fyers": null
+      },
+      {
+        "t": "12:01",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:02",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:03",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:04",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:05",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:06",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:07",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:08",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:09",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:10",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:11",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:12",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:13",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:14",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:15",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:16",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:17",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:18",
+        "net": -10375,
+        "dhan": 0,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "12:19",
+        "net": -11125,
+        "dhan": 0,
+        "upstox": -11125,
+        "fyers": null
+      },
+      {
+        "t": "12:20",
+        "net": -11125,
+        "dhan": 0,
+        "upstox": -11125,
+        "fyers": null
+      },
+      {
+        "t": "12:21",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:22",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:23",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:24",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:25",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:26",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:27",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:28",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:29",
+        "net": -10875,
+        "dhan": 0,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "12:30",
+        "net": -13875,
+        "dhan": 0,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:31",
+        "net": -13875,
+        "dhan": 0,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:32",
+        "net": 10288.75,
+        "dhan": 24163.75,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:33",
+        "net": 11117.5,
+        "dhan": 24992.5,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:34",
+        "net": 11263.75,
+        "dhan": 25138.75,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:35",
+        "net": 12157.5,
+        "dhan": 26032.5,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:36",
+        "net": 13262.5,
+        "dhan": 27137.5,
+        "upstox": -13875,
+        "fyers": null
+      },
+      {
+        "t": "12:37",
+        "net": 11966.25,
+        "dhan": 26341.25,
+        "upstox": -14375,
+        "fyers": null
+      },
+      {
+        "t": "12:38",
+        "net": 12356.25,
+        "dhan": 26731.25,
+        "upstox": -14375,
+        "fyers": null
+      },
+      {
+        "t": "12:39",
+        "net": 13331.25,
+        "dhan": 27706.25,
+        "upstox": -14375,
+        "fyers": null
+      },
+      {
+        "t": "12:40",
+        "net": 11078.75,
+        "dhan": 26828.75,
+        "upstox": -15750,
+        "fyers": null
+      },
+      {
+        "t": "12:41",
+        "net": 10981.25,
+        "dhan": 26731.25,
+        "upstox": -15750,
+        "fyers": null
+      },
+      {
+        "t": "12:42",
+        "net": 10461.25,
+        "dhan": 26211.25,
+        "upstox": -15750,
+        "fyers": null
+      },
+      {
+        "t": "12:43",
+        "net": 10358.75,
+        "dhan": 25983.75,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:44",
+        "net": 9708.75,
+        "dhan": 25333.75,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:45",
+        "net": 8555,
+        "dhan": 24180,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:46",
+        "net": 9416.25,
+        "dhan": 25041.25,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:47",
+        "net": 9708.75,
+        "dhan": 25333.75,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:48",
+        "net": 10082.5,
+        "dhan": 25707.5,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:49",
+        "net": 10180,
+        "dhan": 25805,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:50",
+        "net": 10180,
+        "dhan": 25805,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:51",
+        "net": 9692.5,
+        "dhan": 25317.5,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:52",
+        "net": 10033.75,
+        "dhan": 25658.75,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:53",
+        "net": 10911.25,
+        "dhan": 26536.25,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:54",
+        "net": 10976.25,
+        "dhan": 26601.25,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:55",
+        "net": 10618.75,
+        "dhan": 26243.75,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:56",
+        "net": 9985,
+        "dhan": 25610,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:57",
+        "net": 10326.25,
+        "dhan": 25951.25,
+        "upstox": -15625,
+        "fyers": null
+      },
+      {
+        "t": "12:58",
+        "net": 9877.5,
+        "dhan": 25252.5,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "12:59",
+        "net": 10625,
+        "dhan": 26000,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "13:00",
+        "net": 10170,
+        "dhan": 25545,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "13:01",
+        "net": 11015,
+        "dhan": 26390,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "13:02",
+        "net": 12303.75,
+        "dhan": 27803.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:03",
+        "net": 12628.75,
+        "dhan": 28128.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:04",
+        "net": 12011.25,
+        "dhan": 27511.25,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:05",
+        "net": 11198.75,
+        "dhan": 26698.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:06",
+        "net": 11182.5,
+        "dhan": 26682.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:07",
+        "net": 10175,
+        "dhan": 25675,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:08",
+        "net": 10158.75,
+        "dhan": 25658.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:09",
+        "net": 10402.5,
+        "dhan": 25902.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:10",
+        "net": 11133.75,
+        "dhan": 26633.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:11",
+        "net": 10207.5,
+        "dhan": 25707.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:12",
+        "net": 9070,
+        "dhan": 24570,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:13",
+        "net": 8192.5,
+        "dhan": 23692.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:14",
+        "net": 7412.5,
+        "dhan": 22912.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:15",
+        "net": 7006.25,
+        "dhan": 22506.25,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:16",
+        "net": 7477.5,
+        "dhan": 22977.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:17",
+        "net": 8842.5,
+        "dhan": 24342.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:18",
+        "net": 9313.75,
+        "dhan": 24813.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:19",
+        "net": 10922.5,
+        "dhan": 26422.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:20",
+        "net": 10857.5,
+        "dhan": 26357.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:21",
+        "net": 10451.25,
+        "dhan": 25951.25,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:22",
+        "net": 10873.75,
+        "dhan": 26373.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:23",
+        "net": 11393.75,
+        "dhan": 26893.75,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:24",
+        "net": 10597.5,
+        "dhan": 26097.5,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:25",
+        "net": 9866.25,
+        "dhan": 25366.25,
+        "upstox": -15500,
+        "fyers": null
+      },
+      {
+        "t": "13:26",
+        "net": 14861.25,
+        "dhan": 25236.25,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "13:27",
+        "net": 15186.25,
+        "dhan": 25561.25,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "13:31",
+        "net": 14633.75,
+        "dhan": 25008.75,
+        "upstox": -10375,
+        "fyers": null
+      },
+      {
+        "t": "13:32",
+        "net": 15371.25,
+        "dhan": 25496.25,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:33",
+        "net": 15793.75,
+        "dhan": 25918.75,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:34",
+        "net": 15875,
+        "dhan": 26000,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:35",
+        "net": 16590,
+        "dhan": 26715,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:36",
+        "net": 16135,
+        "dhan": 26260,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:37",
+        "net": 15793.75,
+        "dhan": 25918.75,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:38",
+        "net": 15842.5,
+        "dhan": 25967.5,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:39",
+        "net": 17646.25,
+        "dhan": 27771.25,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "13:40",
+        "net": 18440,
+        "dhan": 29315,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:41",
+        "net": 17903.75,
+        "dhan": 28778.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:42",
+        "net": 17335,
+        "dhan": 28210,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:43",
+        "net": 16376.25,
+        "dhan": 27251.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:44",
+        "net": 15986.25,
+        "dhan": 26861.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:45",
+        "net": 15953.75,
+        "dhan": 26828.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:46",
+        "net": 15791.25,
+        "dhan": 26666.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:47",
+        "net": 17627.5,
+        "dhan": 28502.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:48",
+        "net": 16847.5,
+        "dhan": 27722.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:49",
+        "net": 16522.5,
+        "dhan": 27397.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:50",
+        "net": 16636.25,
+        "dhan": 27511.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:51",
+        "net": 16717.5,
+        "dhan": 27592.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:52",
+        "net": 16863.75,
+        "dhan": 27738.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:53",
+        "net": 15580,
+        "dhan": 26455,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:54",
+        "net": 13987.5,
+        "dhan": 24862.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:55",
+        "net": 14442.5,
+        "dhan": 25317.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:56",
+        "net": 14702.5,
+        "dhan": 25577.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:57",
+        "net": 12801.25,
+        "dhan": 23676.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:58",
+        "net": 13971.25,
+        "dhan": 24846.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "13:59",
+        "net": 12200,
+        "dhan": 23075,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:00",
+        "net": 12833.75,
+        "dhan": 23708.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:01",
+        "net": 12996.25,
+        "dhan": 23871.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:02",
+        "net": 13272.5,
+        "dhan": 24147.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:03",
+        "net": 14540,
+        "dhan": 25415,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:04",
+        "net": 14426.25,
+        "dhan": 25301.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:05",
+        "net": 13418.75,
+        "dhan": 24293.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:06",
+        "net": 13987.5,
+        "dhan": 24862.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:07",
+        "net": 13223.75,
+        "dhan": 24098.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:08",
+        "net": 13630,
+        "dhan": 24505,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:09",
+        "net": 12118.75,
+        "dhan": 22993.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:10",
+        "net": 9518.75,
+        "dhan": 20393.75,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:11",
+        "net": 9876.25,
+        "dhan": 20751.25,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:12",
+        "net": 8820,
+        "dhan": 19695,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:13",
+        "net": 7130,
+        "dhan": 18005,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:14",
+        "net": 5895,
+        "dhan": 16770,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:15",
+        "net": 2905,
+        "dhan": 13780,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:16",
+        "net": 272.5,
+        "dhan": 11147.5,
+        "upstox": -10875,
+        "fyers": null
+      },
+      {
+        "t": "14:17",
+        "net": 5263.75,
+        "dhan": 15388.75,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:18",
+        "net": 2810,
+        "dhan": 12935,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:19",
+        "net": 535,
+        "dhan": 10660,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:20",
+        "net": 1786.25,
+        "dhan": 11911.25,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:21",
+        "net": 730,
+        "dhan": 10855,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:22",
+        "net": 1103.75,
+        "dhan": 11228.75,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:23",
+        "net": -4307.5,
+        "realised": 0,
+        "mtm": -4307.5,
+        "dhan": 5817.5,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:24",
+        "net": -1350,
+        "realised": 0,
+        "mtm": -1350,
+        "dhan": 8775,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:25",
+        "net": -5591.25,
+        "realised": 0,
+        "mtm": -5591.25,
+        "dhan": 4533.75,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:26",
+        "net": -6647.5,
+        "realised": -13601.25,
+        "mtm": 6953.75,
+        "dhan": 3477.5,
+        "upstox": -10125,
+        "fyers": null
+      },
+      {
+        "t": "14:27",
+        "net": -11856.25,
+        "realised": -13601.25,
+        "mtm": 1745,
+        "dhan": 4143.75,
+        "upstox": -16000,
+        "fyers": null
+      },
+      {
+        "t": "14:28",
+        "net": -12278.75,
+        "realised": -13601.25,
+        "mtm": 1322.5,
+        "dhan": 3721.25,
+        "upstox": -16000,
+        "fyers": null
+      },
+      {
+        "t": "14:30",
+        "net": -10751.25,
+        "realised": -13601.25,
+        "mtm": 2850,
+        "dhan": 5248.75,
+        "upstox": -16000,
+        "fyers": null
+      },
+      {
+        "t": "14:31",
+        "net": -11222.5,
+        "realised": -13601.25,
+        "mtm": 2378.75,
+        "dhan": 4777.5,
+        "upstox": -16000,
+        "fyers": null
+      },
+      {
+        "t": "14:32",
+        "net": -10825,
+        "realised": -13601.25,
+        "mtm": 2776.25,
+        "dhan": 4550,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:33",
+        "net": -9996.25,
+        "realised": -13601.25,
+        "mtm": 3605,
+        "dhan": 5378.75,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:34",
+        "net": -9508.75,
+        "realised": -13601.25,
+        "mtm": 4092.5,
+        "dhan": 5866.25,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:35",
+        "net": -8988.75,
+        "realised": -13601.25,
+        "mtm": 4612.5,
+        "dhan": 6386.25,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:36",
+        "net": -9151.25,
+        "realised": -13601.25,
+        "mtm": 4450,
+        "dhan": 6223.75,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:37",
+        "net": -9427.5,
+        "realised": -13601.25,
+        "mtm": 4173.75,
+        "dhan": 5947.5,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:38",
+        "net": -10175,
+        "realised": -13601.25,
+        "mtm": 3426.25,
+        "dhan": 5200,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:39",
+        "net": -10386.25,
+        "realised": -13601.25,
+        "mtm": 3215,
+        "dhan": 4988.75,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:40",
+        "net": -9866.25,
+        "realised": -13601.25,
+        "mtm": 3735,
+        "dhan": 5508.75,
+        "upstox": -15375,
+        "fyers": null
+      },
+      {
+        "t": "14:41",
+        "net": -10472.5,
+        "realised": -13601.25,
+        "mtm": 3128.75,
+        "dhan": 4777.5,
+        "upstox": -15250,
+        "fyers": null
+      },
+      {
+        "t": "14:42",
+        "net": -11680,
+        "realised": -13601.25,
+        "mtm": 1921.25,
+        "dhan": 3445,
+        "upstox": -15125,
+        "fyers": null
+      },
+      {
+        "t": "14:43",
+        "net": -12443.75,
+        "realised": -13601.25,
+        "mtm": 1157.5,
+        "dhan": 2681.25,
+        "upstox": -15125,
+        "fyers": null
+      },
+      {
+        "t": "14:44",
+        "net": -12151.25,
+        "realised": -13601.25,
+        "mtm": 1450,
+        "dhan": 2973.75,
+        "upstox": -15125,
+        "fyers": null
+      },
+      {
+        "t": "14:45",
+        "net": -11468.75,
+        "realised": -13601.25,
+        "mtm": 2132.5,
+        "dhan": 3656.25,
+        "upstox": -15125,
+        "fyers": null
+      },
+      {
+        "t": "14:46",
+        "net": -13968.75,
+        "realised": -13601.25,
+        "mtm": -367.5,
+        "dhan": 3656.25,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:47",
+        "net": -13406.25,
+        "realised": -13601.25,
+        "mtm": 195,
+        "dhan": 4468.75,
+        "upstox": -17875,
+        "fyers": null
+      },
+      {
+        "t": "14:48",
+        "net": -14186.25,
+        "realised": -13601.25,
+        "mtm": -585,
+        "dhan": 3688.75,
+        "upstox": -17875,
+        "fyers": null
+      },
+      {
+        "t": "14:49",
+        "net": -13968.75,
+        "realised": -13601.25,
+        "mtm": -367.5,
+        "dhan": 3656.25,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:50",
+        "net": -13871.25,
+        "realised": -13601.25,
+        "mtm": -270,
+        "dhan": 3753.75,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:51",
+        "net": -14545,
+        "realised": -13601.25,
+        "mtm": -943.75,
+        "dhan": 3705,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "14:52",
+        "net": -12831.25,
+        "realised": -13601.25,
+        "mtm": 770,
+        "dhan": 4793.75,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:53",
+        "net": -11482.5,
+        "realised": -13601.25,
+        "mtm": 2118.75,
+        "dhan": 6142.5,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:54",
+        "net": -12360,
+        "realised": -13601.25,
+        "mtm": 1241.25,
+        "dhan": 5265,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:55",
+        "net": -12035,
+        "realised": -13601.25,
+        "mtm": 1566.25,
+        "dhan": 5590,
+        "upstox": -17625,
+        "fyers": null
+      },
+      {
+        "t": "14:56",
+        "net": -12447.5,
+        "realised": -13601.25,
+        "mtm": 1153.75,
+        "dhan": 5427.5,
+        "upstox": -17875,
+        "fyers": null
+      },
+      {
+        "t": "14:57",
+        "net": -12512.5,
+        "realised": -13601.25,
+        "mtm": 1088.75,
+        "dhan": 5362.5,
+        "upstox": -17875,
+        "fyers": null
+      },
+      {
+        "t": "14:58",
+        "net": -12366.25,
+        "realised": -13601.25,
+        "mtm": 1235,
+        "dhan": 5508.75,
+        "upstox": -17875,
+        "fyers": null
+      },
+      {
+        "t": "14:59",
+        "net": -13440,
+        "realised": -13601.25,
+        "mtm": 161.25,
+        "dhan": 4810,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:00",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:01",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:02",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:03",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:04",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:05",
+        "net": -22452.25,
+        "realised": -4202.25,
+        "mtm": -18250,
+        "dhan": -4202.25,
+        "upstox": -18250,
+        "fyers": null
+      },
+      {
+        "t": "15:06",
+        "net": -22202.25,
+        "realised": -4202.25,
+        "mtm": -18000,
+        "dhan": -4202.25,
+        "upstox": -18000,
+        "fyers": null
+      },
+      {
+        "t": "15:07",
+        "net": -22202.25,
+        "realised": -4202.25,
+        "mtm": -18000,
+        "dhan": -4202.25,
+        "upstox": -18000,
+        "fyers": null
+      },
+      {
+        "t": "15:08",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null
+      },
+      {
+        "t": "15:09",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:10",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:11",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:12",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:13",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:14",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:15",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:16",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:17",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:18",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:19",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:20",
+        "net": -21202.25,
+        "realised": -4202.25,
+        "mtm": -17000,
+        "dhan": -4202.25,
+        "upstox": -17000,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:21",
+        "net": -21202.25,
+        "realised": -4202.25,
+        "mtm": -17000,
+        "dhan": -4202.25,
+        "upstox": -17000,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -19250,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:22",
+        "net": -21202.25,
+        "realised": -4202.25,
+        "mtm": -17000,
+        "dhan": -4202.25,
+        "upstox": -17000,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -19250,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:23",
+        "net": -21202.25,
+        "realised": -4202.25,
+        "mtm": -17000,
+        "dhan": -4202.25,
+        "upstox": -17000,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -19250,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:24",
+        "net": -22952.25,
+        "realised": -4202.25,
+        "mtm": -18750,
+        "dhan": -4202.25,
+        "upstox": -18750,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21000,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:25",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:26",
+        "net": -22952.25,
+        "realised": -4202.25,
+        "mtm": -18750,
+        "dhan": -4202.25,
+        "upstox": -18750,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:27",
+        "net": -19327.25,
+        "realised": -4202.25,
+        "mtm": -15125,
+        "dhan": -4202.25,
+        "upstox": -15125,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21000,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:28",
+        "net": -22202.25,
+        "realised": -4202.25,
+        "mtm": -18000,
+        "dhan": -4202.25,
+        "upstox": -18000,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -20250,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:29",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -20250,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:30",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:31",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "15:32",
+        "net": -23077.25,
+        "realised": -4202.25,
+        "mtm": -18875,
+        "dhan": -4202.25,
+        "upstox": -18875,
+        "fyers": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Jun2026-23550-PE",
+            "pnl": -3874,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23950-PE",
+            "pnl": 13273,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-23750-PE",
+            "pnl": 1560,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Jun2026-24150-PE",
+            "pnl": -15161.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "ANGELONE26JUL300PE",
+            "pnl": 2250,
+            "broker": "upstox"
+          },
+          {
+            "sym": "ANGELONE26AUGFUT",
+            "pnl": -21125,
+            "broker": "upstox"
+          }
+        ]
+      }
+    ]
+  },
+  "fills": {
+    "2026-06-25": [
+      {
+        "id": "23226062520113",
+        "t": "10:15",
+        "side": "SELL",
+        "sym": "NIFTY-Jun2026-24150-PE",
+        "qty": 325,
+        "price": 90.95,
+        "broker": "dhan"
+      },
+      {
+        "id": "34226062519013",
+        "t": "10:15",
+        "side": "BUY",
+        "sym": "NIFTY-Jun2026-23750-PE",
+        "qty": 325,
+        "price": 17.3,
+        "broker": "dhan"
+      },
+      {
+        "id": "34226062570313",
+        "t": "14:26",
+        "side": "SELL",
+        "sym": "NIFTY-Jun2026-23750-PE",
+        "qty": 325,
+        "price": 22.1,
+        "broker": "dhan"
+      },
+      {
+        "id": "34226062569713",
+        "t": "14:26",
+        "side": "BUY",
+        "sym": "NIFTY-Jun2026-24150-PE",
+        "qty": 325,
+        "price": 137.6,
+        "broker": "dhan"
+      },
+      {
+        "id": "23226062578213",
+        "t": "15:00",
+        "side": "SELL",
+        "sym": "NIFTY-Jun2026-23550-PE",
+        "qty": 325,
+        "price": 9.23,
+        "broker": "dhan"
+      },
+      {
+        "id": "34226062578913",
+        "t": "15:00",
+        "side": "BUY",
+        "sym": "NIFTY-Jun2026-23950-PE",
+        "qty": 325,
+        "price": 57.51,
+        "broker": "dhan"
+      }
+    ]
+  }
 }
