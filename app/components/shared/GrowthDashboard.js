@@ -26,7 +26,8 @@ const dayLabel = (d) => {
   return `${+day} ${MON[+m] || m}`;
 };
 
-export default function GrowthDashboard({ days = 90 }) {
+export default function GrowthDashboard() {
+  const [days, setDays] = useState(90);
   const [records, setRecords] = useState(null);
   useEffect(() => {
     let on = true;
@@ -67,6 +68,12 @@ export default function GrowthDashboard({ days = 90 }) {
           <div className="lbl" style={{ margin: '0 0 2px' }}>cumulative</div>
           <div className={'vlg ' + cl(total)}><SInrF n={total} /></div>
         </div>
+      </div>
+
+      <div className="seg" role="tablist" aria-label="Window" style={{ marginBottom: 10 }}>
+        {[['1D', 1], ['1W', 7], ['1M', 30], ['3M', 90], ['1Y', 365]].map(([l, d]) => (
+          <button key={d} type="button" role="tab" aria-selected={days === d} className={days === d ? 'on' : ''} onClick={() => setDays(d)}>{l}</button>
+        ))}
       </div>
 
       {tape.length >= 2 ? (
