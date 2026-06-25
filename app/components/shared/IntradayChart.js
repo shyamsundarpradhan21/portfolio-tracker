@@ -78,7 +78,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   // Hover card rows — Net + per-BROKER net (no per-order rows, no timestamp). Labels are
   // back: "Net" + each broker's name (the broker label in its CURVE colour so it ties to
   // its line). The value keeps sign-colour for direction. Rendered as an HTML overlay
-  // (below) so it can be frosted glass, tinted green/red by the net's direction.
+  // (below) so it can be an accent-tinted frosted-glass card.
   const tipRows = [];
   if (ht) {
     tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
@@ -88,7 +88,6 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       tipRows.push({ kind: 'broker', label: o.label, v: +raw, vc: dirColor(+raw), lc: o.c });
     }
   }
-  const tipUp = ht ? (+ht.net >= 0) : true;                  // net direction → glass tint
   // Position the HTML card by % of the viewBox width; flip left of the cursor on the right half.
   const tipLeftPct = hp ? (hp.x / W) * 100 : 0;
   const tipFlip = hp ? hp.x > W * 0.5 : false;
@@ -185,13 +184,11 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       )}
     </svg>
 
-    {/* frosted, gain/loss-tinted hover card — Net + per-broker net (colour = curve = legend) */}
+    {/* accent-tinted frosted hover card — Net + per-broker net (colour = curve = legend) */}
     {hp && (
       <div className="iq-tip" style={{
         left: `${tipLeftPct}%`,
         transform: tipFlip ? 'translateX(calc(-100% - 12px))' : 'translateX(12px)',
-        background: `color-mix(in srgb, var(${tipUp ? '--grn' : '--red'}) 22%, var(--glass-bg))`,
-        borderColor: `color-mix(in srgb, var(${tipUp ? '--grn' : '--red'}) 42%, var(--glass-brd))`,
       }}>
         {tipRows.map((row, i) => (
           <div key={i} className={'iq-r' + (row.kind === 'net' ? ' iq-net' : '')}>
