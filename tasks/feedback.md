@@ -31,6 +31,53 @@ as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
 
+### Type scale is TIER-DRIVEN — a figure's size is set by its card's ROLE, never by the component, the card's dimensions, or the value's length
+The app has a clean 9-step `--fs-*` scale, but the **value figure** on a card is sized
+ad hoc — by whichever value class or inline `fontSize` the component happened to reach
+for — so the SAME role renders at **5+ different sizes** and the hierarchy reads as
+noise. A figure's size must be bound to a fixed **tier**, defined once in `globals.css`;
+resizing a card (padding, width, content) must **never** change the figure size inside it,
+and a shorter string must never render bigger than a longer one in the same row.
+
+**The tiers (largest → smallest), driven ONLY by the card's role:**
+- **Tier 0 — Hero net-worth** (`.hdr-val`): the single showpiece. Biggest, full glory
+  (`--fs-h0`). Nothing else competes with it.
+- **Tier 1 — Header cards**: the top-of-page head band (`.hdr-card`) AND the top
+  summary-card row inside every tab (`.csm` headline / `.pnl-stat`). One fixed size
+  everywhere (`--fs-2xl`) — a summary figure reads identically in the head band and
+  inside its tab.
+- **Tier 2 — Standard card values**: the headline number of a normal content card → one
+  step down (`--fs-xl`).
+- **Tier 3 — Dense / mini / secondary values**: nested minis, chips, table-adjacent
+  stats → `--fs-lg` / `--fs-md` by context.
+
+**Rules:**
+- One source of truth: each value class maps to exactly ONE tier in `globals.css`.
+  **Never** set `fontSize` inline on a figure to override its tier (current offenders to
+  migrate: `AlgoTab.js:99,140`; `MarketOverview.js:46`; `FnoHistory.js:26`;
+  `FnoPositions.js:44`; `BenchmarkBars.js:19`).
+- Value classes must have DISTINCT sizes matching the tiers — today `.vlg` and `.vmd` are
+  **both** `--fs-2xl` (a size collision: "large" and "medium" look identical, differing
+  only in weight) and `.vsm` jumps to `--fs-lg`. Re-map them so each step on the ladder is
+  real.
+- A figure's size is independent of its string length: "50", "54%", "₹1,72,842" and
+  "₹8.67L" in one summary row are the SAME height.
+
+**Footers & alignment:**
+- A card footer is a **single line, anchored to the LEFT, clipped with an ellipsis** on
+  overflow — UNLESS it carries exactly **two values**, in which case the first is
+  left-aligned and the second right-aligned (`space-between`). No wrapping footers (base
+  `.sub` currently wraps; only `.hdr-card .sub` clips — unify on the clip).
+- A value figure **hugs the left edge** of its card. The only right-aligned figures are
+  **numeric table columns** (`.ra`).
+
+(Trigger: the Trading-tab header row — TRADING CAPITAL / NET P&L / WIN RATE / MOST
+PROFITABLE DAY / TRADING DAYS — rendered its figures at visibly different sizes because
+each stat picked its own size. The user wants a definite, card-tier-driven scale: the hero
+stands out, the header cards match, everything else falls in by context — and it's an
+app-wide standard, not a one-card fix. Pairs with "Render mocks BEFORE editing": build the
+tier mock and get the pick before reflowing `globals.css`.)
+
 ### CMPF (pension) always renders LAST / to the right in any allocation visual
 In every allocation view — donut, the horizontal bar, the legend, the deployment
 strip — the **CMPF / pension (`pf`) sleeve sits last (right-most)**, after the
