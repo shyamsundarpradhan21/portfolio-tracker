@@ -53,7 +53,17 @@ export default function GrowthDashboard() {
   const total = tape[tape.length - 1].net;
   // Per-sleeve final contribution (kept in house order — CMPF last).
   const breakdown = SLEEVES.map((s) => ({ ...s, val: cum[s.key] })).filter((s) => s.val !== 0);
-  const maxAbs = Math.max(...breakdown.map((s) => Math.abs(s.val)), 1); // bar scale
+  // ONE composite waffle: allocate N cells across the sleeves ∝ |contribution| (largest-remainder
+  // so they sum to exactly N), coloured by sleeve in house order (CMPF hatched, last).
+  const N = 50;
+  const totalAbs = breakdown.reduce((a, s) => a + Math.abs(s.val), 0) || 1;
+  const alloc = breakdown.map((s) => ({ ...s, raw: (Math.abs(s.val) / totalAbs) * N, n: 0 }));
+  alloc.forEach((s) => { s.n = Math.floor(s.raw); });
+  let used = alloc.reduce((a, s) => a + s.n, 0);
+  alloc.map((s, i) => ({ i, frac: s.raw - Math.floor(s.raw) })).sort((a, b) => b.frac - a.frac)
+    .forEach((r) => { if (used < N) { alloc[r.i].n += 1; used += 1; } });
+  const cellColors = [];
+  for (const s of alloc) for (let i = 0; i < s.n; i++) cellColors.push(s.key === 'cmpf' ? CMPF_HATCH : s.c);
 
   return (
     <div className="card">
@@ -85,26 +95,25 @@ export default function GrowthDashboard() {
         </div>
       )}
 
-      <div style={{ marginTop: tape.length >= 2 ? 14 : 6 }}>
-        {breakdown.map((s) => {
-          const N = 20;
-          const filled = Math.min(N, Math.max(1, Math.round((Math.abs(s.val) / maxAbs) * N)));
-          const fill = s.key === 'cmpf' ? CMPF_HATCH : s.c; // sleeve colour (CMPF hatched)
-          return (
-            <div key={s.key} style={{ padding: '8px 0', borderTop: '.5px solid var(--brd2)' }}>
-              <div className="fxc" style={{ marginBottom: 6 }}>
-                <span style={{ color: 'var(--txt2)', fontSize: 'var(--fs-sm)' }}>{s.label}</span>
-                <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
-              </div>
-              {/* waffle — filled cells ∝ |contribution| relative to the top sleeve */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2.5, maxWidth: 150 }}>
-                {Array.from({ length: N }, (_, i) => (
-                  <span key={i} style={{ aspectRatio: '1', borderRadius: 1.5, background: i < filled ? fill : 'var(--sur2)' }} />
-                ))}
-              </div>
+      {/* one composite waffle (sleeve mix ∝ contribution) + a colour-keyed legend with values */}
+      <div style={{ marginTop: tape.length >= 2 ? 14 : 6, paddingTop: 12, borderTop: '.5px solid var(--brd2)',
+        display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3, width: 168, flexShrink: 0 }} aria-hidden="true">
+          {Array.from({ length: N }, (_, i) => (
+            <span key={i} style={{ aspectRatio: '1', borderRadius: 2, background: cellColors[i] || 'var(--sur2)' }} />
+          ))}
+        </div>
+        <div style={{ flex: 1, minWidth: 150 }}>
+          {breakdown.map((s) => (
+            <div key={s.key} className="fxc" style={{ padding: '5px 0' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--txt2)', fontSize: 'var(--fs-sm)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: s.key === 'cmpf' ? CMPF_HATCH : s.c, flexShrink: 0 }} />
+                {s.label}
+              </span>
+              <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
