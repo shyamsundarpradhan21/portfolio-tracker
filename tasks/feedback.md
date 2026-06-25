@@ -257,6 +257,26 @@ FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a s
 (Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
 the elegant answer.)
 
+### Dev-server verification gotchas (Next.js + a live data daemon)
+Two traps cost real time verifying live changes while the capture daemon rewrites
+`data/*.json` every ~10s:
+- **Same-URL `#hash` navigation does NOT reload.** Playwright `page.goto('…/#algo')`
+  when already on that URL is a same-document hash change — React state persists, so a
+  `useState` + `[]`-effect change (e.g. a poll that now sets an OBJECT instead of a
+  number) keeps the STALE value while Fast Refresh hot-swaps the new component around
+  it → you see `₹NaN` / old data even after "reloading". Force a real document load with
+  a cache-bust query (`?r=N#algo`). Confirm the *logic* against the API payload directly
+  (`fetch(...)` in the page) so you don't chase a phantom bug in correct code.
+- **Fast Refresh churn from the daemon.** A static `import data from '…/data/x.json'`
+  recompiles on every daemon write → constant "Fast Refresh rebuilding", which can serve
+  a transitional bundle AND destroy a Playwright eval context mid-run ("Execution context
+  was destroyed"). To verify cleanly, stop the daemon briefly (settle the rebuilds) or
+  just retry the eval; the code is usually right — the dev loop is noisy. Prod (KV-backed,
+  no static-JSON churn) doesn't have this.
+After a hot change to a polling `useEffect`, prefer a cache-bust reload over trusting the
+in-app tab nav, and restart a long-running daemon so it picks up edited modules (Node
+caches them — a running daemon keeps the OLD code until restarted).
+
 ## Communication Style
 
 ### No narration, no preamble
