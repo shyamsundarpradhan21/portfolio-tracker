@@ -27,7 +27,7 @@ const Stat = ({ k, v, vc, foot }) => (
   </div>
 );
 
-export default function PnlDashboard({ rows: rowsProp } = {}) {
+export default function PnlDashboard({ rows: rowsProp, summary = null } = {}) {
   const allRows = rowsProp || APP.fnoLedger?.rows || [];
   // Brokers present, busiest first — drives the broker toggle (All + each broker).
   const brokers = useMemo(() => {
@@ -105,9 +105,12 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
 
   if (!series.length) {
     return (
-      <div className="card">
-        <div className="ctitle">P&amp;L Dashboard</div>
-        <div className="sub">No captured F&amp;O days yet — the realised ledger fills as the daily broker sync runs.</div>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px 12px' }}>
+          <div className="ctitle" style={{ margin: 0 }}>Trading Journal</div>
+        </div>
+        {summary ? <div className="pnl-summary">{summary}</div> : null}
+        <div className="sub" style={{ padding: '12px 20px 16px' }}>No captured F&amp;O days yet — the realised ledger fills as the daily broker sync runs.</div>
       </div>
     );
   }
@@ -136,6 +139,9 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
           ))}
         </div>
       </div>
+
+      {/* capital / verified / YTD summary — folded into the journal as its top row */}
+      {summary ? <div className="pnl-summary">{summary}</div> : null}
 
       {/* ── controls: broker filter (Net/Gross removed — captured in the cards) ── */}
       {brokers.length > 1 && (

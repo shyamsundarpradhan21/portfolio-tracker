@@ -1991,6 +1991,10 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
   70%  { box-shadow: 0 0 0 5px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
+/* capital / verified / YTD summary folded into the journal card as its top row */
+.pnl-summary { padding: 4px 20px 14px; border-bottom: .5px solid var(--brd2); }
+.pnl-summary .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 720px) { .pnl-summary .g3 { grid-template-columns: 1fr; } }
 .pnl-brokers { padding: 0 20px 12px; display: flex; }
 .pnl-brokers .seg { flex-wrap: wrap; }
 .pnl-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
