@@ -238,9 +238,10 @@ into asset growth.
       F&O excluded) + `scripts/snapshot-growth.mjs` entry + `app/api/growth` read route +
       `data/growth.json` seed. 12 tests; live run captured real eq/us; route serves
       KV→archive. Schema reserves fd/mf/cmpf/cmps keys.
-- [ ] 0b. Slow sleeves into captureGrowth (each its own cadence):
-      - [ ] **fd**  — daily accrued interest from `FDS[]` (deterministic, no fetch)
-      - [ ] **mf**  — daily NAV (extract AMFI resolution from `app/api/mf-nav` to a shared lib)
+- [~] 0b. Slow sleeves into captureGrowth (each its own cadence):
+      - [x] **fd**  — daily accrued interest from `FDS[]` (deterministic, no fetch) — DONE (08619a4)
+      - [x] **mf**  — daily NAV via api.mfapi.in (scripts/lib/mf.mjs, mirrors mf-nav
+            resolveCode); Σ units×(latest−prev NAV), skip-not-zero per fund — DONE
       - [ ] **cmpf/cmps** — monthly step from `CMPF_/CMPS_CONTRIBUTIONS` (salary-slip fed)
 - [ ] 0c. Fold the daily **FII/DII** capture into the snapshot routine → KV
       `premarket:fiidiiTrail` (20-session) + committed `data/fiidii-trail.json`.

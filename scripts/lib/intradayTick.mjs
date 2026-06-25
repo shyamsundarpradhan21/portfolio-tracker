@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 import { pullPositions } from './brokers.mjs';
 import { pullEquityDayChange, pullUsDayChange, niftyCandles } from './equity.mjs';
 import { pullFdDayChange } from './fd.mjs';
+import { pullMfDayChange } from './mf.mjs';
 import { appendIntraday, writeGrowth } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts, usSessionDate } from './marketHours.mjs';
@@ -130,22 +131,24 @@ const GROWTH_TTL = 35 * 24 * 3600; // recent records live in KV; older served fr
 export async function captureGrowth({ nowMs = Date.now() } = {}) {
   const { date, iso } = istParts(nowMs);
   // Asset sleeves in parallel; a rejection/empty → null → omitted (carry-forward).
-  const [eqR, usR] = await Promise.allSettled([
+  const [eqR, usR, mfR] = await Promise.allSettled([
     pullEquityDayChange(),
     pullUsDayChange(),
+    pullMfDayChange(),
   ]);
   const val = (r) => (r.status === 'fulfilled' ? r.value : null);
-  const eqS = val(eqR), usS = val(usR);
+  const eqS = val(eqR), usS = val(usR), mfS = val(mfR);
   const eq = eqS ? { net: eqS.net, bySleeve: eqS.bySleeve, covered: eqS.covered } : null;
   const us = usS ? { net: usS.net, usd: usS.usd, fx: usS.fx, covered: usS.covered } : null;
+  const mf = mfS ? { net: mfS.net, covered: mfS.covered, byFund: mfS.byFund } : null;
   // FD is deterministic (accrued interest), computed not fetched — no await, no network.
   let fd = null;
   try { fd = pullFdDayChange(date); } catch { /* private FDS unavailable → omit */ }
 
-  const partial = { eq, us, fd, istNow: iso };
+  const partial = { eq, us, fd, mf, istNow: iso };
   let record = null;
   try { record = writeGrowth(GROWTH_FILE, date, partial); } catch { /* archive best-effort */ }
   let kv = false;
   if (record && kvConfigured()) { try { kv = await kvSetJSON(kvKeyGrowth(date), record, GROWTH_TTL); } catch {} }
-  return { ok: true, date, eq, us, fd, kv, captured: ['eq', 'us', 'fd'].filter((k) => partial[k]) };
+  return { ok: true, date, eq, us, fd, mf, kv, captured: ['eq', 'us', 'fd', 'mf'].filter((k) => partial[k]) };
 }

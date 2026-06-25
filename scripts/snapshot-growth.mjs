@@ -10,7 +10,7 @@
 //
 //   node scripts/snapshot-growth.mjs
 //
-// Net-worth ASSET sleeves only (eq + us + fd today; mf/cmpf/cmps as their feeds land).
+// Net-worth ASSET sleeves only (eq + us + fd + mf today; cmpf/cmps as their feeds land).
 // F&O is EXCLUDED — it's business income, captured by the F&O pipeline (fno-ledger).
 
 import { captureGrowth } from './lib/intradayTick.mjs';
@@ -19,7 +19,7 @@ import { istParts } from './lib/marketHours.mjs';
 const r = await captureGrowth({ nowMs: Date.now() });
 const f = (s) => (s ? `₹${s.net}` : '—');
 console.log(
-  `${istParts(Date.now()).iso} growth ${r.date} · eq ${f(r.eq)} · us ${f(r.us)} · fd ${f(r.fd)}` +
+  `${istParts(Date.now()).iso} growth ${r.date} · eq ${f(r.eq)} · us ${f(r.us)} · fd ${f(r.fd)} · mf ${f(r.mf)}` +
   `${r.kv ? ' · kv' : ''} (captured: ${r.captured.join('+') || 'none'})`,
 );
 process.exit(0);
