@@ -65,10 +65,12 @@ export function sumMfDayChange(funds, navByFund) {
 
 // Reads private MF_FUNDS, resolves each to live AMFI NAVs, returns the day's MF
 // growth { net, covered, total, byFund } or null when unavailable.
-export async function pullMfDayChange() {
-  let priv;
-  try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
-  catch { return null; }
+export async function pullMfDayChange(priv) {
+  // `priv` injected by the cloud route (KV portfolio:v1); else read the gitignored file.
+  if (!priv) {
+    try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
+    catch { return null; }
+  }
   const funds = priv?.MF_FUNDS;
   if (!Array.isArray(funds) || !funds.length) return null;
   const navByFund = {};

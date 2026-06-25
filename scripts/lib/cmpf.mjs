@@ -57,10 +57,12 @@ export function cmpfDailyAccrual(contributions, rates, atDate) {
 }
 
 // Reads private CMPF terms → { net } = today's interest accrual, or null.
-export function pullCmpfDayChange(dateIso) {
-  let priv;
-  try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
-  catch { return null; }
+export function pullCmpfDayChange(dateIso, priv) {
+  // `priv` injected by the cloud route (KV portfolio:v1); else read the gitignored file.
+  if (!priv) {
+    try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
+    catch { return null; }
+  }
   const contributions = priv?.CMPF_CONTRIBUTIONS;
   if (!Array.isArray(contributions) || !contributions.length) return null;
   const net = cmpfDailyAccrual(contributions, priv?.CMPF_RATES || {}, dateIso);

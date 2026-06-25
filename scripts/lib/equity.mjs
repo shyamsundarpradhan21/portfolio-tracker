@@ -140,10 +140,13 @@ export function computeUsDayChange(holdings, quotes, fx) {
 
 // One US snapshot: private US holdings × live Yahoo (USD) × live USD/INR → INR
 // day-change. Returns null if holdings/quotes/FX unavailable (→ daemon skips).
-export async function pullUsDayChange() {
-  let priv;
-  try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
-  catch { return null; }
+export async function pullUsDayChange(priv) {
+  // `priv` injected by the cloud route (KV portfolio:v1); the daemon/script reads the
+  // gitignored file. Param path is what lets this run on Vercel (no private file there).
+  if (!priv) {
+    try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
+    catch { return null; }
+  }
   const holdings = usHoldings(priv);
   if (!holdings.length) return null;
   let quotes, fxq;
@@ -161,10 +164,14 @@ export async function pullUsDayChange() {
 
 // One equity snapshot: committed holdings × live Yahoo prices → today's day-change.
 // Returns null if holdings/quotes are unavailable (→ daemon skips the tick).
-export async function pullEquityDayChange() {
-  let state;
-  try { state = JSON.parse(readFileSync(join(ROOT, 'data', 'broker-state.json'), 'utf8')); }
-  catch { return null; }
+export async function pullEquityDayChange(state) {
+  // `state` injected by the cloud route (static import of committed broker-state.json);
+  // the daemon/script reads it off disk. broker-state IS committed, so Vercel could read
+  // it too, but a static import is what NFT reliably bundles into the function.
+  if (!state) {
+    try { state = JSON.parse(readFileSync(join(ROOT, 'data', 'broker-state.json'), 'utf8')); }
+    catch { return null; }
+  }
   const holdings = equityHoldings(state);
   if (!holdings.length) return null;
   let quotes;

@@ -48,10 +48,12 @@ export function fdDayChange(fds, dateIso) {
 
 // Reads the private FDS terms and returns { net } for `dateIso` (IST date), or null
 // when the private file / FDS is unavailable. Same private-file source as US/MF.
-export function pullFdDayChange(dateIso) {
-  let priv;
-  try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
-  catch { return null; }
+export function pullFdDayChange(dateIso, priv) {
+  // `priv` injected by the cloud route (KV portfolio:v1); else read the gitignored file.
+  if (!priv) {
+    try { priv = JSON.parse(readFileSync(join(ROOT, 'data', 'portfolio.private.json'), 'utf8')); }
+    catch { return null; }
+  }
   const fds = priv?.FDS;
   if (!Array.isArray(fds) || !fds.length) return null;
   return { net: fdDayChange(fds, dateIso) };
