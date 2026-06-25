@@ -1100,8 +1100,10 @@ function Dashboard() {
         <div className="main-header" ref={headerRef}>
           <div className="topbar">
             <div className="topbar-left">
-              <div className={pulseCls} />
-              <span className="status-txt">{status.msg}</span>
+              {/* Net worth — live LABEL only (the figure stays in the hero). Opens Overview. */}
+              <button className={'topbar-nw' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview — net worth (excl. trading)">
+                <span className="topbar-nw-lbl">Net worth — live <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
+              </button>
             </div>
             <div className="topbar-center">
               <span className={'mkt-pill ' + mktPill(markets.nse, markets.nseState)}><span className="live-dot" />NSE {mktTxt(markets.nse, markets.nseState)}</span>
@@ -1111,6 +1113,8 @@ function Dashboard() {
               <span className={'mkt-pill ' + mktPill(markets.nyse, markets.nyseState)}><span className="live-dot" />NYSE {mktTxt(markets.nyse, markets.nyseState)}</span>
             </div>
             <div className="topbar-right">
+              {/* Data-freshness status — moved here, right-aligned adjacent to the AI toggle. */}
+              <span className="topbar-status"><span className={pulseCls} /><span className="status-txt">{status.msg}</span></span>
               <button className={'hdr-toggle ai-toggle' + (insightsOn ? ' on' : '')} onClick={toggleInsights} aria-pressed={insightsOn}
                 title={insightsOn ? 'AI analysis ON — click to hide the cards' : 'AI analysis OFF — click to show the cards'}>AI</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
@@ -1120,12 +1124,6 @@ function Dashboard() {
           <div className="hdr-grid">
             {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
             <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
-              <div className="page-header-lbl">
-                Net worth — live{' '}
-                <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span>
-                {ath && <span className="spark ath-spark" style={{ marginLeft: 3 }}>✦</span>}
-                {ath && <span className="spark ath-spark" style={{ marginLeft: 3 }}>✦</span>}
-              </div>
               <div key={heroKey} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
                 {indian.valued && usdInr ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} /> : <Skel w={150} h={36} />}
               </div>

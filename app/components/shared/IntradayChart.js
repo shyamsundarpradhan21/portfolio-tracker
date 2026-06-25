@@ -196,7 +196,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
         {tipRows.map((row, i) => (
           <div key={i} className={'iq-r' + (row.kind === 'net' ? ' iq-net' : '')}>
             <span className="iq-l" style={{ color: row.lc, fontWeight: row.kind === 'net' ? 700 : 600 }}>{row.label}</span>
-            <span className="iq-v" style={{ color: row.vc }}>{f(row.v)}</span>
+            <span className="iq-v" style={{ color: row.vc }}><span className="rs">₹</span>{f(row.v).slice(1)}</span>
           </div>
         ))}
       </div>
