@@ -26,15 +26,6 @@ const f = (v) => {
   return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? '₹' + (a / 1e3).toFixed(1) + 'K' : '₹' + a;
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
-// "NIFTY-Jun2026-24150-PE" → "24150 PE", "ANGELONE26JUL300PE" → "300 PE",
-// "ANGELONE26AUGFUT" → "ANGELONE FUT"; falls back to a trimmed symbol.
-const legShort = (sym) => {
-  const s = String(sym ?? '');
-  const opt = s.match(/(\d{3,6})[-\s]?(PE|CE|PUT|CALL)\b/i);
-  if (opt) return `${opt[1]} ${/^p/i.test(opt[2]) ? 'PE' : 'CE'}`;
-  if (/FUT\b/i.test(s)) { const u = s.match(/^([A-Za-z&]+)/); return `${u ? u[1] : s.slice(0, 8)} FUT`; }
-  return s.replace(/^[A-Z]+[-:]/i, '').slice(0, 14);
-};
 
 export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
@@ -71,15 +62,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
   const nearestIdx = (t) => { const fr = tRank(t); let best = 0, bd = Infinity; for (let i = 0; i < n; i++) { const d = Math.abs(tRank(pts[i].t) - fr); if (d < bd) { bd = d; best = i; } } return best; };
   const marks = (fills || []).filter((fl) => fl && fl.t).map((fl) => { const i = nearestIdx(fl.t); return { ...fl, x: net[i].x, y: net[i].y, idx: i }; });
-  const fillsByIdx = {};
-  for (const m of marks) (fillsByIdx[m.idx] = fillsByIdx[m.idx] || []).push(m);
-  const hoverFills = ht ? (fillsByIdx[hov] || []) : [];
-  // Per-order P&L at the hovered minute — ONLY this point's own captured legs (never a
-  // far-search/carry across time). The broker's positions feed drops a leg once it's
-  // squared off, so an order stops appearing past its exit ("it doesn't exist any more");
-  // and minutes before the first legs snapshot show no per-order rows rather than
-  // back-filling orders that weren't open yet.
-  const legsHere = ht && Array.isArray(ht.legs) ? ht.legs : [];
+  // (marks above feed the on-chart buy/sell triangles; the hover card no longer lists fills/orders)
 
   // right-edge value labels at each line's last y. Net = bold sign-colour; each leg =
   // DIMMED sign-colour (the global +/- codes, NOT the line colour — direction must read
@@ -92,38 +75,27 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       labels.push({ y: arr[arr.length - 1].y, v, c: dirColor(v), bold: false, dim: true });
     }
   }
-  // tooltip rows — Net, then a per-BROKER split (each in its curve colour) with that
-  // broker's currently-open ORDERS nested beneath it (also curve-coloured), so a row's
-  // colour ties it to its line. Direction (gain/loss) stays sign-coloured on the value.
-  // Legs-less points (e.g. before the first capture) fall back to per-broker subtotals.
-  const colorOf = (k) => (overlays.find((o) => o.key === k) || {}).c || 'var(--txt2)';
-  const labelOf = (k) => (overlays.find((o) => o.key === k) || {}).label || k;
+  // Hover card rows — Net + per-BROKER net only (no per-order rows, no timestamp). The
+  // broker rows carry NO label: each value is drawn in its CURVE colour, and the legend
+  // already maps colour→broker. Net keeps a label + sign-colour. Rendered as an HTML
+  // overlay (below) so it can be frosted glass, tinted green/red by the net's direction.
   const tipRows = [];
   if (ht) {
     tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net) });
-    const byBroker = {};
-    for (const l of legsHere) (byBroker[l.broker] = byBroker[l.broker] || []).push(l);
-    // curve order first (stable colours), then any leg-only brokers
-    const haveLegs = legsHere.length > 0;
-    const order = [...overlays.map((o) => o.key), ...Object.keys(byBroker)].filter((k, i, a) => a.indexOf(k) === i);
-    for (const k of order) {
-      const blegs = byBroker[k] || [];
-      const raw = ht[k];
-      const hasVal = raw != null && Number.isFinite(+raw);   // +null === 0 is finite — guard the null leg
-      const bval = hasVal ? +raw : null;
-      // With per-order data show only brokers holding OPEN orders; without legs (pre-capture
-      // minutes) fall back to per-broker subtotals so the split still reads.
-      if (haveLegs ? blegs.length === 0 : !(overlay && hasVal)) continue;
-      tipRows.push({ kind: 'broker', label: labelOf(k), v: bval, vc: hasVal ? dirColor(bval) : null, lc: colorOf(k) });
-      for (const l of blegs) tipRows.push({ kind: 'order', label: legShort(l.sym), v: +l.pnl, vc: dirColor(+l.pnl), lc: colorOf(k) });
+    if (overlay) for (const o of present) {
+      const raw = ht[o.key];
+      if (raw == null || !Number.isFinite(+raw)) continue;   // skip a broker with no value this minute
+      tipRows.push({ kind: 'broker', label: '', v: +raw, vc: o.c });
     }
   }
-  const tipW = hoverFills.length ? 178 : (legsHere.length ? 156 : 110);
-  const tipH = 16 + tipRows.length * 15 + (hoverFills.length ? hoverFills.length * 14 + 5 : 0);
-  const tipX = hp ? Math.max(2, Math.min(PLOT_W - tipW - 2, hp.x + 8)) : 0;
+  const tipUp = ht ? (+ht.net >= 0) : true;                  // net direction → glass tint
+  // Position the HTML card by % of the viewBox width; flip left of the cursor on the right half.
+  const tipLeftPct = hp ? (hp.x / W) * 100 : 0;
+  const tipFlip = hp ? hp.x > W * 0.5 : false;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" style={{ marginTop: 12, display: 'block', height: 'auto' }}
+    <div className="iq-wrap" style={{ position: 'relative', marginTop: 12 }}>
+    <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" style={{ display: 'block', height: 'auto' }}
       role="img" aria-label={ariaLabel} onMouseMove={onMove} onMouseLeave={() => setHov(null)}>
       <clipPath id={`up-${uid}`}><rect x="0" y="0" width={PLOT_W} height={g.zeroY} /></clipPath>
       <clipPath id={`dn-${uid}`}><rect x="0" y={g.zeroY} width={PLOT_W} height={H - g.zeroY} /></clipPath>
@@ -174,32 +146,11 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
           opacity={l.dim ? 0.6 : 1} style={{ fontSize: l.bold ? 13 : 11, fontWeight: l.bold ? 700 : 600 }}>{f(l.v)}</text>
       ))}
 
-      {/* hover cursor + tooltip */}
+      {/* hover cursor — the value card itself is the frosted HTML overlay below the svg */}
       {hp && (
         <g>
           <line x1={hp.x} y1="0" x2={hp.x} y2={H} stroke="var(--txt3)" strokeWidth=".7" opacity=".6" />
           <circle cx={hp.x} cy={hp.y} r="3" fill={curColor} />
-          <g transform={`translate(${tipX} 4)`}>
-            <rect width={tipW} height={tipH} rx="4" fill="var(--bg2, #1b1f2a)" stroke="var(--brd)" strokeWidth=".5" opacity=".96" />
-            <text x="7" y="13" className="pnl-axt" style={{ fontWeight: 600 }}>{ht.t}</text>
-            {tipRows.map((row, i) => {
-              const indent = row.kind === 'order' ? 16 : 7;                        // orders nest under their broker
-              const labelFill = row.kind === 'net' ? 'var(--txt)' : (row.lc || 'var(--txt2)'); // broker/order labels in curve colour
-              const fs = row.kind === 'order' ? 9.5 : 10;
-              return (
-                <g key={i} transform={`translate(0 ${27 + i * 15})`}>
-                  <text x={indent} y="0" fill={labelFill} style={{ fontSize: fs, fontWeight: row.kind === 'order' ? 500 : 600 }}>{row.label}</text>
-                  {row.v != null ? <text x={tipW - 14} y="0" textAnchor="end" fill={row.vc} style={{ fontSize: fs, fontWeight: 600 }}>{f(row.v)}</text> : null}
-                </g>
-              );
-            })}
-            {hoverFills.map((fl, i) => (
-              <text key={'f' + i} x="7" y={27 + tipRows.length * 15 + 6 + i * 14}
-                fill={fl.side === 'BUY' ? 'var(--blu)' : 'var(--acc)'} style={{ fontSize: 9, fontWeight: 600 }}>
-                {fl.side} {fl.sym} · {fl.qty}@{fl.price}
-              </text>
-            ))}
-          </g>
         </g>
       )}
 
@@ -233,5 +184,23 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
         </g>
       )}
     </svg>
+
+    {/* frosted, gain/loss-tinted hover card — Net + per-broker net (colour = curve = legend) */}
+    {hp && (
+      <div className="iq-tip" style={{
+        left: `${tipLeftPct}%`,
+        transform: tipFlip ? 'translateX(calc(-100% - 12px))' : 'translateX(12px)',
+        background: `color-mix(in srgb, var(${tipUp ? '--grn' : '--red'}) 22%, var(--glass-bg))`,
+        borderColor: `color-mix(in srgb, var(${tipUp ? '--grn' : '--red'}) 42%, var(--glass-brd))`,
+      }}>
+        {tipRows.map((row, i) => (
+          <div key={i} className="iq-r">
+            <span className="iq-l" style={{ color: row.kind === 'net' ? 'var(--txt)' : 'var(--txt2)', fontWeight: row.kind === 'net' ? 700 : 600 }}>{row.label}</span>
+            <span className="iq-v" style={{ color: row.vc }}>{f(row.v)}</span>
+          </div>
+        ))}
+      </div>
+    )}
+    </div>
   );
 }
