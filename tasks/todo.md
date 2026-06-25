@@ -238,11 +238,14 @@ into asset growth.
       F&O excluded) + `scripts/snapshot-growth.mjs` entry + `app/api/growth` read route +
       `data/growth.json` seed. 12 tests; live run captured real eq/us; route serves
       KV→archive. Schema reserves fd/mf/cmpf/cmps keys.
-- [~] 0b. Slow sleeves into captureGrowth (each its own cadence):
+- [x] 0b. Slow sleeves into captureGrowth (each its own cadence) — DONE:
       - [x] **fd**  — daily accrued interest from `FDS[]` (deterministic, no fetch) — DONE (08619a4)
       - [x] **mf**  — daily NAV via api.mfapi.in (scripts/lib/mf.mjs, mirrors mf-nav
-            resolveCode); Σ units×(latest−prev NAV), skip-not-zero per fund — DONE
-      - [ ] **cmpf/cmps** — monthly step from `CMPF_/CMPS_CONTRIBUTIONS` (salary-slip fed)
+            resolveCode); Σ units×(latest−prev NAV), skip-not-zero per fund — DONE (056e2c3)
+      - [x] **cmpf** — daily PF interest accrual (scripts/lib/cmpf.mjs, mirrors app/lib/cmpf
+            cmpfDailyAccrual = corpus×rate/365; monthly contributions = new money, excluded) — DONE
+      - [—] **cmps** — EXCLUDED: defined-benefit pension (no corpus / no daily asset value)
+      Asset sleeves complete: eq · us · fd · mf · cmpf.
 - [ ] 0c. Fold the daily **FII/DII** capture into the snapshot routine → KV
       `premarket:fiidiiTrail` (20-session) + committed `data/fiidii-trail.json`.
       REMOVE the Vercel premarket cron; KEEP the `/api/premarket` route (live Wrap).

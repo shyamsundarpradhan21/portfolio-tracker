@@ -67,14 +67,13 @@ export function appendIntraday(file, date, point) {
 // LEFT AS-IS (skip-not-zero — a failed fetch never wipes a good prior value).
 // Pure given (json, …) → returns the next json (no I/O), so it unit-tests on its own.
 // Net-worth ASSET sleeves, by growth cadence (same record, different feed):
-//   eq/us     — market day-change (intraday tick)
-//   fd        — daily accrued interest (deterministic from principal×rate, no fetch)
-//   mf        — daily NAV (once-daily, AMFI)
-//   cmpf/cmps — monthly step from the salary-slip upload
-// F&O is deliberately EXCLUDED: it's BUSINESS INCOME (non-speculative), not asset
-// appreciation, and the trading capital is off-NW — it lives in the F&O pipeline
-// (fno-ledger / intraday tape / Trading tab), never summed into asset growth.
-const GROWTH_SLEEVES = ['eq', 'us', 'fd', 'mf', 'cmpf', 'cmps'];
+//   eq/us — market day-change (intraday tick)
+//   fd    — daily accrued interest (deterministic from principal×rate, no fetch)
+//   mf    — daily NAV (once-daily, AMFI)
+//   cmpf  — daily PF interest accrual (deterministic; monthly contributions are new money)
+// EXCLUDED: F&O (business income, off-NW — lives in the fno-ledger pipeline) and CMPS
+// (a defined-benefit pension — a future income right, not an accruing asset).
+const GROWTH_SLEEVES = ['eq', 'us', 'fd', 'mf', 'cmpf'];
 export function upsertGrowth(json, date, partial) {
   const out = json && typeof json === 'object' ? { ...json } : {};
   const days = { ...(out.days || {}) };

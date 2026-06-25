@@ -11,6 +11,7 @@ import { pullPositions } from './brokers.mjs';
 import { pullEquityDayChange, pullUsDayChange, niftyCandles } from './equity.mjs';
 import { pullFdDayChange } from './fd.mjs';
 import { pullMfDayChange } from './mf.mjs';
+import { pullCmpfDayChange } from './cmpf.mjs';
 import { appendIntraday, writeGrowth } from './intraday.mjs';
 import { kvSetJSON, kvConfigured } from './kv.mjs';
 import { istParts, usSessionDate } from './marketHours.mjs';
@@ -141,14 +142,15 @@ export async function captureGrowth({ nowMs = Date.now() } = {}) {
   const eq = eqS ? { net: eqS.net, bySleeve: eqS.bySleeve, covered: eqS.covered } : null;
   const us = usS ? { net: usS.net, usd: usS.usd, fx: usS.fx, covered: usS.covered } : null;
   const mf = mfS ? { net: mfS.net, covered: mfS.covered, byFund: mfS.byFund } : null;
-  // FD is deterministic (accrued interest), computed not fetched — no await, no network.
-  let fd = null;
+  // FD + CMPF are deterministic (accrued interest), computed not fetched — no network.
+  let fd = null, cmpf = null;
   try { fd = pullFdDayChange(date); } catch { /* private FDS unavailable → omit */ }
+  try { cmpf = pullCmpfDayChange(date); } catch { /* private CMPF unavailable → omit */ }
 
-  const partial = { eq, us, fd, mf, istNow: iso };
+  const partial = { eq, us, fd, mf, cmpf, istNow: iso };
   let record = null;
   try { record = writeGrowth(GROWTH_FILE, date, partial); } catch { /* archive best-effort */ }
   let kv = false;
   if (record && kvConfigured()) { try { kv = await kvSetJSON(kvKeyGrowth(date), record, GROWTH_TTL); } catch {} }
-  return { ok: true, date, eq, us, fd, mf, kv, captured: ['eq', 'us', 'fd', 'mf'].filter((k) => partial[k]) };
+  return { ok: true, date, eq, us, fd, mf, cmpf, kv, captured: ['eq', 'us', 'fd', 'mf', 'cmpf'].filter((k) => partial[k]) };
 }
