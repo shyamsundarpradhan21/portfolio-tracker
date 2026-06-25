@@ -43,7 +43,7 @@ function SessionStat({ s, label }) {
         <span className="sub" style={{ textTransform: 'none', letterSpacing: 0 }}>at close · {s.asOf}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 7 }}>
-        <span className="mono" style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, letterSpacing: '-.5px' }}>{n0(s.close)}</span>
+        <span className="vt2">{n0(s.close)}</span>
         <span className={'mono ' + pctCls(s.pct)} style={{ fontSize: 'var(--fs-sm)', fontWeight: 700 }}>{pctTxt(s.pct)}</span>
       </div>
       <div className="sub" style={{ marginTop: 5 }}>

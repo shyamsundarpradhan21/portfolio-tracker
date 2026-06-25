@@ -53,15 +53,20 @@ and a shorter string must never render bigger than a longer one in the same row.
 
 **Rules:**
 - One source of truth: each value class maps to exactly ONE tier in `globals.css`.
-  **Never** set `fontSize` inline on a figure to override its tier (current offenders to
-  migrate: `AlgoTab.js:99,140`; `MarketOverview.js:46`; `FnoHistory.js:26`;
-  `FnoPositions.js:44`; `BenchmarkBars.js:19`).
-- Value classes must have DISTINCT sizes matching the tiers — today `.vlg` and `.vmd` are
-  **both** `--fs-2xl` (a size collision: "large" and "medium" look identical, differing
-  only in weight) and `.vsm` jumps to `--fs-lg`. Re-map them so each step on the ladder is
-  real.
+  **Never** set `fontSize` inline on a figure to override its tier.
 - A figure's size is independent of its string length: "50", "54%", "₹1,72,842" and
   "₹8.67L" in one summary row are the SAME height.
+
+**Implemented** (this IS the live system — keep new figures on it):
+- Classes: `.vt1`/`.vmd` = Tier 1 (`--fs-2xl`), `.vt2` = Tier 2 (`--fs-xl`), `.vt3`/`.vsm`
+  = Tier 3 (`--fs-lg`, → `--fs-md` inside `.mini`). Old `.vlg` was folded into Tier 1 (it
+  duplicated `.vmd`'s size); the ladder now has three real steps.
+- Inline figure-size overrides removed → tier classes in `FnoHistory`, `MarketOverview`,
+  `AlgoTab` (both splits). The two remaining `--fs-md` figures (`FnoPositions` leg P&L,
+  `BenchmarkBars` bar %) are dense ROW/bar values (table-like Tier 3), left by design.
+- Footers: `.csm .sub` clips to one line; `.sub.split` gives the two-value left/right
+  split. Deeper per-component re-tiering (e.g. shrinking a secondary breakdown grid from
+  Tier 1 → Tier 2) is the remaining, render-verified follow-up — not done blind.
 
 **Footers & alignment:**
 - A card footer is a **single line, anchored to the LEFT, clipped with an ellipsis** on
@@ -75,8 +80,8 @@ and a shorter string must never render bigger than a longer one in the same row.
 PROFITABLE DAY / TRADING DAYS — rendered its figures at visibly different sizes because
 each stat picked its own size. The user wants a definite, card-tier-driven scale: the hero
 stands out, the header cards match, everything else falls in by context — and it's an
-app-wide standard, not a one-card fix. Pairs with "Render mocks BEFORE editing": build the
-tier mock and get the pick before reflowing `globals.css`.)
+app-wide standard, not a one-card fix. Pairs with "Render mocks BEFORE editing": the tier
+mock was built and approved before the `globals.css` re-map.)
 
 ### CMPF (pension) always renders LAST / to the right in any allocation visual
 In every allocation view — donut, the horizontal bar, the legend, the deployment

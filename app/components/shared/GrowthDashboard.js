@@ -64,7 +64,7 @@ export default function GrowthDashboard({ days = 90 }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="lbl" style={{ margin: '0 0 2px' }}>cumulative</div>
-          <div className={'vlg ' + cl(total)}><SInrF n={total} /></div>
+          <div className={'vmd ' + cl(total)}><SInrF n={total} /></div>
         </div>
       </div>
 
