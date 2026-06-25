@@ -28,10 +28,6 @@ export default function OverviewTab({
           equity + US sleeves. Self-hides outside market hours (no points yet). */}
       <PortfolioLiveCurve />
 
-      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves, fed by
-          the resilient growth:<date> snapshots (KV + archive), not a live Yahoo poll. */}
-      <div className="sec"><GrowthDashboard /></div>
-
       {/* Net worth growth/projection scrubber, with the live allocation strip merged
           into its footer (replaces the separate sunburst card). */}
       <ProjectionTab
@@ -42,6 +38,10 @@ export default function OverviewTab({
         cmpsVested={cmpsVested} cmpsVestYear={cmpsVestYear}
         footer={<AllocBar sleeves={projSleeves} mfAlloc={mfAlloc} drift={drift} />}
       />
+
+      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves (fed by the
+          resilient growth:<date> snapshots). Moved below the net-worth growth scrubber. */}
+      <div className="sec"><GrowthDashboard /></div>
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />
