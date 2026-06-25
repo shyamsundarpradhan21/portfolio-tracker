@@ -35,6 +35,23 @@ export function splitLegs(list, { isLeg, realised, mtm }) {
   return { realised: round(r), mtm: round(m), net: round(r + m) };
 }
 
+// First HH:MM in a broker timestamp ("2026-06-25 14:23:45" → "14:23"), else null.
+export const hhmmOf = (ts) => { const m = String(ts ?? '').match(/(\d{2}):(\d{2})/); return m ? `${m[1]}:${m[2]}` : null; };
+// Parse a broker order book into today's executed FILLS (for buy/sell markers on the
+// curve). Pure + broker-agnostic — each puller passes accessors. Returns
+// [{ id, t, side:'BUY'|'SELL', sym, qty, price }] for filled orders with a parseable time.
+export function parseFills(orders, A) {
+  const out = [];
+  for (const o of (orders || [])) {
+    if (!A.isFilled(o)) continue;
+    const t = hhmmOf(A.time(o));
+    if (!t) continue;
+    const side = /sell|^-1$|^-/i.test(String(A.side(o))) ? 'SELL' : 'BUY';
+    out.push({ id: String(A.id(o) ?? `${t}-${A.sym(o)}`), t, side, sym: String(A.sym(o) ?? '').replace(/^[A-Z]+:/, ''), qty: num(A.qty(o)), price: num(A.price(o)) });
+  }
+  return out;
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function getJSON(url, headers) {
   // One retry with backoff + jitter on a 429 (rate limit) or a transient network
@@ -76,13 +93,19 @@ async function dhan(withOrders) {
   if (!pos.ok || !pos.json) return null;
   const list = Array.isArray(pos.json) ? pos.json : (pos.json.data || []);
   const { net, realised, mtm } = splitLegs(list, { isLeg: isFnoPosition, realised: (p) => p.realizedProfit, mtm: (p) => p.unrealizedProfit });
-  let pending = false;
+  let pending = false, fills = [];
   if (withOrders) {
     const ord = await getJSON('https://api.dhan.co/v2/orders', H);
     const olist = Array.isArray(ord.json) ? ord.json : (ord.json?.data || []);
     pending = olist.some((o) => /PENDING|TRANSIT|OPEN/i.test(String(o.orderStatus || '')));
+    fills = parseFills(olist, {
+      isFilled: (o) => /TRADED/i.test(String(o.orderStatus || '')),
+      side: (o) => o.transactionType, sym: (o) => o.tradingSymbol,
+      qty: (o) => o.quantity, price: (o) => o.averageTradedPrice ?? o.price,
+      time: (o) => o.updateTime || o.exchangeTime || o.createTime, id: (o) => o.orderId,
+    });
   }
-  return { net, realised, mtm, pending };
+  return { net, realised, mtm, pending, fills };
 }
 
 async function upstox(withOrders) {
@@ -95,12 +118,19 @@ async function upstox(withOrders) {
     isLeg: (p) => isFno(p.trading_symbol || p.tradingsymbol || ''),
     realised: (p) => p.realised, mtm: (p) => p.unrealised,
   });
-  let pending = false;
+  let pending = false, fills = [];
   if (withOrders) {
     const ord = await getJSON('https://api.upstox.com/v2/order/retrieve-all', H);
-    pending = (ord.json?.data || []).some((o) => /open|pending|trigger/i.test(String(o.status || '')));
+    const olist = ord.json?.data || [];
+    pending = olist.some((o) => /open|pending|trigger/i.test(String(o.status || '')));
+    fills = parseFills(olist, {
+      isFilled: (o) => /complete/i.test(String(o.status || '')),
+      side: (o) => o.transaction_type, sym: (o) => o.trading_symbol,
+      qty: (o) => o.filled_quantity ?? o.quantity, price: (o) => o.average_price,
+      time: (o) => o.exchange_timestamp || o.order_timestamp, id: (o) => o.order_id,
+    });
   }
-  return { net, realised, mtm, pending };
+  return { net, realised, mtm, pending, fills };
 }
 
 async function fyers(withOrders) {
@@ -114,12 +144,19 @@ async function fyers(withOrders) {
     isLeg: (p) => isFno(p.symbol),
     realised: (p) => p.realized_profit, mtm: (p) => p.unrealized_profit,
   });
-  let pending = false;
+  let pending = false, fills = [];
   if (withOrders) {
     const ord = await getJSON('https://api-t1.fyers.in/api/v3/orders', H);
-    pending = (ord.json?.orderBook || []).some((o) => /pending|open|transit/i.test(String(o.status || o.orderStatus || '')));
+    const olist = ord.json?.orderBook || [];
+    pending = olist.some((o) => /pending|open|transit/i.test(String(o.status || o.orderStatus || '')));
+    fills = parseFills(olist, {
+      isFilled: (o) => String(o.status) === '2' || /traded|filled|complete/i.test(String(o.status || '')),
+      side: (o) => (o.side === 1 ? 'BUY' : o.side === -1 ? 'SELL' : o.side), sym: (o) => o.symbol,
+      qty: (o) => o.qty ?? o.filledQty, price: (o) => o.tradedPrice ?? o.limitPrice,
+      time: (o) => o.orderDateTime, id: (o) => o.id,
+    });
   }
-  return { net, realised, mtm, pending };
+  return { net, realised, mtm, pending, fills };
 }
 
 // Pull the ACTIVE brokers concurrently. Returns { byBroker, bySleeve:{S01,S02},
@@ -139,7 +176,7 @@ const BROKERS = [
 export async function pullPositions({ withOrders = true } = {}) {
   const active = BROKERS.filter((b) => b.enabled);
   const results = await Promise.all(active.map((b) => b.pull(withOrders)));
-  const byBroker = {}, bySleeve = { S01: 0, S02: 0 };
+  const byBroker = {}, bySleeve = { S01: 0, S02: 0 }, fills = [];
   let net = 0, realised = 0, mtm = 0, pending = false, any = false;
   results.forEach((r, i) => {
     if (!r) return;
@@ -149,6 +186,7 @@ export async function pullPositions({ withOrders = true } = {}) {
     bySleeve[SLEEVE[name]] += r.net;
     net += r.net; realised += num(r.realised); mtm += num(r.mtm);
     pending = pending || !!r.pending;
+    if (Array.isArray(r.fills)) for (const f of r.fills) fills.push({ ...f, broker: name });
   });
-  return { any, byBroker, bySleeve, net: round(net), realised: round(realised), mtm: round(mtm), pending };
+  return { any, byBroker, bySleeve, net: round(net), realised: round(realised), mtm: round(mtm), pending, fills };
 }

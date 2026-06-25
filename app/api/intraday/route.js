@@ -48,9 +48,16 @@ export async function GET(req) {
   if (!isoDate(date)) {
     return Response.json({ error: 'date must be YYYY-MM-DD' }, { status: 400 });
   }
+  // KV value is either the bare tape array (legacy / eq / us) or { tape, fills } (F&O
+  // with buy/sell fills). Read both shapes; fall back to the committed archive.
   const live = await fromKV(kind, date);
-  const tape = Array.isArray(live) ? live : (ARCHIVE[kind]?.days?.[date] || []);
-  return new Response(JSON.stringify({ date, kind, tape, source: live ? 'kv' : 'archive' }), {
+  const liveTape = Array.isArray(live) ? live : (Array.isArray(live?.tape) ? live.tape : null);
+  const archive = ARCHIVE[kind];
+  const tape = liveTape || archive?.days?.[date] || [];
+  const fills = kind === 'fno'
+    ? ((!Array.isArray(live) && Array.isArray(live?.fills)) ? live.fills : (archive?.fills?.[date] || []))
+    : [];
+  return new Response(JSON.stringify({ date, kind, tape, fills, source: live ? 'kv' : 'archive' }), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }

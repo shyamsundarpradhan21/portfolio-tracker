@@ -27,7 +27,7 @@ const f = (v) => {
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
 
-export default function IntradayChart({ tape, candles = null, pending = false, overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
+export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
   const [hov, setHov] = useState(null);   // hovered point index
 
@@ -58,6 +58,14 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
   const hp = hov != null && hov >= 0 && hov < n ? net[hov] : null;
   const ht = hp ? pts[hov] : null;
 
+  // Buy/sell fills → markers, anchored to the nearest tape point by time (midnight-aware).
+  const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
+  const nearestIdx = (t) => { const fr = tRank(t); let best = 0, bd = Infinity; for (let i = 0; i < n; i++) { const d = Math.abs(tRank(pts[i].t) - fr); if (d < bd) { bd = d; best = i; } } return best; };
+  const marks = (fills || []).filter((fl) => fl && fl.t).map((fl) => { const i = nearestIdx(fl.t); return { ...fl, x: net[i].x, y: net[i].y, idx: i }; });
+  const fillsByIdx = {};
+  for (const m of marks) (fillsByIdx[m.idx] = fillsByIdx[m.idx] || []).push(m);
+  const hoverFills = ht ? (fillsByIdx[hov] || []) : [];
+
   // right-edge value labels at each line's last y. Net = bold sign-colour; each leg =
   // DIMMED sign-colour (the global +/- codes, NOT the line colour — direction must read
   // at a glance and stay subordinate to the net). Which leg is which reads off its line.
@@ -73,7 +81,8 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
   const tipRows = ht ? [{ label: 'Net', v: +ht.net, c: dirColor(+ht.net) }, ...(overlay ? present
     .filter((o) => Number.isFinite(+ht[o.key]))
     .map((o) => ({ label: o.label, v: +ht[o.key], c: dirColor(+ht[o.key]) })) : [])] : [];
-  const tipW = 96, tipH = 16 + tipRows.length * 15;
+  const tipW = hoverFills.length ? 144 : 96;
+  const tipH = 16 + tipRows.length * 15 + (hoverFills.length ? hoverFills.length * 14 + 5 : 0);
   const tipX = hp ? Math.max(2, Math.min(PLOT_W - tipW - 2, hp.x + 8)) : 0;
 
   return (
@@ -112,6 +121,16 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
       <circle cx={lastNet.x} cy={lastNet.y} r="3.5" fill={curColor} />
       {pending ? <line x1="0" y1={g.zeroY - 0.1} x2={PLOT_W} y2={g.zeroY - 0.1} stroke="var(--acc)" strokeWidth=".7" strokeDasharray="6 4" opacity=".5" /> : null}
 
+      {/* buy/sell fill markers — up triangle = BUY (below the line), down = SELL (above):
+          side encoded by SHAPE; blue (buy) / accent (sell), kept apart from the P&L green/red */}
+      {marks.map((m, i) => {
+        const buy = m.side === 'BUY';
+        const tri = buy
+          ? `${m.x},${m.y + 4} ${m.x - 4},${m.y + 10} ${m.x + 4},${m.y + 10}`
+          : `${m.x},${m.y - 4} ${m.x - 4},${m.y - 10} ${m.x + 4},${m.y - 10}`;
+        return <polygon key={i} points={tri} fill={buy ? 'var(--blu)' : 'var(--acc)'} opacity=".9" />;
+      })}
+
       {/* right-edge value labels, riding each line's last point */}
       {labels.map((l, i) => (
         <text key={i} x={W - 3} textAnchor="end" y={Math.max(9, Math.min(H - 2, l.y + 3))} fill={l.c}
@@ -132,6 +151,12 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
                 <text x={tipW - 14} y="0" textAnchor="end" fill={row.c} style={{ fontSize: 10, fontWeight: 600 }}>{f(row.v)}</text>
               </g>
             ))}
+            {hoverFills.map((fl, i) => (
+              <text key={'f' + i} x="7" y={27 + tipRows.length * 15 + 6 + i * 14}
+                fill={fl.side === 'BUY' ? 'var(--blu)' : 'var(--acc)'} style={{ fontSize: 9, fontWeight: 600 }}>
+                {fl.side} {fl.sym} · {fl.qty}@{fl.price}
+              </text>
+            ))}
           </g>
         </g>
       )}
@@ -140,8 +165,8 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
       <text x={PLOT_W / 2} y={H + 16} className="pnl-axt" textAnchor="middle">{net[Math.floor(n / 2)].t}</text>
       <text x={PLOT_W} y={H + 16} className="pnl-axt" textAnchor="end">{lastNet.t}{pending ? ' · pending order' : ''}</text>
 
-      {/* legend (only when overlaying or watermark present) */}
-      {(overlay || nifty) && (
+      {/* legend (when overlaying, watermark, or fills present) */}
+      {(overlay || nifty || marks.length > 0) && (
         <g transform={`translate(2 ${H + 30})`} className="pnl-axt">
           {overlay && present.map((o, i) => (
             <g key={o.key} transform={`translate(${i * 70} 0)`}>
@@ -153,6 +178,14 @@ export default function IntradayChart({ tape, candles = null, pending = false, o
             <g transform={`translate(${overlay ? present.length * 70 : 0} 0)`}>
               <rect x="0" y="-7" width="9" height="3" rx="1" fill="var(--txt2)" opacity=".4" />
               <text x="13" y="0">NIFTY 50</text>
+            </g>
+          )}
+          {marks.length > 0 && (
+            <g transform={`translate(${(overlay ? present.length * 70 : 0) + (nifty ? 70 : 0)} 0)`}>
+              <polygon points="2,-2 -1,3 5,3" fill="var(--blu)" />
+              <text x="9" y="0">buy</text>
+              <polygon points="25,3 22,-2 28,-2" fill="var(--acc)" />
+              <text x="32" y="0">sell</text>
             </g>
           )}
         </g>

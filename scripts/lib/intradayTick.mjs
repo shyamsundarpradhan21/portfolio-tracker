@@ -51,9 +51,14 @@ function publish(file, keyFn, date, point) {
   let kv = false;
   if (kvConfigured()) {
     try {
-      const tape = JSON.parse(readFileSync(file, 'utf8'))?.days?.[date] || [];
+      const json = JSON.parse(readFileSync(file, 'utf8'));
+      const tape = json?.days?.[date] || [];
+      const fills = json?.fills?.[date];
+      // Publish { tape, fills } when there are fills (the buy/sell markers); else the bare
+      // array (equity/US tapes + F&O days with no fills). The API reads either shape.
+      const value = (Array.isArray(fills) && fills.length) ? { tape, fills } : tape;
       // kvSetJSON is async; fire-and-return its promise via the caller.
-      return { count, kvPromise: kvSetJSON(keyFn(date), tape, KV_TTL) };
+      return { count, kvPromise: kvSetJSON(keyFn(date), value, KV_TTL) };
     } catch { /* KV best-effort */ }
   }
   return { count, kvPromise: Promise.resolve(kv) };
@@ -72,7 +77,7 @@ export async function captureTick({ withOrders = true, nowMs = Date.now(), file 
   }
   if (!snap.any) return { ok: false, reason: 'no-tokens', date, t: hhmm };
 
-  const point = { t: hhmm, net: snap.net, realised: snap.realised, mtm: snap.mtm, byBroker: snap.byBroker, pending: snap.pending, istNow: iso };
+  const point = { t: hhmm, net: snap.net, realised: snap.realised, mtm: snap.mtm, byBroker: snap.byBroker, fills: snap.fills, pending: snap.pending, istNow: iso };
   const { count, kvPromise } = publish(file, kvKey, date, point);
 
   // NIFTY 50 1-min OHLC watermark — refreshed on the heavier ~1/min pass only

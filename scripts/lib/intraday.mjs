@@ -53,11 +53,32 @@ export function upsertPoint(json, date, point) {
   return out;
 }
 
-// Disk wrapper around upsertPoint. Returns the point count for `date` after write.
+// Merge today's executed fills into json.fills[date], deduped by broker+id (the orders
+// check re-reports the same fill each ~minute). Time-sorted; drives the buy/sell markers
+// on the curve. Non-personal aggregate (no account ids) — safe to commit.
+export function upsertFills(json, date, fills) {
+  const out = json && typeof json === 'object' ? { ...json } : {};
+  const all = { ...(out.fills || {}) };
+  const arr = Array.isArray(all[date]) ? all[date].slice() : [];
+  const seen = new Set(arr.map((f) => `${f.broker}:${f.id}`));
+  for (const f of (fills || [])) {
+    const k = `${f.broker}:${f.id}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    arr.push(f);
+  }
+  arr.sort((a, b) => tRank(a.t) - tRank(b.t));
+  all[date] = arr;
+  out.fills = all;
+  return out;
+}
+
+// Disk wrapper around upsertPoint (+ fills). Returns the point count for `date` after write.
 export function appendIntraday(file, date, point) {
   let json;
   try { json = JSON.parse(readFileSync(file, 'utf8')); } catch { json = { days: {} }; }
-  const next = upsertPoint(json, date, point);
+  let next = upsertPoint(json, date, point);
+  if (Array.isArray(point.fills) && point.fills.length) next = upsertFills(next, date, point.fills);
   next.updatedAt = point.istNow || next.updatedAt || null;
   next.note = next.note || 'Intraday F&O P&L tape (realised + open MTM). Non-personal aggregate; safe to commit.';
   writeFileSync(file, JSON.stringify(next, null, 2) + '\n');

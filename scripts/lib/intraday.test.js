@@ -1,6 +1,6 @@
 // Tests for the intraday tape upsert — the pure core of capture-intraday.
 import { describe, it, expect } from 'vitest';
-import { upsertPoint, upsertGrowth } from './intraday.mjs';
+import { upsertPoint, upsertGrowth, upsertFills } from './intraday.mjs';
 
 const pt = (t, net, byBroker = {}, pending = false) => ({ t, net, byBroker, pending });
 
@@ -70,6 +70,27 @@ describe('upsertPoint', () => {
     j = upsertPoint(j, '2026-06-24', pt('10:00', 160, {}, false));
     expect(j.days['2026-06-24'][0].pending).toBe(1);                      // still flagged
     expect(j.days['2026-06-24'][0].net).toBe(160);                        // newest net still wins
+  });
+});
+
+describe('upsertFills', () => {
+  it('dedups by broker+id (the order check re-reports each ~minute) and time-sorts', () => {
+    let j = upsertFills({}, '2026-06-25', [
+      { id: 'A1', t: '14:23', side: 'BUY', sym: 'NIFTY', qty: 50, price: 120, broker: 'dhan' },
+      { id: 'B1', t: '09:30', side: 'SELL', sym: 'NIFTY', qty: 25, price: 110, broker: 'upstox' },
+    ]);
+    j = upsertFills(j, '2026-06-25', [
+      { id: 'A1', t: '14:23', side: 'BUY', sym: 'NIFTY', qty: 50, price: 120, broker: 'dhan' },   // dup → dropped
+      { id: 'A1', t: '11:00', side: 'BUY', sym: 'NIFTY', qty: 10, price: 5, broker: 'upstox' },    // same id, OTHER broker → kept
+    ]);
+    expect(j.fills['2026-06-25'].map((f) => `${f.broker}:${f.id}`)).toEqual(['upstox:B1', 'upstox:A1', 'dhan:A1']);
+  });
+
+  it('leaves other dates untouched and tolerates an empty batch', () => {
+    const seed = upsertFills({}, '2026-06-24', [{ id: 'Z', t: '10:00', broker: 'dhan' }]);
+    const j = upsertFills(seed, '2026-06-25', []);
+    expect(j.fills['2026-06-24']).toHaveLength(1);
+    expect(j.fills['2026-06-25']).toEqual([]);
   });
 });
 
