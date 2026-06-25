@@ -82,7 +82,7 @@ export default function SunburstMix({ sectors, caps, total, secColors, capColor,
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 500, height: 'auto', overflow: 'visible' }}>
+      <svg viewBox={`0 0 ${W} ${W}`} style={{ width: '100%', maxWidth: 620, height: 'auto', overflow: 'visible' }}>
         <defs>
           {/* CMPF hatch — SVG twin of the CSS repeating-gradient token */}
           <pattern id={`sbh${pid}`} patternUnits="userSpaceOnUse" width="6.5" height="6.5" patternTransform="rotate(45)">

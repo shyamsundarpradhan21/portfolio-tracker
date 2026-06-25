@@ -392,7 +392,7 @@ function WinRateStat({ stats }) {
     <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Win rate</div>
       <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-        <Donut pct={stats.winPct} size={56} showPct />
+        <Donut pct={stats.winPct} size="3.4rem" showPct />
       </div>
       {/* win count (green, left) · loss count (red, right) — counts only, colour-coded */}
       <div className="fxc sub" style={{ marginTop: 'auto', paddingTop: 8 }}>
