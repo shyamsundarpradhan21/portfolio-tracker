@@ -27,7 +27,7 @@ const Stat = ({ k, v, vc, foot }) => (
   </div>
 );
 
-export default function PnlDashboard({ rows: rowsProp, summary = null } = {}) {
+export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null } = {}) {
   const allRows = rowsProp || APP.fnoLedger?.rows || [];
   // Brokers present, busiest first — drives the broker toggle (All + each broker).
   const brokers = useMemo(() => {
@@ -156,8 +156,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null } = {}) {
         </div>
       )}
 
-      {/* ── stat panel — every subtext is a 2-corner FOOTER (value left / right, colour-coded) ── */}
-      <div className="pnl-stats">
+      {/* ── stat panel — every subtext is a 2-corner FOOTER (value left / right, colour-coded).
+            `capital` (trading capital · live) leads, adjacent to Net P&L. ── */}
+      <div className={'pnl-stats' + (capital ? ' has-cap' : '')}>
+        {capital ? <Stat k={capital.label} v={capital.value} foot={capital.foot} /> : null}
         <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />}
           foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />

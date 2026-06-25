@@ -34,8 +34,9 @@ export default function AlgoTab({
     const bs = fno.byStrategy;
     const used = [['S01', bs.S01.fundsUsed], ['S02', bs.S02.fundsUsed]].filter(([, v]) => v > 0);
     const free = bs.S01.fundsAvail + bs.S02.fundsAvail;
-    const total = bs.S01.fundsUsed + bs.S02.fundsUsed + free;   // live account capital (deployed + free)
-    return { str: used.map(([k, v]) => `${k} ${cap(v)}`).join(' + '), free, total, any: used.length > 0 || free > 0 };
+    const usedTotal = bs.S01.fundsUsed + bs.S02.fundsUsed;
+    const total = usedTotal + free;   // live account capital (deployed + free)
+    return { str: used.map(([k, v]) => `${k} ${cap(v)}`).join(' + '), free, used: usedTotal, total, any: used.length > 0 || free > 0 };
   })();
   // Headline capital: the LIVE trading-account total (deployed + free) from the broker funds
   // reads when present — dynamic, moves with the account — else the static own-capital config.
@@ -50,30 +51,28 @@ export default function AlgoTab({
       {/* Groww/Dhan-style P&L dashboard — realised-F&O calendar across Fyers/Upstox/Dhan. The
           capital / verified / YTD summary cards now sit INSIDE the journal as its top row. */}
       <div className="sec">
-        <PnlDashboard summary={(
-          <div className="g3">
-            <div className="csm">
-              <div className="lbl">{dep.any ? 'trading capital · live' : 'own capital'}</div>
-              <div className="vmd"><RsText>{cap(dep.any ? dep.total : ownStatic)}</RsText></div>
-              {dep.any && (
-                <div className="sub"><RsText>{`deployed: ${dep.str || '—'}${dep.free > 0 ? ` · ${cap(dep.free)} free` : ''}`}</RsText></div>
-              )}
-            </div>
-            <div className="csm">
-              <div className="lbl">{FY.labels.verifiedLong}</div>
-              <div className={'vmd ' + cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></div>
-              <div className="sub">net realised · ITR-verified</div>
-            </div>
-            <div className="csm">
-              <div className="lbl">{FY.labels.current} YTD</div>
-              <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
-              <div className="sub">
-                S01 <span className={cl(FY.s01.current.net)}><SInrF n={FY.s01.current.net} /></span> ·{' '}
-                S02 <span className={cl(FY.s02.current.net)}><SInrF n={FY.s02.current.net} /></span>
+        <PnlDashboard
+          capital={dep.any
+            ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
+            : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
+          summary={(
+            <div className="pnl-sumrow">
+              <div className="csm">
+                <div className="lbl">{FY.labels.verifiedLong}</div>
+                <div className={'vmd ' + cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></div>
+                <div className="sub">net realised · ITR-verified</div>
+              </div>
+              <div className="csm">
+                <div className="lbl">{FY.labels.current} YTD</div>
+                <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
+                <div className="sub">
+                  S01 <span className={cl(FY.s01.current.net)}><SInrF n={FY.s01.current.net} /></span> ·{' '}
+                  S02 <span className={cl(FY.s02.current.net)}><SInrF n={FY.s02.current.net} /></span>
+                </div>
               </div>
             </div>
-          </div>
-        )} />
+          )}
+        />
       </div>
 
       {/* Strategy toggle — one card at a time; the overall summaries sit OUTSIDE */}

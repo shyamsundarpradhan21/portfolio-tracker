@@ -2002,14 +2002,15 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
   70%  { box-shadow: 0 0 0 5px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
-/* capital / verified / YTD summary folded into the journal card as its top row */
+/* verified / YTD summary row folded into the journal card (trading capital now leads the stat panel) */
 .pnl-summary { padding: 4px 20px 14px; border-bottom: .5px solid var(--brd2); }
-.pnl-summary .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-@media (max-width: 720px) { .pnl-summary .g3 { grid-template-columns: 1fr; } }
+.pnl-summary .pnl-sumrow { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (max-width: 720px) { .pnl-summary .pnl-sumrow { grid-template-columns: 1fr; } }
 .pnl-brokers { padding: 0 20px 12px; display: flex; }
 .pnl-brokers .seg { flex-wrap: wrap; }
 .pnl-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
   border-top: .5px solid var(--brd2); border-bottom: .5px solid var(--brd2); }
+.pnl-stats.has-cap { grid-template-columns: repeat(5, 1fr); }   /* trading capital leads, adjacent to Net P&L */
 .pnl-stat { padding: 13px 18px; border-right: .5px solid var(--brd2); }
 .pnl-stat:last-child { border-right: none; }
 .pnl-periodbar { padding: 14px 20px 10px; flex-wrap: wrap; gap: 10px; }
@@ -2060,7 +2061,7 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .iq-tip .iq-v .rs { font-size: 1em; font-weight: 500; }   /* mono lacks ₹ — body-font glyph at ~digit size so it sits flush */
 
 @media (max-width: 720px) {
-  .pnl-stats { grid-template-columns: repeat(2, 1fr); }
+  .pnl-stats, .pnl-stats.has-cap { grid-template-columns: repeat(2, 1fr); }
   .pnl-stat { border-bottom: .5px solid var(--brd2); }
   .pnl-year { grid-template-columns: repeat(3, 1fr); }
   .pnl-dp { display: none; }
