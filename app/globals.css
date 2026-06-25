@@ -882,6 +882,12 @@ body::before {
    clipping, but that orphaned the 3rd tile (Winner/Drag/Largest, Top-gainer/loser/
    years) onto its own row — reverted on live feedback: a tight 3-up beats a 2+1
    orphan. If a value clips at tablet width, tighten the tile, don't drop a column. */
+/* Tablet/small-laptop (~720–1080): keep the 3-up (per the note above) but step the
+   headline figure down a tier so a 7-figure value doesn't hit the .csm nowrap+ellipsis
+   clip while the tile is narrow — "tighten the tile, don't drop a column". */
+@media (max-width: 1080px) {
+  .g3 .vlg, .g3 .vmd, .g4 .vlg, .g4 .vmd { font-size: var(--fs-xl); }
+}
 @media (max-width: 720px) {
   .g3 { grid-template-columns: 1fr; }
   .g2 { grid-template-columns: 1fr; }
@@ -916,13 +922,12 @@ body::before {
 /* the headline net-worth value shimmers using the current tab's accent color */
 .hdr-val {
   font-family: var(--mono);
-  /* The figure STRETCHES to the last letter of the caption's 2nd line ("incl.
-     trading … · Liabilities …"). Measured: at 46px the glyph ran 41px short of that
-     line; the glyph grows ~3.85px per 1px of font, so ~57px lands the right edge on
-     it. The 2nd line is fixed text (≈constant width across viewports), so the figure
-     is near-constant ~57px — only the largest monitors nudge to the 60 cap. Uses vw
-     (not cqw) since the hero column hugs the figure (a container unit is circular). */
-  font-size: clamp(57px, 4.8vw, 60px) !important;
+  /* Rem-anchored fluid size so the hero tracks the root clamp (html font-size:
+     clamp(15px,8px+0.7vw,21px)) like every --fs-* token: ~36px on phones, ~56px on a
+     laptop (still ≈spans the caption's 2nd line), and it keeps growing on ultrawide.
+     The old raw-px clamp (57px FLOOR) was decoupled from the root — pinned huge on
+     phones and frozen while everything else grew on large monitors. */
+  font-size: clamp(2.4rem, 1.2rem + 2.4vw, 3.6rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.047em; /* ≈ -3px at 64px, scales with the fluid size */
   line-height: 0.85; /* the mono font carries ~10% extra leading; trim it so the
@@ -2011,6 +2016,12 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .pnl-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
   border-top: .5px solid var(--brd2); border-bottom: .5px solid var(--brd2); }
 .pnl-stats.has-cap { grid-template-columns: repeat(5, 1fr); }   /* trading capital leads, adjacent to Net P&L */
+/* Intermediate step so the 4/5-wide stat strip doesn't hold full width down to the 720
+   phone rule — 5/4 → 3 → 2 instead of 5/4 → 2. */
+@media (max-width: 1000px) {
+  .pnl-stats, .pnl-stats.has-cap { grid-template-columns: repeat(3, 1fr); }
+  .pnl-stats .pnl-stat:nth-child(3n) { border-right: none; }
+}
 .pnl-stat { padding: 13px 18px; border-right: .5px solid var(--brd2); }
 .pnl-stat:last-child { border-right: none; }
 .pnl-periodbar { padding: 14px 20px 10px; flex-wrap: wrap; gap: 10px; }
