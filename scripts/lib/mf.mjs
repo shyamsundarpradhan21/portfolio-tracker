@@ -27,7 +27,7 @@ async function jget(url) {
 
 // Resolve a fund spec { q, inc[], exc[] } to its AMFI scheme code (mirrors mf-nav):
 // require ALL `inc` terms in the scheme name, reject any `exc`.
-async function resolveCode(spec) {
+export async function resolveCode(spec) {
   const list = await jget(SEARCH + encodeURIComponent(spec.q));
   if (!Array.isArray(list)) return null;
   const hit = list.find((it) => {
@@ -35,6 +35,17 @@ async function resolveCode(spec) {
     return (spec.inc || []).every((t) => n.includes(t)) && !(spec.exc || []).some((t) => n.includes(t));
   });
   return hit ? hit.schemeCode : null;
+}
+
+// Full DAILY NAV history for a scheme → { <iso>: nav }, or {} on failure. Used by the
+// historical growth backfill (the live path only needs the latest two — lastTwoNavs).
+export async function navHistory(code) {
+  try {
+    const j = await jget(`https://api.mfapi.in/mf/${code}`);
+    const out = {};
+    for (const r of (j?.data || [])) { const iso = toIso(r.date); const nav = +r.nav; if (iso && Number.isFinite(nav)) out[iso] = nav; }
+    return out;
+  } catch { return {}; }
 }
 
 // Latest two DAILY NAVs for a scheme → { latest, prev } numbers, or null.

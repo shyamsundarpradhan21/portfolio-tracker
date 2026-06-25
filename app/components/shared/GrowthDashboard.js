@@ -52,6 +52,7 @@ export default function GrowthDashboard({ days = 90 }) {
   const total = tape[tape.length - 1].net;
   // Per-sleeve final contribution (kept in house order — CMPF last).
   const breakdown = SLEEVES.map((s) => ({ ...s, val: cum[s.key] })).filter((s) => s.val !== 0);
+  const maxAbs = Math.max(...breakdown.map((s) => Math.abs(s.val)), 1); // bar scale
 
   return (
     <div className="card">
@@ -79,12 +80,18 @@ export default function GrowthDashboard({ days = 90 }) {
 
       <div style={{ marginTop: tape.length >= 2 ? 14 : 6 }}>
         {breakdown.map((s) => (
-          <div key={s.key} className="fxc" style={{ padding: '7px 0', borderTop: '.5px solid var(--brd2)' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 9, height: 9, borderRadius: 2, background: s.key === 'cmpf' ? CMPF_HATCH : s.c, display: 'inline-block', flexShrink: 0 }} />
-              <span style={{ color: 'var(--txt2)', fontSize: 'var(--fs-sm)' }}>{s.label}</span>
-            </span>
-            <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
+          <div key={s.key} style={{ padding: '7px 0', borderTop: '.5px solid var(--brd2)' }}>
+            <div className="fxc" style={{ marginBottom: 5 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: s.key === 'cmpf' ? CMPF_HATCH : s.c, display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ color: 'var(--txt2)', fontSize: 'var(--fs-sm)' }}>{s.label}</span>
+              </span>
+              <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
+            </div>
+            {/* magnitude bar — width ∝ |contribution|, coloured by direction */}
+            <div style={{ height: 4, background: 'var(--sur2)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.round((Math.abs(s.val) / maxAbs) * 100)}%`, height: '100%', background: s.val >= 0 ? 'var(--grn)' : 'var(--red)', opacity: 0.55, borderRadius: 2 }} />
+            </div>
           </div>
         ))}
       </div>
