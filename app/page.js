@@ -244,13 +244,24 @@ function Dashboard() {
     const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
     setHdrEdge((p) => (p.l === l && p.r === r ? p : { l, r }));
   }, []);
+  // Scroll the asset-card strip by ~one viewport-width worth (the ‹ › buttons use this).
+  const scrollHdr = useCallback((dir) => {
+    const el = hdrCardsRef.current; if (!el) return;
+    el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.7), behavior: 'smooth' });
+  }, []);
   useEffect(() => {
     const el = hdrCardsRef.current; if (!el) return;
     updHdrEdge();
     const ro = new ResizeObserver(updHdrEdge);
     ro.observe(el);
     window.addEventListener('resize', updHdrEdge);
-    return () => { ro.disconnect(); window.removeEventListener('resize', updHdrEdge); };
+    // Mouse wheel → horizontal: a plain vertical wheel scrolls the strip sideways (no Shift needed).
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || el.scrollWidth <= el.clientWidth + 2) return;
+      el.scrollLeft += e.deltaY; e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => { ro.disconnect(); window.removeEventListener('resize', updHdrEdge); el.removeEventListener('wheel', onWheel); };
   }, [updHdrEdge]);
 
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
@@ -1157,6 +1168,8 @@ function Dashboard() {
             {/* Asset-class cards — primary navigation (single-row scroll strip; the
                 wrapper carries the state-driven edge-fade affordance — RSP-001). */}
             <div className={'hdr-cards-wrap' + (hdrEdge.l ? ' edge-l' : '') + (hdrEdge.r ? ' edge-r' : '')}>
+            {hdrEdge.l && <button type="button" className="hdr-scroll l" aria-label="Scroll cards left" onClick={() => scrollHdr(-1)}>‹</button>}
+            {hdrEdge.r && <button type="button" className="hdr-scroll r" aria-label="Scroll cards right" onClick={() => scrollHdr(1)}>›</button>}
             <div className="hdr-cards" ref={hdrCardsRef} onScroll={updHdrEdge}>
               {headerCards.map((c) => (
                 <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '') + (c.cls ? ' ' + c.cls : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>

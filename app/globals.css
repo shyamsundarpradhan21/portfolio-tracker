@@ -1476,6 +1476,17 @@ body { padding: 0; }
 .hdr-cards-wrap::after  { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
 .hdr-cards-wrap.edge-l::before { opacity: .92; }
 .hdr-cards-wrap.edge-r::after  { opacity: .92; }
+/* Click-to-scroll arrows — shown only on the side that can scroll (toggled by edge-l/edge-r).
+   Sit over the edge-fade; the strip also takes mouse-wheel → horizontal (page.js). */
+.hdr-scroll { position: absolute; top: 50%; transform: translateY(-50%); z-index: 4;
+  width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  border: .5px solid var(--brd); background: var(--glass-bg); color: var(--txt2); cursor: pointer;
+  font-size: var(--fs-lg); line-height: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: color .12s, border-color .12s; }
+.hdr-scroll:hover { color: var(--txt); border-color: color-mix(in srgb, var(--acc) 45%, var(--brd2)); }
+.hdr-scroll:active { transform: translateY(-50%) scale(.92); }
+.hdr-scroll.l { left: 2px; }
+.hdr-scroll.r { right: 2px; }
 .hdr-card {
   display: flex; flex-direction: column; justify-content: center; /* centre content in the taller, hero-matched height */
   text-align: left; cursor: pointer; min-width: 0;
