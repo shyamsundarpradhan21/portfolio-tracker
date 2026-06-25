@@ -71,9 +71,10 @@ async function yahooQuote(sym) {
   return null;
 }
 
-// NIFTY 50 intraday 1-MINUTE OHLC candles (^NSEI) for the chart watermark. Yahoo's
-// finest intraday granularity is 1m. Returns [{ t:'HH:MM'(IST), o, h, l, c }] for
-// today, or null. The whole-day array is re-fetched each refresh (cheap, overwrite).
+// NIFTY 50 intraday 1-MINUTE OHLC(+V) candles (^NSEI) for the chart watermark. Yahoo's
+// finest intraday granularity is 1m. Returns [{ t:'HH:MM'(IST), o, h, l, c, v }] for
+// today, or null. The whole-day array is re-fetched each refresh (cheap, overwrite) —
+// so adding `v` here backfills today's volume on the next capture tick.
 export async function niftyCandles() {
   const path = '/v8/finance/chart/%5ENSEI?interval=1m&range=1d&includePrePost=false';
   for (const host of YH_HOSTS) {
@@ -85,11 +86,11 @@ export async function niftyCandles() {
       if (!Array.isArray(ts) || !q) continue;
       const out = [];
       for (let i = 0; i < ts.length; i++) {
-        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i];
-        if ([o, h, l, c].some((v) => typeof v !== 'number')) continue;
+        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i], v = q.volume?.[i];
+        if ([o, h, l, c].some((x) => typeof x !== 'number')) continue;
         const d = new Date((ts[i] + 5.5 * 3600) * 1000);   // shift epoch to IST wall-clock
         const t = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-        out.push({ t, o: r2(o), h: r2(h), l: r2(l), c: r2(c) });
+        out.push({ t, o: r2(o), h: r2(h), l: r2(l), c: r2(c), ...(typeof v === 'number' ? { v } : {}) });
       }
       return out.length ? out : null;
     } catch { /* try next host */ }

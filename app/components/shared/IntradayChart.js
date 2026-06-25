@@ -10,7 +10,7 @@
 // NB: legs are per-BROKER (the capture tape carries dhan/upstox/fyers), not per-trade —
 // per-position hover would need the daemon to capture each leg's P&L over time.
 import { useState } from 'react';
-import { scaleLines, scaleCandles } from '../../lib/pnlDaily';
+import { scaleLines, scaleCandles, niftyLevels } from '../../lib/pnlDaily';
 
 // Default overlay = the three F&O brokers. The Overview live curve passes its own
 // (F&O / equity / US sleeves). Each entry: { key, c (colour), label }.
@@ -37,6 +37,11 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const g = scaleLines(pts, ['net', ...(overlay ? present.map((o) => o.key) : [])], PLOT_W, H);
   if (!g || !g.byKey.net) return null;
   const nifty = scaleCandles(candles, PLOT_W, H);
+  // Intraday S/R levels (swing pivots) + volume band, both rendered as a faint watermark
+  // behind the P&L (only when we actually have NIFTY candles).
+  const levels = candles && candles.length ? niftyLevels(candles) : null;
+  const srLines = levels ? [...levels.resistances.map((l) => ({ ...l, k: 'R' })), ...levels.supports.map((l) => ({ ...l, k: 'S' }))] : [];
+  const VOL_BAND = H * 0.16;
   const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
 
   const net = g.byKey.net;
@@ -78,7 +83,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   // Hover card rows — Net + per-BROKER net (no per-order rows, no timestamp). Labels are
   // back: "Net" + each broker's name (the broker label in its CURVE colour so it ties to
   // its line). The value keeps sign-colour for direction. Rendered as an HTML overlay
-  // (below) so it can be an accent-tinted frosted-glass card.
+  // (below) so it can be a plain frosted-glass card.
   const tipRows = [];
   if (ht) {
     tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
@@ -114,6 +119,28 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
           })}
         </g>
       )}
+
+      {/* NIFTY volume histogram — faint bars in a bottom band, coloured by candle up/down */}
+      {nifty && nifty.vmax > 0 && (
+        <g opacity=".14">
+          {nifty.bars.map((b, i) => {
+            if (b.v == null) return null;
+            const vh = (b.v / nifty.vmax) * VOL_BAND;
+            return <rect key={i} x={b.x - nifty.bw / 2} y={H - vh} width={nifty.bw} height={vh} fill={b.up ? 'var(--grn)' : 'var(--red)'} />;
+          })}
+        </g>
+      )}
+
+      {/* support / resistance — faint dashed levels (swing pivots + day H/L), price-labelled left */}
+      {nifty && srLines.map((l, i) => {
+        const y = nifty.priceY(l.price);
+        return (
+          <g key={'sr' + i} opacity=".42">
+            <line x1="0" y1={y} x2={PLOT_W} y2={y} stroke="var(--txt3)" strokeWidth=".6" strokeDasharray="5 4" />
+            <text x="3" y={y - 2.5} style={{ fontSize: 8, fill: 'var(--txt3)', fontFamily: 'var(--mono)' }}>{l.k} {Math.round(l.price)}</text>
+          </g>
+        );
+      })}
 
       <line x1="0" y1={g.zeroY} x2={PLOT_W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
 
@@ -184,7 +211,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       )}
     </svg>
 
-    {/* accent-tinted frosted hover card — Net + per-broker net (colour = curve = legend) */}
+    {/* frosted hover card (untinted) — Net + per-broker net (colour = curve = legend) */}
     {hp && (
       <div className="iq-tip" style={{
         left: `${tipLeftPct}%`,

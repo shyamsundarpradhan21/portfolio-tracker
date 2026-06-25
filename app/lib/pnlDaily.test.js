@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
-  scaleIntraday, scaleCandles, mergeLiveTapes,
+  scaleIntraday, scaleCandles, mergeLiveTapes, niftyLevels,
 } from './pnlDaily.js';
 
 const rows = [
@@ -176,5 +176,63 @@ describe('monthlyRollup — newest first', () => {
   it('orders by month descending', () => expect(m.map((x) => x.ym)).toEqual(['2026-06', '2026-05', '2026-04']));
   it('June net = 52478 + 15714 = 68192 over 2 days', () => {
     const jun = m.find((x) => x.ym === '2026-06'); expect(jun.net).toBe(68192); expect(jun.days).toBe(2);
+  });
+});
+
+describe('scaleCandles — S/R axis mapping + volume', () => {
+  const cs = [
+    { t: '09:15', o: 100, h: 110, l: 95, c: 105, v: 10 },
+    { t: '09:16', o: 105, h: 108, l: 100, c: 102, v: 40 },
+    { t: '09:17', o: 102, h: 120, l: 90, c: 118, v: 25 },
+  ];
+  it('exposes lo/hi and a clamped price→y mapping on the same axis as the bars', () => {
+    const g = scaleCandles(cs, 100, 100, 0);
+    expect(g.lo).toBe(90); expect(g.hi).toBe(120);
+    expect(g.priceY(120)).toBe(0);    // hi → top
+    expect(g.priceY(90)).toBe(100);   // lo → bottom
+    expect(g.priceY(999)).toBe(0);    // clamped into the plot band
+    expect(g.priceY(-999)).toBe(100);
+  });
+  it('carries per-bar volume and the day max', () => {
+    const g = scaleCandles(cs, 100, 100);
+    expect(g.vmax).toBe(40);
+    expect(g.bars.map((b) => b.v)).toEqual([10, 40, 25]);
+  });
+  it('vmax is 0 and bar.v null when the feed has no volume', () => {
+    const g = scaleCandles([{ t: 'a', o: 1, h: 2, l: 0, c: 1 }, { t: 'b', o: 1, h: 3, l: 0, c: 2 }], 100, 100);
+    expect(g.vmax).toBe(0);
+    expect(g.bars[0].v).toBe(null);
+  });
+});
+
+describe('niftyLevels — intraday swing S/R (option c)', () => {
+  const mk = (h, l, c) => ({ t: '', o: c, h, l, c });
+  // A clean rise to a peak (idx5, h=120) then a fall to a trough (idx9, l=88); last close 97.
+  const cs = [
+    mk(102, 98, 100), mk(104, 99, 103), mk(108, 102, 107), mk(112, 106, 110), mk(115, 109, 113),
+    mk(120, 112, 114), mk(113, 107, 108), mk(109, 100, 101), mk(103, 92, 95), mk(98, 88, 90), mk(99, 93, 97),
+  ];
+  const out = niftyLevels(cs);
+  it('returns empty for fewer than 3 candles', () => {
+    const e = niftyLevels([mk(1, 0, 0.5), mk(1, 0, 0.5)]);
+    expect(e.resistances).toEqual([]); expect(e.supports).toEqual([]);
+  });
+  it('returns no levels on a flat day (dayHigh === dayLow)', () => {
+    const f = niftyLevels([mk(100, 100, 100), mk(100, 100, 100), mk(100, 100, 100)]);
+    expect(f.resistances).toEqual([]); expect(f.supports).toEqual([]);
+    expect(f.dayHigh).toBe(100); expect(f.dayLow).toBe(100);
+  });
+  it('anchors the day high/low and last close', () => {
+    expect(out.dayHigh).toBe(120); expect(out.dayLow).toBe(88); expect(out.last).toBe(97);
+  });
+  it('places every resistance ABOVE and every support BELOW the last close', () => {
+    expect(out.resistances.length).toBeGreaterThan(0);
+    expect(out.supports.length).toBeGreaterThan(0);
+    expect(out.resistances.every((l) => l.price > out.last)).toBe(true);
+    expect(out.supports.every((l) => l.price < out.last)).toBe(true);
+  });
+  it('detects the swing high (≈120) as resistance and swing low (≈88) as support', () => {
+    expect(out.resistances.some((l) => Math.abs(l.price - 120) < 0.5)).toBe(true);
+    expect(out.supports.some((l) => Math.abs(l.price - 88) < 0.5)).toBe(true);
   });
 });

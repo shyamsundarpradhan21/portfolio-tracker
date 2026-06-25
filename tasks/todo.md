@@ -275,3 +275,34 @@ into asset growth.
 - Unit tests for new pure calc; full `vitest run` green each phase.
 - Confirm captures still mint with the login tasks removed; deleted tasks gone.
 - Render-check affected tabs; confirm app renders the `growth` fallback when intraday absent.
+
+---
+
+# NIFTY S/R (swing) + volume on the Day-view watermark (DONE)
+
+User decisions: method = (c) detected intraday swing highs/lows, anchored by day H/L;
+layout = stays in the BACKGROUND watermark (no separate panel) — S/R as faint dashed
+lines, volume as a faint bottom histogram, both behind the P&L curve.
+
+## Tasks
+- [x] 1. `scripts/lib/equity.mjs niftyCandles()` — captures `v` (Yahoo `quote.volume[i]`), additive.
+- [x] 2. `app/lib/pnlDaily.js`: `scaleCandles` now returns `lo/hi/y0/y1/vmax/priceY` + per-bar `v`;
+      new pure `niftyLevels(candles)` (swing pivots → clustered, touch-ranked S/R + day H/L anchors).
+- [x] 3. `IntradayChart.js` — faint volume histogram (bottom band) + faint dashed S/R lines with
+      price labels, behind the P&L; gated on `nifty`/`vmax`.
+- [x] 4. +9 unit tests (sparse, flat, anchors, R>last/S<last, swing detection, scaleCandles fields).
+- [x] 5. `vitest run` green (214); S/R render-verified on the live watermark
+      (R 24261/24199/24067 · S 24042 around the ~24056 close). Volume pending the daemon restart
+      that picks up `v`.
+- [ ] 6. Adversarial multi-agent review — deferred (user interrupted to polish the hover card);
+      feature ships verified via the 9 unit tests + live render. Offer the review as a follow-up.
+
+## Review
+- S/R method = swing pivots (±5-bar local extremes), clustered within 0.08%, touch-ranked,
+  split around last close, with day H/L as outer anchors — faint dashed lines + R/S price
+  labels, kept neutral (not green/red) so they don't fight the P&L colours.
+- Volume = faint bottom-band histogram (≤16% height), coloured by candle up/down; renders
+  only once the capture's new `v` field populates (daemon restart).
+- Layout per user: everything stays in the BACKGROUND watermark, no separate panel.
+- Hover card (same session): dropped the tint → plain frosted glass; ₹ sized to 1em body
+  font so it sits flush (was over-shrunk to .82em → looked tiny).

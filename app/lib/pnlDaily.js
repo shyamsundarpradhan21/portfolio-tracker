@@ -192,16 +192,67 @@ export function mergeLiveTapes(parts = {}) {
 export function scaleCandles(candles, width, height, pad = 8) {
   const cs = (candles || []).filter((c) => c && [c.o, c.h, c.l, c.c].every((v) => Number.isFinite(+v)));
   if (cs.length < 2) return null;
-  let lo = Infinity, hi = -Infinity;
-  for (const c of cs) { if (+c.l < lo) lo = +c.l; if (+c.h > hi) hi = +c.h; }
+  let lo = Infinity, hi = -Infinity, vmax = 0;
+  for (const c of cs) { if (+c.l < lo) lo = +c.l; if (+c.h > hi) hi = +c.h; if (Number.isFinite(+c.v) && +c.v > vmax) vmax = +c.v; }
   if (lo === hi) { lo -= 1; hi += 1; }
   const x0 = pad, x1 = width - pad, y0 = pad, y1 = height - pad;
   const vy = (v) => r2(y0 + (hi - v) / (hi - lo) * (y1 - y0));
   const bars = cs.map((c, i) => ({
     x: r2(x0 + (i / (cs.length - 1)) * (x1 - x0)),
     openY: vy(+c.o), closeY: vy(+c.c), highY: vy(+c.h), lowY: vy(+c.l), up: +c.c >= +c.o,
+    v: Number.isFinite(+c.v) ? +c.v : null,
   }));
-  return { bars, bw: Math.max(1.2, ((x1 - x0) / cs.length) * 0.6) };
+  // Expose the price→y mapping (clamped into the plot band) so the component can place S/R
+  // lines on the SAME axis as the candles, plus vmax for the volume histogram.
+  const priceY = (p) => r2(Math.max(y0, Math.min(y1, y0 + (hi - p) / (hi - lo) * (y1 - y0))));
+  return { bars, bw: Math.max(1.2, ((x1 - x0) / cs.length) * 0.6), lo, hi, y0, y1, vmax, priceY };
+}
+
+// Intraday support/resistance via swing pivots (option c). A swing HIGH is a candle whose
+// high is the max within ±window bars; a swing LOW, the min within ±window. Nearby pivots
+// are clustered (within `tol` fraction of price) into levels, ranked by touch count, then
+// split around the last close into resistances (above) / supports (below). The day high &
+// low are always added as the outer anchors. Pure → unit-tested. Defensive on sparse/flat.
+//   → { resistances:[{price,touches,anchor?}], supports:[...], dayHigh, dayLow, last }
+export function niftyLevels(candles, { window = 5, tol = 0.0008, max = 2 } = {}) {
+  const cs = (candles || []).filter((c) => c && [c.h, c.l, c.c].every((v) => Number.isFinite(+v)));
+  const empty = { resistances: [], supports: [], dayHigh: null, dayLow: null, last: null };
+  if (cs.length < 3) return empty;
+  const last = +cs[cs.length - 1].c;
+  let dayHigh = -Infinity, dayLow = Infinity;
+  for (const c of cs) { if (+c.h > dayHigh) dayHigh = +c.h; if (+c.l < dayLow) dayLow = +c.l; }
+  if (!(dayHigh > dayLow)) return { ...empty, last: r2(last), dayHigh: r2(dayHigh), dayLow: r2(dayLow) };  // flat day
+  const w = Math.max(1, Math.min(window, Math.floor((cs.length - 1) / 2)));
+  const highs = [], lows = [];
+  for (let i = 0; i < cs.length; i++) {
+    let isHigh = true, isLow = true;
+    for (let j = Math.max(0, i - w); j <= Math.min(cs.length - 1, i + w); j++) {
+      if (j === i) continue;
+      if (+cs[j].h > +cs[i].h) isHigh = false;
+      if (+cs[j].l < +cs[i].l) isLow = false;
+    }
+    if (isHigh) highs.push(+cs[i].h);
+    if (isLow) lows.push(+cs[i].l);
+  }
+  // Merge a sorted price list into clustered levels (avg price, touch count) within `tol`.
+  const cluster = (prices) => {
+    const out = [];
+    for (const p of [...prices].sort((a, b) => a - b)) {
+      const g = out[out.length - 1];
+      if (g && Math.abs(p - g.price) <= g.price * tol) { g.sum += p; g.touches += 1; g.price = g.sum / g.touches; }
+      else out.push({ price: p, sum: p, touches: 1 });
+    }
+    return out.map((g) => ({ price: r2(g.price), touches: g.touches }));
+  };
+  // Rank by touches, then proximity to the last price (nearest wins ties).
+  const rank = (lvls) => lvls.slice().sort((a, b) => b.touches - a.touches || Math.abs(a.price - last) - Math.abs(b.price - last));
+  const resistances = rank(cluster(highs).filter((l) => l.price > last)).slice(0, max);
+  const supports = rank(cluster(lows).filter((l) => l.price < last)).slice(0, max);
+  // Day high/low as outer anchors (skip if a swing level already sits within tol of them).
+  const near = (lvls, p) => lvls.some((l) => Math.abs(l.price - p) <= p * tol);
+  if (dayHigh > last && !near(resistances, dayHigh)) resistances.push({ price: r2(dayHigh), touches: 1, anchor: true });
+  if (dayLow < last && !near(supports, dayLow)) supports.push({ price: r2(dayLow), touches: 1, anchor: true });
+  return { resistances, supports, dayHigh: r2(dayHigh), dayLow: r2(dayLow), last: r2(last) };
 }
 
 // Scale an intraday tape ([{ t:'HH:MM', net }]) into SVG geometry for the Day
