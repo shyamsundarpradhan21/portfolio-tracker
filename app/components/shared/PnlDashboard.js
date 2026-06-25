@@ -47,6 +47,24 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
       const m = localStorage.getItem('nwTracker.pnlMetric'); if (m === 'gross' || m === 'net') setMetric(m);
     } catch {}
   }, []);
+  // Today's live F&O MTM, for the Day-view period bar — realised is ₹0 until the
+  // evening sync books today, so the bar shows live MTM during the session instead.
+  const [liveToday, setLiveToday] = useState(null);
+  useEffect(() => {
+    let on = true;
+    const today = todayIstIso();
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/intraday?kind=fno&date=${today}`, { cache: 'no-store' });
+        if (!r.ok || !on) return;
+        const pts = (await r.json()).tape || [];
+        if (on) setLiveToday(pts.length ? pts[pts.length - 1].net : null);
+      } catch {}
+    };
+    poll();
+    const id = setInterval(poll, 12_000);
+    return () => { on = false; clearInterval(id); };
+  }, []);
   const pick = (v) => { setView(v); try { localStorage.setItem('nwTracker.pnlView', v); } catch {} };
   const pickBroker = (b) => { setBroker(b); try { localStorage.setItem('nwTracker.pnlBroker', b); } catch {} };
   const pickMetric = (m) => { setMetric(m); try { localStorage.setItem('nwTracker.pnlMetric', m); } catch {} };
@@ -159,7 +177,7 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
           <span style={{ fontWeight: 600 }}>{periodLabel(view, periodKey)}</span>
           <button className="pnl-nav" onClick={() => nav(1)} disabled={cur[view] >= lists[view].length - 1} aria-label="Next">›</button>
         </div>
-        <PeriodSummary view={view} periodKey={periodKey} byDate={byDate} series={series} />
+        <PeriodSummary view={view} periodKey={periodKey} byDate={byDate} series={series} liveToday={liveToday} />
       </div>
 
       {/* ── view body ── */}
@@ -279,7 +297,10 @@ function DayPanel({ date, byDate }) {
     <div className="mini" style={{ padding: '16px 18px' }}>
       <div className="fxc">
         <div className="lbl" style={{ margin: 0 }}>{tape.length ? 'P&L' : 'Realised P&L'} · {prettyDate(date)}</div>
-        <div className={'vmd ' + (headNet != null ? cl(headNet) : '')}>{headNet != null ? <SInrF n={headNet} /> : '—'}</div>
+        {/* When the curve renders, its right-edge label IS the value — the headline
+            here would be redundant, so show it only in the no-curve (realised) state. */}
+        {tape.length >= 2 ? null
+          : <div className={'vmd ' + (headNet != null ? cl(headNet) : '')}>{headNet != null ? <SInrF n={headNet} /> : '—'}</div>}
       </div>
 
       {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} /> : null}
@@ -306,17 +327,20 @@ const Mini = ({ k, v, vc }) => (
   <div className="csm"><div className="sub" style={{ margin: 0 }}>{k}</div><div className={'vsm ' + (vc || '')} style={{ marginTop: 4 }}>{v}</div></div>
 );
 
-function PeriodSummary({ view, periodKey, byDate, series }) {
+function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   const sub = view === 'year' ? series.filter((d) => fyOf(d.date) === periodKey)
     : view === 'month' ? series.filter((d) => d.date.slice(0, 7) === periodKey)
     : series.filter((d) => d.date === periodKey);
   const s = summaryStats(sub);
+  // Today has no realised row until the evening sync — so its bar shows the LIVE MTM
+  // (the realised + per-leg fields fill in at close), not a misleading ₹0.
+  const liveDay = view === 'day' && periodKey === todayIstIso() && liveToday != null;
   return (
     <div className="pnl-psum">
-      <span><span className="lbl">Orders</span> <span className="mono">{s.orders || '—'}</span></span>
-      <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
-      <span><span className="lbl">Charges</span> <span className="mono red"><SInrF n={s.charges} /></span></span>
-      <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
+      <span><span className="lbl">Orders</span> <span className="mono">{liveDay ? '—' : (s.orders || '—')}</span></span>
+      <span><span className="lbl">Days</span> <span className="mono">{liveDay ? '—' : s.tradingDays}</span></span>
+      <span><span className="lbl">Charges</span> <span className="mono red">{liveDay ? '—' : <SInrF n={s.charges} />}</span></span>
+      <span><span className="lbl">{liveDay ? 'Live MTM' : 'Net'}</span> <span className={'mono ' + cl(liveDay ? liveToday : s.net)}><SInrF n={liveDay ? liveToday : s.net} /></span></span>
     </div>
   );
 }
