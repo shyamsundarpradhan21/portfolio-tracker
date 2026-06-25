@@ -194,8 +194,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
         borderColor: `color-mix(in srgb, var(${tipUp ? '--grn' : '--red'}) 42%, var(--glass-brd))`,
       }}>
         {tipRows.map((row, i) => (
-          <div key={i} className="iq-r">
-            <span className="iq-l" style={{ color: row.kind === 'net' ? 'var(--txt)' : 'var(--txt2)', fontWeight: row.kind === 'net' ? 700 : 600 }}>{row.label}</span>
+          <div key={i} className={'iq-r' + (row.kind === 'net' ? ' iq-net' : '')}>
             <span className="iq-v" style={{ color: row.vc }}>{f(row.v)}</span>
           </div>
         ))}
