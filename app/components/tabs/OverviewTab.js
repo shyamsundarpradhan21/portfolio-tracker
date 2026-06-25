@@ -7,6 +7,7 @@ import ProjectionTab from '../ProjectionTab';
 import AllocBar from '../shared/AllocBar';
 import SipCard from '../shared/SipCard';
 import PortfolioLiveCurve from '../shared/PortfolioLiveCurve';
+import GrowthDashboard from '../shared/GrowthDashboard';
 
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots, histSeries,
@@ -26,6 +27,10 @@ export default function OverviewTab({
       {/* Live intraday portfolio P&L — today's day-change across F&O + Indian
           equity + US sleeves. Self-hides outside market hours (no points yet). */}
       <PortfolioLiveCurve />
+
+      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves, fed by
+          the resilient growth:<date> snapshots (KV + archive), not a live Yahoo poll. */}
+      <div className="sec"><GrowthDashboard /></div>
 
       {/* Net worth growth/projection scrubber, with the live allocation strip merged
           into its footer (replaces the separate sunburst card). */}

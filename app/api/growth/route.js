@@ -34,10 +34,59 @@ async function fromKV(date) {
   } catch { return null; }
 }
 
+// The last N IST dates, oldest first — the window the growth dashboard charts.
+function lastNDates(n) {
+  const out = [];
+  const ist = new Date(Date.now() + 5.5 * 3600 * 1000);
+  for (let i = 0; i < n; i++) {
+    const d = new Date(ist);
+    d.setUTCDate(d.getUTCDate() - i);
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out.reverse();
+}
+
+// One MGET for the whole window (recent days live in KV; older fall back to the archive).
+async function fromKVMany(dates) {
+  const creds = kvCreds();
+  if (!creds || !dates.length) return {};
+  try {
+    const r = await fetch(creds.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['MGET', ...dates.map((d) => `growth:${d}`)]),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(6000),
+    });
+    const vals = (await r.json())?.result || [];
+    const out = {};
+    dates.forEach((d, i) => { if (vals[i]) { try { out[d] = JSON.parse(vals[i]); } catch { /* skip */ } } });
+    return out;
+  } catch { return {}; }
+}
+
 export async function GET(req) {
-  const date = new URL(req.url).searchParams.get('date');
+  const params = new URL(req.url).searchParams;
+  const date = params.get('date');
+  const days = Math.min(370, Math.max(0, parseInt(params.get('days') || '0', 10)));
+
+  // Range mode (?days=N) → the dashboard window: KV MGET, archive fallback per date.
+  if (days > 0) {
+    const dates = lastNDates(days);
+    const kv = await fromKVMany(dates);
+    const records = {};
+    for (const d of dates) {
+      const rec = kv[d] || growthArchive?.days?.[d] || null;
+      if (rec) records[d] = rec;
+    }
+    return new Response(JSON.stringify({ days, records, source: Object.keys(kv).length ? 'kv+archive' : 'archive' }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  // Single-date mode (existing).
   if (!isoDate(date)) {
-    return Response.json({ error: 'date must be YYYY-MM-DD' }, { status: 400 });
+    return Response.json({ error: 'date must be YYYY-MM-DD, or pass ?days=N' }, { status: 400 });
   }
   const live = await fromKV(date);
   const record = live || growthArchive?.days?.[date] || null;
