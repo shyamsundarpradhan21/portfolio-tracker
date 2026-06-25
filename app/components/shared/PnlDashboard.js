@@ -72,6 +72,11 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
     const fys = [...new Set(series.map((d) => fyOf(d.date)))];
     const months = [...new Set(series.map((d) => d.date.slice(0, 7)))];
     const days = series.map((d) => d.date);
+    // Today's REALISED row only lands at the evening sync, but its LIVE intraday curve
+    // exists all session — so make today selectable in the Day view (and its default,
+    // since it's newest), else the live curve has nowhere to render until tomorrow.
+    const today = todayIstIso();
+    if (!days.includes(today)) days.push(today);
     return { year: fys, month: months, day: days };
   }, [series]);
   const [cur, setCur] = useState({ year: 0, month: 0, day: 0 });
