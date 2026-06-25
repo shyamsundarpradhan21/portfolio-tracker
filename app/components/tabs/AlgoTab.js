@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { cl, SInrF, RsText, inrFull } from '../../lib/fmt';
+import { cl, SInrF, RsText } from '../../lib/fmt';
 import { LiveSInrF } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -142,15 +142,6 @@ export default function AlgoTab({
       </div>
 
       {fno.hasAny ? <div className="sec"><FnoPositions data={fno} /></div> : null}
-
-      <div className="csm sec">
-        <span style={{ color: 'var(--txt2)' }}>
-          {FY.labels.verified} combined — Gross: <span className="grn"><SInrF n={FY.combinedVerified.gross} /></span> ·
-          Charges: <span className="red"><RsText>{inrFull(FY.combinedVerified.charges)}</RsText></span> ·
-          Net F&amp;O (Sch BP): <span className={cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></span>
-          {'  '}<span className="mut">(S01 <SInrF n={FY.s01.verified.total.net} /> · S02 <SInrF n={FY.s02.verified.total.net} />)</span>
-        </span>
-      </div>
 
       {fnoRealized ? <div className="sec"><FnoHistory data={fnoRealized} /></div> : null}
 
