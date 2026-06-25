@@ -19,11 +19,11 @@ const FY_MONTHS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
 const bucketStyle = (b) =>
   b == null ? { background: 'var(--pnl-empty)' }
   : { background: `var(--pnl-b${b > 0 ? 'p' + b : b < 0 ? 'l' + -b : 'e'})` };
-const Stat = ({ k, v, vc, sub }) => (
-  <div className="pnl-stat">
+const Stat = ({ k, v, vc, foot }) => (
+  <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
     <div className="lbl" style={{ margin: 0 }}>{k}</div>
     <div className={'vmd ' + (vc || '')} style={{ marginTop: 5 }}>{v}</div>
-    {sub ? <div className="sub" style={{ marginTop: 3 }}>{sub}</div> : null}
+    {foot ? <div className="fxc sub" style={{ marginTop: 'auto', paddingTop: 8, gap: 8 }}>{foot}</div> : null}
   </div>
 );
 
@@ -42,7 +42,7 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
   const [dayMode, setDayMode] = useState('most'); // 'most' | 'least' profitable day
   useEffect(() => {
     try {
-      const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year'].includes(v)) setView(v);
+      const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year', 'all'].includes(v)) setView(v);
       const b = localStorage.getItem('nwTracker.pnlBroker'); if (b) setBroker(b);
       const m = localStorage.getItem('nwTracker.pnlMetric'); if (m === 'gross' || m === 'net') setMetric(m);
     } catch {}
@@ -95,12 +95,12 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
     // since it's newest), else the live curve has nowhere to render until tomorrow.
     const today = todayIstIso();
     if (!days.includes(today)) days.push(today);
-    return { year: fys, month: months, day: days };
+    return { year: fys, month: months, day: days, all: ['all'] };
   }, [series]);
-  const [cur, setCur] = useState({ year: 0, month: 0, day: 0 });
+  const [cur, setCur] = useState({ year: 0, month: 0, day: 0, all: 0 });
   // Snap each cursor to the newest entry once data is known.
   useEffect(() => {
-    setCur({ year: Math.max(0, lists.year.length - 1), month: Math.max(0, lists.month.length - 1), day: Math.max(0, lists.day.length - 1) });
+    setCur({ year: Math.max(0, lists.year.length - 1), month: Math.max(0, lists.month.length - 1), day: Math.max(0, lists.day.length - 1), all: 0 });
   }, [lists]);
 
   if (!series.length) {
@@ -114,33 +114,32 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
 
   const periodKey = lists[view][Math.min(cur[view], lists[view].length - 1)] || lists[view][lists[view].length - 1];
   // The FY in scope drives the top stat panel + monthly table regardless of view.
-  const scopeFy = view === 'year' ? periodKey
+  const scopeFy = view === 'all' ? null
+    : view === 'year' ? periodKey
     : view === 'month' ? fyOf(periodKey + '-01')
     : fyOf(periodKey);
-  const fySeries = series.filter((d) => fyOf(d.date) === scopeFy);
-  const stats = summaryStats(fySeries);
+  // The stat panel scopes to the period in view — all-time for All, else the FY in scope.
+  const statSeries = view === 'all' ? series : series.filter((d) => fyOf(d.date) === scopeFy);
+  const stats = summaryStats(statSeries);
   const nav = (dir) => setCur((c) => ({ ...c, [view]: Math.min(lists[view].length - 1, Math.max(0, c[view] + dir)) }));
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
       {/* ── header ── */}
       <div className="fxc" style={{ padding: '16px 20px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div className="ctitle" style={{ margin: 0 }}>P&amp;L Dashboard <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O · realised</span></div>
-          <LivePnl broker={activeBroker} />
-        </div>
+        <div className="ctitle" style={{ margin: 0 }}>Trading Journal <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O · realised</span></div>
         <div className="seg" role="tablist" aria-label="P&L period">
-          {['day', 'month', 'year'].map((v) => (
+          {['day', 'month', 'year', 'all'].map((v) => (
             <button key={v} role="tab" aria-selected={view === v} className={view === v ? 'on' : ''} onClick={() => pick(v)}>
-              {v[0].toUpperCase() + v.slice(1)}
+              {v === 'all' ? 'All' : v[0].toUpperCase() + v.slice(1)}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── controls: broker filter + Net/Gross metric ── */}
-      <div className="pnl-brokers">
-        {brokers.length > 1 && (
+      {/* ── controls: broker filter (Net/Gross removed — captured in the cards) ── */}
+      {brokers.length > 1 && (
+        <div className="pnl-brokers">
           <div className="seg" role="tablist" aria-label="Broker">
             {['all', ...brokers].map((b) => (
               <button key={b} role="tab" aria-selected={activeBroker === b} className={activeBroker === b ? 'on' : ''} onClick={() => pickBroker(b)}>
@@ -148,26 +147,17 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
               </button>
             ))}
           </div>
-        )}
-        <div className="seg" role="tablist" aria-label="Metric" style={{ marginLeft: 'auto' }}>
-          {['net', 'gross'].map((m) => (
-            <button key={m} role="tab" aria-selected={metric === m} className={metric === m ? 'on' : ''} onClick={() => pickMetric(m)}>
-              {m === 'net' ? 'Net' : 'Gross'}
-            </button>
-          ))}
         </div>
-      </div>
+      )}
 
-      {/* ── stat panel (FY in scope) ── */}
+      {/* ── stat panel — every subtext is a 2-corner FOOTER (value left / right, colour-coded) ── */}
       <div className="pnl-stats">
-        <Stat k={metric === 'gross' ? 'Gross P&L' : 'Net P&L'} vc={cl(stats.net)} v={<SInrF n={stats.net} />}
-          sub={`Gross ${inrC(stats.gross)} · charges ${inrC(stats.charges)} · avg ${inrC(stats.avgPerDay)}/day`} />
+        <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />}
+          foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />
         <DayStat stats={stats} mode={dayMode} onToggle={() => setDayMode((m) => (m === 'most' ? 'least' : 'most'))} />
-        <Stat k="Orders" v={stats.orders || '—'}
-          sub={stats.orders ? `${(stats.orders / stats.tradingDays).toFixed(1)} avg/day` : 'not in this report'} />
         <Stat k="Trading days" v={stats.tradingDays}
-          sub={`streak 🔥 ${stats.bestStreak} · now ${stats.currentStreak}${stats.currentStreakWin ? '' : ' loss'}`} />
+          foot={<><span>streak 🔥 {stats.bestStreak}</span><span>now {stats.currentStreak}{stats.currentStreakWin ? '' : ' (loss)'}</span></>} />
       </div>
 
       {/* ── period bar ── */}
@@ -185,6 +175,12 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
         {view === 'year' && <YearHeat fy={scopeFy} byDate={byDate} buckets={buckets} />}
         {view === 'month' && <MonthCal ym={periodKey} byDate={byDate} buckets={buckets} />}
         {view === 'day' && <DayPanel key={periodKey} date={periodKey} byDate={byDate} />}
+        {view === 'all' && [...lists.year].reverse().map((fy) => (
+          <div key={fy} style={{ marginBottom: 18 }}>
+            <div className="lbl" style={{ margin: '0 0 6px' }}>{fy}</div>
+            <YearHeat fy={fy} byDate={byDate} buckets={buckets} />
+          </div>
+        ))}
       </div>
 
       {view !== 'day' && <Legend />}
@@ -290,37 +286,27 @@ function DayPanel({ date, byDate }) {
   }, [date]);
   const tape = liveTape != null ? liveTape : (APP.fnoIntraday?.days?.[date] || []);
   const pending = tape.some((p) => p.pending);
-  // The headline tracks the LIVE tape (realised + open MTM) when one exists, so it
-  // can never disagree with the curve below; falls back to the realised ledger row.
-  const liveNet = tape.length ? tape[tape.length - 1].net : null;
-  const headNet = liveNet != null ? liveNet : (d ? d.net : null);
+  // Flattened — contents sit directly in the view-body container (no nested .mini box,
+  // which scaled oddly); the date + summary live in the period bar above, so no header here.
   return (
-    <div className="mini" style={{ padding: '16px 18px' }}>
-      <div className="fxc">
-        <div className="lbl" style={{ margin: 0 }}>{tape.length ? 'P&L' : 'Realised P&L'} · {prettyDate(date)}</div>
-        {/* When the curve renders, its right-edge label IS the value — the headline
-            here would be redundant, so show it only in the no-curve (realised) state. */}
-        {tape.length >= 2 ? null
-          : <div className={'vmd ' + (headNet != null ? cl(headNet) : '')}>{headNet != null ? <SInrF n={headNet} /> : '—'}</div>}
-      </div>
-
+    <>
       {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} fills={fills} /> : null}
 
       {d ? (
         <div className="g4" style={{ marginTop: 12 }}>
           <Mini k="Gross" v={<SInrF n={d.gross} />} vc={cl(d.gross)} />
-          <Mini k="Charges" v={<SInrF n={d.charges} />} vc="red" />
+          <Mini k="Charges" v={<SInrF n={d.charges} />} />
           <Mini k="Orders" v={d.orders || '—'} />
           <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
-      ) : (tape.length ? null : <div className="sub">No trades captured this day.</div>)}
+      ) : (tape.length ? null : <div className="sub" style={{ marginTop: 12 }}>No trades captured this day.</div>)}
 
       {tape.length < 2 ? (
         <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
           The intraday P&amp;L curve (green above 0 / red below) draws once the live capture has logged a few points — it snapshots realised + open MTM every few minutes through the session.
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -329,7 +315,8 @@ const Mini = ({ k, v, vc }) => (
 );
 
 function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
-  const sub = view === 'year' ? series.filter((d) => fyOf(d.date) === periodKey)
+  const sub = view === 'all' ? series
+    : view === 'year' ? series.filter((d) => fyOf(d.date) === periodKey)
     : view === 'month' ? series.filter((d) => d.date.slice(0, 7) === periodKey)
     : series.filter((d) => d.date === periodKey);
   const s = summaryStats(sub);
@@ -338,11 +325,18 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   // older points carry net only, so fall back to a single Live P&L figure.
   const liveDay = view === 'day' && periodKey === todayIstIso() && liveToday != null;
   const split = liveDay && liveToday.realised != null && liveToday.mtm != null;
+  // Charges is a COST, not a P&L direction → neutral, never red. Booked at the evening
+  // sync, so on the live day it reads — until the day's realised row lands.
+  const dayCharges = byDate.get(periodKey)?.charges;
+  const Charges = ({ n }) => (
+    <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}>{n != null ? <SInrF n={n} /> : '—'}</span></span>
+  );
   if (split) {
     return (
       <div className="pnl-psum">
         <span><span className="lbl">Realised</span> <span className={'mono ' + cl(liveToday.realised)}><SInrF n={liveToday.realised} /></span></span>
         <span><span className="lbl">Open MTM</span> <span className={'mono ' + cl(liveToday.mtm)}><SInrF n={liveToday.mtm} /></span></span>
+        <Charges n={dayCharges} />
         <span><span className="lbl">Net</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
       </div>
     );
@@ -350,7 +344,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   if (liveDay) {
     return (
       <div className="pnl-psum">
-        <span><span className="lbl">Orders</span> <span className="mono">—</span></span>
+        <Charges n={dayCharges} />
         <span><span className="lbl">Live P&amp;L</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
       </div>
     );
@@ -359,7 +353,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
     <div className="pnl-psum">
       <span><span className="lbl">Orders</span> <span className="mono">{s.orders || '—'}</span></span>
       <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
-      <span><span className="lbl">Charges</span> <span className="mono red"><SInrF n={s.charges} /></span></span>
+      <Charges n={s.charges} />
       <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
     </div>
   );
@@ -386,14 +380,17 @@ function Legend() {
 
 // Win rate — shows the % number, hover swaps it for the donut ring.
 function WinRateStat({ stats }) {
-  const [hover, setHover] = useState(false);
   return (
-    <div className="pnl-stat" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ cursor: 'default' }}>
+    <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Win rate</div>
-      <div className="vmd" style={{ marginTop: 5, minHeight: 26, display: 'flex', alignItems: 'center' }}>
-        {hover ? <Donut pct={stats.winPct} size={26} /> : `${stats.winPct}%`}
+      <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+        <Donut pct={stats.winPct} size={56} showPct />
       </div>
-      <div className="sub" style={{ marginTop: 3 }}>{stats.winDays} win · {stats.lossDays} loss days</div>
+      {/* win count (green, left) · loss count (red, right) — counts only, colour-coded */}
+      <div className="fxc sub" style={{ marginTop: 'auto', paddingTop: 8 }}>
+        <span className="grn" style={{ fontWeight: 700 }}>{stats.winDays}</span>
+        <span className="red" style={{ fontWeight: 700 }}>{stats.lossDays}</span>
+      </div>
     </div>
   );
 }
@@ -402,18 +399,18 @@ function WinRateStat({ stats }) {
 function DayStat({ stats, mode, onToggle }) {
   const d = mode === 'most' ? stats.mostProfit : stats.leastProfit;
   return (
-    <div className="pnl-stat" onClick={onToggle} style={{ cursor: 'pointer' }} title="Click to toggle most / least profitable day">
+    <div className="pnl-stat" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} title="Click to toggle most / least profitable day">
       <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
         {mode === 'most' ? 'Most profitable day' : 'Least profitable day'} <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-sm)' }}>↻</span>
       </div>
       <div className={'vmd ' + (d ? cl(d.net) : '')} style={{ marginTop: 5 }}>{d ? <SInrF n={d.net} /> : '—'}</div>
-      <div className="sub" style={{ marginTop: 3 }}>{d ? prettyDate(d.date) : ''}</div>
+      <div className="sub" style={{ marginTop: 'auto', paddingTop: 8 }}>{d ? prettyDate(d.date) : ''}</div>
     </div>
   );
 }
 
 // Win-rate ring (Groww-style). Green arc = win%.
-function Donut({ pct, color = 'var(--grn)', size = 26 }) {
+function Donut({ pct, color = 'var(--grn)', size = 26, showPct = false }) {
   const r = 11, c = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true">
@@ -421,6 +418,7 @@ function Donut({ pct, color = 'var(--grn)', size = 26 }) {
       <circle cx="14" cy="14" r={r} fill="none" stroke={color} strokeWidth="4"
         strokeDasharray={c} strokeDashoffset={c * (1 - (pct || 0) / 100)}
         strokeLinecap="round" transform="rotate(-90 14 14)" />
+      {showPct ? <text x="14" y="14.5" textAnchor="middle" dominantBaseline="central" fill="var(--txt)" style={{ fontSize: '7.5px', fontWeight: 700 }}>{pct}%</text> : null}
     </svg>
   );
 }
@@ -461,6 +459,7 @@ const prettyDate = (iso) => `${+iso.slice(8)} ${MON[+iso.slice(5, 7) - 1]} ${iso
 // Today's date in IST (the market's timezone), for deciding when to keep polling.
 const todayIstIso = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 const periodLabel = (view, key) =>
-  view === 'year' ? key
+  view === 'all' ? 'All-time'
+  : view === 'year' ? key
   : view === 'month' ? `${MON[+key.slice(5, 7) - 1]} ${key.slice(0, 4)}`
   : prettyDate(key);
