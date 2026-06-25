@@ -15,6 +15,11 @@ import { segmentOf } from './fno-charges.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const readJSON = (p, fb = null) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return fb; } };
 const isFno = (sym) => segmentOf(sym) != null;
+// A broker position is an F&O leg if the broker tags it so (Dhan's exchangeSegment
+// NSE_FNO/BSE_FNO) OR its tradingSymbol parses as F&O. Dhan's hyphenated symbols
+// (e.g. NIFTY-Jun2026-23550-PE) don't parse via segmentOf, so a symbol-only filter
+// silently dropped EVERY Dhan F&O leg — trust the explicit segment, fall back to parse.
+export const isFnoPosition = (p) => /FNO/.test(p?.exchangeSegment || '') || isFno(p?.tradingSymbol);
 const num = (n) => (Number.isFinite(+n) ? +n : 0);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -59,7 +64,7 @@ async function dhan(withOrders) {
   const list = Array.isArray(pos.json) ? pos.json : (pos.json.data || []);
   let net = 0;
   for (const p of list) {
-    if (!isFno(p.tradingSymbol)) continue;
+    if (!isFnoPosition(p)) continue;
     net += num(p.realizedProfit) + num(p.unrealizedProfit);
   }
   let pending = false;
