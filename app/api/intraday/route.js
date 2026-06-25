@@ -57,7 +57,12 @@ export async function GET(req) {
   const fills = kind === 'fno'
     ? ((!Array.isArray(live) && Array.isArray(live?.fills)) ? live.fills : (archive?.fills?.[date] || []))
     : [];
-  return new Response(JSON.stringify({ date, kind, tape, fills, source: live ? 'kv' : 'archive' }), {
+  // Durability flag: is this day baked into the committed archive THIS deployment ships?
+  // A day served from KV but absent here lives only in the 3-day KV cache — it'll vanish
+  // when the cache expires unless the archive is committed AND redeployed. The client
+  // surfaces this on past days so a missed close-commit is visible, not silent.
+  const archived = !!(archive?.days?.[date]?.length);
+  return new Response(JSON.stringify({ date, kind, tape, fills, source: live ? 'kv' : 'archive', archived }), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }

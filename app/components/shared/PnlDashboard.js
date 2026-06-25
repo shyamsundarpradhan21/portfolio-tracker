@@ -275,6 +275,10 @@ function DayPanel({ date, byDate }) {
   const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[date] || null);
   const [candles, setCandles] = useState(() => APP.niftyOhlc?.days?.[date] || null);
   const [fills, setFills] = useState(() => APP.fnoIntraday?.fills?.[date] || []);
+  // Is this day baked into the committed archive this build ships? Seeded from the
+  // hydrated archive (same build-time bundle the API imports); refreshed from the API's
+  // `archived` flag on each poll. Drives the live-cache-only durability guard below.
+  const [archived, setArchived] = useState(() => !!(APP.fnoIntraday?.days?.[date]?.length));
   useEffect(() => {
     if (!date) return;
     let on = true;
@@ -284,7 +288,7 @@ function DayPanel({ date, byDate }) {
           fetch(`/api/intraday?date=${date}`, { cache: 'no-store' }),
           fetch(`/api/intraday?kind=nifty&date=${date}`, { cache: 'no-store' }),
         ]);
-        if (on && res.ok) { const j = await res.json(); if (Array.isArray(j.tape)) setLiveTape(j.tape); if (Array.isArray(j.fills)) setFills(j.fills); }
+        if (on && res.ok) { const j = await res.json(); if (Array.isArray(j.tape)) setLiveTape(j.tape); if (Array.isArray(j.fills)) setFills(j.fills); if (typeof j.archived === 'boolean') setArchived(j.archived); }
         if (on && niftyRes.ok) { const j = await niftyRes.json(); if (Array.isArray(j.tape)) setCandles(j.tape); }
       } catch {}
     };
@@ -294,10 +298,21 @@ function DayPanel({ date, byDate }) {
   }, [date]);
   const tape = liveTape != null ? liveTape : (APP.fnoIntraday?.days?.[date] || []);
   const pending = tape.some((p) => p.pending);
+  // Durability guard: a PAST day that has data but isn't in this deployment's committed
+  // archive lives only in the 3-day KV cache — flag it so a missed close-commit is visible
+  // here instead of silently expiring. Today is legitimately cache-only until the evening
+  // commit, so only past days qualify (ISO dates compare chronologically).
+  const atRisk = tape.length > 0 && !archived && date < todayIstIso();
   // Flattened — contents sit directly in the view-body container (no nested .mini box,
   // which scaled oddly); the date + summary live in the period bar above, so no header here.
   return (
     <>
+      {atRisk ? (
+        <div role="status" style={{ display: 'flex', gap: 9, alignItems: 'flex-start', margin: '0 0 12px', padding: '9px 12px', borderRadius: 8, border: '.5px solid var(--warn-brd)', background: 'color-mix(in srgb, var(--sc-opt) 9%, transparent)', fontSize: 'var(--fs-xs)', color: 'var(--txt2)', lineHeight: 1.55 }}>
+          <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--sc-opt)', flexShrink: 0, marginTop: '0.4em' }} />
+          <span><b style={{ color: 'var(--sc-opt)', fontWeight: 700 }}>Live-cache only.</b> This day isn&apos;t in the committed archive this build ships, so it survives only in the 3-day live cache and will vanish once that expires. Commit &amp; redeploy the intraday archive to keep it.</span>
+        </div>
+      ) : null}
       {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} fills={fills} /> : null}
 
       {d ? (
