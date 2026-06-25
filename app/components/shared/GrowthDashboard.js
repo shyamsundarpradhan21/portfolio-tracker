@@ -27,7 +27,7 @@ const dayLabel = (d) => {
 };
 
 export default function GrowthDashboard() {
-  const [days, setDays] = useState(90);
+  const [days, setDays] = useState(30);
   const [records, setRecords] = useState(null);
   useEffect(() => {
     let on = true;
@@ -71,7 +71,7 @@ export default function GrowthDashboard() {
       </div>
 
       <div className="seg" role="tablist" aria-label="Window" style={{ marginBottom: 10 }}>
-        {[['1D', 1], ['1W', 7], ['1M', 30], ['3M', 90], ['1Y', 365]].map(([l, d]) => (
+        {[['1D', 1], ['1W', 7], ['1M', 30], ['1Y', 365], ['Max', 'max']].map(([l, d]) => (
           <button key={d} type="button" role="tab" aria-selected={days === d} className={days === d ? 'on' : ''} onClick={() => setDays(d)}>{l}</button>
         ))}
       </div>
@@ -86,21 +86,25 @@ export default function GrowthDashboard() {
       )}
 
       <div style={{ marginTop: tape.length >= 2 ? 14 : 6 }}>
-        {breakdown.map((s) => (
-          <div key={s.key} style={{ padding: '7px 0', borderTop: '.5px solid var(--brd2)' }}>
-            <div className="fxc" style={{ marginBottom: 5 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 9, height: 9, borderRadius: 2, background: s.key === 'cmpf' ? CMPF_HATCH : s.c, display: 'inline-block', flexShrink: 0 }} />
+        {breakdown.map((s) => {
+          const N = 20;
+          const filled = Math.min(N, Math.max(1, Math.round((Math.abs(s.val) / maxAbs) * N)));
+          const fill = s.key === 'cmpf' ? CMPF_HATCH : s.c; // sleeve colour (CMPF hatched)
+          return (
+            <div key={s.key} style={{ padding: '8px 0', borderTop: '.5px solid var(--brd2)' }}>
+              <div className="fxc" style={{ marginBottom: 6 }}>
                 <span style={{ color: 'var(--txt2)', fontSize: 'var(--fs-sm)' }}>{s.label}</span>
-              </span>
-              <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
+                <span className={'mono ' + cl(s.val)} style={{ fontWeight: 600 }}><SInrF n={s.val} /></span>
+              </div>
+              {/* waffle — filled cells ∝ |contribution| relative to the top sleeve */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 2.5, maxWidth: 150 }}>
+                {Array.from({ length: N }, (_, i) => (
+                  <span key={i} style={{ aspectRatio: '1', borderRadius: 1.5, background: i < filled ? fill : 'var(--sur2)' }} />
+                ))}
+              </div>
             </div>
-            {/* magnitude bar — width ∝ |contribution|, coloured by direction */}
-            <div style={{ height: 4, background: 'var(--sur2)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.round((Math.abs(s.val) / maxAbs) * 100)}%`, height: '100%', background: s.val >= 0 ? 'var(--grn)' : 'var(--red)', opacity: 0.55, borderRadius: 2 }} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -68,18 +68,26 @@ async function fromKVMany(dates) {
 export async function GET(req) {
   const params = new URL(req.url).searchParams;
   const date = params.get('date');
-  const days = Math.min(370, Math.max(0, parseInt(params.get('days') || '0', 10)));
+  const daysParam = params.get('days') || '';
+  const isMax = daysParam === 'max';
+  const days = Math.min(370, Math.max(0, parseInt(daysParam, 10) || 0));
 
-  // Range mode (?days=N) → the dashboard window: KV MGET, archive fallback per date.
-  if (days > 0) {
-    const dates = lastNDates(days);
-    const kv = await fromKVMany(dates);
+  // Range mode (?days=N) or Max (?days=max → ALL committed history + the recent KV
+  // window). Range MGETs the window's dates; Max takes the whole archive and overlays
+  // the recent KV (avoids a huge MGET over years of keys).
+  if (isMax || days > 0) {
     const records = {};
-    for (const d of dates) {
-      const rec = kv[d] || growthArchive?.days?.[d] || null;
-      if (rec) records[d] = rec;
+    if (isMax) {
+      Object.assign(records, growthArchive?.days || {});
+      const recent = lastNDates(45);
+      const kv = await fromKVMany(recent);
+      for (const d of recent) if (kv[d]) records[d] = kv[d];
+    } else {
+      const dates = lastNDates(days);
+      const kv = await fromKVMany(dates);
+      for (const d of dates) { const rec = kv[d] || growthArchive?.days?.[d] || null; if (rec) records[d] = rec; }
     }
-    return new Response(JSON.stringify({ days, records, source: Object.keys(kv).length ? 'kv+archive' : 'archive' }), {
+    return new Response(JSON.stringify({ days: isMax ? 'max' : days, records, source: 'kv+archive' }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
