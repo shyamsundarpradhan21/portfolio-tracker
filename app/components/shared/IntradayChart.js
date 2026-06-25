@@ -26,6 +26,13 @@ const f = (v) => {
   return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? '₹' + (a / 1e3).toFixed(1) + 'K' : '₹' + a;
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
+// "NIFTY-Jun2026-24150-PE" → "24150 PE"; falls back to a trimmed symbol.
+const legShort = (sym) => {
+  const s = String(sym ?? '');
+  const m = s.match(/(\d{4,6})[-\s]?(PE|CE|PUT|CALL|P|C)\b/i);
+  if (m) return `${m[1]} ${/^p/i.test(m[2]) ? 'PE' : 'CE'}`;
+  return s.replace(/^[A-Z]+[-:]/i, '').slice(0, 14);
+};
 
 export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
@@ -65,6 +72,15 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const fillsByIdx = {};
   for (const m of marks) (fillsByIdx[m.idx] = fillsByIdx[m.idx] || []).push(m);
   const hoverFills = ht ? (fillsByIdx[hov] || []) : [];
+  // Per-leg P&L at the hovered minute — legs land ~1/min, so fall back to the nearest
+  // point that carries them (by index distance, i.e. time-near).
+  const legsAt = (() => {
+    if (!ht) return null;
+    if (Array.isArray(ht.legs) && ht.legs.length) return ht.legs;
+    let best = null, bd = Infinity;
+    for (let i = 0; i < n; i++) if (Array.isArray(pts[i].legs) && pts[i].legs.length) { const d = Math.abs(i - hov); if (d < bd) { bd = d; best = pts[i].legs; } }
+    return best;
+  })();
 
   // right-edge value labels at each line's last y. Net = bold sign-colour; each leg =
   // DIMMED sign-colour (the global +/- codes, NOT the line colour — direction must read
@@ -77,11 +93,14 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       labels.push({ y: arr[arr.length - 1].y, v, c: dirColor(v), bold: false, dim: true });
     }
   }
-  // tooltip rows for the hovered minute — values by sign (the label names the leg)
-  const tipRows = ht ? [{ label: 'Net', v: +ht.net, c: dirColor(+ht.net) }, ...(overlay ? present
-    .filter((o) => Number.isFinite(+ht[o.key]))
-    .map((o) => ({ label: o.label, v: +ht[o.key], c: dirColor(+ht[o.key]) })) : [])] : [];
-  const tipW = hoverFills.length ? 144 : 96;
+  // tooltip rows — Net, then PER-LEG P&L (which trade is making/losing what) when we have
+  // a legs snapshot, else the per-broker subtotals. Values by sign; label names the row.
+  const tipRows = ht ? [{ label: 'Net', v: +ht.net, c: dirColor(+ht.net) }, ...(
+    legsAt && legsAt.length
+      ? legsAt.map((l) => ({ label: legShort(l.sym), v: +l.pnl, c: dirColor(+l.pnl) }))
+      : (overlay ? present.filter((o) => Number.isFinite(+ht[o.key])).map((o) => ({ label: o.label, v: +ht[o.key], c: dirColor(+ht[o.key]) })) : [])
+  )] : [];
+  const tipW = hoverFills.length ? 152 : ((legsAt && legsAt.length) ? 126 : 96);
   const tipH = 16 + tipRows.length * 15 + (hoverFills.length ? hoverFills.length * 14 + 5 : 0);
   const tipX = hp ? Math.max(2, Math.min(PLOT_W - tipW - 2, hp.x + 8)) : 0;
 

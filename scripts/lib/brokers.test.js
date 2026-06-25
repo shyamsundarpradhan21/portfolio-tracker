@@ -2,7 +2,7 @@
 // hyphenated tradingSymbol (NIFTY-Jun2026-23550-PE) that segmentOf can't parse, so a
 // symbol-only filter silently excluded every Dhan F&O leg from the live P&L.
 import { describe, it, expect } from 'vitest';
-import { isFnoPosition, splitLegs, parseFills } from './brokers.mjs';
+import { isFnoPosition, splitLegs, parseFills, legsOf } from './brokers.mjs';
 
 describe('isFnoPosition', () => {
   it('matches Dhan F&O by exchangeSegment even when the symbol does not parse', () => {
@@ -83,5 +83,23 @@ describe('parseFills', () => {
   it('empty / null → []', () => {
     expect(parseFills([], dhanA)).toEqual([]);
     expect(parseFills(null, dhanA)).toEqual([]);
+  });
+});
+
+// Per-leg P&L snapshot for the "which trade is making/losing what" hover.
+describe('legsOf', () => {
+  const A = { isLeg: isFnoPosition, sym: (p) => p.tradingSymbol, realised: (p) => p.realizedProfit, mtm: (p) => p.unrealizedProfit };
+
+  it('returns per-leg total P&L (realised + MTM) over F&O legs only, prefix stripped', () => {
+    const list = [
+      { exchangeSegment: 'NSE_FNO', tradingSymbol: 'NSE:NIFTY-24150-PE', realizedProfit: 100, unrealizedProfit: -30 },
+      { exchangeSegment: 'NSE_EQ', tradingSymbol: 'RELIANCE', realizedProfit: 999, unrealizedProfit: 999 },
+    ];
+    expect(legsOf(list, A)).toEqual([{ sym: 'NIFTY-24150-PE', pnl: 70 }]);
+  });
+
+  it('empty / null → []', () => {
+    expect(legsOf([], A)).toEqual([]);
+    expect(legsOf(null, A)).toEqual([]);
   });
 });

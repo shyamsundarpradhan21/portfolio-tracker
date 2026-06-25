@@ -18,6 +18,19 @@ describe('upsertPoint', () => {
     expect(p.net).toBe(140);
   });
 
+  it('stores a legs snapshot and keeps it STICKY when a later same-minute tick lacks legs', () => {
+    let j = upsertPoint({}, '2026-06-25', { t: '14:30', net: 100, byBroker: {}, legs: [{ sym: 'NIFTY-24150-PE', pnl: 50 }] });
+    j = upsertPoint(j, '2026-06-25', { t: '14:30', net: 120, byBroker: {} });  // legs-less, same minute
+    const p = j.days['2026-06-25'][0];
+    expect(p.net).toBe(120);
+    expect(p.legs).toEqual([{ sym: 'NIFTY-24150-PE', pnl: 50 }]);
+  });
+
+  it('omits legs entirely on points that never had them', () => {
+    const j = upsertPoint({}, '2026-06-25', { t: '09:20', net: 5, byBroker: {} });
+    expect('legs' in j.days['2026-06-25'][0]).toBe(false);
+  });
+
   it('keeps the array time-sorted regardless of insert order', () => {
     let j = upsertPoint({}, '2026-06-24', pt('10:00', 500));
     j = upsertPoint(j, '2026-06-24', pt('09:30', 200));

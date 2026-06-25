@@ -45,6 +45,10 @@ export function upsertPoint(json, date, point) {
     // check ~1/min, so a later same-minute tick (which skips it → pending:false)
     // must not clear a pending flag an earlier tick set. OR with the prior point.
     pending: (point.pending || prev?.pending) ? 1 : undefined,
+    // Per-leg P&L snapshot — captured ~1/min (withOrders); STICKY within the minute so a
+    // later legs-less tick on the same minute doesn't wipe it. Absent on legs-less points.
+    ...((Array.isArray(point.legs) && point.legs.length) ? { legs: point.legs }
+      : (prev?.legs ? { legs: prev.legs } : {})),
   };
   if (i >= 0) arr[i] = p; else arr.push(p);
   arr.sort((a, b) => tRank(a.t) - tRank(b.t));
