@@ -75,17 +75,17 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       labels.push({ y: arr[arr.length - 1].y, v, c: dirColor(v), bold: false, dim: true });
     }
   }
-  // Hover card rows — Net + per-BROKER net only (no per-order rows, no timestamp). The
-  // broker rows carry NO label: each value is drawn in its CURVE colour, and the legend
-  // already maps colour→broker. Net keeps a label + sign-colour. Rendered as an HTML
-  // overlay (below) so it can be frosted glass, tinted green/red by the net's direction.
+  // Hover card rows — Net + per-BROKER net (no per-order rows, no timestamp). Labels are
+  // back: "Net" + each broker's name (the broker label in its CURVE colour so it ties to
+  // its line). The value keeps sign-colour for direction. Rendered as an HTML overlay
+  // (below) so it can be frosted glass, tinted green/red by the net's direction.
   const tipRows = [];
   if (ht) {
-    tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net) });
+    tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
     if (overlay) for (const o of present) {
       const raw = ht[o.key];
       if (raw == null || !Number.isFinite(+raw)) continue;   // skip a broker with no value this minute
-      tipRows.push({ kind: 'broker', label: '', v: +raw, vc: o.c });
+      tipRows.push({ kind: 'broker', label: o.label, v: +raw, vc: dirColor(+raw), lc: o.c });
     }
   }
   const tipUp = ht ? (+ht.net >= 0) : true;                  // net direction → glass tint
@@ -195,6 +195,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       }}>
         {tipRows.map((row, i) => (
           <div key={i} className={'iq-r' + (row.kind === 'net' ? ' iq-net' : '')}>
+            <span className="iq-l" style={{ color: row.lc, fontWeight: row.kind === 'net' ? 700 : 600 }}>{row.label}</span>
             <span className="iq-v" style={{ color: row.vc }}>{f(row.v)}</span>
           </div>
         ))}
