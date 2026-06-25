@@ -413,7 +413,7 @@ body::before {
   :root[data-time="day"] { --glass-bg: #ffffff; --glass-bg2: #f1f4f9; --glass-brd: var(--brd); --thead-bg: #edf1f7; }
 }
 /* Values inside summary cards must not push the card wider */
-.csm .vlg, .csm .vmd, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.csm .vmd, .csm .vt2, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
 .lbl {
   font-size: var(--fs-2xs); color: var(--acc); text-transform: uppercase;
@@ -422,13 +422,21 @@ body::before {
      summary cards; min-width:0 lets the flex/grid child actually shrink. */
   overflow-wrap: anywhere; min-width: 0;
 }
-/* Summary-card value (Section 0a): 24px mono. */
-.vlg { font-size: var(--fs-2xl); font-weight: 800; font-family: var(--mono); letter-spacing: -.5px; }
-.vmd { font-size: var(--fs-2xl); font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
-.vsm { font-size: var(--fs-lg); font-weight: 600; font-family: var(--mono); }
+/* ── Figure value tiers — a figure's size is bound to its card's ROLE and is set
+   ONLY here; never override a figure's font-size inline. Tier 0 is the net-worth
+   hero (.hdr-val). The three in-card tiers below it:
+     Tier 1  .vt1 / .vmd   --fs-2xl   header band + each tab's top summary headline
+     Tier 2  .vt2          --fs-xl    a standard content card's headline value
+     Tier 3  .vt3 / .vsm   --fs-lg    dense / mini / chip values (→ --fs-md in .mini)
+   Card size, padding and string length never change the figure size inside a tier;
+   .vmd/.vsm stay as the established aliases for Tiers 1/3. (Old .vlg is folded into
+   Tier 1 — it duplicated .vmd's size; the ladder now has three distinct steps.) */
+.vt1, .vmd { font-size: var(--fs-2xl); font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+.vt2       { font-size: var(--fs-xl);  font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+.vt3, .vsm { font-size: var(--fs-lg);  font-weight: 600; font-family: var(--mono); }
 /* Numbers contain no spaces so they never wrap; never break inside a word
    (tickers like POWERGRID/FEDERALBNK) — overflow-wrap:anywhere did exactly that. */
-.vlg, .vmd, .vsm { overflow-wrap: normal; word-break: keep-all; }
+.vt1, .vmd, .vt2, .vt3, .vsm { overflow-wrap: normal; word-break: keep-all; }
 /* Symbol/ticker values in compact minis stay on one line and shrink to fit,
    falling back to a clean ellipsis instead of an ugly mid-word break. */
 .mini .vsm, .mini .vmd {
@@ -439,6 +447,12 @@ body::before {
   letter-spacing: -.6px;
 }
 .sub { font-size: var(--fs-xs); color: var(--txt2); margin-top: 4px; }
+/* ── Card value-footers — the line under a card's value is a SINGLE, left-anchored
+   line, clipped with an ellipsis on overflow (never wraps to a 2nd line). A footer
+   that carries exactly two values splits them left/right instead (.sub.split).
+   Scoped to the summary surfaces so prose captions in .card/.mini still wrap. */
+.csm .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub.split { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
 .fxc { display: flex; justify-content: space-between; align-items: center; }
 
 .badge {
@@ -886,7 +900,7 @@ body::before {
    headline figure down a tier so a 7-figure value doesn't hit the .csm nowrap+ellipsis
    clip while the tile is narrow — "tighten the tile, don't drop a column". */
 @media (max-width: 1080px) {
-  .g3 .vlg, .g3 .vmd, .g4 .vlg, .g4 .vmd { font-size: var(--fs-xl); }
+  .g3 .vmd, .g4 .vmd { font-size: var(--fs-xl); }
 }
 @media (max-width: 720px) {
   .g3 { grid-template-columns: 1fr; }

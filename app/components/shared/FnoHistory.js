@@ -23,7 +23,7 @@ export default function FnoHistory({ data }) {
       </div>
       <div className="fxc" style={{ marginBottom: 10 }}>
         <span className="sub" style={{ margin: 0 }}>{brokers.length} brokers · {data.fy.length} FYs · as on {data.asOf}</span>
-        <span className={'vmd ' + cl(data.total)} style={{ fontSize: 'var(--fs-xl)' }}><SInrF n={data.total} /></span>
+        <span className={'vt2 ' + cl(data.total)}><SInrF n={data.total} /></span>
       </div>
       <div className="ovx">
         <table className="tbl">

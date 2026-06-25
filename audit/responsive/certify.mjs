@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const BASE = 'http://localhost:3000';
+const BASE = process.env.CERT_BASE || 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const ALL_SURFACES = [
