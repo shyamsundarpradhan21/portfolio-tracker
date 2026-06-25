@@ -31,3 +31,23 @@ card's ROLE (not the component / card size / string length); fix footers.
   ROW/bar values (table-like Tier 3), not card headlines.
 - Remaining (needs a live render to verify): re-tiering deeper secondary stats
   (e.g. US dividend breakdown grid) from Tier 1 → Tier 2. Not done blind.
+
+## Resume on local CLI (real-data render is available there)
+The cloud workspace couldn't render the real tabs: KV creds (`KV_REST_API_URL` /
+`KV_REST_API_TOKEN`) weren't injected into the container, and `serverPortfolio.js`
+reads them ONLY from `process.env`, so `/api/portfolio` 503'd and the dashboard
+render-gate failed (every tab blank). Locally the gitignored
+`data/portfolio.private.json` (real holdings) drives it, so `npm run dev` renders fully.
+
+To finish here:
+1. `git pull origin claude/ecstatic-wozniak-svdlxb`  (tier system = commit 4ac016f).
+2. `npm run dev`; open `#us` in both night + day (toggle persists in `nwTracker.theme`).
+3. **Pending decision** — secondary stat grids that currently sit at Tier 1 (`--fs-2xl`),
+   as loud as the tab's TOP summary; drop to Tier 2 (`.vt2`, `--fs-xl`) if they over-shout:
+   - `USTab.js:181,185,189,193` — the Dividend-Income 2×2 grid (gross / tax / 12-mo / this-FY).
+     Keep `:174` (the card's headline "net all-time") at Tier 1.
+   - Scan `MFTab` / `IndianTab` secondary stats for the same pattern.
+   Rule of thumb: a tab's top-summary row = Tier 1; deeper breakdown grids = Tier 2.
+4. The live system (in `globals.css`): `.vt1`/`.vmd`=`--fs-2xl`, `.vt2`=`--fs-xl`,
+   `.vt3`/`.vsm`=`--fs-lg` (→`--fs-md` in `.mini`); footers `.csm .sub` clip,
+   `.sub.split` = two-value left/right. Tier 0 hero (`.hdr-val`) is untouched.
