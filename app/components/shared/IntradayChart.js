@@ -9,7 +9,7 @@
 //
 // NB: legs are per-BROKER (the capture tape carries dhan/upstox/fyers), not per-trade —
 // per-position hover would need the daemon to capture each leg's P&L over time.
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { scaleLines, scaleCandles, niftyLevels } from '../../lib/pnlDaily';
 
 // Default overlay = the three F&O brokers. The Overview live curve passes its own
@@ -36,10 +36,10 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const overlay = present.length > 1;     // only split out legs when there's more than one
   const g = scaleLines(pts, ['net', ...(overlay ? present.map((o) => o.key) : [])], PLOT_W, H);
   if (!g || !g.byKey.net) return null;
-  const nifty = scaleCandles(candles, PLOT_W, H);
-  // Intraday S/R levels (swing pivots) + volume band, both rendered as a faint watermark
-  // behind the P&L (only when we actually have NIFTY candles).
-  const levels = candles && candles.length ? niftyLevels(candles) : null;
+  // Candle-derived geometry + S/R levels — memoized on `candles` so a hover (which only flips
+  // `hov`) doesn't re-run scaleCandles over ~376 bars or the O(n·window) niftyLevels scan.
+  const nifty = useMemo(() => scaleCandles(candles, PLOT_W, H), [candles]);
+  const levels = useMemo(() => (candles && candles.length ? niftyLevels(candles) : null), [candles]);
   const srLines = levels ? [...levels.resistances.map((l) => ({ ...l, k: 'R' })), ...levels.supports.map((l) => ({ ...l, k: 'S' }))] : [];
   const VOL_BAND = H * 0.16;
   const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
@@ -137,7 +137,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
         return (
           <g key={'sr' + i} opacity=".42">
             <line x1="0" y1={y} x2={PLOT_W} y2={y} stroke="var(--txt3)" strokeWidth=".6" strokeDasharray="5 4" />
-            <text x="3" y={y - 2.5} style={{ fontSize: 8, fill: 'var(--txt3)', fontFamily: 'var(--mono)' }}>{l.k} {Math.round(l.price)}</text>
+            <text x="3" y={y - 2.5} className="pnl-srlabel">{l.k} {Math.round(l.price)}</text>
           </g>
         );
       })}

@@ -200,7 +200,7 @@ export function scaleCandles(candles, width, height, pad = 8) {
   const bars = cs.map((c, i) => ({
     x: r2(x0 + (i / (cs.length - 1)) * (x1 - x0)),
     openY: vy(+c.o), closeY: vy(+c.c), highY: vy(+c.h), lowY: vy(+c.l), up: +c.c >= +c.o,
-    v: Number.isFinite(+c.v) ? +c.v : null,
+    v: Number.isFinite(+c.v) ? Math.max(0, +c.v) : null,   // clamp ≥0 so a stray negative can't draw an inverted bar
   }));
   // Expose the price→y mapping (clamped into the plot band) so the component can place S/R
   // lines on the SAME axis as the candles, plus vmax for the volume histogram.
@@ -209,19 +209,21 @@ export function scaleCandles(candles, width, height, pad = 8) {
 }
 
 // Intraday support/resistance via swing pivots (option c). A swing HIGH is a candle whose
-// high is the max within ±window bars; a swing LOW, the min within ±window. Nearby pivots
-// are clustered (within `tol` fraction of price) into levels, ranked by touch count, then
-// split around the last close into resistances (above) / supports (below). The day high &
-// low are always added as the outer anchors. Pure → unit-tested. Defensive on sparse/flat.
+// high is the max within ±window bars; a swing LOW, the min within ±window. Nearby pivots are
+// clustered (band anchored on the group's first price, so width never exceeds `tol`), ranked by
+// touch count, then split around the last close into resistances (above) / supports (below) with
+// a small `minGap` stand-off that drops noise levels hugging the current price (and keeps the
+// every-R>last / every-S<last invariant true on the rounded values). The day high & low are
+// added as the outer anchors. Pure → unit-tested. Defensive on sparse/flat.
 //   → { resistances:[{price,touches,anchor?}], supports:[...], dayHigh, dayLow, last }
-export function niftyLevels(candles, { window = 5, tol = 0.0008, max = 2 } = {}) {
-  const cs = (candles || []).filter((c) => c && [c.h, c.l, c.c].every((v) => Number.isFinite(+v)));
+export function niftyLevels(candles, { window = 5, tol = 0.0008, max = 2, minGap = 0.0004 } = {}) {
+  const cs = (candles || []).filter((c) => c && [c.o, c.h, c.l, c.c].every((v) => Number.isFinite(+v)));
   const empty = { resistances: [], supports: [], dayHigh: null, dayLow: null, last: null };
   if (cs.length < 3) return empty;
-  const last = +cs[cs.length - 1].c;
+  const last = r2(+cs[cs.length - 1].c);
   let dayHigh = -Infinity, dayLow = Infinity;
   for (const c of cs) { if (+c.h > dayHigh) dayHigh = +c.h; if (+c.l < dayLow) dayLow = +c.l; }
-  if (!(dayHigh > dayLow)) return { ...empty, last: r2(last), dayHigh: r2(dayHigh), dayLow: r2(dayLow) };  // flat day
+  if (!(dayHigh > dayLow)) return { ...empty, last, dayHigh: r2(dayHigh), dayLow: r2(dayLow) };  // flat day
   const w = Math.max(1, Math.min(window, Math.floor((cs.length - 1) / 2)));
   const highs = [], lows = [];
   for (let i = 0; i < cs.length; i++) {
@@ -234,25 +236,29 @@ export function niftyLevels(candles, { window = 5, tol = 0.0008, max = 2 } = {})
     if (isHigh) highs.push(+cs[i].h);
     if (isLow) lows.push(+cs[i].l);
   }
-  // Merge a sorted price list into clustered levels (avg price, touch count) within `tol`.
+  // Merge a sorted price list into clustered levels. The tolerance band is anchored on the
+  // group's FIRST (lowest) price, not a running mean — so a cluster's total width can never
+  // exceed `tol` (a running mean drifts up and absorbs a wider band). price = centroid.
   const cluster = (prices) => {
     const out = [];
     for (const p of [...prices].sort((a, b) => a - b)) {
       const g = out[out.length - 1];
-      if (g && Math.abs(p - g.price) <= g.price * tol) { g.sum += p; g.touches += 1; g.price = g.sum / g.touches; }
-      else out.push({ price: p, sum: p, touches: 1 });
+      if (g && Math.abs(p - g.anchor) <= g.anchor * tol) { g.sum += p; g.touches += 1; }
+      else out.push({ anchor: p, sum: p, touches: 1 });
     }
-    return out.map((g) => ({ price: r2(g.price), touches: g.touches }));
+    return out.map((g) => ({ price: r2(g.sum / g.touches), touches: g.touches }));
   };
-  // Rank by touches, then proximity to the last price (nearest wins ties).
+  // Rank by touches, then proximity to last (nearest wins ties).
   const rank = (lvls) => lvls.slice().sort((a, b) => b.touches - a.touches || Math.abs(a.price - last) - Math.abs(b.price - last));
-  const resistances = rank(cluster(highs).filter((l) => l.price > last)).slice(0, max);
-  const supports = rank(cluster(lows).filter((l) => l.price < last)).slice(0, max);
+  const resCut = last * (1 + minGap), supCut = last * (1 - minGap);   // stand-off from the current price
+  const resistances = rank(cluster(highs).filter((l) => l.price > resCut)).slice(0, max);
+  const supports = rank(cluster(lows).filter((l) => l.price < supCut)).slice(0, max);
   // Day high/low as outer anchors (skip if a swing level already sits within tol of them).
   const near = (lvls, p) => lvls.some((l) => Math.abs(l.price - p) <= p * tol);
-  if (dayHigh > last && !near(resistances, dayHigh)) resistances.push({ price: r2(dayHigh), touches: 1, anchor: true });
-  if (dayLow < last && !near(supports, dayLow)) supports.push({ price: r2(dayLow), touches: 1, anchor: true });
-  return { resistances, supports, dayHigh: r2(dayHigh), dayLow: r2(dayLow), last: r2(last) };
+  const dh = r2(dayHigh), dl = r2(dayLow);
+  if (dh > resCut && !near(resistances, dh)) resistances.push({ price: dh, touches: 1, anchor: true });
+  if (dl < supCut && !near(supports, dl)) supports.push({ price: dl, touches: 1, anchor: true });
+  return { resistances, supports, dayHigh: dh, dayLow: dl, last };
 }
 
 // Scale an intraday tape ([{ t:'HH:MM', net }]) into SVG geometry for the Day

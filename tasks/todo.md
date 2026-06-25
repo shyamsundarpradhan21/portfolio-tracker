@@ -294,8 +294,24 @@ lines, volume as a faint bottom histogram, both behind the P&L curve.
 - [x] 5. `vitest run` green (214); S/R render-verified on the live watermark
       (R 24261/24199/24067 · S 24042 around the ~24056 close). Volume pending the daemon restart
       that picks up `v`.
-- [ ] 6. Adversarial multi-agent review — deferred (user interrupted to polish the hover card);
-      feature ships verified via the 9 unit tests + live render. Offer the review as a follow-up.
+- [x] 6. Adversarial multi-agent review (5 dims × per-finding skeptic verify, 28 agents) — 23
+      findings, 17 confirmed. Fixes applied (see below); 215 tests green.
+
+## Adversarial-review fixes applied
+- **Volume was dead-on-arrival** (3 reviewers, one live-probed Yahoo): `^NSEI` cash index returns
+  volume 0 on every 1-min bar → histogram never paints + a useless `v:0` on every candle. Fix:
+  source volume from `NIFTYBEES.NS` (liquid Nifty ETF, same NSE clock), matched minute-by-minute,
+  `v>0` only. Verified live: 374/376 candles now carry real volume, index OHLC preserved, no `v:0`.
+- **Clustering drift** (spec bug): the running-mean band absorbed >tol width. Fix: anchor the band
+  on the group's first price → width ≤ tol.
+- **Min stand-off** from last (0.04%): drops noise levels hugging the current price AND guarantees
+  every R>last / S<last on the rounded values (subsumes the rounding-boundary invariant finding).
+- Align niftyLevels field filter to `[o,h,l,c]`; clamp scaleCandles volume ≥0; memoize the
+  candle-derived calcs (no recompute on hover); S/R label → `.pnl-srlabel` class (no inline px).
+- Deferred (enhancements, noted to user): PDH/PDL/PDC + opening-range + VWAP reference levels
+  (need prior-day retention / volume-at-price); plateau touch-count de-dup; a memoized watermark
+  child for the full 376-bar render; S/R label de-collision (largely mooted by the stand-off).
+- 6 findings dismissed as false positives by the verifiers (subjective tone, positive confirmations).
 
 ## Review
 - S/R method = swing pivots (±5-bar local extremes), clustered within 0.08%, touch-ranked,

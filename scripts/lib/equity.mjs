@@ -71,31 +71,48 @@ async function yahooQuote(sym) {
   return null;
 }
 
-// NIFTY 50 intraday 1-MINUTE OHLC(+V) candles (^NSEI) for the chart watermark. Yahoo's
-// finest intraday granularity is 1m. Returns [{ t:'HH:MM'(IST), o, h, l, c, v }] for
-// today, or null. The whole-day array is re-fetched each refresh (cheap, overwrite) —
-// so adding `v` here backfills today's volume on the next capture tick.
-export async function niftyCandles() {
-  const path = '/v8/finance/chart/%5ENSEI?interval=1m&range=1d&includePrePost=false';
+// Fetch a Yahoo 1-minute chart for `symbol` → { ts:[epoch…], q:{open,high,low,close,volume} } | null.
+async function yahoo1m(symbol) {
+  const path = `/v8/finance/chart/${symbol}?interval=1m&range=1d&includePrePost=false`;
   for (const host of YH_HOSTS) {
     try {
       const r = await fetch(host + path, { headers: { 'User-Agent': UA, Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(8000) });
       if (!r.ok) continue;
       const res = (await r.json())?.chart?.result?.[0];
       const ts = res?.timestamp, q = res?.indicators?.quote?.[0];
-      if (!Array.isArray(ts) || !q) continue;
-      const out = [];
-      for (let i = 0; i < ts.length; i++) {
-        const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i], v = q.volume?.[i];
-        if ([o, h, l, c].some((x) => typeof x !== 'number')) continue;
-        const d = new Date((ts[i] + 5.5 * 3600) * 1000);   // shift epoch to IST wall-clock
-        const t = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
-        out.push({ t, o: r2(o), h: r2(h), l: r2(l), c: r2(c), ...(typeof v === 'number' ? { v } : {}) });
-      }
-      return out.length ? out : null;
+      if (Array.isArray(ts) && q) return { ts, q };
     } catch { /* try next host */ }
   }
   return null;
+}
+// HH:MM in IST (the market's wall clock) for a Yahoo epoch (seconds).
+const istHm = (epoch) => { const d = new Date((epoch + 5.5 * 3600) * 1000); return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; };
+
+// NIFTY 50 intraday 1-MINUTE OHLC(+V) candles for the chart watermark. Returns
+// [{ t:'HH:MM'(IST), o, h, l, c, v? }] for today, or null. The whole-day array is re-fetched
+// each refresh (cheap, overwrite). The cash index ^NSEI carries NO traded volume (Yahoo returns
+// 0 for every bar), so volume is borrowed from NIFTYBEES — the liquid Nifty ETF that tracks the
+// index on the same NSE clock — matched minute-by-minute. Only positive counts are attached, so
+// pre-open / empty minutes stay bare (no v:0). Best-effort: if the ETF fetch fails the candles
+// return without volume and the histogram simply stays hidden.
+export async function niftyCandles() {
+  const idx = await yahoo1m('%5ENSEI');                 // NIFTY 50 index → OHLC
+  if (!idx) return null;
+  const { ts, q } = idx;
+  const out = [];
+  for (let i = 0; i < ts.length; i++) {
+    const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i];
+    if ([o, h, l, c].some((x) => typeof x !== 'number')) continue;
+    out.push({ t: istHm(ts[i]), o: r2(o), h: r2(h), l: r2(l), c: r2(c) });
+  }
+  if (!out.length) return null;
+  const etf = await yahoo1m('NIFTYBEES.NS');            // borrow real intraday volume from the ETF
+  if (etf && Array.isArray(etf.ts)) {
+    const volByT = {};
+    for (let i = 0; i < etf.ts.length; i++) { const v = etf.q.volume?.[i]; if (typeof v === 'number' && v > 0) volByT[istHm(etf.ts[i])] = v; }
+    for (const cdl of out) { const v = volByT[cdl.t]; if (v > 0) cdl.v = v; }
+  }
+  return out;
 }
 
 // Resolve quotes for a symbol list (bounded concurrency to stay polite to Yahoo).

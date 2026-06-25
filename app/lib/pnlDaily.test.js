@@ -235,4 +235,17 @@ describe('niftyLevels — intraday swing S/R (option c)', () => {
     expect(out.resistances.some((l) => Math.abs(l.price - 120) < 0.5)).toBe(true);
     expect(out.supports.some((l) => Math.abs(l.price - 88) < 0.5)).toBe(true);
   });
+  it('drops a swing level hugging the last price (min stand-off) but keeps the far one', () => {
+    // window:1 → strict local extremes. idx1 high 100.02 sits just above last (100), inside the
+    // ~0.04% stand-off, so it must be dropped; idx3 high 103 is far and must survive.
+    const o = niftyLevels([
+      mk(99.5, 98, 99), mk(100.02, 98, 99.5), mk(99.6, 97, 99), mk(103, 96, 100.5),
+      mk(99, 95, 98), mk(95, 90, 96), mk(96, 94, 100),
+    ], { window: 1 });
+    expect(o.last).toBe(100);
+    expect(o.resistances.some((l) => l.price > 100 && l.price < 100.1)).toBe(false); // 100.04 dropped
+    expect(o.resistances.some((l) => Math.abs(l.price - 103) < 0.5)).toBe(true);     // 103 kept
+    expect(o.resistances.every((l) => l.price > o.last)).toBe(true);
+    expect(o.supports.some((l) => Math.abs(l.price - 90) < 0.5)).toBe(true);         // swing low 90
+  });
 });
