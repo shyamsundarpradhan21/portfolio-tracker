@@ -50,7 +50,6 @@ export default function AlgoTab({
         <div className="csm">
           <div className="lbl">own capital · live deployed</div>
           <div className="vmd"><RsText>{cap(ALGO.s01.split.own + ALGO.s02.split.own)}</RsText></div>
-          <div className="sub"><RsText>{`S01 ${cap(ALGO.s01.split.own)} + S02 ${cap(ALGO.s02.split.own)} own · excl. net worth`}</RsText></div>
           {dep.any && (
             <div className="sub"><RsText>{`deployed: ${dep.str || '—'}${dep.free > 0 ? ` · ${cap(dep.free)} free` : ''}`}</RsText></div>
           )}

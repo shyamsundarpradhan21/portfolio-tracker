@@ -74,15 +74,12 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const fillsByIdx = {};
   for (const m of marks) (fillsByIdx[m.idx] = fillsByIdx[m.idx] || []).push(m);
   const hoverFills = ht ? (fillsByIdx[hov] || []) : [];
-  // Per-leg P&L at the hovered minute — legs land ~1/min, so fall back to the nearest
-  // point that carries them (by index distance, i.e. time-near).
-  const legsAt = (() => {
-    if (!ht) return null;
-    if (Array.isArray(ht.legs) && ht.legs.length) return ht.legs;
-    let best = null, bd = Infinity;
-    for (let i = 0; i < n; i++) if (Array.isArray(pts[i].legs) && pts[i].legs.length) { const d = Math.abs(i - hov); if (d < bd) { bd = d; best = pts[i].legs; } }
-    return best;
-  })();
+  // Per-order P&L at the hovered minute — ONLY this point's own captured legs (never a
+  // far-search/carry across time). The broker's positions feed drops a leg once it's
+  // squared off, so an order stops appearing past its exit ("it doesn't exist any more");
+  // and minutes before the first legs snapshot show no per-order rows rather than
+  // back-filling orders that weren't open yet.
+  const legsHere = ht && Array.isArray(ht.legs) ? ht.legs : [];
 
   // right-edge value labels at each line's last y. Net = bold sign-colour; each leg =
   // DIMMED sign-colour (the global +/- codes, NOT the line colour — direction must read
@@ -95,19 +92,38 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       labels.push({ y: arr[arr.length - 1].y, v, c: dirColor(v), bold: false, dim: true });
     }
   }
-  // tooltip rows — Net, then PER-LEG P&L (which trade is making/losing what) when we have
-  // a legs snapshot, else the per-broker subtotals. Values by sign; label names the row.
-  const tipRows = ht ? [{ label: 'Net', v: +ht.net, c: dirColor(+ht.net) }, ...(
-    legsAt && legsAt.length
-      ? legsAt.map((l) => ({ label: legShort(l.sym), v: +l.pnl, c: dirColor(+l.pnl) }))
-      : (overlay ? present.filter((o) => Number.isFinite(+ht[o.key])).map((o) => ({ label: o.label, v: +ht[o.key], c: dirColor(+ht[o.key]) })) : [])
-  )] : [];
-  const tipW = hoverFills.length ? 152 : ((legsAt && legsAt.length) ? 126 : 96);
+  // tooltip rows — Net, then a per-BROKER split (each in its curve colour) with that
+  // broker's currently-open ORDERS nested beneath it (also curve-coloured), so a row's
+  // colour ties it to its line. Direction (gain/loss) stays sign-coloured on the value.
+  // Legs-less points (e.g. before the first capture) fall back to per-broker subtotals.
+  const colorOf = (k) => (overlays.find((o) => o.key === k) || {}).c || 'var(--txt2)';
+  const labelOf = (k) => (overlays.find((o) => o.key === k) || {}).label || k;
+  const tipRows = [];
+  if (ht) {
+    tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net) });
+    const byBroker = {};
+    for (const l of legsHere) (byBroker[l.broker] = byBroker[l.broker] || []).push(l);
+    // curve order first (stable colours), then any leg-only brokers
+    const haveLegs = legsHere.length > 0;
+    const order = [...overlays.map((o) => o.key), ...Object.keys(byBroker)].filter((k, i, a) => a.indexOf(k) === i);
+    for (const k of order) {
+      const blegs = byBroker[k] || [];
+      const raw = ht[k];
+      const hasVal = raw != null && Number.isFinite(+raw);   // +null === 0 is finite — guard the null leg
+      const bval = hasVal ? +raw : null;
+      // With per-order data show only brokers holding OPEN orders; without legs (pre-capture
+      // minutes) fall back to per-broker subtotals so the split still reads.
+      if (haveLegs ? blegs.length === 0 : !(overlay && hasVal)) continue;
+      tipRows.push({ kind: 'broker', label: labelOf(k), v: bval, vc: hasVal ? dirColor(bval) : null, lc: colorOf(k) });
+      for (const l of blegs) tipRows.push({ kind: 'order', label: legShort(l.sym), v: +l.pnl, vc: dirColor(+l.pnl), lc: colorOf(k) });
+    }
+  }
+  const tipW = hoverFills.length ? 178 : (legsHere.length ? 156 : 110);
   const tipH = 16 + tipRows.length * 15 + (hoverFills.length ? hoverFills.length * 14 + 5 : 0);
   const tipX = hp ? Math.max(2, Math.min(PLOT_W - tipW - 2, hp.x + 8)) : 0;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" height="auto" style={{ marginTop: 12, display: 'block' }}
+    <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" style={{ marginTop: 12, display: 'block', height: 'auto' }}
       role="img" aria-label={ariaLabel} onMouseMove={onMove} onMouseLeave={() => setHov(null)}>
       <clipPath id={`up-${uid}`}><rect x="0" y="0" width={PLOT_W} height={g.zeroY} /></clipPath>
       <clipPath id={`dn-${uid}`}><rect x="0" y={g.zeroY} width={PLOT_W} height={H - g.zeroY} /></clipPath>
@@ -166,12 +182,17 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
           <g transform={`translate(${tipX} 4)`}>
             <rect width={tipW} height={tipH} rx="4" fill="var(--bg2, #1b1f2a)" stroke="var(--brd)" strokeWidth=".5" opacity=".96" />
             <text x="7" y="13" className="pnl-axt" style={{ fontWeight: 600 }}>{ht.t}</text>
-            {tipRows.map((row, i) => (
-              <g key={i} transform={`translate(7 ${27 + i * 15})`}>
-                <text x="0" y="0" fill="var(--txt2)" style={{ fontSize: 10 }}>{row.label}</text>
-                <text x={tipW - 14} y="0" textAnchor="end" fill={row.c} style={{ fontSize: 10, fontWeight: 600 }}>{f(row.v)}</text>
-              </g>
-            ))}
+            {tipRows.map((row, i) => {
+              const indent = row.kind === 'order' ? 16 : 7;                        // orders nest under their broker
+              const labelFill = row.kind === 'net' ? 'var(--txt)' : (row.lc || 'var(--txt2)'); // broker/order labels in curve colour
+              const fs = row.kind === 'order' ? 9.5 : 10;
+              return (
+                <g key={i} transform={`translate(0 ${27 + i * 15})`}>
+                  <text x={indent} y="0" fill={labelFill} style={{ fontSize: fs, fontWeight: row.kind === 'order' ? 500 : 600 }}>{row.label}</text>
+                  {row.v != null ? <text x={tipW - 14} y="0" textAnchor="end" fill={row.vc} style={{ fontSize: fs, fontWeight: 600 }}>{f(row.v)}</text> : null}
+                </g>
+              );
+            })}
             {hoverFills.map((fl, i) => (
               <text key={'f' + i} x="7" y={27 + tipRows.length * 15 + 6 + i * 14}
                 fill={fl.side === 'BUY' ? 'var(--blu)' : 'var(--acc)'} style={{ fontSize: 9, fontWeight: 600 }}>
