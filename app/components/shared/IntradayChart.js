@@ -26,11 +26,13 @@ const f = (v) => {
   return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? '₹' + (a / 1e3).toFixed(1) + 'K' : '₹' + a;
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
-// "NIFTY-Jun2026-24150-PE" → "24150 PE"; falls back to a trimmed symbol.
+// "NIFTY-Jun2026-24150-PE" → "24150 PE", "ANGELONE26JUL300PE" → "300 PE",
+// "ANGELONE26AUGFUT" → "ANGELONE FUT"; falls back to a trimmed symbol.
 const legShort = (sym) => {
   const s = String(sym ?? '');
-  const m = s.match(/(\d{4,6})[-\s]?(PE|CE|PUT|CALL|P|C)\b/i);
-  if (m) return `${m[1]} ${/^p/i.test(m[2]) ? 'PE' : 'CE'}`;
+  const opt = s.match(/(\d{3,6})[-\s]?(PE|CE|PUT|CALL)\b/i);
+  if (opt) return `${opt[1]} ${/^p/i.test(opt[2]) ? 'PE' : 'CE'}`;
+  if (/FUT\b/i.test(s)) { const u = s.match(/^([A-Za-z&]+)/); return `${u ? u[1] : s.slice(0, 8)} FUT`; }
   return s.replace(/^[A-Z]+[-:]/i, '').slice(0, 14);
 };
 
