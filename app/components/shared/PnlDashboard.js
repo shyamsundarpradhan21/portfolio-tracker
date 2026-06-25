@@ -23,7 +23,7 @@ const Stat = ({ k, v, vc, foot }) => (
   <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
     <div className="lbl" style={{ margin: 0 }}>{k}</div>
     <div className={'vmd ' + (vc || '')} style={{ marginTop: 5 }}>{v}</div>
-    {foot ? <div className="fxc sub" style={{ marginTop: 'auto', paddingTop: 8, gap: 8 }}>{foot}</div> : null}
+    {foot ? <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}>{foot}</div> : null}
   </div>
 );
 
@@ -434,7 +434,7 @@ function DayStat({ stats, mode, onToggle }) {
         {mode === 'most' ? 'Most profitable day' : 'Least profitable day'} <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-sm)' }}>↻</span>
       </div>
       <div className={'vmd ' + (d ? cl(d.net) : '')} style={{ marginTop: 5 }}>{d ? <SInrF n={d.net} /> : '—'}</div>
-      <div className="sub" style={{ marginTop: 'auto', paddingTop: 8 }}>{d ? prettyDate(d.date) : ''}</div>
+      <div className="sub" style={{ marginTop: 8 }}>{d ? prettyDate(d.date) : ''}</div>
     </div>
   );
 }

@@ -4,6 +4,27 @@ Captured from live sessions. Read before starting any task.
 
 ---
 
+## ALWAYS-READ (the terse layer — these fire most tasks)
+
+- **Git:** never create/switch branches (default `main`). Auto-commit verified work to the currently checked-out branch; push to its `origin` counterpart ONLY on "push"/"ship".
+- **No hardcoded subtexts/figures/dates** in JSX — derive from data or computed values.
+- **Direction = colour**, never a `+`/`−` glyph on the figure.
+- **CMPF (pension) renders LAST / right-most** in any allocation visual, always hatched, never solid.
+- **AI surfaces never quote real portfolio ₹** — only public macro readings, only in `pulse` / `*_swot.macro`.
+- **Derive from the data the user pointed at** — don't substitute a from-scratch answer; show the numbers you ran.
+- **Build to the provided mockup/spec**, not the house style. "Mirror layout X" = build THAT layout; if exact `grid-template-areas` given, apply verbatim.
+- **Render-mock BEFORE editing** any visual/layout redesign — they can't see my screenshots.
+- **Render-verify any data-ledger edit** in the live app (raw API returns pre-corp-action qty).
+- **Verify external facts (broker pricing/auth/limits) live** before asserting — or mark "unconfirmed".
+- **Check for an official/hosted path before a big custom build**; confirm scope first. (But don't questionnaire analysis drafts — do the work, then iterate.)
+- **"Fix all" = exhaustive grep sweep**, not just the flagged instances.
+- **NEVER `npx graphify`** (resolves to an unrelated package); guard `command -v graphify`.
+- **Comms:** no preamble; state what changed + what's next in 1–2 sentences. If partially done, say so and list the remainder unprompted.
+
+Everything below is the detailed case file — consult the relevant entry when its situation comes up.
+
+---
+
 ## UI / Data Layer
 
 ### No hardcoded subtexts or summaries
@@ -30,6 +51,15 @@ for a deposit, red for a withdrawal; no `+₹74,128`. If a metric only makes sen
 as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
+
+### Sizing-up requests: enlarge the element, not the dead space
+When asked to "enlarge" something (e.g. the win-rate donut), watch the CONTAINER
+it shares. A taller element stretches an equal-height grid row, and footers pinned
+with `margin-top:auto` then leave a hollow band in every sibling tile — which reads
+back as "oversized clunks." Size the element for prominence AND keep the row
+compact: pack each tile's value+footer as a unit (fixed `margin-top`, not `auto`)
+so any slack falls to a uniform bottom, never a gap in the middle. The enlarge was
+wanted; overshooting into clunk is the failure. (`.pnl-stat` / `.pnl-wr`, 2026-06.)
 
 ### CMPF (pension) always renders LAST / to the right in any allocation visual
 In every allocation view — donut, the horizontal bar, the legend, the deployment
@@ -78,18 +108,21 @@ commit on `main`, push to `origin/main`. Do not create `claude/*` branches.
 (Caught: I kept spinning up a `claude/*` branch per task; the user asked plainly
 to stop and work on main — "ship to main.. work on main.. why are u creating branches".)
 
-### Always commit finished work — don't leave it sitting in the working tree
-Once a change is done and verified, **commit it on the current branch without
-being asked** ("commit it always"). Don't stop to ask "want me to commit?" — the
-default is yes. Committing ≠ publishing: **only push / merge to `main` when the
-user explicitly says so**. So a normal task ends with a local commit on the
-working branch and no push, unless they say push/ship/merge.
+### Always commit finished work — to the current branch, don't leave it in the working tree
+Once a change is done and verified, **commit it without being asked** ("commit it
+always"), to **whatever branch is currently checked out** — on `main` → `main`; if the
+user has checked out a branch → commit there. Don't create or switch branches to do it.
+Don't stop to ask "want me to commit?" — the default is yes. Committing ≠ publishing:
+**only push to `origin` when the user explicitly says so** (push the current branch to
+its `origin` counterpart). So a normal task ends with a local commit on the current
+branch and no push, unless they say push/ship/merge.
 (Caught: I kept finishing edits and asking whether to commit; the user wants the
-commit done automatically, just held back from origin/main until told.)
+commit done automatically, just held back from origin until told.)
 
-### "push" / "ship" = commit on main and push
-When the user says **push** or **ship**, commit the work on `main` and push to
-`origin/main` — no confirmation needed unless something genuinely conflicts.
+### "push" / "ship" = commit + push the current branch
+When the user says **push** or **ship**, commit the work on the current branch and push
+it to its `origin` counterpart (on `main` → `origin/main`) — no confirmation needed
+unless something genuinely conflicts.
 
 ---
 
@@ -191,7 +224,7 @@ fetch, ask the user to check rather than assuming and building.)
 
 ### Verify external facts before asserting them — don't guess pricing / capability / limits
 This session I stated several third-party facts from memory that were wrong, and the
-user corrected each: Kite Connect "₹2,000/mo" (really ~₹500 base; the ₹2k is the
+user corrected each: Kite Connect "₹2,000/mo" (really ~₹500 base as of 2026-06; the ₹2k is the
 historical-data add-on a portfolio reader doesn't need), and Dhan "SMS-only, so
 blocked" (only the *consumer* QR/SMS login is blocked — the DhanHQ *developer* TOTP
 endpoint mints tokens fully headless). Before asserting a broker/API's pricing, auth
@@ -200,27 +233,16 @@ research agent, or ask the user (who knows their own account) — or explicitly 
 "unconfirmed." Repeated confident-but-wrong claims erode trust and cause churn.
 (Pairs with "Check for the easy/official path".)
 
-### Broker refresh-token APIs are SEBI-disabled — Fyers needs the daily browser login
-Do NOT propose a "headless refresh-mint" for Fyers, and don't treat `sync-brokers.mjs`
-`fyersRefreshMint` (or its optimistic "works headless for ~15 days" comment) as live.
-The Fyers `/validate-refresh-token` endpoint returns **code -16 "Refresh token API is
-currently disabled to comply with SEBI regulations."** The ONLY Fyers auth is the daily
-TOTP **browser login** (`mcp/fyers/login.py`, headed — Cloudflare blocks headless). So
-Fyers can't go cloud/headless even on the self-host box — it needs a daily headed browser
-session. (Dhan = clean headless pure-API TOTP self-mint; Upstox = headless Playwright;
-Kite = hosted OAuth, interactive.) Caught: I recommended a headless Fyers refresh path from
-a stale code comment, then the live API returned -16 — the [[broker-mcp-unattended-auth]]
-memory already said "SEBI killed refresh tokens." Trust that; verify before recommending.
-(Pairs with "Verify external facts before asserting them".)
-
-UPDATE 2026-06-25: the BROWSER login is dead too. Fyers redesigned the login page AND
-Cloudflare now silently blocks the send-OTP API (`api-t2 .../vagator/v2/send_login_otp_v3`
-→ `net::ERR_FAILED`) for any automated browser — NO Turnstile widget to solve; only a real
-human browser's `cf_clearance` gets through (confirmed by driving it live + capturing the
-network). So there is NO unattended Fyers auth left. Fyers is PARKED: `enabled:false` in
-`scripts/lib/brokers.mjs` pullPositions + the `FyersDailyLogin` task is Disabled. The only
-way to a token now is a MANUAL login + `mcp/fyers/exchange-code.py`. Don't burn time
-re-automating it; the user is not trading on Fyers anyway.
+### Fyers is PARKED — no unattended auth exists; don't re-automate it
+Fyers has **no** headless/unattended auth path (refresh-token API SEBI-disabled, AND
+the browser login is Cloudflare-blocked as of 2026-06-25). It is parked:
+`enabled:false` in `scripts/lib/brokers.mjs` pullPositions, `FyersDailyLogin` task
+disabled. The only way to a token is a MANUAL login + `mcp/fyers/exchange-code.py`.
+Don't burn time re-automating it — the user isn't trading on Fyers. Durable lesson:
+trust the [[broker-mcp-unattended-auth]] memory and verify a broker's auth live before
+recommending a path. (Other brokers, current: Dhan = headless pure-API TOTP self-mint;
+Upstox = headless Playwright; Kite = hosted OAuth, interactive.) Full investigation
+history in Archive at end of file.
 
 ### /sync drift check: apply corp actions before flagging INDIAN qty drift
 The INDIAN ledger (`data/portfolio.private.json`) stores **pre-corp-action**
@@ -286,3 +308,20 @@ done. Don't enumerate every file you touched unless asked.
 ### Partial answers invite re-prompts
 If the answer is "some are fixed, some aren't", say so immediately and list
 the remainder — don't wait to be asked.
+
+---
+
+## Archive (perishable / historical — do not treat as current truth)
+
+### Fyers auth — full investigation trail (2026-06)
+Original finding: `/validate-refresh-token` returned **code -16 "Refresh token API is
+currently disabled to comply with SEBI regulations."** — killed the headless
+refresh-mint path (`sync-brokers.mjs fyersRefreshMint`, and its stale "works headless
+for ~15 days" comment). Left the daily headed TOTP browser login (`mcp/fyers/login.py`)
+as the only path; Cloudflare blocked headless.
+UPDATE 2026-06-25: the browser login died too — Fyers redesigned the login page and
+Cloudflare now silently blocks the send-OTP API
+(`api-t2 .../vagator/v2/send_login_otp_v3` → `net::ERR_FAILED`) for any automated
+browser; no Turnstile widget to solve, only a real human's `cf_clearance` passes
+(confirmed by driving it live + capturing the network). Net: no unattended Fyers auth
+left → parked. Superseded by the one-line rule in Working Style; kept here for the trail.

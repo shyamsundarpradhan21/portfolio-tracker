@@ -39,12 +39,13 @@ export default function OverviewTab({
         footer={<AllocBar sleeves={projSleeves} mfAlloc={mfAlloc} drift={drift} />}
       />
 
-      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves (fed by the
-          resilient growth:<date> snapshots). Moved below the net-worth growth scrubber. */}
-      <div className="sec"><GrowthDashboard /></div>
-
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />
+
+      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves (fed by the
+          resilient growth:<date> snapshots). Placed below the capital-deployment calendar so
+          its area curve doesn't stack directly under the net-worth growth scrubber's curve. */}
+      <div className="sec"><GrowthDashboard /></div>
 
       <CFMemo
         title="Loss Carryforward — Tax Asset"
