@@ -34,8 +34,12 @@ export default function AlgoTab({
     const bs = fno.byStrategy;
     const used = [['S01', bs.S01.fundsUsed], ['S02', bs.S02.fundsUsed]].filter(([, v]) => v > 0);
     const free = bs.S01.fundsAvail + bs.S02.fundsAvail;
-    return { str: used.map(([k, v]) => `${k} ${cap(v)}`).join(' + '), free, any: used.length > 0 || free > 0 };
+    const total = bs.S01.fundsUsed + bs.S02.fundsUsed + free;   // live account capital (deployed + free)
+    return { str: used.map(([k, v]) => `${k} ${cap(v)}`).join(' + '), free, total, any: used.length > 0 || free > 0 };
   })();
+  // Headline capital: the LIVE trading-account total (deployed + free) from the broker funds
+  // reads when present — dynamic, moves with the account — else the static own-capital config.
+  const ownStatic = ALGO.s01.split.own + ALGO.s02.split.own;
   return (
     <div>
       <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
@@ -48,8 +52,8 @@ export default function AlgoTab({
 
       <div className="g3 sec">
         <div className="csm">
-          <div className="lbl">own capital · live deployed</div>
-          <div className="vmd"><RsText>{cap(ALGO.s01.split.own + ALGO.s02.split.own)}</RsText></div>
+          <div className="lbl">{dep.any ? 'trading capital · live' : 'own capital'}</div>
+          <div className="vmd"><RsText>{cap(dep.any ? dep.total : ownStatic)}</RsText></div>
           {dep.any && (
             <div className="sub"><RsText>{`deployed: ${dep.str || '—'}${dep.free > 0 ? ` · ${cap(dep.free)} free` : ''}`}</RsText></div>
           )}
