@@ -29,7 +29,7 @@ const r2 = (n) => Math.round(n * 100) / 100;
 export function fnoLive() {
   const positions = APP.brokerState?.positions || {};
   const fundsAll = APP.brokerState?.funds || {};
-  const byStrategy = { S01: { openMtm: 0, realisedToday: 0 }, S02: { openMtm: 0, realisedToday: 0 } };
+  const byStrategy = { S01: { openMtm: 0, realisedToday: 0, fundsUsed: 0, fundsAvail: 0 }, S02: { openMtm: 0, realisedToday: 0, fundsUsed: 0, fundsAvail: 0 } };
   let netOpenMtm = 0, realisedToday = 0;
 
   const brokers = FNO_META.map((m) => {
@@ -42,13 +42,21 @@ export function fnoLive() {
     const realised = r2(rows.reduce((a, r) => a + (Number(r.realized) || 0), 0));
     netOpenMtm += openMtm;
     realisedToday += realised;
+    const f = fundsAll[m.funds] || null;
     const strat = byStrategy[m.sleeve];
-    if (strat) { strat.openMtm = r2(strat.openMtm + openMtm); strat.realisedToday = r2(strat.realisedToday + realised); }
+    if (strat) {
+      strat.openMtm = r2(strat.openMtm + openMtm);
+      strat.realisedToday = r2(strat.realisedToday + realised);
+      if (f) {
+        strat.fundsUsed = r2(strat.fundsUsed + (Number(f.utilized) || 0));
+        strat.fundsAvail = r2(strat.fundsAvail + (Number(f.available) || 0));
+      }
+    }
     return {
       key: m.key, name: m.name, sleeve: m.sleeve,
       syncedAt: sleeve?.syncedAt || null,
       open, closed, openMtm, realised,
-      funds: fundsAll[m.funds] || null,
+      funds: f,
       active: rows.length > 0,
     };
   });

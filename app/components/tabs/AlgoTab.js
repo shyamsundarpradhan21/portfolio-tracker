@@ -28,6 +28,14 @@ export default function AlgoTab({
   // Live F&O positions (all brokers, open + closed) — one derivation feeds both the
   // panel below and the YTD open-MTM line in each strategy card, so they agree.
   const fno = fnoLive();
+  // Live deployed capital per strategy from the broker funds reads (skip-not-zero: a
+  // strategy with no captured margin is omitted, not shown as ₹0).
+  const dep = (() => {
+    const bs = fno.byStrategy;
+    const used = [['S01', bs.S01.fundsUsed], ['S02', bs.S02.fundsUsed]].filter(([, v]) => v > 0);
+    const free = bs.S01.fundsAvail + bs.S02.fundsAvail;
+    return { str: used.map(([k, v]) => `${k} ${cap(v)}`).join(' + '), free, any: used.length > 0 || free > 0 };
+  })();
   return (
     <div>
       <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
@@ -40,9 +48,12 @@ export default function AlgoTab({
 
       <div className="g3 sec">
         <div className="csm">
-          <div className="lbl">own capital</div>
+          <div className="lbl">own capital · live deployed</div>
           <div className="vmd"><RsText>{cap(ALGO.s01.split.own + ALGO.s02.split.own)}</RsText></div>
-          <div className="sub"><RsText>{`S01 ${cap(ALGO.s01.split.own)} + S02 ${cap(ALGO.s02.split.own)} · own capital · excluded from net worth`}</RsText></div>
+          <div className="sub"><RsText>{`S01 ${cap(ALGO.s01.split.own)} + S02 ${cap(ALGO.s02.split.own)} own · excl. net worth`}</RsText></div>
+          {dep.any && (
+            <div className="sub"><RsText>{`deployed: ${dep.str || '—'}${dep.free > 0 ? ` · ${cap(dep.free)} free` : ''}`}</RsText></div>
+          )}
         </div>
         <div className="csm">
           <div className="lbl">{FY.labels.verifiedLong}</div>
