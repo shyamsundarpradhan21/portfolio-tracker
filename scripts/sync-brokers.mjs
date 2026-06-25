@@ -218,11 +218,13 @@ async function pullUpstox() {
   const pos = await getJSON('https://api.upstox.com/v2/portfolio/short-term-positions', H);
   const fnoRows = (Array.isArray(pos.json?.data) ? pos.json.data : []).map(normFnoUpstox).filter(Boolean);
   const fund = await getJSON('https://api.upstox.com/v2/user/get-funds-and-margin', H);
-  const avail = fund.json?.data?.equity?.available_margin;
+  const eq = fund.json?.data?.equity;
+  const avail = eq?.available_margin;
+  const used = eq?.used_margin;     // margin currently deployed — was dropped, so S02 read ₹0
   return {
     swing: { source: 'Upstox', syncedAt: nowIst(), rows },
     fno: { source: 'Upstox', syncedAt: nowIst(), rows: fnoRows },
-    funds: avail != null ? { available: +avail }
+    funds: avail != null ? { available: +avail, ...(used != null ? { utilized: +used } : {}) }
       : { available: null, note: fund.json?.errors?.[0]?.message || 'funds window 00:00-05:30 IST' },
   };
 }
@@ -405,7 +407,11 @@ for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', 
     }
     if (r.swing) state.holdings.SWING = r.swing;
     if (r.fno) state.positions[`${name.toUpperCase()}_FNO`] = r.fno;
-    if (r.funds) state.funds[name] = r.funds;
+    // skip-not-zero: a funds fetch that came back all-null (EOD / funds-window) must NOT
+    // clobber the last good values — keep the prior funds unless the new read has a real one.
+    if (r.funds && (r.funds.available != null || r.funds.utilized != null || !state.funds[name])) {
+      state.funds[name] = r.funds;
+    }
     state.brokers[name] = { ok: true, note: '' };
     log.push(`${name}: ok${r.swing ? ` · ${r.swing.rows.length} holdings` : ''}${r.fno ? ` · ${r.fno.rows.length} positions` : ''}`);
   } catch (e) {
