@@ -18,6 +18,7 @@ import { pullFdDayChange } from '../../../scripts/lib/fd.mjs';
 import { pullCmpfDayChange } from '../../../scripts/lib/cmpf.mjs';
 import { upsertGrowth } from '../../../scripts/lib/intraday.mjs';
 import { kvGetJSON, kvSetJSON, kvConfigured } from '../../../scripts/lib/kv.mjs';
+import { captureFiiDiiTrail } from '../../lib/fiidiiTrail';
 import brokerState from '../../../data/broker-state.json';
 
 export const runtime = 'nodejs';
@@ -72,9 +73,15 @@ export async function GET(req) {
     const record = upsertGrowth({ days: { [date]: existing || {} } }, date, partial).days[date];
     kv = await kvSetJSON(`growth:${date}`, record, GROWTH_TTL);
   }
+  // FII/DII cash-flow trail — folded in from the (now-dropped) premarket cron, so the
+  // server-side trail keeps building on this one daily run. Best-effort; null if NSE is
+  // unreachable or no store. Carries no portfolio figures (public market data).
+  let fiidii = null;
+  try { const r = await captureFiiDiiTrail(); fiidii = r.trail ? r.trail.length : (r.fiidii?.stale ? 'stale' : null); } catch { /* NSE unreachable → skip */ }
+
   const captured = ['eq', 'us', 'fd', 'mf', 'cmpf'].filter((k) => partial[k]);
   return Response.json(
-    { ok: true, date, captured, kv, privSource: priv ? 'kv' : 'file' },
+    { ok: true, date, captured, kv, privSource: priv ? 'kv' : 'file', fiidiiTrail: fiidii },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

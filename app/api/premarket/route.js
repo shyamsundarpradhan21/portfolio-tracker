@@ -15,6 +15,8 @@
 
 import { deriveMarketState } from '../../lib/market';
 import { mapAllIndices, mapYahooIndices, YH_INDEX_SYMS } from '../../lib/wrapIndices';
+// FII/DII trail capture is shared with /api/snapshot (the daily cron) — one copy.
+import { nseCookie, fetchFiiDii, persistTrail } from '../../lib/fiidiiTrail';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -200,24 +202,7 @@ async function fetchUsMovers() {
   return { gainers, losers };
 }
 
-// ── NSE session cookie (shared) ──────────────────────────────────────────────
-// NSE gates its JSON behind a cookie set on the home page. We bootstrap it ONCE
-// per request (browser UA) and reuse it for every NSE endpoint below (indices +
-// FII/DII), so the home page is hit a single time. Returns '' on failure — the
-// callers then degrade to a fallback / { stale } rather than throwing.
-async function nseCookie() {
-  try {
-    const boot = await fetch('https://www.nseindia.com/', {
-      headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9' },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(8000),
-    });
-    return (boot.headers.get('set-cookie') || '')
-      .split(/,(?=[^ ;]+=)/).map((c) => c.split(';')[0].trim()).filter(Boolean).join('; ');
-  } catch {
-    return '';
-  }
-}
+// nseCookie (shared NSE session bootstrap) now lives in lib/fiidiiTrail.js.
 
 // ── NSE index board (sectoral + breadth + India VIX) ─────────────────────────
 // Replaces the manual Kite EOD snapshot (data/market-wrap.json): one allIndices
@@ -256,46 +241,7 @@ async function fetchIndices(cookie) {
   return { stale: true, error: 'NSE + Yahoo index feeds unavailable', source: src };
 }
 
-// ── FII/DII cash-flow trail (NSE public JSON) ────────────────────────────────
-// Uses the shared NSE session cookie (see nseCookie). Often blocked from
-// data-centre IPs — on any failure we return { stale } and the UI shows the trail
-// as unavailable rather than inventing flows.
-async function fetchFiiDii(cookie) {
-  const src = 'NSE fiidiiTradeReact';
-  try {
-    const res = await fetch('https://www.nseindia.com/api/fiidiiTradeReact', {
-      headers: {
-        'User-Agent': UA,
-        Accept: 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        Referer: 'https://www.nseindia.com/reports/fii-dii',
-        ...(cookie ? { Cookie: cookie } : {}),
-      },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return { stale: true, error: `NSE HTTP ${res.status}`, source: src };
-
-    const json = await res.json();
-    // Response is an array of { category:'FII/FPI *'|'DII *', date, buyValue,
-    // sellValue, netValue } rows. NSE returns only the latest session here, so a
-    // 10-day trail isn't available from this endpoint — we surface today's net.
-    const rows = Array.isArray(json) ? json : json?.data;
-    if (!Array.isArray(rows) || !rows.length) return { stale: true, error: 'no rows', source: src };
-
-    const pick = (re) => rows.find((r) => re.test(String(r.category || '')));
-    const fii = pick(/FII|FPI/i);
-    const dii = pick(/DII/i);
-    const num = (v) => { const n = parseFloat(String(v).replace(/,/g, '')); return isFinite(n) ? n : null; };
-    const norm = (r) => r && ({ buy: num(r.buyValue), sell: num(r.sellValue), net: num(r.netValue), date: r.date });
-
-    const latest = { fii: norm(fii), dii: norm(dii), date: (fii || dii)?.date || null, source: src };
-    if (latest.fii?.net == null && latest.dii?.net == null) return { stale: true, error: 'unparseable', source: src };
-    return { latest, asOf: latest.date, source: src };
-  } catch (e) {
-    return { stale: true, error: e?.name === 'TimeoutError' ? 'timeout' : (e?.message || 'fetch failed'), source: src };
-  }
-}
+// fetchFiiDii (NSE cash-flow trail) now lives in lib/fiidiiTrail.js (shared with the cron).
 
 // ── FII derivative positioning (NSE participant-wise OI CSV) ─────────────────
 // Underneath the cash net (fiidiiTradeReact, above) sits the F&O book. NSE's
@@ -362,58 +308,9 @@ async function fetchParticipantStats(cookie, sessionDate) {
   }
 }
 
-// ── Server-side FII/DII trail (Vercel KV / Upstash Redis, optional) ──────────
-// When a Redis store is wired we persist one point per NSE session here too, so
-// the 10-day trail is cross-device and keeps building even when no browser is
-// open — refreshed by the daily Vercel cron (see vercel.json). Without a store
-// this is a no-op and the client's localStorage trail (lib/fiidii.js) is the
-// source of truth.
-//
-// Vercel KV now ships via the Marketplace (Upstash for Redis), which injects
-// creds under EITHER naming depending on how the store is connected:
-//   - KV_REST_API_URL / KV_REST_API_TOKEN          (legacy / "KV" prefix)
-//   - UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (Upstash default)
-// We accept both and build the client explicitly so it works either way. The
-// import is dynamic so the route never hard-depends on the store being present.
-const KV_KEY = 'premarket:fiidiiTrail';
-const TRAIL_CAP = 20; // ~a month of sessions; gap-free since it builds server-side
-
-function kvCreds() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url, token } : null;
-}
-
-async function kvClient() {
-  const creds = kvCreds();
-  if (!creds) return null;
-  try {
-    const { createClient } = await import('@vercel/kv');
-    return createClient(creds);
-  } catch {
-    return null;
-  }
-}
-
-async function persistTrail(latest) {
-  const kv = await kvClient();
-  if (!kv || !latest?.date) return null;
-  const fii = latest.fii?.net, dii = latest.dii?.net;
-  try {
-    const arr = (await kv.get(KV_KEY)) || [];
-    // Nothing live to record — return whatever trail the store already holds.
-    if ((fii == null || !isFinite(fii)) && (dii == null || !isFinite(dii))) return arr.length ? arr : null;
-    const point = { d: latest.date, fii: isFinite(fii) ? fii : null, dii: isFinite(dii) ? dii : null };
-    const i = arr.findIndex((p) => p.d === point.d);
-    if (i >= 0) arr[i] = point; else arr.push(point);
-    arr.sort((a, b) => new Date(a.d) - new Date(b.d));
-    const trimmed = arr.slice(-TRAIL_CAP);
-    await kv.set(KV_KEY, trimmed);
-    return trimmed;
-  } catch {
-    return null; // store unreachable — fall back to the client trail
-  }
-}
+// Server-side FII/DII trail persistence (KV premarket:fiidiiTrail) now lives in
+// lib/fiidiiTrail.js — shared with /api/snapshot's daily cron. The Wrap still persists
+// on-demand here when the page loads; the cron keeps it building with no browser open.
 
 export async function GET() {
   // One NSE cookie bootstrap, reused by both NSE endpoints (indices + FII/DII).
