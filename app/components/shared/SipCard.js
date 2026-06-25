@@ -431,7 +431,7 @@ export default function SipCard({ fx }) {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + (viewTotal > 0 ? 'grn' : viewTotal < 0 ? 'red' : '')}>{viewTotal ? <RsText>{inrFull(Math.abs(viewTotal))}</RsText> : '—'}</div>
+          <div className={'vt2 ' + (viewTotal > 0 ? 'grn' : viewTotal < 0 ? 'red' : '')}>{viewTotal ? <RsText>{inrFull(Math.abs(viewTotal))}</RsText> : '—'}</div>
           <div className="sub" style={{ margin: 0 }}>{headSub}</div>
         </div>
       </div>

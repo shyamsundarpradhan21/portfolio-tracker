@@ -50,7 +50,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           <div className="sub" style={{ margin: 0 }}>{data.source || 'avg-cost'} · as on {data.asOf}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vmd ' + cl(total)}><Money n={total} />
+          <div className={'vt2 ' + cl(total)}><Money n={total} />
             {currency === 'usd' && fxRate ? <span className="sub" style={{ fontWeight: 400 }}> ≈<span className="rs">₹</span>{compactInr(Math.abs(total) * fxRate)}</span> : null}
           </div>
           <div className="sub" style={{ margin: 0 }}>

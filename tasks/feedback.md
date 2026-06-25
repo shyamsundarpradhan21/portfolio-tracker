@@ -86,8 +86,16 @@ and a shorter string must never render bigger than a longer one in the same row.
   `AlgoTab` (both splits). The two remaining `--fs-md` figures (`FnoPositions` leg P&L,
   `BenchmarkBars` bar %) are dense ROW/bar values (table-like Tier 3), left by design.
 - Footers: `.csm .sub` clips to one line; `.sub.split` gives the two-value left/right
-  split. Deeper per-component re-tiering (e.g. shrinking a secondary breakdown grid from
-  Tier 1 → Tier 2) is the remaining, render-verified follow-up — not done blind.
+  split.
+- App-wide rollout DONE (2026-06): every STANDARD content-card corner headline stepped
+  Tier 1 → Tier 2 (`.vmd` → `.vt2`): `EquityDayCurve`, `RealizedPanel`, `FnoPositions`
+  (net open MTM), `PortfolioLiveCurve`, `GrowthDashboard`, `SipCard`, and the US
+  `Dividend Income` card (corner + its four `.csm` sub-stats together, so a breakdown
+  never out-ranks its own headline). `CFMemo` `.vsm` tax memo left by design.
+- The "mf @768 clip" was NOT a tier/CSS bug: `MFTab`'s Winner/Drag/Largest mini fed a
+  full fund NAME into the symbol-width `.mini .vsm` slot (equity tabs put a short ticker
+  there). Fixed locally — the name wraps to 2 lines + `-webkit-line-clamp:2`; the shared
+  `.mini .vsm` nowrap rule (for tickers) is untouched. No `globals.css` change.
 
 **Footers & alignment:**
 - A card footer is a **single line, anchored to the LEFT, clipped with an ellipsis** on

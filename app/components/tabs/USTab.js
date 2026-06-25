@@ -171,26 +171,26 @@ export default function USTab({
               <div className="sub" style={{ margin: 0 }}>Vested statement · as of {US_DIVIDENDS.asOf}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div className="vmd grn"><UsdF n={US_DIVIDENDS.netAllTime} /></div>
+              <div className="vt2 grn"><UsdF n={US_DIVIDENDS.netAllTime} /></div>
               <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
             </div>
           </div>
           <div className="g2" style={{ flex: 1, margin: '0 0 14px', alignItems: 'stretch' }}>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">gross all-time</div>
-              <div className="vmd grn"><UsdF n={US_DIVIDENDS.grossAllTime} /></div>
+              <div className="vt2 grn"><UsdF n={US_DIVIDENDS.grossAllTime} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">tax withheld</div>
-              <div className="vmd red"><UsdF n={US_DIVIDENDS.taxAllTime} /></div>
+              <div className="vt2 red"><UsdF n={US_DIVIDENDS.taxAllTime} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">last 12 months</div>
-              <div className="vmd grn"><UsdF n={US_DIVIDENDS.last12Gross} /></div>
+              <div className="vt2 grn"><UsdF n={US_DIVIDENDS.last12Gross} /></div>
             </div>
             <div className="csm" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div className="lbl">this FY ({US_DIVIDENDS.fy[US_DIVIDENDS.fy.length - 1]?.label.replace('FY', '') || '—'})</div>
-              <div className="vmd"><UsdF n={US_DIVIDENDS.fy[US_DIVIDENDS.fy.length - 1]?.amt || 0} /></div>
+              <div className="vt2"><UsdF n={US_DIVIDENDS.fy[US_DIVIDENDS.fy.length - 1]?.amt || 0} /></div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignContent: 'flex-start', flex: 1 }}>

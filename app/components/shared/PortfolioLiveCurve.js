@@ -62,7 +62,7 @@ export default function PortfolioLiveCurve() {
         <div className="ctitle" style={{ margin: 0 }}>
           Live P&amp;L <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>today · all sleeves</span>
         </div>
-        <div className={'vmd ' + cl(net)}><SInrF n={net} /></div>
+        <div className={'vt2 ' + cl(net)}><SInrF n={net} /></div>
       </div>
       <div style={{ padding: '0 16px 16px' }}>
         <IntradayChart tape={tape} overlays={SLEEVES} ariaLabel="Live portfolio P&L today" />

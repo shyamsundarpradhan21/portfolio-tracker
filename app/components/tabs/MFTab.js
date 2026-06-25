@@ -47,7 +47,7 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
             {minis.map(({ label, cls, name, sub, subCls }) => (
               <div className="mini" key={label}>
                 <div className="lbl" style={{ marginBottom: 4 }}>{label}</div>
-                <div className={'vsm ' + (cls || '')} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name || '—'}</div>
+                <div className={'vsm ' + (cls || '')} title={name || ''} style={{ whiteSpace: 'normal', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.25 }}>{name || '—'}</div>
                 <div className={'sub ' + (subCls || '')}>{sub}</div>
               </div>
             ))}

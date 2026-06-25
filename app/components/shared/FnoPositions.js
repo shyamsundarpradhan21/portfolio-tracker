@@ -86,7 +86,7 @@ export default function FnoPositions({ data }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="lbl" style={{ margin: '0 0 2px' }}>net open MTM</div>
-          <div className={'vmd ' + cl(data.netOpenMtm)}><SInrF n={data.netOpenMtm} /></div>
+          <div className={'vt2 ' + cl(data.netOpenMtm)}><SInrF n={data.netOpenMtm} /></div>
         </div>
       </div>
       {active.map((b) => <BrokerGroup key={b.key} b={b} />)}
