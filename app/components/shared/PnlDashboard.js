@@ -255,7 +255,7 @@ function Week({ idx, w, byDate, buckets }) {
       })}
       <div className="pnl-wk">
         <div className="lbl" style={{ margin: 0 }}>Wk {idx + 1}</div>
-        <div className={'mono ' + (has ? cl(ws) : '')} style={{ fontWeight: 700, fontSize: 'var(--fs-sm)', color: has ? undefined : 'var(--txt3)' }}>
+        <div className={'mono ' + (has ? cl(ws) : '')} style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: has ? undefined : 'var(--txt3)' }}>
           {has ? <SInrF n={ws} /> : '—'}
         </div>
       </div>
@@ -301,10 +301,9 @@ function DayPanel({ date, byDate }) {
       {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} fills={fills} /> : null}
 
       {d ? (
-        <div className="g4" style={{ marginTop: 12 }}>
+        <div className="g3" style={{ marginTop: 12 }}>
           <Mini k="Gross" v={<SInrF n={d.gross} />} vc={cl(d.gross)} />
           <Mini k="Charges" v={<SInrF n={d.charges} />} />
-          <Mini k="Orders" v={d.orders || '—'} />
           <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
       ) : (tape.length ? null : <div className="sub" style={{ marginTop: 12 }}>No trades captured this day.</div>)}
@@ -359,7 +358,6 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   }
   return (
     <div className="pnl-psum">
-      <span><span className="lbl">Orders</span> <span className="mono">{s.orders || '—'}</span></span>
       <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
       <Charges n={s.charges} />
       <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
@@ -386,18 +384,27 @@ function Legend() {
   );
 }
 
-// Win rate — shows the % number, hover swaps it for the donut ring.
+// Win rate — the donut ring (with its centre %), which TOGGLES to a big bare % on hover
+// (pointer devices) or tap (touch/tablet, which can't hover). Footers label the win/loss
+// counts that drive the %. Cross-fade respects prefers-reduced-motion (CSS-gated).
 function WinRateStat({ stats }) {
+  const [flip, setFlip] = useState(false);
+  const [hover, setHover] = useState(false);
+  const bare = hover || flip;
   return (
     <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Win rate</div>
-      <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-        <Donut pct={stats.winPct} size="3.4rem" showPct />
-      </div>
-      {/* win count (green, left) · loss count (red, right) — counts only, colour-coded */}
-      <div className="fxc sub" style={{ marginTop: 'auto', paddingTop: 8 }}>
-        <span className="grn" style={{ fontWeight: 700 }}>{stats.winDays}</span>
-        <span className="red" style={{ fontWeight: 700 }}>{stats.lossDays}</span>
+      <button type="button" className="pnl-wr" aria-pressed={bare}
+        aria-label={`Win rate ${stats.winPct}% — ${stats.winDays} wins, ${stats.lossDays} losses. Tap to toggle the percentage.`}
+        onClick={() => setFlip((f) => !f)}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+        <span className="pnl-wr-face" style={{ opacity: bare ? 0 : 1 }}><Donut pct={stats.winPct} size="100%" showPct /></span>
+        <span className="pnl-wr-face pnl-wr-pct" style={{ opacity: bare ? 1 : 0 }}>{stats.winPct}%</span>
+      </button>
+      {/* labelled win / loss counts (colour-coded) — they feed the % above */}
+      <div className="fxc sub pnl-wr-foot">
+        <span className="grn" style={{ fontWeight: 700 }}>Wins {stats.winDays}</span>
+        <span className="red" style={{ fontWeight: 700 }}>Losses {stats.lossDays}</span>
       </div>
     </div>
   );
@@ -426,7 +433,7 @@ function Donut({ pct, color = 'var(--grn)', size = 26, showPct = false }) {
       <circle cx="14" cy="14" r={r} fill="none" stroke={color} strokeWidth="4"
         strokeDasharray={c} strokeDashoffset={c * (1 - (pct || 0) / 100)}
         strokeLinecap="round" transform="rotate(-90 14 14)" />
-      {showPct ? <text x="14" y="14.5" textAnchor="middle" dominantBaseline="central" fill="var(--txt)" style={{ fontSize: '7.5px', fontWeight: 700 }}>{pct}%</text> : null}
+      {showPct ? <text x="14" y="14.5" textAnchor="middle" dominantBaseline="central" fill="var(--txt)" style={{ fontSize: '8.5px', fontWeight: 700 }}>{pct}%</text> : null}
     </svg>
   );
 }
