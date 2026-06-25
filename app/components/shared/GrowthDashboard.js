@@ -6,7 +6,7 @@
 // (/api/growth, KV + archive), NOT a live Yahoo poll — so it stands even on days no
 // capture host ran. F&O is excluded (business income); CMPF renders LAST, in grey.
 import { useState, useEffect } from 'react';
-import IntradayChart from './IntradayChart';
+import GrowthCurve from './GrowthCurve';
 import { cl, SInrF } from '../../lib/fmt';
 import { CMPF_HATCH } from '../../portfolio'; // CSS constant (not gated private data)
 
@@ -87,7 +87,7 @@ export default function GrowthDashboard() {
       </div>
 
       {tape.length >= 2 ? (
-        <IntradayChart tape={tape} candles={null} fills={[]} overlays={[]} ariaLabel="Wealth growth curve" />
+        <GrowthCurve tape={tape} total={total} />
       ) : (
         <div className="sub" style={{ padding: '18px 0', textAlign: 'center', lineHeight: 1.6 }}>
           The growth curve draws once a few daily snapshots have accrued (one lands each
