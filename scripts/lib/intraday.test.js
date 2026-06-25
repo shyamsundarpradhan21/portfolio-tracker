@@ -7,7 +7,15 @@ const pt = (t, net, byBroker = {}, pending = false) => ({ t, net, byBroker, pend
 describe('upsertPoint', () => {
   it('appends to an empty tape and rounds money to 2dp', () => {
     const j = upsertPoint({}, '2026-06-24', pt('09:20', 1234.567, { dhan: 1234.567 }));
-    expect(j.days['2026-06-24']).toEqual([{ t: '09:20', net: 1234.57, dhan: 1234.57, upstox: null, fyers: null, pending: undefined }]);
+    expect(j.days['2026-06-24']).toEqual([{ t: '09:20', net: 1234.57, realised: null, mtm: null, dhan: 1234.57, upstox: null, fyers: null, pending: undefined }]);
+  });
+
+  it('carries the realised / open-MTM split when the capture provides it (else null)', () => {
+    const j = upsertPoint({}, '2026-06-24', { t: '09:20', net: 140, realised: 70, mtm: 70.004, byBroker: { dhan: 140 } });
+    const p = j.days['2026-06-24'][0];
+    expect(p.realised).toBe(70);
+    expect(p.mtm).toBe(70);          // rounded to 2dp like net
+    expect(p.net).toBe(140);
   });
 
   it('keeps the array time-sorted regardless of insert order', () => {

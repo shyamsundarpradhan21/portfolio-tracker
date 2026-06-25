@@ -34,6 +34,10 @@ export function upsertPoint(json, date, point) {
   const p = {
     t: point.t,
     net: round2(point.net),
+    // realised (closed legs) + open MTM split — present only on points captured by the
+    // post-2026-06-25 daemon; older points carry net only (the UI falls back gracefully).
+    realised: round2(point.realised ?? null),
+    mtm: round2(point.mtm ?? null),
     dhan: round2(point.byBroker?.dhan ?? null),
     upstox: round2(point.byBroker?.upstox ?? null),
     fyers: round2(point.byBroker?.fyers ?? null),

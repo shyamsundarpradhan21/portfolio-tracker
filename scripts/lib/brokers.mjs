@@ -21,6 +21,19 @@ const isFno = (sym) => segmentOf(sym) != null;
 // silently dropped EVERY Dhan F&O leg — trust the explicit segment, fall back to parse.
 export const isFnoPosition = (p) => /FNO/.test(p?.exchangeSegment || '') || isFno(p?.tradingSymbol);
 const num = (n) => (Number.isFinite(+n) ? +n : 0);
+const round = (n) => Math.round(n * 100) / 100;
+// Split a broker's position rows into realised (booked — closed legs) and open MTM
+// (unrealised), over F&O legs only. Pure + broker-agnostic: each puller passes its own
+// leg-test and realised/mtm field accessors. net = realised + mtm (the prior single sum).
+export function splitLegs(list, { isLeg, realised, mtm }) {
+  let r = 0, m = 0;
+  for (const p of (list || [])) {
+    if (!isLeg(p)) continue;
+    r += num(realised(p));
+    m += num(mtm(p));
+  }
+  return { realised: round(r), mtm: round(m), net: round(r + m) };
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function getJSON(url, headers) {
@@ -62,18 +75,14 @@ async function dhan(withOrders) {
   const pos = await getJSON('https://api.dhan.co/v2/positions', H);
   if (!pos.ok || !pos.json) return null;
   const list = Array.isArray(pos.json) ? pos.json : (pos.json.data || []);
-  let net = 0;
-  for (const p of list) {
-    if (!isFnoPosition(p)) continue;
-    net += num(p.realizedProfit) + num(p.unrealizedProfit);
-  }
+  const { net, realised, mtm } = splitLegs(list, { isLeg: isFnoPosition, realised: (p) => p.realizedProfit, mtm: (p) => p.unrealizedProfit });
   let pending = false;
   if (withOrders) {
     const ord = await getJSON('https://api.dhan.co/v2/orders', H);
     const olist = Array.isArray(ord.json) ? ord.json : (ord.json?.data || []);
     pending = olist.some((o) => /PENDING|TRANSIT|OPEN/i.test(String(o.orderStatus || '')));
   }
-  return { net, pending };
+  return { net, realised, mtm, pending };
 }
 
 async function upstox(withOrders) {
@@ -82,18 +91,16 @@ async function upstox(withOrders) {
   const H = { Authorization: `Bearer ${tok}`, Accept: 'application/json' };
   const pos = await getJSON('https://api.upstox.com/v2/portfolio/short-term-positions', H);
   if (!pos.ok || !Array.isArray(pos.json?.data)) return null;
-  let net = 0;
-  for (const p of pos.json.data) {
-    const sym = p.trading_symbol || p.tradingsymbol || '';
-    if (!isFno(sym)) continue;
-    net += num(p.realised) + num(p.unrealised);
-  }
+  const { net, realised, mtm } = splitLegs(pos.json.data, {
+    isLeg: (p) => isFno(p.trading_symbol || p.tradingsymbol || ''),
+    realised: (p) => p.realised, mtm: (p) => p.unrealised,
+  });
   let pending = false;
   if (withOrders) {
     const ord = await getJSON('https://api.upstox.com/v2/order/retrieve-all', H);
     pending = (ord.json?.data || []).some((o) => /open|pending|trigger/i.test(String(o.status || '')));
   }
-  return { net, pending };
+  return { net, realised, mtm, pending };
 }
 
 async function fyers(withOrders) {
@@ -103,17 +110,16 @@ async function fyers(withOrders) {
   const H = { Authorization: `${appId}:${tok}` };
   const pos = await getJSON('https://api-t1.fyers.in/api/v3/positions', H);
   if (pos.json?.s !== 'ok' || !Array.isArray(pos.json?.netPositions)) return null;
-  let net = 0;
-  for (const p of pos.json.netPositions) {
-    if (!isFno(p.symbol)) continue;
-    net += num(p.realized_profit) + num(p.unrealized_profit);
-  }
+  const { net, realised, mtm } = splitLegs(pos.json.netPositions, {
+    isLeg: (p) => isFno(p.symbol),
+    realised: (p) => p.realized_profit, mtm: (p) => p.unrealized_profit,
+  });
   let pending = false;
   if (withOrders) {
     const ord = await getJSON('https://api-t1.fyers.in/api/v3/orders', H);
     pending = (ord.json?.orderBook || []).some((o) => /pending|open|transit/i.test(String(o.status || o.orderStatus || '')));
   }
-  return { net, pending };
+  return { net, realised, mtm, pending };
 }
 
 // Pull the ACTIVE brokers concurrently. Returns { byBroker, bySleeve:{S01,S02},
@@ -134,15 +140,15 @@ export async function pullPositions({ withOrders = true } = {}) {
   const active = BROKERS.filter((b) => b.enabled);
   const results = await Promise.all(active.map((b) => b.pull(withOrders)));
   const byBroker = {}, bySleeve = { S01: 0, S02: 0 };
-  let net = 0, pending = false, any = false;
+  let net = 0, realised = 0, mtm = 0, pending = false, any = false;
   results.forEach((r, i) => {
     if (!r) return;
     any = true;
     const name = active[i].name;
-    byBroker[name] = Math.round(r.net * 100) / 100;
+    byBroker[name] = round(r.net);
     bySleeve[SLEEVE[name]] += r.net;
-    net += r.net;
+    net += r.net; realised += num(r.realised); mtm += num(r.mtm);
     pending = pending || !!r.pending;
   });
-  return { any, byBroker, bySleeve, net: Math.round(net * 100) / 100, pending };
+  return { any, byBroker, bySleeve, net: round(net), realised: round(realised), mtm: round(mtm), pending };
 }

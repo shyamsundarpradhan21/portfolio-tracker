@@ -58,7 +58,7 @@ export default function PnlDashboard({ rows: rowsProp } = {}) {
         const r = await fetch(`/api/intraday?kind=fno&date=${today}`, { cache: 'no-store' });
         if (!r.ok || !on) return;
         const pts = (await r.json()).tape || [];
-        if (on) setLiveToday(pts.length ? pts[pts.length - 1].net : null);
+        if (on) setLiveToday(pts.length ? pts[pts.length - 1] : null); // whole point: {net, realised, mtm}
       } catch {}
     };
     poll();
@@ -332,15 +332,34 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
     : view === 'month' ? series.filter((d) => d.date.slice(0, 7) === periodKey)
     : series.filter((d) => d.date === periodKey);
   const s = summaryStats(sub);
-  // Today has no realised row until the evening sync — so its bar shows the LIVE MTM
-  // (the realised + per-leg fields fill in at close), not a misleading ₹0.
+  // Today has no realised LEDGER row until the evening sync — so show LIVE figures, not a
+  // misleading ₹0. The post-2026-06-25 capture splits realised (closed legs) vs open MTM;
+  // older points carry net only, so fall back to a single Live P&L figure.
   const liveDay = view === 'day' && periodKey === todayIstIso() && liveToday != null;
+  const split = liveDay && liveToday.realised != null && liveToday.mtm != null;
+  if (split) {
+    return (
+      <div className="pnl-psum">
+        <span><span className="lbl">Realised</span> <span className={'mono ' + cl(liveToday.realised)}><SInrF n={liveToday.realised} /></span></span>
+        <span><span className="lbl">Open MTM</span> <span className={'mono ' + cl(liveToday.mtm)}><SInrF n={liveToday.mtm} /></span></span>
+        <span><span className="lbl">Net</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
+      </div>
+    );
+  }
+  if (liveDay) {
+    return (
+      <div className="pnl-psum">
+        <span><span className="lbl">Orders</span> <span className="mono">—</span></span>
+        <span><span className="lbl">Live P&amp;L</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
+      </div>
+    );
+  }
   return (
     <div className="pnl-psum">
-      <span><span className="lbl">Orders</span> <span className="mono">{liveDay ? '—' : (s.orders || '—')}</span></span>
-      <span><span className="lbl">Days</span> <span className="mono">{liveDay ? '—' : s.tradingDays}</span></span>
-      <span><span className="lbl">Charges</span> <span className="mono red">{liveDay ? '—' : <SInrF n={s.charges} />}</span></span>
-      <span><span className="lbl">{liveDay ? 'Live MTM' : 'Net'}</span> <span className={'mono ' + cl(liveDay ? liveToday : s.net)}><SInrF n={liveDay ? liveToday : s.net} /></span></span>
+      <span><span className="lbl">Orders</span> <span className="mono">{s.orders || '—'}</span></span>
+      <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
+      <span><span className="lbl">Charges</span> <span className="mono red"><SInrF n={s.charges} /></span></span>
+      <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
     </div>
   );
 }
