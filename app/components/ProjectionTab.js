@@ -15,7 +15,7 @@ import { useMemo, useRef, useState, useEffect, memo } from 'react';
 import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
-import PerformanceCurve from './shared/PerformanceCurve';
+import GrowthView from './shared/GrowthView';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
 // the pre-history fallback rate and the Cons/Opt bracket all read from here.
@@ -246,8 +246,8 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('Max');
-  // 'value' = net-worth growth + projection scrubber; 'return' = Zerodha-style
-  // time-weighted performance curve (indexed to 100) vs Nifty 50.
+  // 'value' = net-worth growth + projection scrubber; 'growth' = ₹ money-made curve vs a
+  // same-dated-rupees benchmark counterfactual (GrowthView), windowed 1D…Max.
   const [view, setView] = useState('value');
   const [hoverX, setHoverX] = useState(null); // hovered viewBox x → read values off the curve (history or projection)
   const [playing, setPlaying] = useState(false);
@@ -669,7 +669,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       {footer && <div className="pjx-alloc">{footer}</div>}
       <div className="fxc pjx-head" style={{ alignItems: 'baseline' }}>
         <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          {view === 'return' ? 'Performance · returns vs market' : scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
+          {view === 'growth' ? 'Growth · money made vs market' : scrubbing ? 'Net worth · projected' : 'Net worth · growth'}
           {!dataReady && (
             <span style={{ fontSize: 'var(--fs-2xs)', fontFamily: 'var(--mono)', color: 'var(--gld)', textTransform: 'none', letterSpacing: 0 }}>
               ⚠ live pricing incomplete — figures provisional
@@ -678,11 +678,11 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         </div>
         <div className="pjx-head-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="pjx-viewtoggle" role="tablist" aria-label="Chart view">
-            <button role="tab" aria-selected={view === 'value'} className={view === 'value' ? 'on' : ''} onClick={() => setView('value')}>Value</button>
-            <button role="tab" aria-selected={view === 'return'} className={view === 'return' ? 'on' : ''} onClick={() => { stopPlay(); setT(0); setView('return'); }}>Return</button>
+            <button role="tab" aria-selected={view === 'value'} className={view === 'value' ? 'on' : ''} onClick={() => setView('value')}>Net worth</button>
+            <button role="tab" aria-selected={view === 'growth'} className={view === 'growth' ? 'on' : ''} onClick={() => { stopPlay(); setT(0); setView('growth'); }}>Growth</button>
           </div>
           <div className="sub" style={{ margin: 0, fontFamily: 'var(--mono)' }}>
-            {view === 'return' ? 'indexed to 100' : <>{monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
+            {view === 'growth' ? 'money made vs market' : <>{monYr(first.d)} → {scrubbing ? baseYear + yr : 'today'}
             {scrubbing && (
               <button className="pjx-reset" onClick={reset} title="Back to today">⟲ today</button>
             )}</>}
@@ -695,10 +695,10 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           with its Compare+legend header) height and the chart stays anchored above the
           scrubber, so toggling never jumps the card. Charts are identical size. */}
       <div className="pjx-chartswap">
-      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
-        <PerformanceCurve hist={hist} series={histSeries} range={range} />
+      <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'visible' : 'hidden' }} aria-hidden={view !== 'growth'}>
+        <GrowthView fx={fx} />
       </div>
-      <div className="pjx-chartcell" style={{ visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
+      <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'hidden' : 'visible' }} aria-hidden={view === 'growth'}>
       <div style={{ position: 'relative', marginTop: 10 }}>
       {/* the growth story rides INSIDE the chart's empty upper-left;
           methodology lives in the small footnote below the card */}
@@ -929,20 +929,20 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       {/* scrub rail — value-only (a returns curve has no projection). In Return it
           stays visible but DIMMED + disabled, so toggling Value↔Return doesn't shift
           the layout and it reads as "projection doesn't apply to returns". */}
-      <div className={'pjx-scrubrow' + (view === 'return' ? ' off' : '')}
+      <div className={'pjx-scrubrow' + (view === 'growth' ? ' off' : '')}
         style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}
-        title={view === 'return' ? 'Returns aren’t projected — the scrubber is value-only' : undefined}
-        aria-hidden={view === 'return'}>
+        title={view === 'growth' ? 'Growth isn’t projected — the scrubber is net-worth-only' : undefined}
+        aria-hidden={view === 'growth'}>
         {/* at rest the button wears the tab accent (the growth view's colour);
             once scrubbing it adopts the scrubber/scenario tone to match the rail */}
-        <button onClick={onPlay} className="pj-play" disabled={view === 'return'}
+        <button onClick={onPlay} className="pj-play" disabled={view === 'growth'}
           style={{ '--play-clr': scrubbing ? scTone : 'var(--acc)' }}
           aria-label={playing ? 'Pause' : 'Play projection'}>
           {playing ? '❚❚' : t >= MAXY ? '↻' : '▶'}
         </button>
         <div className="pj-year">{baseYear + yr}<small>{yr === 0 ? 'today' : `year ${yr}`}</small></div>
         <div className="pjx-rail">
-          <input type="range" min="0" max={MAXY} step="0.1" value={t} onInput={onScrub} disabled={view === 'return'}
+          <input type="range" min="0" max={MAXY} step="0.1" value={t} onInput={onScrub} disabled={view === 'growth'}
             className="pj-range" style={{ width: '100%', '--p': `${(t / MAXY) * 100}%`, '--range-clr': scrubbing ? scTone : 'var(--acc)' }}
             aria-label="Projection year" />
           <div className="pjx-notches">
@@ -1027,22 +1027,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
             : <> · {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit, for life</>}
         </div>
       )}
-
-      {/* methodology footnote — every number is derived. Both view variants stack in
-          one grid cell (toggled by visibility) so it reserves the taller text's height
-          in both views — the footnote prose differs in length, so this keeps Value↔Return
-          from jumping at the bottom of the card. */}
-      <div className="pjx-foot pjx-footswap">
-        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'visible' : 'hidden' }} aria-hidden={view !== 'return'}>
-          Time-weighted returns indexed to 100 at the window start — realised + unrealised P&amp;L only, deposits/withdrawals removed (like a fund NAV), so it isn&rsquo;t inflated by adding money. Benchmarks rebased to the same start (foreign indices in local-currency price terms, not FX-adjusted); pick benchmarks above, change the window below. Indicative.
-        </span>
-        <span style={{ gridArea: '1 / 1', visibility: view === 'return' ? 'hidden' : 'visible' }} aria-hidden={view === 'return'}>
-          {MAXY}-yr model · <span className="rs">₹</span>{projIn.monthly.toLocaleString('en-IN')}/mo (T12M avg deployment)
-          {' '}stepping {(projIn.stepUp * 100).toFixed(1)}%→inflation · base = live XIRR{xirrPct != null ? ` ${xirrPct}%` : ''} →
-          {' '}{(rates.base.longRun * 100).toFixed(0)}% long-run · Cons/Opt ∓{(SPREAD * 100).toFixed(0)} pts ·
-          inflation {(PROJECTION.inflation * 100).toFixed(0)}% for real values · indicative, not advice
-        </span>
-      </div>
 
     </div>
   );

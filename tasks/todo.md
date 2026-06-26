@@ -43,7 +43,30 @@ Fixes (all done):
       Proven behavior-preserving: deriveProjInputs net + monthly contribution byte-identical
       on real data (net ₹1,238,740, ₹103,000/mo old==new).
 - [x] Revised suite (17 assertions) green; own line returns real local data; homepage 200.
-- [ ] Push branch → Vercel preview (real KV) → hit ?view=growth&range=1M → report believability.
+- [x] Push branch → Vercel preview (real KV) → hit ?view=growth all ranges → GREEN.
+      1D: 376 intraday pts, own null (client-supplied), bench.nifty ₹−6,068…9,198 ✓.
+      1M/1Y/max: own ₹32,626/₹1.25L/₹1.33L, bench believable, == local. CMPF excluded.
+      (Preview was SSO-gated; user disabled Deployment Protection for the fetch — RE-ENABLE.)
+
+## Phase 2 — Client (commit 3, revertible) — DONE
+- [x] `GrowthView.js`: fetches `/api/growth?view=growth&range=&fx=`; window 1D·1M·6M·1Y·Max;
+      two+ ₹ lines (own solid --acc, benchmarks dashed); reuses PerformanceCurve chrome
+      (pjx-cmp chips, smoothPath, niceScale/RsSvg, pjx-perf-legend with ₹ deltas, NO +/-
+      glyph — direction by colour), 0-baseline emphasised. 1D own line = merged intraday
+      tape (mergeLiveTapes, client live P&L) vs Nifty intraday bench. Range/data race guard
+      (only render when data.range === range) — caught a NaN-path bug in render-verify.
+- [x] `ProjectionTab.js`: toggle relabelled Net worth ↔ Growth (view 'return'→'growth'),
+      renders GrowthView (PerformanceCurve import dropped), footnote block deleted, scrubber
+      disabled on growth. Value/projection path untouched (verified: scrubber+pills+NW curve).
+- [x] Render-verified live: Max ₹1.33L vs Nifty ₹49,451 · 1M ₹32,626 vs ₹29,207 · 1D
+      ₹1,239 live (own accumulating tape) — no NaN, 0 console errors on clean load,
+      direction by colour, CMPF excluded. Net worth view intact on toggle-back.
+- [x] `certify.mjs`: Overview (this change's tab) = 004:0 across all 6 widths × both themes
+      on the canonical gate. Pre-existing 004 clips on indian/fd/mf/us @768 are unrelated
+      (no globals.css change; those tabs import none of the changed files). STRESSHARD is a
+      broad torture probe (every tab fails) — not the merge gate.
+
+## RE-ENABLE Vercel Deployment Protection (was turned off for the preview fetch).
 
 ### Phase 1 verification
 - Existing modes (`?days=N`, single-date) unaffected — `?days=30` still serves.
