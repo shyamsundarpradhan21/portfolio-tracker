@@ -66,6 +66,19 @@ Fixes (all done):
       (no globals.css change; those tabs import none of the changed files). STRESSHARD is a
       broad torture probe (every tab fails) — not the merge gate.
 
+## Post-ship fix (commit 4) — benchmark chips missing on protected deployment
+Symptom: on the SSO-protected preview the Growth view showed the own line but NO benchmark
+chips/lines. Root cause (confirmed via runtime logs: 22 /api/growth calls vs only 2
+/api/history): the route did a server-side **self-fetch** to `${origin}/api/history` (+
+`/api/intraday` for 1D), which a protected deployment blocks at the edge (no auth cookie on
+the server-internal request) → `available: []`. The browser's own calls succeed because the
+USER is authed — that's why it worked with protection off and breaks with it on.
+- [x] Extract `app/lib/yahooHistory.js` (`fetchYahooSeries`/`Many`); /api/history + the
+      growth route both use it — Yahoo called DIRECTLY, no self-fetch. No fork.
+- [x] 1D Nifty bench reads KV `intraday:nifty:<date>` + the committed niftyOhlc archive
+      directly (no /api/intraday self-fetch).
+- [x] Local: history route unchanged shape; growth available=[all 7] via direct Yahoo.
+
 ## RE-ENABLE Vercel Deployment Protection (was turned off for the preview fetch).
 
 ### Phase 1 verification

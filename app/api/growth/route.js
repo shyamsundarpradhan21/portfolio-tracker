@@ -8,8 +8,10 @@
 
 import growthArchive from '../../../data/growth.json';
 import indianExits from '../../../data/indian_exits.json';
+import niftyOhlc from '../../../data/nifty-ohlc.json';
 import { loadPortfolio } from '../../lib/serverPortfolio';
 import { buildDepositLedger } from '../../lib/deposits';
+import { fetchYahooSeriesMany } from '../../lib/yahooHistory';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,6 +100,30 @@ async function fetchSnapshots() {
   } catch { return []; }
 }
 
+// NIFTY 50 intraday 1-min tape for `date` — read DIRECTLY from KV (intraday:nifty:<date>),
+// falling back to the committed archive. NOT a self-fetch to /api/intraday: a server-side
+// fetch to the deployment's own URL carries no auth cookie, so Deployment Protection blocks
+// it at the edge (the 1D bench would silently vanish on a protected deployment).
+async function niftyIntradayTape(date) {
+  const creds = kvCreds();
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', `intraday:nifty:${date}`]),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(6000),
+      });
+      const j = await r.json();
+      const v = j?.result ? JSON.parse(j.result) : null;
+      const tape = Array.isArray(v) ? v : (Array.isArray(v?.tape) ? v.tape : null);
+      if (tape) return tape;
+    } catch { /* fall back to archive */ }
+  }
+  return niftyOhlc?.days?.[date] || [];
+}
+
 // The window's growth:<date> records (recent days from KV, older from the committed
 // archive) — the same resilient tier the cumulative-accrual dashboard reads.
 async function fetchGrowthRecords(range) {
@@ -157,7 +183,6 @@ export async function GET(req) {
 
   // ── Growth view: money made (deposits stripped) + ₹ benchmark counterfactual ──
   if (params.get('view') === 'growth') {
-    const origin = new URL(req.url).origin;
     const range = ['1D', '1M', '6M', '1Y', 'max'].includes(params.get('range')) ? params.get('range') : 'max';
     const fx = Math.max(1, parseFloat(params.get('fx')) || 88);
     const json = (body) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -167,11 +192,10 @@ export async function GET(req) {
     if (range === '1D') {
       let points = [], available = [];
       try {
-        const [ir, snaps] = await Promise.all([
-          fetch(`${origin}/api/intraday?kind=nifty&date=${istToday()}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) }).then((r) => r.json()).catch(() => null),
+        const [tape, snaps] = await Promise.all([
+          niftyIntradayTape(istToday()),
           fetchSnapshots(),
         ]);
-        const tape = Array.isArray(ir?.tape) ? ir.tape : [];
         const base = investableBase(snaps[snaps.length - 1] || {});
         const open = tape.length ? (Number.isFinite(tape[0].o) ? tape[0].o : tape[0].c) : null;
         if (open > 0 && base > 0) {
@@ -211,10 +235,8 @@ export async function GET(req) {
       // bumped to 5y/max if inception predates it). One fetch, evaluated per window date.
       const yearsBack = (now.getTime() - new Date(ledger[0].date + 'T00:00:00Z').getTime()) / (365.25 * 864e5);
       const yRange = range === 'max' ? (yearsBack > 5 ? 'max' : '5y') : (yearsBack > 2 ? '5y' : '2y');
-      try {
-        const hr = await fetch(`${origin}/api/history?symbols=${encodeURIComponent(BENCHMARKS.map((b) => b.sym).join(','))}&range=${yRange}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) }).then((r) => r.json()).catch(() => null);
-        series = hr?.series || {};
-      } catch { series = {}; }
+      try { series = await fetchYahooSeriesMany(BENCHMARKS.map((b) => b.sym), yRange); }
+      catch { series = {}; }
     }
     const benchFns = {};
     for (const b of BENCHMARKS) { const fn = benchCfFn(series[b.sym]?.closes, ledger); if (fn) benchFns[b.key] = fn; }
