@@ -32,6 +32,11 @@
 # extracted figures get written into the committed JSONs.
 /data/reports/
 
+# throwaway mail-parser spike (branch claude/mail-parser-spike) — sensitive contract-note
+# samples (account#/PAN/holdings/P&L). The ENTIRE folder is deletable + must NEVER be
+# committed; raw mail stays here and nowhere else. `rm -rf _sandbox` leaves zero trace.
+/_sandbox/
+
 # private portfolio data — holdings/salary/loans, pulled out of the bundle into KV.
 # Local dev + the KV seed read this; the deployed app reads KV. .example is committed.
 /data/portfolio.private.json
