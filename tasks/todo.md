@@ -79,7 +79,30 @@ USER is authed — that's why it worked with protection off and breaks with it o
       directly (no /api/intraday self-fetch).
 - [x] Local: history route unchanged shape; growth available=[all 7] via direct Yahoo.
 
-## RE-ENABLE Vercel Deployment Protection (was turned off for the preview fetch).
+## Review — Net worth ↔ Growth (DONE, shipped & live-verified)
+Replaced the ProjectionTab Value/Return toggle with **Net worth ↔ Growth**. Net worth =
+the untouched value + projection-scrubber path. Growth = a ₹ "money made" curve (investment
+sleeves, CMPF excluded, from the 365-day growth archive) overlaid with a same-dated-rupees
+benchmark counterfactual in ₹, re-baselined to 0 per window (1D·1M·6M·1Y·Max); 1D own line
+is the client's live accumulating intraday P&L vs Nifty intraday.
+
+Commits (origin/claude/ecstatic-wozniak-svdlxb): `b80054a` server route → `3342396` revision
+(CMPF fix + shared `buildDepositLedger`) → `4612cf9` client toggle + `GrowthView` → `ad224d6`
+no-self-fetch fix → `c928040` cleanup (drop `PerformanceCurve`, file @768 task) → `c4dfea2`
+build nudge. (The feedback/review docs commit is local — push on "push".)
+
+Verified: 17-assertion math suite; `deriveProjInputs` behavior-preserving; live render-verify
+(caught a NaN race + the CMPF phantom-gain + the self-fetch bug); certify Overview-clean;
+fix confirmed LIVE on the protected preview via the bypass (`available:[all 7]`, screenshot
+shows all chips + the Nifty line).
+
+Key lessons recorded in `feedback.md`: never server-side self-fetch a sibling API route
+(Deployment Protection blocks it); verify against real KV/prod data, not just local.
+
+## Open / optional (not started — user's call)
+- Fix the pre-existing @768 certify clips — see `tasks/responsive-768-clips.md` (filed, deferred).
+- Merge the branch to `main` when ready (awaiting "merge"/"ship").
+- Deployment Protection is back ON (re-enabled after the verification fetch). ✓
 
 ### Phase 1 verification
 - Existing modes (`?days=N`, single-date) unaffected — `?days=30` still serves.

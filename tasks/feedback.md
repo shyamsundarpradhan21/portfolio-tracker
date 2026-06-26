@@ -208,6 +208,33 @@ full use of the knowledge graph everywhere:
   host", check DNS first.
 - Repo-local git identity: shyamsundar.pradhan21@gmail.com.
 
+### Deployment (Vercel) — API routes must NOT server-side self-fetch a sibling route
+A server-side `fetch(\`${origin}/api/other\`)` from inside one API route carries NO auth
+cookie, so Vercel **Deployment Protection** (SSO/SAML on previews, any protected deployment)
+blocks it at the edge — the call returns the auth-wall HTML/redirect, the route's try/catch
+swallows it, and the feature **silently degrades to empty data with no error**. It "works"
+locally and with protection off (self-fetch not blocked then), and the browser's own calls
+work because the USER is authenticated — so the gap only shows on a protected deployment.
+**Fix: call the underlying source DIRECTLY** — external APIs via a shared lib (e.g.
+`app/lib/yahooHistory.js`), KV + committed-archive reads inline — never hop through a sibling
+route. (Caught: the Growth route self-fetched `/api/history` + `/api/intraday`; benchmark
+chips/lines vanished on the protected preview — runtime logs showed 22 `/api/growth` vs only
+2 `/api/history`.)
+
+### Verifying a protected Vercel deployment + when a push doesn't build
+- **Bypass for verification:** `?x-vercel-protection-bypass=<SECRET>` (or the header) reaches
+  a protected deployment via curl/Playwright; add `&x-vercel-set-bypass-cookie=true` so the
+  page's OWN client fetches pass too. It does NOT fix a server-internal self-fetch (above).
+- **Verify against REAL data before declaring done:** private figures live in KV (empty in
+  local dev), so a KV-reading route returns empty locally and only computes in prod. Pull
+  real inputs (prod `/api/snapshots` via the Vercel MCP `web_fetch_vercel_url`) and run the
+  math, or hit the deployed endpoint with the bypass — local green ≠ prod green. (Caught: the
+  first Growth cut had a CMPF phantom-gain + 5-day snapshot-depth issue only the real-KV check
+  surfaced.)
+- **A push can silently skip a build** (webhook hiccup / daily deploy limit): `list_deployments`
+  shows 0 new builds. An empty commit (`git commit --allow-empty`) + push re-triggers it
+  cleanly; if that still fails it's a Vercel-side limit → redeploy from the dashboard.
+
 ---
 
 ## Working Style / Task Execution
