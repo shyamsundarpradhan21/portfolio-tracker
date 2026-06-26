@@ -7,7 +7,9 @@
 // private-data routes so nothing private ships in the client bundle.
 
 import growthArchive from '../../../data/growth.json';
+import indianExits from '../../../data/indian_exits.json';
 import { loadPortfolio } from '../../lib/serverPortfolio';
+import { buildDepositLedger } from '../../lib/deposits';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,10 +69,12 @@ async function fromKVMany(dates) {
 }
 
 // ── Growth view (?view=growth) ───────────────────────────────────────────────
-// A ₹ curve of money MADE (deposits stripped, re-baselined to 0 per window), with a
-// same-dated-rupees benchmark counterfactual overlaid in ₹. ALL deposit math is
-// server-side — the private ledger never reaches the client. Lifts the unit-replication
-// core of calc.js benchCounterfactual, extended to emit a per-date ₹ series.
+// A ₹ curve of money MADE — cumulative daily P&L of the INVESTMENT sleeves (CMPF/pension
+// excluded), re-baselined to 0 per window — overlaid with a same-dated-rupees benchmark
+// counterfactual in ₹. The own line reads the resilient growth:<date> archive (deposit-free
+// by construction, ~1y deep); the benchmark lifts the unit-replication core of calc.js
+// benchCounterfactual, extended to a per-date ₹ series. ALL deposit math is server-side —
+// the private ledger never reaches the client.
 
 const OWNER = ((process.env.DASHBOARD_OWNER || 'primary').replace(/[^a-z0-9_-]/gi, '')) || 'primary';
 // Public index symbols (same set the Performance curve compares against). Not private.
@@ -78,7 +82,10 @@ const BENCHMARKS = [
   { key: 'nifty', sym: '^NSEI' }, { key: 'nasdaq', sym: '^IXIC' }, { key: 'china', sym: '000300.SS' },
   { key: 'germany', sym: '^GDAXI' }, { key: 'uk', sym: '^FTSE' }, { key: 'crypto', sym: 'BTC-USD' }, { key: 'gold', sym: 'GC=F' },
 ];
-const RANGE_DAYS = { '1M': 30, '6M': 182, '1Y': 365, max: null };
+// Own line sums these sleeves' daily net; CMPF (pension) is EXCLUDED — its accrual isn't
+// investment performance and its corpus would swamp the curve (see the Perf-curve note).
+const INVEST_SLEEVES = ['eq', 'us', 'fd', 'mf'];
+const GROWTH_DAYS = { '1M': 30, '6M': 182, '1Y': 365 };
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 
 async function fetchSnapshots() {
@@ -91,34 +98,34 @@ async function fetchSnapshots() {
   } catch { return []; }
 }
 
-// Investable book value of a snapshot — the per-sleeve basis sums (sl.v), which exclude
-// the loan/CMPF that net worth folds in; falls back to nw when no per-sleeve basis exists.
-function investableBase(snap) {
-  if (snap && snap.sl && typeof snap.sl === 'object') {
-    let v = 0; for (const k in snap.sl) { const e = snap.sl[k]; if (e && Number.isFinite(e.v)) v += e.v; }
-    if (v > 0) return v;
+// The window's growth:<date> records (recent days from KV, older from the committed
+// archive) — the same resilient tier the cumulative-accrual dashboard reads.
+async function fetchGrowthRecords(range) {
+  const records = {};
+  if (range === 'max') {
+    Object.assign(records, growthArchive?.days || {});
+    const recent = lastNDates(45);
+    const kv = await fromKVMany(recent);
+    for (const d of recent) if (kv[d]) records[d] = kv[d];
+  } else {
+    const dates = lastNDates(GROWTH_DAYS[range] || 30);
+    const kv = await fromKVMany(dates);
+    for (const d of dates) { const rec = kv[d] || growthArchive?.days?.[d] || null; if (rec) records[d] = rec; }
   }
-  return snap && Number.isFinite(snap.nw) ? snap.nw : 0;
+  return records;
 }
 
-// Whole-book dated deposit ledger (₹) from the private object — net capital deployed:
-// buys +, redemptions/sells −, US flows × fx. Mirrors deriveProjInputs' signs and the
-// fdFlows/fdRedemptions logic, read off the loaded object (the portfolio.js module exports
-// are empty server-side). Indian swing exits (appData, not in loadPortfolio) are out of
-// scope here — minor net magnitude. Returns [{date, amt}] sorted ascending.
-function depositLedger(d, fx, now) {
-  const out = [];
-  const push = (date, amt) => { if (date && Number.isFinite(amt) && amt !== 0) out.push({ date, amt }); };
-  for (const t of (d.TRANSACTIONS || [])) push(t.date, t.invested);
-  for (const c of (d.MF_CASHFLOWS || [])) push(c.date, -(c.amount || 0));   // amount<0 = money in
-  for (const c of (d.US_CASHFLOWS || [])) push(c.date, (c.invested || 0) * fx);
-  for (const f of (d.FDS || [])) {
-    if (f.status !== 'pipeline') push(f.open, f.newMoney ?? f.principal);
-    if (f.status === 'closed' && f.closedOn) push(f.closedOn, -(f.principal || 0));
-    else if (f.status === 'active' && f.matures && new Date(f.matures) <= now) push(f.matures, -(f.principal || 0));
+// Investable book value of a snapshot (INVESTMENT sleeves' sl.v) — used only to scale the
+// 1D Nifty counterfactual. EXCLUDES `pf` (CMPF/pension) and the loan net worth folds in, so
+// 1D shares the deposit-ledger basis the 1M+ windows use. Returns 0 (→ honest blank) when
+// no per-sleeve basis exists, rather than falling back to CMPF/loan-laden net worth.
+function investableBase(snap) {
+  if (snap && snap.sl && typeof snap.sl === 'object') {
+    let v = 0;
+    for (const k in snap.sl) { if (k === 'pf') continue; const e = snap.sl[k]; if (e && Number.isFinite(e.v)) v += e.v; }
+    if (v > 0) return v;
   }
-  out.sort((a, b) => (a.date < b.date ? -1 : 1));
-  return out;
+  return 0;
 }
 
 // binary-search the index of the last element whose .date <= iso (arr sorted asc by .date)
@@ -128,17 +135,12 @@ const lastLE = (arr, iso) => {
   return ans;
 };
 
-// Cumulative ₹ deposited up to & including a date (prefix sum over the ledger).
-function cumDepositFn(ledger) {
-  const pref = []; let s = 0;
-  for (const e of ledger) { s += e.amt; pref.push(s); }
-  return (iso) => { const i = lastLE(ledger, iso); return i < 0 ? 0 : pref[i]; };
-}
-
 // Same-dated-rupees counterfactual as a per-date ₹ series: replicate each deposit into the
 // benchmark at its on-or-before close (units += amt/level), then value the holding at any
-// later date (units × level − deposits). A flat-fx assumption makes the ₹ value a pure
-// price-return ratio, so foreign indices need no FX series (consistent with the Perf-curve
+// later date (units × level − deposits). NOTE a basis mismatch with the own line: this
+// COMPOUNDS (units ride price) whereas the own line is summed daily P&L — over long windows
+// the two treatments diverge slightly. A flat-fx assumption makes the ₹ value a pure
+// price-return ratio, so foreign indices need no FX series (matches the Perf-curve
 // footnote). Returns null when the closes can't price the earliest deposit.
 function benchCfFn(closes, ledger) {
   const cl = (closes || []).filter((c) => c && c.close > 0).map((c) => ({ date: c.date, close: c.close })).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -180,51 +182,50 @@ export async function GET(req) {
       return json({ view: 'growth', range, points, available });
     }
 
-    // 1M / 6M / 1Y / max — own line from snapshots, bench counterfactuals from weekly closes
-    const snaps = (await fetchSnapshots()).filter((s) => s && s.d && Number.isFinite(s.nw)).sort((a, b) => (a.d < b.d ? -1 : 1));
-    if (snaps.length < 2) return json({ view: 'growth', range, points: [], available: [] });
+    // 1M / 6M / 1Y / max — own line = cumulative INVESTMENT-sleeve daily P&L from the growth
+    // archive (deposit-free, CMPF-excluded); bench = same-dated-rupees counterfactual.
+    const records = await fetchGrowthRecords(range);
+    const dates = Object.keys(records).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    if (dates.length < 2) return json({ view: 'growth', range, points: [], available: [] });
 
+    // own line: cumulative daily net across INVEST_SLEEVES, re-baselined to 0 at the window's
+    // first day. This is SUMMED daily P&L — it does NOT compound, so on long windows (1Y/Max)
+    // it drifts slightly below the true (compounded) figure and uses a different basis than
+    // the benchmark's unit-replication line. Acceptable for now; if it ever needs to match
+    // exactly, reconstruct from NW deltas instead.
+    const ownByDate = {}; let cum = 0;
+    dates.forEach((d, i) => {
+      if (i > 0) { const r = records[d]; for (const k of INVEST_SLEEVES) cum += (r[k]?.net || 0); }
+      ownByDate[d] = Math.round(cum);
+    });
+
+    // whole-book dated deposit ledger (server-side only) → benchmark counterfactual fns
     const now = new Date();
     const priv = await loadPortfolio();
-    const ledger = priv ? depositLedger(priv, fx, now) : [];
-    // deposits(t): the ledger when available (spec-faithful, shared with the bench), else
-    // fall back to the snapshot's own cumulative `invested` so the own line still strips
-    // deposits in degraded mode (no private object reachable).
-    const snapDates = snaps.map((s) => ({ date: s.d }));
-    const depAt = ledger.length ? cumDepositFn(ledger) : (iso) => { const i = lastLE(snapDates, iso); return i < 0 ? 0 : (snaps[i].invested || 0); };
-
-    // window slice + re-baseline point
-    const days = RANGE_DAYS[range];
-    const lastD = snaps[snaps.length - 1].d;
-    const cutoffMs = days != null ? new Date(lastD + 'T00:00:00Z').getTime() - days * 864e5 : -Infinity;
-    let win = snaps.filter((s) => new Date(s.d + 'T00:00:00Z').getTime() >= cutoffMs);
-    if (win.length < 2) win = snaps.slice(-2);
-    const w0 = win[0];
-
-    // benchmark closes — fetch enough weekly history to cover the earliest deposit (5y for
-    // max, else 2y; bumped if inception predates it). One fetch, sliced per window.
-    const earliest = ledger.length ? ledger[0].date : w0.d;
-    const yearsBack = (now.getTime() - new Date(earliest + 'T00:00:00Z').getTime()) / (365.25 * 864e5);
-    const yRange = range === 'max' ? (yearsBack > 5 ? 'max' : '5y') : (yearsBack > 2 ? '5y' : '2y');
+    const ledger = priv
+      ? buildDepositLedger({ TRANSACTIONS: priv.TRANSACTIONS, MF_CASHFLOWS: priv.MF_CASHFLOWS, US_CASHFLOWS: priv.US_CASHFLOWS, FDS: priv.FDS, indianExits }, fx, now)
+      : [];
     let series = {};
-    try {
-      const hr = await fetch(`${origin}/api/history?symbols=${encodeURIComponent(BENCHMARKS.map((b) => b.sym).join(','))}&range=${yRange}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) }).then((r) => r.json()).catch(() => null);
-      series = hr?.series || {};
-    } catch { series = {}; }
-
-    const benchFns = {};
-    for (const b of BENCHMARKS) {
-      const fn = ledger.length ? benchCfFn(series[b.sym]?.closes, ledger) : null;
-      if (fn) benchFns[b.key] = fn;
+    if (ledger.length) {
+      // fetch enough weekly history to cover the earliest deposit (5y for max, else 2y;
+      // bumped to 5y/max if inception predates it). One fetch, evaluated per window date.
+      const yearsBack = (now.getTime() - new Date(ledger[0].date + 'T00:00:00Z').getTime()) / (365.25 * 864e5);
+      const yRange = range === 'max' ? (yearsBack > 5 ? 'max' : '5y') : (yearsBack > 2 ? '5y' : '2y');
+      try {
+        const hr = await fetch(`${origin}/api/history?symbols=${encodeURIComponent(BENCHMARKS.map((b) => b.sym).join(','))}&range=${yRange}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) }).then((r) => r.json()).catch(() => null);
+        series = hr?.series || {};
+      } catch { series = {}; }
     }
-    const dep0 = depAt(w0.d);
-    const benchBase0 = {}; for (const k in benchFns) benchBase0[k] = benchFns[k](w0.d);
+    const benchFns = {};
+    for (const b of BENCHMARKS) { const fn = benchCfFn(series[b.sym]?.closes, ledger); if (fn) benchFns[b.key] = fn; }
 
-    const points = win.map((s) => {
-      const own = (s.nw - w0.nw) - (depAt(s.d) - dep0);
+    // both lines re-baseline to 0 at the window's first day
+    const winStart = dates[0];
+    const benchBase0 = {}; for (const k in benchFns) benchBase0[k] = benchFns[k](winStart);
+    const points = dates.map((d) => {
       const bench = {};
-      for (const k in benchFns) bench[k] = Math.round(benchFns[k](s.d) - benchBase0[k]);
-      return { d: s.d, growth_inr: Math.round(own), bench };
+      for (const k in benchFns) bench[k] = Math.round(benchFns[k](d) - benchBase0[k]);
+      return { d, growth_inr: ownByDate[d], bench };
     });
     return json({ view: 'growth', range, points, available: Object.keys(benchFns) });
   }

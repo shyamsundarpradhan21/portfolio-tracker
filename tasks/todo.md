@@ -26,6 +26,25 @@ stripped, re-baselined to 0 per window) + a ₹-counterfactual benchmark overlay
 - [x] Returns `{view, range, points:[{d, growth_inr, bench:{…}}], available:[…]}`.
       No private ledger in the response; force-dynamic + no-store kept.
 
+### Phase 1 REVISION (commit 2 of Phase 1) — verification caught 3 real issues
+Real-data verification (pulled prod KV snapshots via Vercel MCP) caught: (A) CMPF phantom
+gain — NW−ledger-deposits double-counted the ₹9.58L CMPF corpus (~₹8.7L phantom); (B) only
+5 recorded NW snapshots exist server-side → snapshot-sourced own line collapses on long
+windows; (#3) 1D base included CMPF (56% overstatement); (#4) deposit logic forked.
+Fixes (all done):
+- [x] Own line → cumulative INVESTMENT-sleeve (eq+us+fd+mf, **exclude cmpf**) daily P&L from
+      the 365-day `growth:<date>` archive, re-baselined to 0 per window. Deposit-free, deep,
+      no CMPF. Commented: summed P&L (no compounding) drifts slightly under true on long
+      windows + differs from the bench's unit-replication basis; reconstruct from NW deltas
+      if it ever must match exactly.
+- [x] 1D `investableBase` excludes `pf` (CMPF) → consistent with the 1M+ deposit basis.
+- [x] Extracted `app/lib/deposits.js` `buildDepositLedger(arrays)` — ONE pure impl both
+      `deriveProjInputs` (client) and the route consume; now includes the swing-exits term.
+      Proven behavior-preserving: deriveProjInputs net + monthly contribution byte-identical
+      on real data (net ₹1,238,740, ₹103,000/mo old==new).
+- [x] Revised suite (17 assertions) green; own line returns real local data; homepage 200.
+- [ ] Push branch → Vercel preview (real KV) → hit ?view=growth&range=1M → report believability.
+
 ### Phase 1 verification
 - Existing modes (`?days=N`, single-date) unaffected — `?days=30` still serves.
 - New endpoint returns valid shape, no 500, at all ranges (empty points locally — KV

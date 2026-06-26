@@ -5,8 +5,9 @@
 // live base; the contribution and its annual step-up are DERIVED from the
 // ledgers (below) — never typed in.
 
-import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, fdFlows, fdRedemptions, PAYSLIPS, PROJECTION } from '../portfolio';
+import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, FDS, PAYSLIPS, PROJECTION } from '../portfolio';
 import { APP } from './appData';
+import { buildDepositLedger } from './deposits';
 
 // Projection inputs derived from real money movement:
 //   monthly — average NET deployment (buys − redemptions/sells, all sleeves)
@@ -22,14 +23,13 @@ export function deriveProjInputs(fx) {
   const startKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
   const inWin = (d) => mKey(d) >= startKey;
 
-  let net = 0;
-  net += MF_CASHFLOWS.filter((c) => inWin(c.date)).reduce((s, c) => s - c.amount, 0);
-  net += US_CASHFLOWS.filter((c) => inWin(c.date)).reduce((s, c) => s + c.invested * rate, 0);
-  net += TRANSACTIONS.filter((t) => inWin(t.date)).reduce((s, t) => s + t.invested, 0);
-  net += fdFlows().filter((f) => inWin(f.date)).reduce((s, f) => s + f.amount, 0);
-  net -= fdRedemptions().filter((r) => inWin(r.date)).reduce((s, r) => s + r.amount, 0);
-  net += APP.indianExits.trades.filter(([e]) => inWin(e)).reduce((s, [, , buy]) => s + buy, 0);
-  net -= APP.indianExits.trades.filter(([, x]) => inWin(x)).reduce((s, [, , , sell]) => s + sell, 0);
+  // Net deployment over the trailing 12 months = the sum of the shared deposit ledger's
+  // signed flows that fall inside the window (the ledger encodes every sleeve's sign once).
+  const ledger = buildDepositLedger(
+    { TRANSACTIONS, MF_CASHFLOWS, US_CASHFLOWS, FDS, indianExits: APP.indianExits },
+    rate, now,
+  );
+  const net = ledger.filter((e) => inWin(e.date)).reduce((s, e) => s + e.amt, 0);
   const monthly = Math.max(0, Math.round(net / 12 / 500) * 500);
 
   let stepUp = 0;
