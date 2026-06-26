@@ -1,53 +1,57 @@
-# Task — Tier-driven type scale + footer/alignment
+# Growth Card — Net worth ↔ Growth toggle (per spec)
 
-Diagnose the app-wide text-size ambiguity; make figure size a function of the
-card's ROLE (not the component / card size / string length); fix footers.
+Replace the `ProjectionTab` Value/Return toggle with **Net worth ↔ Growth**. "Net worth"
+= existing value path, byte-for-byte. "Growth" = new ₹ curve (money made, deposits
+stripped, re-baselined to 0 per window) + a ₹-counterfactual benchmark overlay.
 
-## Plan
-- [x] Diagnose: figures sized ad hoc (5+ sizes for one role); `.vlg`/`.vmd` size
-      collision; inline `fontSize` overrides; no real Tier-2 home.
-- [x] Record the standing rule in `tasks/feedback.md` (tiers + footer/alignment).
-- [x] Build a render mock of the 4 tiers (night + day); get approval.
-- [x] Implement the ladder in `globals.css` as the single source of truth.
-- [x] Remove inline figure-size overrides → tier classes.
-- [x] Footer utilities (single-line clip + two-value split).
-- [x] Verify (static, since no node_modules/data in this cloud session).
+## Phase 0 — Recon (DONE — reported, awaiting go-ahead for Phase 1)
+- [x] Locate the ₹-counterfactual → `benchCounterfactual()` in `app/lib/calc.js:52`.
+- [x] Confirm `loadPortfolio()` returns deposit arrays (TRANSACTIONS / MF_CASHFLOWS /
+      US_CASHFLOWS / FDS) — yes, keyed exactly so in the private object.
+- [x] Confirm server-reachable NW series — `snapshots:nw:<owner>` KV (api/snapshots),
+      points {d, nw, invested, sl}; `invested` = cumulative net deposits.
+- [x] Surface the nuances that shape Phase 1 (see report) — STOP before writing.
 
-## Changes
-- `globals.css`: tier block — `.vt1`/`.vmd`=`--fs-2xl` (T1), `.vt2`=`--fs-xl` (T2),
-  `.vt3`/`.vsm`=`--fs-lg` (T3, →`--fs-md` in `.mini`). Old `.vlg` folded into T1.
-  Added `.csm .sub` single-line clip + `.sub.split` two-value footer.
-- De-inlined headline figures → `.vt2`: `FnoHistory`, `MarketOverview`, `AlgoTab` (×2).
-- `vlg`→`vmd`: `GrowthDashboard`, `FnoPositions` (prominent totals, size preserved).
+## Phase 1 — Server (commit 1, revertible) — DONE
+- [x] `app/api/growth/route.js`: new mode `?view=growth&range=<1D|1M|6M|1Y|max>`.
+- [x] Own growth line (₹) = (nw(t)−nw(winStart)) − (deposits(t)−deposits(winStart)),
+      deposits from the loadPortfolio ledger (snapshot-`invested` fallback in degraded mode).
+- [x] Benchmark counterfactual (₹): lifted the unit-replication core from
+      `benchCounterfactual` (`levelOnOrBefore` + `units += amt/lvl`), extended to a per-date
+      ₹ series (units×close(t) − deposits), re-baselined to 0 at window start. Whole-book
+      dated deposit stream (Indian + MF + US×fx + FD). Flat-fx → currency-agnostic ratio.
+- [x] range=max → Yahoo `5y`/`max`; non-max bumped to 5y if inception predates 2y.
+- [x] 1D special: bench from `/api/intraday?kind=nifty` (Nifty only, scaled to ₹ on the
+      investable base); own line null (client-supplied live P&L). Others null on 1D.
+- [x] Returns `{view, range, points:[{d, growth_inr, bench:{…}}], available:[…]}`.
+      No private ledger in the response; force-dynamic + no-store kept.
 
-## Review
-- Size-preserving by design: no figure changed tier blindly. The win is structural —
-  one source of truth, no inline magic, the `.vlg`/`.vmd` collision gone, Tier 2 has a
-  real class, footers fixed. Prevents the screenshot's divergence from recurring.
-- Verified statically: CSS braces balanced; no `vlg`/inline `--fs-xl|2xl` figure left;
-  `.vt2` defined + used ×4; rendered a harness from the real rules — ladder + footer
-  behaviour confirmed (Tier 1>2>3; equal height across value lengths; clip + split).
-- Kept inline `--fs-md` on `FnoPositions` leg P&L + `BenchmarkBars` bar % — dense
-  ROW/bar values (table-like Tier 3), not card headlines.
-- Remaining (needs a live render to verify): re-tiering deeper secondary stats
-  (e.g. US dividend breakdown grid) from Tier 1 → Tier 2. Not done blind.
+### Phase 1 verification
+- Existing modes (`?days=N`, single-date) unaffected — `?days=30` still serves.
+- New endpoint returns valid shape, no 500, at all ranges (empty points locally — KV
+  snapshots are empty in dev; computes live in prod where KV is populated).
+- Pure math proven by a 17-assertion synthetic harness: deposit-ledger signs,
+  cumulative deposits, the counterfactual (100@idx100 + 100@idx200 → ₹250 @idx300),
+  per-window re-baseline to 0, and deposit-stripping (mid-window 10k deposit excluded).
 
-## Resume on local CLI (real-data render is available there)
-The cloud workspace couldn't render the real tabs: KV creds (`KV_REST_API_URL` /
-`KV_REST_API_TOKEN`) weren't injected into the container, and `serverPortfolio.js`
-reads them ONLY from `process.env`, so `/api/portfolio` 503'd and the dashboard
-render-gate failed (every tab blank). Locally the gitignored
-`data/portfolio.private.json` (real holdings) drives it, so `npm run dev` renders fully.
+## Phase 2 — Client (commit 2, revertible)
+- [ ] `ProjectionTab.js`: relabel toggle → "Net worth" (value, untouched) / "Growth"
+      (new). Delete the old NAV footnote. Scrubber stays value-only.
+- [ ] New `app/components/shared/GrowthView.js` — fetches the route, renders two ₹ lines
+      (yours solid `--acc`, benchmarks dashed), window selector `1D·1M·6M·1Y·Max`, reuses
+      PerformanceCurve chrome (pjx-cmp chips, smoothPath, seam dashing, pjx-perf-legend
+      showing ₹ delta not %), zero-baseline emphasised. Owns zero private data.
+- [ ] 1D: own line vs Nifty intraday only; hide non-Nifty chips. Honest blanks otherwise.
+- [ ] `certify.mjs` passes at all breakpoints × both themes before merge.
 
-To finish here:
-1. `git pull origin claude/ecstatic-wozniak-svdlxb`  (tier system = commit 4ac016f).
-2. `npm run dev`; open `#us` in both night + day (toggle persists in `nwTracker.theme`).
-3. **Pending decision** — secondary stat grids that currently sit at Tier 1 (`--fs-2xl`),
-   as loud as the tab's TOP summary; drop to Tier 2 (`.vt2`, `--fs-xl`) if they over-shout:
-   - `USTab.js:181,185,189,193` — the Dividend-Income 2×2 grid (gross / tax / 12-mo / this-FY).
-     Keep `:174` (the card's headline "net all-time") at Tier 1.
-   - Scan `MFTab` / `IndianTab` secondary stats for the same pattern.
-   Rule of thumb: a tab's top-summary row = Tier 1; deeper breakdown grids = Tier 2.
-4. The live system (in `globals.css`): `.vt1`/`.vmd`=`--fs-2xl`, `.vt2`=`--fs-xl`,
-   `.vt3`/`.vsm`=`--fs-lg` (→`--fs-md` in `.mini`); footers `.csm .sub` clip,
-   `.sub.split` = two-value left/right. Tier 0 hero (`.hdr-val`) is untouched.
+## Open decisions (flagged in the report — confirm before Phase 1)
+1. Max bench span → 5y (recommended; route already allows it).
+2. 1D own-line "live P&L" source: client-supplied (it already has dayGain) vs server
+   re-derive from eq/us intraday + fx. Recommend client-supplied to stay truly live.
+3. Bench deposit source: raw cross-sleeve ledger (accurate) vs snapshot invested-deltas
+   (simpler). Recommend raw ledger.
+
+## Constraints
+- --fs-* tokens only; private data server-side only (no deposit ledger in client bundle);
+  two revertible commits (server then client); commit to current branch; no footnote;
+  don't touch the certified Net-worth/value path; lift the counterfactual, don't reinvent.
