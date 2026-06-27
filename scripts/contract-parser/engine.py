@@ -45,9 +45,13 @@ TABLE_LABELS = [
     (r"\bipft\b", "ipft"),
     (r"stamp", "stamp_duty"),
     (r"other tax", "other_tax"),   # old-Dhan tiny sub-line, already folded into the inclusive pay-in
-]                                  # -> recognised (clears unmapped) but NOT in CHARGE_KEYS (never summed -> no double-count)
+    (r"span\s*mg|exp\.?\s*mg|del\.?\s*mg|exposure margin|span margin", "margin"),   # F&O COLLATERAL (SPAN/EXP/DEL)
+]                                  # other_tax/margin -> recognised, NOT in CHARGE_KEYS. margin balances the NET (checksum), is not a cost.
 CHARGE_KEYS = ["brokerage", "exchange_txn", "clearing", "cgst", "sgst", "igst",
                "stt", "ctt", "sebi_turnover", "ipft", "stamp_duty"]
+# keys that ACCUMULATE across rows/tables (vs overwrite). 'margin' (SPAN/EXP/DEL collateral) sums like
+# a charge but is NOT a CHARGE_KEY - it balances the NET checksum, never counts as a cost or GST base.
+_ACCUM_KEYS = set(CHARGE_KEYS) | {"margin"}
 # Container leads that are NOT the charge name - the real charge is in the parenthetical
 # (Fyers: "Taxable Value Of Supply (Brokerage)"). Distinct from Zerodha's "IGST (@18% of
 # Brokerage...)" where the lead IS the charge and the () is a description.
@@ -56,8 +60,7 @@ GENERIC_LEADS = ("taxable value of supply", "total taxable value", "value of sup
 # flagged as an "unmapped charge" (settlement id, contract no, dates, amount-in-words, etc.).
 _CHARGE_META = re.compile(r"settlement|contract note|trade date|\bucc\b|\bpan\b|invoice|in words|"
                           r"order no|trade no|nomination|exchange/segment|ledger balance|opening balance|"
-                          r"clearing cor|"                              # old-Dhan "Clearing Corporation/Coporation" header row
-                          r"span\s*mg|exp\.?\s*mg|del\.?\s*mg", re.I)   # F&O MARGIN lines (collateral, NOT a charge) - skip
+                          r"clearing cor", re.I)                       # old-Dhan "Clearing Corporation/Coporation" header row
 
 def pnum(s):
     """Parse a money cell. Zerodha parenthesises debits: '(29,458.26)' -> -29458.26. Fyers/Dhan
@@ -218,8 +221,8 @@ def parse_charges_rows(tbl):
         if lbl and not _CHARGE_META.search(lbl) and any(pnum(c) is not None for c in row[1:]):
             unmapped.append(lbl[:40])               # skip note metadata (settlement no, dates, ...)
     def setnt(key, v):                             # ACCUMULATE charge keys (Upstox: two IGST lines, two
-        if key in CHARGE_KEYS:                     # STT lines must SUM); singletons (net_amount/pay_in/
-            net_total[key] = round(net_total.get(key, 0.0) + v, 4)   # gst_base) overwrite.
+        if key in _ACCUM_KEYS:                     # STT lines, multiple SPAN/EXP/DEL margin lines must SUM);
+            net_total[key] = round(net_total.get(key, 0.0) + v, 4)   # singletons (net_amount/pay_in/gst_base) overwrite.
         else:
             net_total[key] = v
     # Row 0 is a column HEADER (Zerodha: 'label | NCL-Cash | NCL-F&O | NET TOTAL') only if it has
@@ -259,7 +262,7 @@ def parse_charges_rows(tbl):
                 setnt(key, v)                   # SUM repeated charge keys (two IGST/STT lines)
             else:
                 seg = by_seg.setdefault(colnames[i], {})
-                seg[key] = round(seg.get(key, 0.0) + v, 4) if key in CHARGE_KEYS else v
+                seg[key] = round(seg.get(key, 0.0) + v, 4) if key in _ACCUM_KEYS else v
     return {"by_clearing_segment": by_seg, "net_total": net_total, "unmapped_labels": unmapped}
 
 def parse_charges_from_tables(tables):
@@ -306,7 +309,8 @@ def checksum(net_total, fills=None):
     else:
         return (None, None)
     csum = sum(net_total.get(k, 0.0) for k in CHARGE_KEYS)
-    residual = round(net_amt - (obligation + csum), 4)
+    margin = net_total.get("margin", 0.0)   # collateral movement (SPAN/EXP/DEL) is in the NET cash but is
+    residual = round(net_amt - (obligation + csum + margin), 4)   # NOT a charge - balances the checksum, excluded from cost
     return (abs(residual) <= 0.01, residual)
 
 # Map a clearing-segment LABEL to a fill segment. Handles every broker's naming: NCLCM/NCLCD->cash,
@@ -339,7 +343,7 @@ def per_segment_checksum(charges, fills):
         obl = seg_payin if seg_payin is not None else sum(
             (f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg)
         chg = sum(d.get(k, 0.0) for k in CHARGE_KEYS)
-        resid = round(net - (obl + chg), 4)
+        resid = round(net - (obl + chg + d.get("margin", 0.0)), 4)   # margin balances the net, not a charge
         out[seg] = {"pass": abs(resid) <= 0.02, "residual": resid}
     return out
 
