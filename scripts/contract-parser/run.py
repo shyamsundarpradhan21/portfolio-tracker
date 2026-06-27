@@ -56,12 +56,24 @@ def reconciles(ledger):
         return False
     return cs.get("pass") is True or any(v.get("pass") is True for v in ps.values())
 
+# A note is HELD only when it RECONCILES (checksum passed => the charge TOTAL is complete and correct)
+# but still carries unmapped labels. Those are SAFE to ignore iff none looks like a real charge line -
+# in the messy old-Dhan layout they're fill-row noise (numeric order/ref IDs, NET/SUMMARY/TOTAL markers,
+# Symbol/ISIN fragments). If ANY unmapped label could be a charge, stay HELD (never relax a maybe-charge).
+_CHARGE_WORD = re.compile(r"brokerage|\bstt\b|\bctt\b|gst|stamp|sebi|turnover|transaction|clearing|ipft|duty|\btax\b|charge|levy|\bfee", re.I)
+def unmapped_benign(labels):
+    return all(not _CHARGE_WORD.search(str(lab or "")) for lab in labels)
+
 # ---------- PII-redacted payload ----------
-def payload_of(ledger, cn_no):
+def payload_of(ledger, cn_no, low_conf_fills=False):
     # build_ledger output carries NO PAN / name / address. note_file embeds the ACCOUNT CODE
     # (e.g. YS59535/7BB93B) -> drop it; the contract-note number identifies the note.
     p = {k: v for k, v in ledger.items() if k != "note_file"}
     p["contract_note_no"] = cn_no
+    if low_conf_fills:
+        # reconciles on the TOTAL charges (what the dashboard merge uses) but the old layout makes the
+        # per-fill detail unreliable - flag it so downstream never treats these fills as clean.
+        p["fills_confidence"] = "low"
     return p
 
 # ---------- KV (Upstash REST via stdlib; mirrors scripts/seed-portfolio-kv.mjs) ----------
@@ -88,14 +100,15 @@ def evaluate(path, dry, kv_url, kv_tok, verbose):
           "tax": ledger.get("tax_entity"), "cn": cn_no, "unmapped": unmapped, "reason": ""}
     if not reconciles(ledger):
         st["status"], st["reason"] = "REFUSED", "checksum FAIL"; return st
-    if unmapped:
-        st["status"], st["reason"] = "HELD", f"unmapped {unmapped}"; return st
+    if unmapped and not unmapped_benign(unmapped):
+        st["status"], st["reason"] = "HELD", f"unmapped (possible charge) {unmapped[:3]}"; return st
+    low_conf = bool(unmapped)   # benign unmapped -> charge TOTAL trusted (checksum passed); fills are not
     if dry:
-        st["status"], st["reason"] = "OK", "dry-run (not pushed)"; return st
+        st["status"] = "OK"; st["reason"] = "dry-run" + (" (fills low-conf)" if low_conf else ""); return st
     if not (kv_url and kv_tok):
         st["status"], st["reason"] = "OK", "no KV creds (not pushed)"; return st
     try:
-        r1 = kv_cmd(kv_url, kv_tok, ["SET", f"ledger:cn:{cn_no}", json.dumps(payload_of(ledger, cn_no))])
+        r1 = kv_cmd(kv_url, kv_tok, ["SET", f"ledger:cn:{cn_no}", json.dumps(payload_of(ledger, cn_no, low_conf))])
         kv_cmd(kv_url, kv_tok, ["SADD", "ledger:cn:index", cn_no])
         st["status"] = "PUSHED" if r1.get("result") == "OK" else "KVFAIL"
         if st["status"] == "KVFAIL": st["reason"] = str(r1)[:80]
