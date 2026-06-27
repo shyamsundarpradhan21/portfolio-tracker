@@ -36,7 +36,7 @@ TABLE_LABELS = [
     (r"integrated gst|\bigst\b", "igst"),                       # GST before brokerage: "[IGST 18% On Brokerage]"
     (r"central gst|\bcgst\b", "cgst"),                          # -> igst, NOT brokerage (the 'On Brokerage' is a
     (r"state gst|\bsgst\b", "sgst"),                            # description, like Zerodha's parenthetical)
-    (r"taxable value of supply|brokerage", "brokerage"),
+    (r"taxable value of supply|brokerage", "brokerage"),        # NEW-Dhan/Fyers bare TV = brokerage (summed); OLD-Dhan reclassifies in build_ledger
     (r"exchange transaction|toc.*exchange|nse exchange|bse exchange|transaction charge|turnover chg|turnover charge", "exchange_txn"),
     (r"clearing charge|cmcharges|cm charges", "clearing"),      # Fyers "Cmcharges" = clearing-member charge (REAL)
     (r"securities transactions? tax|\bstt\b", "stt"),
@@ -140,27 +140,40 @@ def detect_broker(text):
 # Note-level metadata from the note CONTENT (NOT the account-coded filename): the contract-note
 # number (KV key) and the trade/contract date (the (broker, date) join key the dashboard needs).
 _CN_RE = re.compile(r"contract\s*note\s*(?:no|number)\.?\s*[:#-]?\s*([A-Za-z0-9/_-]{3,})", re.I)
-_DATE_RE = re.compile(r"(?:trade|contract)\s*date\s*[:.\-]?\s*(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{2,4})", re.I)
+_DATE_DMY = re.compile(r"(?:trade|contract)\s*date\s*[:.\-]?\s*(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{2,4})", re.I)
+_DATE_MDY = re.compile(r"(?:trade|contract)\s*date\s*[:.\-]?\s*([A-Za-z]{3,9})\s+(\d{1,2})[,\s]+(\d{4})", re.I)  # old Dhan "Sep 6 2023"
+_MONTHS = {m: i for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split(), 1)}
 
 def contract_note_no(text):
     m = _CN_RE.search(text or "")
     return re.sub(r"[^A-Za-z0-9]", "-", m.group(1)).strip("-") if m else None
 
 def trade_date(text):
-    """Trade/Contract date -> ISO YYYY-MM-DD. Indian notes are DD/MM/YYYY or DD-MM-YYYY (day first)."""
-    m = _DATE_RE.search(text or "")
-    if not m:
-        return None
-    d, mo, y = (int(x) for x in m.groups())
-    y = 2000 + y if y < 100 else y
-    return f"{y:04d}-{mo:02d}-{d:02d}" if (1 <= mo <= 12 and 1 <= d <= 31) else None
+    """Trade/Contract date -> ISO YYYY-MM-DD. DD/MM/YYYY & DD-MM-YYYY (day-first), or "Mon D YYYY" (old Dhan)."""
+    t = text or ""
+    m = _DATE_DMY.search(t)
+    if m:
+        d, mo, y = (int(x) for x in m.groups())
+        y = 2000 + y if y < 100 else y
+        return f"{y:04d}-{mo:02d}-{d:02d}" if (1 <= mo <= 12 and 1 <= d <= 31) else None
+    m = _DATE_MDY.search(t)
+    if m:
+        mo = _MONTHS.get(m.group(1)[:3].lower())
+        d, y = int(m.group(2)), int(m.group(3))
+        return f"{y:04d}-{mo:02d}-{d:02d}" if (mo and 1 <= d <= 31) else None
+    return None
 
 # Upstox PDFs rule COLUMNS but not ROWS (no horizontal lines), so pdfplumber's default line-based
 # row detection merges every row into one cell -> 0 fills / charges collapsed. Use text-position
 # rows for Upstox (columns still by ruled lines); Zerodha/Fyers are fully ruled - keep the default
 # (changing theirs would regress the proven adapters). Detect broker FIRST (from text), then extract.
-def extract_tables_for(pdf, broker):
-    if broker == "upstox":
+_OLD_DHAN_RE = re.compile(r"net total\s*\(before levies\)|pay in\s*/\s*pay out", re.I)
+
+def extract_tables_for(pdf, broker, text=""):
+    # Upstox (always) and old-Dhan 2023-24 rule COLUMNS but not ROWS, so pdfplumber's default
+    # line-based extraction merges every fill into one cell. Use text-position rows for those;
+    # keep the proven line-based default for everything else (changing it would regress them).
+    if broker == "upstox" or (broker == "dhan" and _OLD_DHAN_RE.search(text or "")):
         settings = {"vertical_strategy": "lines", "horizontal_strategy": "text",
                     "snap_tolerance": 4, "join_tolerance": 4, "text_tolerance": 3}
         return [t for pg in pdf.pages for t in (pg.extract_tables(settings) or [])]
@@ -298,8 +311,8 @@ def checksum(net_total, fills=None):
 # "fo-eq" -> fno (it contains neither 'cash' nor 'cm'); "eq-cash" -> cash (no 'fo'/'deriv').
 def _seg_to_fill(seg):
     sl = (seg or "").lower()
-    if "fo" in sl or "deriv" in sl or "f&o" in sl: return "fno"
-    if "cm" in sl or "cash" in sl or "equity" in sl: return "cash"
+    if "fo" in sl or "deriv" in sl or "f&o" in sl or "futur" in sl: return "fno"   # old-Dhan: "NCL FUTURES"
+    if "cm" in sl or "cash" in sl or "equity" in sl or "capital" in sl: return "cash"  # old-Dhan: "NCL CAPITAL"
     return None
 
 def per_segment_checksum(charges, fills):
@@ -830,8 +843,8 @@ def build_ledger(path):
         return None, None                          # no provided password decrypts this note
     with pdf:
         note_text = full_text(pdf)                  # captured once: broker + note-level metadata below
-        broker = detect_broker(note_text)           # text-based; chosen BEFORE extraction (Upstox needs
-        all_tables = extract_tables_for(pdf, broker)  # text-row strategy; line-based default otherwise)
+        broker = detect_broker(note_text)           # text-based; chosen BEFORE extraction (Upstox/old-Dhan need
+        all_tables = extract_tables_for(pdf, broker, note_text)  # text-row strategy; line-based default otherwise)
     fills, tbl_counts = parse_trades_from_tables(all_tables, broker)
     source = "tables" if len(fills) >= 1 else "none"
     waps = wap_from_tables(all_tables)
@@ -1012,7 +1025,7 @@ def wapkeys_report(path):
     fills = ledger["fills"]
     pdf, _ = open_decrypted(path)
     with pdf:
-        waps = wap_from_tables(extract_tables_for(pdf, detect_broker(full_text(pdf))))
+        waps = wap_from_tables((lambda _t: extract_tables_for(pdf, detect_broker(_t), _t))(full_text(pdf)))
     print("=== SUMMARY WAP keys (contract/ISIN | side) [values omitted] ===")
     shown = False
     for side in ("buy", "sell"):
@@ -1079,7 +1092,7 @@ def main():
             print("no set CN_PW_* env var decrypts this note (check the PAN/scheme for this broker)."); sys.exit(2)
         with pdf:
             if "--debug" in flags:
-                debug_dump(extract_tables_for(pdf, detect_broker(full_text(pdf))))   # broker-aware rows
+                debug_dump((lambda _t: extract_tables_for(pdf, detect_broker(_t), _t))(full_text(pdf)))   # broker-aware rows
             else:
                 ml = mask_layout(full_text(pdf))
                 open(os.path.join(OUT, "layout.masked.txt"), "w", encoding="utf-8").write(ml)
