@@ -41,17 +41,7 @@ def kv_creds(env):
         tok = tok or kv.get("KV_REST_API_TOKEN") or kv.get("UPSTASH_REDIS_REST_TOKEN")
     return url, tok
 
-# ---------- contract-note number (KV key) - from note CONTENT, not the account-coded filename ----------
-CN_RE = re.compile(r"contract\s*note\s*(?:no|number)\.?\s*[:#-]?\s*([A-Za-z0-9/_-]{3,})", re.I)
-
-def contract_note_no(path):
-    pdf, _ = engine.open_decrypted(path)
-    if pdf is None:
-        return None
-    with pdf:
-        m = CN_RE.search(engine.full_text(pdf))
-    return re.sub(r"[^A-Za-z0-9]", "-", m.group(1)).strip("-") if m else None
-
+# ---------- KV key: the contract-note number (engine reads it from note CONTENT, not the filename) ----------
 def derive_id(ledger):                                      # stable fallback when no CN-no in the note
     sig = ledger.get("broker", "") + "|" + "|".join(sorted(
         f"{f.get('trade_no') or ''}:{f.get('order_no') or ''}:{f.get('net_total')}" for f in ledger["fills"]))
@@ -86,7 +76,8 @@ def process(path, kv_url, kv_tok):
     if ledger is None:
         print("  no CN_PW_* env var decrypts this note - skipped (check the PAN/scheme)."); return
     print(engine.masked_summary(ledger))                   # already masked (no PAN/name/amounts)
-    cn_no = contract_note_no(path) or derive_id(ledger)
+    cn_no = ledger.get("contract_note_no") or derive_id(ledger)
+    print(f"  trade_date: {ledger.get('trade_date') or 'NONE (date not found - join gap)'}")
     if not reconciles(ledger):
         print(f"  REFUSED to push (checksum FAIL / unreconciled) - nothing sent to KV."); return
     if not (kv_url and kv_tok):

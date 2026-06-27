@@ -780,5 +780,17 @@ P.apportion_segment_brokerage(combined_f, combined_ch)
 check("combined: cash from NCLCM (-20); fno untouched, NO net_total fallback (no double-count)",
       combined_f[0]["brokerage"] == -20.0 and combined_f[1].get("brokerage") in (None, 0, 0.0), [combined_f[0].get("brokerage"), combined_f[1].get("brokerage")])
 
+# ===== 2a: trade_date + contract_note_no extraction (note-level metadata) =====
+print("[2a] trade_date -> ISO, contract_note_no from note content:")
+check("'Trade Date : 06/02/2026' -> ISO", P.trade_date("Trade Date : 06/02/2026") == "2026-02-06", P.trade_date("Trade Date : 06/02/2026"))
+check("'Contract Date : 22-09-2025' -> ISO", P.trade_date("Contract Date : 22-09-2025") == "2025-09-22", P.trade_date("Contract Date : 22-09-2025"))
+check("2-digit year '10/02/26' -> 2026", P.trade_date("Trade Date 10/02/26") == "2026-02-10", P.trade_date("Trade Date 10/02/26"))
+check("grabs trade date, NOT a preceding settlement date", P.trade_date("Settlement Date 09/02/2026\nTrade Date : 06/02/2026") == "2026-02-06", P.trade_date("Settlement Date 09/02/2026\nTrade Date : 06/02/2026"))
+check("no date -> None", P.trade_date("no date here") is None, P.trade_date("no date here"))
+check("impossible month (13) -> None", P.trade_date("Trade Date 06/13/2026") is None, P.trade_date("Trade Date 06/13/2026"))
+check("contract_note_no plain", P.contract_note_no("Contract Note No. : 18415573") == "18415573", P.contract_note_no("Contract Note No. : 18415573"))
+check("contract_note_no with slash -> sanitized", P.contract_note_no("Contract Note No : FON/123") == "FON-123", P.contract_note_no("Contract Note No : FON/123"))
+check("contract_note_no absent -> None", P.contract_note_no("nothing") is None, P.contract_note_no("nothing"))
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)

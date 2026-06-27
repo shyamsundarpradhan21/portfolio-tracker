@@ -137,6 +137,24 @@ def detect_broker(text):
     if "dhan" in t or "moneylicious" in t: return "dhan"
     return "unknown"
 
+# Note-level metadata from the note CONTENT (NOT the account-coded filename): the contract-note
+# number (KV key) and the trade/contract date (the (broker, date) join key the dashboard needs).
+_CN_RE = re.compile(r"contract\s*note\s*(?:no|number)\.?\s*[:#-]?\s*([A-Za-z0-9/_-]{3,})", re.I)
+_DATE_RE = re.compile(r"(?:trade|contract)\s*date\s*[:.\-]?\s*(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{2,4})", re.I)
+
+def contract_note_no(text):
+    m = _CN_RE.search(text or "")
+    return re.sub(r"[^A-Za-z0-9]", "-", m.group(1)).strip("-") if m else None
+
+def trade_date(text):
+    """Trade/Contract date -> ISO YYYY-MM-DD. Indian notes are DD/MM/YYYY or DD-MM-YYYY (day first)."""
+    m = _DATE_RE.search(text or "")
+    if not m:
+        return None
+    d, mo, y = (int(x) for x in m.groups())
+    y = 2000 + y if y < 100 else y
+    return f"{y:04d}-{mo:02d}-{d:02d}" if (1 <= mo <= 12 and 1 <= d <= 31) else None
+
 # Upstox PDFs rule COLUMNS but not ROWS (no horizontal lines), so pdfplumber's default line-based
 # row detection merges every row into one cell -> 0 fills / charges collapsed. Use text-position
 # rows for Upstox (columns still by ruled lines); Zerodha/Fyers are fully ruled - keep the default
@@ -811,7 +829,8 @@ def build_ledger(path):
     if pdf is None:
         return None, None                          # no provided password decrypts this note
     with pdf:
-        broker = detect_broker(full_text(pdf))      # text-based; chosen BEFORE extraction (Upstox needs
+        note_text = full_text(pdf)                  # captured once: broker + note-level metadata below
+        broker = detect_broker(note_text)           # text-based; chosen BEFORE extraction (Upstox needs
         all_tables = extract_tables_for(pdf, broker)  # text-row strategy; line-based default otherwise)
     fills, tbl_counts = parse_trades_from_tables(all_tables, broker)
     source = "tables" if len(fills) >= 1 else "none"
@@ -846,6 +865,8 @@ def build_ledger(path):
     gst_ok, gst_detail = gst_check(nt)
     ledger = {
         "broker": broker, "account": entity, "tax_entity": entity,
+        "contract_note_no": contract_note_no(note_text),   # KV key (from content, not the account-coded filename)
+        "trade_date": trade_date(note_text),               # ISO YYYY-MM-DD - the (broker, date) join key
         "note_file": os.path.basename(path), "trade_source": source,
         "table_counts": tbl_counts,                 # fills come ONLY from detail_tables (de-dup proof)
         "has_fno": note_has_fno(fills, charges),    # gated by NOTE CONTENT, not account
