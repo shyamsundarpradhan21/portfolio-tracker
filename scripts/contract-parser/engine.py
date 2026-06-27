@@ -31,7 +31,7 @@ ISIN_RE = re.compile(r"\bIN[A-Z0-9]{10}\b")
 # pay_in / net_amount are the obligation + total rows (not charge components).
 TABLE_LABELS = [
     (r"pay\s*-?\s*in", "pay_in"),
-    (r"net amount", "net_amount"),
+    (r"net\s*amount", "net_amount"),   # \s* : old-Zerodha runs it together ("Netamountreceivable...")
     (r"total taxable value", "gst_base"),                       # the GST BASE SUBTOTAL - informational, NOT summed
     (r"integrated gst|\bigst\b", "igst"),                       # GST before brokerage: "[IGST 18% On Brokerage]"
     (r"central gst|\bcgst\b", "cgst"),                          # -> igst, NOT brokerage (the 'On Brokerage' is a
@@ -87,6 +87,7 @@ def pnum(s):
 
 def label_key(label):
     l = (label or "").strip().lower()
+    l = re.sub(r"^\d{1,2}(?=[a-z])", "", l)                  # old-Zerodha footnote digit glued to the label: "4IGST" -> "IGST"
     lead = re.sub(r"\([^)]*\)", " ", l).strip()              # text OUTSIDE the parens
     paren = " ".join(re.findall(r"\(([^)]*)\)", l)).strip()  # text INSIDE the parens
     if paren.isdigit():                                      # footnote like "(3)" - not a charge name
