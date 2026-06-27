@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "index": "node scripts/build-code-index.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.101.0",
