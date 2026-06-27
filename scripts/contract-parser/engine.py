@@ -328,7 +328,13 @@ def per_segment_checksum(charges, fills):
         fill_seg = _seg_to_fill(seg)
         if net is None or fill_seg is None:
             continue
-        obl = sum((f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg)
+        # Obligation: mirror checksum() - prefer the segment's pay-in row when present (it's
+        # brokerage-agnostic: brokerage is either folded into pay-in (Upstox 2025 / old-Dhan, where
+        # the detail carries it and the charges table doesn't) or listed as a charge). Falling back
+        # to sum-of-fills only when there's no per-segment pay-in keeps combined-note behaviour.
+        seg_payin = d.get("pay_in")
+        obl = seg_payin if seg_payin is not None else sum(
+            (f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg)
         chg = sum(d.get(k, 0.0) for k in CHARGE_KEYS)
         resid = round(net - (obl + chg), 4)
         out[seg] = {"pass": abs(resid) <= 0.02, "residual": resid}
@@ -480,21 +486,35 @@ def map_table(tbl, broker=""):
     hi = find_detail_header_row(tbl)
     if hi is None: return []                      # DETAIL tables only - summary rows are NOT fills
     if broker == "upstox":
-        ci = dict(UPSTOX_DETAIL_COLS)             # fixed 10-col schema; positional (header is truncated)
+        # Upstox splits the detail header across several rows (text strategy). MERGE them per column
+        # so the NAMES are recoverable: the 2025 layout inserts WAP/Brokerage/Closing cols, shifting
+        # 'Net Total' from col 9 (2026) to col 12 - a fixed positional schema mis-maps it. Merge the
+        # header block (rows until the first fill row, detected by an 8+ digit order id), then match.
+        end = hi + 1
+        while end < len(tbl) and end < hi + 7 and not any(re.search(r"\d{6,}", (c or "")) for c in tbl[end]):
+            end += 1
+        ncol = max((len(r) for r in tbl[hi:end]), default=0)
+        header = [_nh(" ".join((tbl[r][c] or "").replace("\n", " ") for r in range(hi, end) if c < len(tbl[r])))
+                  for c in range(ncol)]
     else:
         header = [_nh(_c) for _c in tbl[hi]]      # normalise newlines so "Trade\nTime" matches
-        def col(*names):
+    def col(*names):
+        # candidate ORDER is priority: try each name across all columns before the next name, so
+        # "net rate" wins over "gross rate" when a layout (2025 Upstox) carries BOTH price columns.
+        for n in names:
             for i, h in enumerate(header):
-                if any(n in h for n in names): return i
-            return None
-        ci = {k: col(*v) for k, v in {
-            "instrument": ["security", "contract", "description", "symbol"], "isin": ["isin"],
-            "side": ["buy", "sell", "b/s"], "qty": ["quantity", "qty"],
-            "price": ["net rate", "trade price", "gross rate", "price"],     # Dhan detail col = "Price"
-            "net_total": ["net total", "net amount"],                        # Dhan detail col = "Net Amount"
-            "wap": ["wap", "weighted"], "brokerage": ["brokerage"],
-            "order_no": ["order no"], "trade_no": ["trade no"], "trade_time": ["trade time"],
-        }.items()}
+                if n in h: return i
+        return None
+    ci = {k: col(*v) for k, v in {
+        "instrument": ["security", "contract", "description", "symbol"], "isin": ["isin"],
+        "side": ["buy", "sell", "b/s"], "qty": ["quantity", "qty"],
+        "price": ["net rate", "trade price", "gross rate", "price"],     # Dhan detail col = "Price"
+        "net_total": ["net total", "net amount"],                        # Dhan detail col = "Net Amount"
+        "wap": ["wap", "weighted"], "brokerage": ["brokerage"],
+        "order_no": ["order no"], "trade_no": ["trade no"], "trade_time": ["trade time"],
+    }.items()}
+    if broker == "upstox" and any(ci.get(k) is None for k in ("instrument", "side", "qty", "net_total")):
+        ci = dict(UPSTOX_DETAIL_COLS)             # merge didn't resolve -> fall back to the fixed 10-col schema
     fills = []
     for row in tbl[hi + 1:]:
         if not any((c or "").strip() for c in row): continue   # text strategy inserts blank rows - skip
@@ -504,8 +524,11 @@ def map_table(tbl, broker=""):
         qty = g("qty")
         if not re.search(r"\d", qty): continue
         instr_n = _nh(g("instrument"))
-        if "brokerage" in instr_n or "*net*" in instr_n or "*net*" in _nh(g("side")):
-            continue            # Trap 2: 'Brokerage Charges' pseudo-rows; Trap 3: '*NET*' subtotals - NOT fills
+        instr_alnum = re.sub(r"[^a-z0-9]", "", instr_n)        # strip *,space so "* NET *"/"*NET*" both -> "net"
+        side_alnum = re.sub(r"[^a-z0-9]", "", _nh(g("side")))
+        if ("brokerage" in instr_n or instr_alnum in ("net", "summary", "total", "netsummary")
+                or side_alnum in ("net", "summary", "total")):
+            continue            # Trap 2: 'Brokerage Charges' rows; Trap 3: *NET*/*SUMMARY*/*TOTAL* subtotals - NOT fills
         side_raw = (g("side") or "").upper()
         side = "BUY" if side_raw.startswith("B") else ("SELL" if side_raw.startswith("S") else side_raw)
         sym, isin = split_isin(g("instrument"), g("isin"))     # ISIN split out of the description
