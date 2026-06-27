@@ -764,14 +764,20 @@ def apportion_segment_brokerage(fills, charges):
     if not charges:
         return fills
     bcs = charges.get("by_clearing_segment", {})
+    nt = charges.get("net_total", {})
+    segs_present = {f.get("segment") for f in fills}
     for fill_seg in ("cash", "fno"):
         need = [f for f in fills if f.get("segment") == fill_seg and f.get("brokerage") in (None, 0, 0.0)]
         if not need:
             continue
         # this segment's brokerage charge (via the same label map as the per-segment checksum, so
-        # Upstox 'FO-EQ'/'EQ-CASH' resolve, not just NCLFO/NCLCM). Include a genuine 0 (delivery).
+        # Upstox 'FO-EQ'/'EQ-CASH' resolve, not just NCLFO/NCLCM).
         total = next((d.get("brokerage") for seg, d in bcs.items()
                       if _seg_to_fill(seg) == fill_seg and "brokerage" in d), None)
+        if total is None and segs_present == {fill_seg}:
+            # SINGLE-segment note whose charges are headerless (by_clearing_segment empty): the
+            # note total IS this segment's brokerage. Absent brokerage row -> genuine 0 (delivery).
+            total = nt.get("brokerage", 0.0)
         if total is None:
             continue
         if total == 0:

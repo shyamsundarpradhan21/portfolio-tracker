@@ -761,5 +761,24 @@ P.apportion_segment_brokerage(zf, zb)
 check("zero NCLCM brokerage -> fill brokerage 0.0 (not missing)", zf[0]["brokerage"] == 0.0, zf[0]["brokerage"])
 check("exact zero NOT flagged apportioned", not zf[0].get("brokerage_apportioned"), None)
 
+# ===== GRADUATION: brokerage apportion fallback (single-segment headerless / genuine-zero) =====
+print("[grad] apportion fallback for single-segment notes (Fyers F&O headerless, Dhan delivery):")
+fno_only_ch = {"by_clearing_segment": {}, "net_total": {"brokerage": -80.0}, "unmapped_labels": []}
+fno_only = [{"segment":"fno","side":"BUY","qty":225,"price":30.0,"brokerage":None},
+            {"segment":"fno","side":"SELL","qty":225,"price":31.0,"brokerage":None}]
+P.apportion_segment_brokerage(fno_only, fno_only_ch)
+check("single-segment headerless -> brokerage from net_total", all(f.get("brokerage") is not None for f in fno_only), [f.get("brokerage") for f in fno_only])
+check("apportioned sums to net_total -80.0", round(sum(f["brokerage"] for f in fno_only),2) == -80.0, round(sum(f["brokerage"] for f in fno_only),2))
+cash_nobrok = {"by_clearing_segment": {}, "net_total": {"stt": -21.0, "net_amount": 5000.0}, "unmapped_labels": []}
+cash_only = [{"segment":"cash","side":"SELL","qty":11,"price":394.76,"brokerage":None}]
+P.apportion_segment_brokerage(cash_only, cash_nobrok)
+check("single-segment, no brokerage charge -> genuine 0 (not missing)", cash_only[0]["brokerage"] == 0.0, cash_only[0]["brokerage"])
+combined_ch = {"by_clearing_segment": {"NCLCM": {"brokerage": -20.0}}, "net_total": {"brokerage": -60.0}, "unmapped_labels": []}
+combined_f = [{"segment":"cash","side":"SELL","qty":10,"price":100,"brokerage":None},
+              {"segment":"fno","side":"BUY","qty":50,"price":30,"brokerage":None}]
+P.apportion_segment_brokerage(combined_f, combined_ch)
+check("combined: cash from NCLCM (-20); fno untouched, NO net_total fallback (no double-count)",
+      combined_f[0]["brokerage"] == -20.0 and combined_f[1].get("brokerage") in (None, 0, 0.0), [combined_f[0].get("brokerage"), combined_f[1].get("brokerage")])
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
