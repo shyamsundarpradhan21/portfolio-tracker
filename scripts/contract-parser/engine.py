@@ -44,7 +44,8 @@ TABLE_LABELS = [
     (r"sebi turnover|sebi fee|sebi.?toc|sebitoc", "sebi_turnover"),
     (r"\bipft\b", "ipft"),
     (r"stamp", "stamp_duty"),
-]
+    (r"other tax", "other_tax"),   # old-Dhan tiny sub-line, already folded into the inclusive pay-in
+]                                  # -> recognised (clears unmapped) but NOT in CHARGE_KEYS (never summed -> no double-count)
 CHARGE_KEYS = ["brokerage", "exchange_txn", "clearing", "cgst", "sgst", "igst",
                "stt", "ctt", "sebi_turnover", "ipft", "stamp_duty"]
 # Container leads that are NOT the charge name - the real charge is in the parenthetical
@@ -54,7 +55,9 @@ GENERIC_LEADS = ("taxable value of supply", "total taxable value", "value of sup
 # Note metadata that sits in a charges table's label column but is NOT a charge - so it isn't
 # flagged as an "unmapped charge" (settlement id, contract no, dates, amount-in-words, etc.).
 _CHARGE_META = re.compile(r"settlement|contract note|trade date|\bucc\b|\bpan\b|invoice|in words|"
-                          r"order no|trade no|nomination|exchange/segment|ledger balance|opening balance", re.I)
+                          r"order no|trade no|nomination|exchange/segment|ledger balance|opening balance|"
+                          r"clearing cor|"                              # old-Dhan "Clearing Corporation/Coporation" header row
+                          r"span\s*mg|exp\.?\s*mg|del\.?\s*mg", re.I)   # F&O MARGIN lines (collateral, NOT a charge) - skip
 
 def pnum(s):
     """Parse a money cell. Zerodha parenthesises debits: '(29,458.26)' -> -29458.26. Fyers/Dhan

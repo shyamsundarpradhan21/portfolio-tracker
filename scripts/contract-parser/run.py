@@ -83,6 +83,17 @@ def kv_cmd(url, tok, cmd):
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode())
 
+# A daily CARRY / MTM note (open overnight F&O position): carries a CF row + margin, but NO executed
+# trade (no BUY/SELL fill) and NO trade levy. It's inert for the charges merge - a recognised doc-type
+# to EXCLUDE, not a parse failure or a refusal. A note with 0 trades but a real charge is NOT carry
+# (it falls through to be flagged in scope).
+_TRADE_LEVY = ("brokerage", "stt", "ctt", "exchange_txn", "igst", "cgst", "sgst", "sebi_turnover", "ipft", "clearing", "stamp_duty")
+def is_carry_note(ledger):
+    real = [f for f in (ledger.get("fills") or []) if f.get("side") in ("BUY", "SELL") and f.get("qty")]
+    nt = (ledger.get("charges") or {}).get("net_total") or {}
+    has_levy = any(abs(nt.get(k) or 0) > 0 for k in _TRADE_LEVY)
+    return (not real) and (not has_levy)
+
 def evaluate(path, dry, kv_url, kv_tok, verbose):
     """Parse one note -> a status dict for the batch tally. Push only if it reconciles AND has no
     unmapped charge labels (an unmapped label means the charge breakdown is incomplete -> HOLD for
@@ -98,6 +109,8 @@ def evaluate(path, dry, kv_url, kv_tok, verbose):
     unmapped = ledger.get("unmapped_charge_labels") or []
     st = {"note": base, "broker": ledger.get("broker"), "date": ledger.get("trade_date"),
           "tax": ledger.get("tax_entity"), "cn": cn_no, "unmapped": unmapped, "reason": ""}
+    if is_carry_note(ledger):
+        st["status"], st["reason"] = "CARRY", "carried position / MTM - no trades, no charges (inert)"; return st
     if not reconciles(ledger):
         st["status"], st["reason"] = "REFUSED", "checksum FAIL"; return st
     if unmapped and not unmapped_benign(unmapped):
