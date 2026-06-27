@@ -1,0 +1,8 @@
+# contract-parser runtime deps (pinned to the versions the engine was proven against).
+# Install into a dedicated, gitignored venv:
+#   python -m venv scripts/contract-parser/.venv
+#   scripts/contract-parser/.venv/Scripts/pip install -r scripts/contract-parser/requirements.txt
+# Transitive deps (pdfminer.six, cryptography, pillow, pypdfium2, charset-normalizer) are
+# resolved by pip. KV push uses only the Python stdlib (urllib) - no extra dependency.
+pdfplumber==0.11.10
+pypdf==6.14.2

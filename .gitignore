@@ -50,6 +50,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# contract-parser tool: family PANs live ONLY here, never committed (the bare `.env` above
+# already covers it; this explicit entry is belt-and-suspenders since a PAN reaching the repo
+# is the one thing to prevent absolutely). The .example (placeholders) IS committed.
+/scripts/contract-parser/.env
+
 # vercel
 .vercel
 
