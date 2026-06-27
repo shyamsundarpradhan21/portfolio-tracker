@@ -71,30 +71,45 @@ def kv_cmd(url, tok, cmd):
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode())
 
-def process(path, kv_url, kv_tok):
+def evaluate(path, dry, kv_url, kv_tok, verbose):
+    """Parse one note -> a status dict for the batch tally. Push only if it reconciles AND has no
+    unmapped charge labels (an unmapped label means the charge breakdown is incomplete -> HOLD for
+    an adapter fix, never push). dry=True parses + reports but never pushes."""
     ledger, _entity = engine.build_ledger(path)
+    base = os.path.basename(path)
     if ledger is None:
-        print("  no CN_PW_* env var decrypts this note - skipped (check the PAN/scheme)."); return
-    print(engine.masked_summary(ledger))                   # already masked (no PAN/name/amounts)
+        return {"note": base, "status": "SKIP", "reason": "no CN_PW_* decrypts"}
+    if verbose:
+        print(engine.masked_summary(ledger))
+        print(f"  trade_date: {ledger.get('trade_date') or 'NONE (date not found)'}")
     cn_no = ledger.get("contract_note_no") or derive_id(ledger)
-    print(f"  trade_date: {ledger.get('trade_date') or 'NONE (date not found - join gap)'}")
+    unmapped = ledger.get("unmapped_charge_labels") or []
+    st = {"note": base, "broker": ledger.get("broker"), "date": ledger.get("trade_date"),
+          "tax": ledger.get("tax_entity"), "cn": cn_no, "unmapped": unmapped, "reason": ""}
     if not reconciles(ledger):
-        print(f"  REFUSED to push (checksum FAIL / unreconciled) - nothing sent to KV."); return
+        st["status"], st["reason"] = "REFUSED", "checksum FAIL"; return st
+    if unmapped:
+        st["status"], st["reason"] = "HELD", f"unmapped {unmapped}"; return st
+    if dry:
+        st["status"], st["reason"] = "OK", "dry-run (not pushed)"; return st
     if not (kv_url and kv_tok):
-        print(f"  parsed + reconciled OK, but NO KV creds -> NOT pushed (set KV creds to push)."); return
-    key = f"ledger:cn:{cn_no}"
+        st["status"], st["reason"] = "OK", "no KV creds (not pushed)"; return st
     try:
-        r1 = kv_cmd(kv_url, kv_tok, ["SET", key, json.dumps(payload_of(ledger, cn_no))])
+        r1 = kv_cmd(kv_url, kv_tok, ["SET", f"ledger:cn:{cn_no}", json.dumps(payload_of(ledger, cn_no))])
         kv_cmd(kv_url, kv_tok, ["SADD", "ledger:cn:index", cn_no])
-        print(f"  pushed -> KV {key}" if r1.get("result") == "OK" else f"  KV push FAILED: {str(r1)[:120]}")
+        st["status"] = "PUSHED" if r1.get("result") == "OK" else "KVFAIL"
+        if st["status"] == "KVFAIL": st["reason"] = str(r1)[:80]
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
-        print(f"  KV push error ({type(e).__name__}) - not pushed.")
+        st["status"], st["reason"] = "KVERR", type(e).__name__
+    return st
 
 def main():
+    flags = {a.lstrip("-").lower() for a in sys.argv[1:] if a.startswith("-")}
     args = [a for a in sys.argv[1:] if not a.startswith("-")]
     target = args[0] if args else None
     if not target or not os.path.exists(target):
-        print("usage: python run.py <pdf-or-folder>"); sys.exit(1)
+        print("usage: python run.py <pdf-or-folder> [--dry-run] [--summary]"); sys.exit(1)
+    dry = "dry-run" in flags or "n" in flags
     env = load_env(os.path.join(HERE, ".env"))
     pans = {k: v for k, v in env.items() if k.upper().startswith("CN_PW") and v}
     if not pans:
@@ -103,12 +118,34 @@ def main():
         os.environ[k] = v                                  # into memory for engine.detect_entity_pw; NEVER printed
     kv_url, kv_tok = kv_creds(env)
     if os.path.isdir(target):
-        pdfs = sorted(set(glob.glob(os.path.join(target, "*.pdf")) + glob.glob(os.path.join(target, "*.PDF"))))
+        pdfs = sorted(set(glob.glob(os.path.join(target, "**", "*.pdf"), recursive=True) +   # recurse subfolders
+                          glob.glob(os.path.join(target, "**", "*.PDF"), recursive=True)))
+        pdfs = [p for p in pdfs if "annexure" not in os.path.basename(p).lower()]   # annexures aren't contract notes
     else:
         pdfs = [target]
+    # one note -> verbose masked block; a batch (folder / --summary) -> one status line per note + tally
+    summary = "summary" in flags or len(pdfs) > 1
+    stats = []
     for p in pdfs:
-        print(f"\n##### {os.path.basename(p)} #####")
-        process(p, kv_url, kv_tok)
+        rel = os.path.relpath(p, target) if os.path.isdir(target) else os.path.basename(p)
+        if not summary:
+            print(f"\n##### {rel} #####")
+        st = evaluate(p, dry, kv_url, kv_tok, verbose=not summary)
+        st["rel"] = rel
+        stats.append(st)
+        if summary:
+            print(f"  [{st['status']:7}] {(st.get('broker') or '?'):8} {(st.get('date') or '----------'):10} "
+                  f"{(st.get('tax') or '-'):4} cn={st.get('cn') or '-'}" + (f"  <- {st['reason']}" if st['reason'] else ""))
+    # ---- batch tally ----
+    from collections import Counter
+    tally = Counter(s["status"] for s in stats)
+    print(f"\n===== BATCH TALLY ({'DRY-RUN' if dry else 'LIVE'}) =====")
+    print(f"  attempted: {len(stats)}  |  " + "  ".join(f"{k}: {v}" for k, v in sorted(tally.items())))
+    fails = [s for s in stats if s["status"] in ("REFUSED", "HELD", "KVFAIL", "KVERR", "SKIP")]
+    if fails:
+        print(f"  --- {len(fails)} not pushed (fix + re-run) ---")
+        for s in fails:
+            print(f"    {s['status']:7} {s.get('broker') or '?':8} {s['rel']}  <- {s['reason']}")
 
 if __name__ == "__main__":
     main()
