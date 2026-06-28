@@ -68,19 +68,31 @@
   /* ── Type scale — the ONLY font sizes used in the app ────────────────────
      7 steps + 2 display sizes, rem-based so OS/browser scaling is respected.
      (SVG/canvas-internal sizes are coordinate-space numbers, not part of it.)
-     FLUID (Phase 1): clamp(floor, base + vw, ceiling) — floors = the prior fixed
-     sizes (tablet unchanged); ceilings grow so widescreen fills, not stretches. */
-  --fs-2xs: clamp(.72rem,.69rem + .12vw,.86rem);     /* micro labels, axis text, footnotes */
-  --fs-xs:  clamp(.8125rem,.78rem + .14vw,.95rem);   /* subs, badges, table headers, status */
-  --fs-sm:  clamp(.875rem,.83rem + .18vw,1.05rem);   /* table cells, dense body */
-  --fs-md:  clamp(.97rem,.92rem + .22vw,1.18rem);    /* body */
-  --fs-lg:  clamp(1.12rem,1.04rem + .32vw,1.45rem);  /* small values */
-  --fs-xl:  clamp(1.36rem,1.22rem + .55vw,1.95rem);  /* card titles, mid values */
-  --fs-2xl: clamp(1.62rem,1.42rem + .8vw,2.5rem);    /* summary-card values */
-  --fs-h1:  clamp(2.55rem,2.1rem + 1.6vw,3.8rem);    /* section heroes */
-  --fs-h0:  clamp(2.95rem,2.3rem + 2.4vw,4.6rem);    /* the net-worth figure */
+     FLUID (Phase 1): clamp(floor, base + vw, ceiling) — floors = the prior fixed sizes
+     (tablet unchanged). Phase 3.5: the ceilings are now the PX value each clamp reaches at
+     the ~1760px centered-container width, so the type caps AT the container instead of racing
+     the viewport. A REM ceiling can't cap here: rem itself grows with the root font clamp
+     (html font-size, vw-based, to ~1857px) AND each token adds its own +vw on top — a px
+     ceiling stops both. ≤1760 is unchanged (floor/middle stay rem, OS-scaling-respecting). */
+  --fs-2xs: clamp(.72rem,.69rem + .12vw,16.1px);    /* micro labels, axis text, footnotes */
+  --fs-xs:  clamp(.8125rem,.78rem + .14vw,18.3px);  /* subs, badges, table headers, status */
+  --fs-sm:  clamp(.875rem,.83rem + .18vw,20px);     /* table cells, dense body */
+  --fs-md:  clamp(.97rem,.92rem + .22vw,22.5px);    /* body */
+  --fs-lg:  clamp(1.12rem,1.04rem + .32vw,26.8px);  /* small values */
+  --fs-xl:  clamp(1.36rem,1.22rem + .55vw,34.5px);  /* card titles, mid values */
+  --fs-2xl: clamp(1.62rem,1.42rem + .8vw,43px);     /* summary-card values */
+  --fs-h1:  clamp(2.55rem,2.1rem + 1.6vw,71px);     /* section heroes */
+  --fs-h0:  clamp(2.95rem,2.3rem + 2.4vw,89px);     /* net-worth figure (fitter overrides on the hero) */
   /* label/table tiers (--fs-2xs/xs/sm) deliberately HELD — bigger values fill the
      dead space without bloating dense tables: more presence, same breathing room. */
+
+  /* ── Fluid spacing (Phase 2) — grid gap, card padding, shell gutter scale with the
+     viewport so widescreen breathes without stretching and tablet isn't cramped. Floors
+     ≈ the prior fixed values; ceilings grow for wide. Bespoke/dense spacing (asymmetric
+     grids, mini/macro cells, ticker/footer internals) is deliberately NOT migrated. */
+  --gap:       clamp(14px, .5vw + 8px, 30px);   /* .g2–.g5 card-grid gap (was 15px) */
+  --pad:       clamp(14px, .6vw + 8px, 30px);   /* .card padding (was 17px 20px) */
+  --shell-pad: clamp(18px, 1.4vw + 8px, 48px);  /* .main side gutter + coupled header bleed (was 32px) */
 
   /* Shared micro-interaction spring (ease-out-quint feel). Every hover/press
      transition references var(--ease); it's the same curve the keyframe
@@ -390,16 +402,18 @@ body::before {
 @media (prefers-reduced-motion: reduce) { .live-word { animation: none; } }
 
 
-/* 2-col / 3-col / 4-col grids — single grid, equal-height rows (Section 0a/0c). */
-.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; align-items: stretch; }
-.g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; align-items: stretch; }
-.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; align-items: stretch; }
-.g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; align-items: stretch; }
+/* Summary card grids (Section 0a/0c). RESPONSIVE auto-fit minmax(260,340): gains columns
+   as width grows, sheds to 1 below ~560. The fixed-px MAX caps card width (no balloon) AND
+   sets the column count (auto-fit counts off the MAX when it's a length, not the MIN).
+   Phase 3.5: inside the centered ~1760 cap the leftover is small, so cards sit at the fluid
+   --gap (space-between dropped); above the cap the container is fixed so columns stop. .g2 fixed. */
+.g3, .g4, .g5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 340px)); gap: var(--gap); align-items: stretch; }
+.g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); align-items: stretch; }
 .g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
-.card { background: color-mix(in srgb, var(--acc) 7%, var(--glass-bg)); border: .5px solid color-mix(in srgb, var(--acc) 18%, var(--glass-brd)); border-radius: 16px; padding: 17px 20px;
+.card { background: color-mix(in srgb, var(--acc) 7%, var(--glass-bg)); border: .5px solid color-mix(in srgb, var(--acc) 18%, var(--glass-brd)); border-radius: 16px; padding: var(--pad);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi); }
 /* Summary card (Section 0a): radius 14px. */
@@ -910,9 +924,9 @@ body::before {
   .g3 .vmd, .g4 .vmd { font-size: var(--fs-xl); }
 }
 @media (max-width: 720px) {
-  .g3 { grid-template-columns: 1fr; }
+  /* g3/g4/g5 now shed to 1 column on their own via auto-fit (≤~560), so the old fixed
+     phone overrides are removed to not fight the responsive rule. .g2 stays fixed. */
   .g2 { grid-template-columns: 1fr; }
-  .g4 { grid-template-columns: 1fr 1fr; }
   body { padding: 0; }
 }
 
@@ -1431,10 +1445,13 @@ body { padding: 0; }
 /* Main content area */
 .main {
   min-width: 0;
-  /* Full-bleed content column — fills the viewport (minus the flat gutters) so the
-     dashboard never reads as a narrow centred panel floating over the ambient mesh.
-     The 32px side padding is the only breathing room; no max-width cap / auto margins. */
-  padding: 24px 32px 40px;
+  /* Centered content column (Phase 3.5): full-bleed up to a ~1760px cap, then centered
+     with gutters above it (1920 → ~80px margins, basically full; 2560 → ~400px). Keeps the
+     dashboard from stretching on ultrawide while tablet/laptop stay full-width. The side
+     padding (--shell-pad) is the inner breathing room; top/bottom (24/40) are vertical rhythm. */
+  max-width: 1760px;
+  margin-inline: auto;
+  padding: 24px var(--shell-pad) 40px;
 }
 
 /* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
@@ -1484,7 +1501,7 @@ body { padding: 0; }
 /* Always one row of 5 — on narrow screens the row scrolls sideways rather
    than wrapping, so the header keeps its desktop shape. */
 .hdr-cards {
-  display: grid; grid-template-columns: repeat(5, minmax(160px, 1fr)); gap: 20px;
+  display: grid; grid-template-columns: repeat(5, minmax(160px, 260px)); gap: 20px;
   /* RSP-001: the asset-card row is ALWAYS a single non-wrapping strip that OWNS its
      overflow (overflow-x:auto + min-width:0) — a too-wide row, or a big value injected
      into a card, scrolls INSIDE the strip and never pushes the document. 160px min
@@ -1579,11 +1596,12 @@ body { padding: 0; }
   position: sticky;
   top: 0;
   z-index: 8;
-  /* Bleed the frosted bar out by the full .main side padding (32px) so it reaches
-     the viewport edges. A stale -28px left a 4px strip on each side that exposed
-     the fixed ambient mesh while scrolling — the header read as a floating panel. */
-  margin: 0 -32px 38px;
-  padding: 0 32px;
+  /* Bleed the frosted bar out by the full .main side padding (--shell-pad) so it reaches
+     the viewport edges. COUPLED to .main's side padding — must stay equal/opposite or a
+     mesh strip (margin < pad) or a viewport overhang (margin > pad → overflow) appears.
+     A stale -28px once left a 4px strip on each side that exposed the ambient mesh. */
+  margin: 0 calc(-1 * var(--shell-pad)) 38px;
+  padding: 0 var(--shell-pad);
   background: rgba(var(--hdr-bg-base), .6);
   -webkit-backdrop-filter: saturate(1.5) blur(18px);
   backdrop-filter: saturate(1.5) blur(18px);
