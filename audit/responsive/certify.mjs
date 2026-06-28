@@ -106,6 +106,23 @@ function detect(opts) {
     topClipped: clipped.sort((a, b) => (b.overRight + b.overLeft + b.contentX) - (a.overRight + a.overLeft + a.contentX)).slice(0, 10),
     topEllipsis: ellipsis.sort((a, b) => b.contentX - a.contentX).slice(0, 10),
   };
+  // ── SYMMETRY (Phase 4 gate) — record the first-card width of each converged UNIFORM
+  // stat-card row (the .statgrid primitive) on this surface. The run() rollup buckets these
+  // within ±8px across surfaces/themes per breakpoint and FAILS on >1 bucket: every
+  // "label + value" stat row must render at ONE width, matching the header sleeves. ONLY the
+  // uniform classes are queried — the bespoke/content grids (.g2, .mf-g3, .macro-grid,
+  // .pjx-gcards, .pnl-year/grid/cal, .pnl-sumrow, .hdr-grid, .topbar, charts) are EXCLUDED by
+  // omission. See audit/responsive/symmetry-audit.md for the mapping + full exclusion list.
+  const STATGRID = ['statgrid', 'g3', 'g4', 'g5', 'fdstats', 'ins-stats', 'pnl-stats'];
+  const statWidths = [];
+  for (const cls of STATGRID) for (const g of document.querySelectorAll('.' + cls)) {
+    const kids = [...g.children].filter((k) => { const r = k.getBoundingClientRect(); return r.width > 1 && r.height > 1; });
+    if (!kids.length) continue;
+    const t0 = Math.round(kids[0].getBoundingClientRect().top);
+    const row0 = kids.filter((k) => Math.round(k.getBoundingClientRect().top) === t0);
+    statWidths.push(Math.round(row0[0].getBoundingClientRect().width));
+  }
+  out.statWidths = statWidths;
   if (opts && opts.vclip) {
     const vclip = []; let checked = 0;
     for (const el of document.querySelectorAll('body *')) {
@@ -247,8 +264,26 @@ async function run() {
       if (n > 0) { roll[k].maxClipped = Math.max(roll[k].maxClipped, n); if (roll[k].cells != null) roll[k].cells++; }
     }
   }
-  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, perRsp: roll };
+  // ── SYMMETRY rollup: per breakpoint, bucket every .statgrid card width (across all
+  // surfaces + themes) within ±8px so live-data jitter doesn't read as distinct. More than
+  // one bucket at any width = the converged stat rows aren't a single width → asymmetry; the
+  // gate FAILS (prints FAIL + exits 1). At the converged state this is 1 bucket everywhere.
+  const symByW = {};
+  for (const c of cells) (symByW[c.w] = symByW[c.w] || []).push(...(c.statWidths || []));
+  const symDetail = {}; let symMaxBuckets = 0;
+  for (const w of WIDTHS) {
+    const sorted = (symByW[w] || []).slice().sort((a, b) => a - b);
+    const buckets = [];
+    for (const x of sorted) { const last = buckets[buckets.length - 1]; if (last && x - last.max <= 8) { last.max = x; last.n++; } else buckets.push({ min: x, max: x, n: 1 }); }
+    symDetail[w] = buckets.map((b) => `${Math.round((b.min + b.max) / 2)}px×${b.n}`);
+    symMaxBuckets = Math.max(symMaxBuckets, buckets.length);
+  }
+  const symPass = symMaxBuckets <= 1;
+
+  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, symmetryPass: symPass, symmetryMaxBuckets: symMaxBuckets, symmetryByWidth: symDetail, perRsp: roll };
   fs.writeFileSync(path.join(DIR, `cert-${LABEL}.json`), JSON.stringify({ summary, cells }, null, 2));
   process.stdout.write(`\n[${LABEL}] docOverflow cells=${docHits} maxDoc=${maxDoc}  clippedMax 001=${roll['RSP-001'].maxClipped} 002=${roll['RSP-002'].maxClipped} 004=${roll['RSP-004'].maxClipped} other=${roll.other.maxClipped}  ellipsis cells=${ellipsisCells} max=${maxEllipsis}\n`);
+  process.stdout.write(`[${LABEL}] SYMMETRY ${symPass ? 'PASS' : '*** FAIL ***'} — distinct stat-card widths/breakpoint (±8px): ${WIDTHS.map((w) => `@${w}:${(symDetail[w] || []).length}[${(symDetail[w] || []).join(',')}]`).join('  ')}\n`);
+  if (!symPass) { console.error(`[${LABEL}] symmetry gate FAILED — converged .statgrid rows render at >1 width`); process.exit(1); }
 }
 run().catch((e) => { console.error('FATAL', e); process.exit(1); });
