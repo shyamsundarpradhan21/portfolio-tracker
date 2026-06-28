@@ -2120,6 +2120,25 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 /* S/R watermark price labels — tiny mono, centralized (no inline px in the SVG) */
 .pnl-srlabel { font-size: 8px; fill: var(--txt3); font-family: var(--mono); }
 
+/* ── Trading-tab Analytics (AnalyticsTab) ── */
+.an-controls { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.an-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.an-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: var(--fs-2xs); color: var(--txt2); }
+.an-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.an-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.an-hint { font-size: var(--fs-2xs); color: var(--txt3); font-style: italic; }
+.an-svg { width: 100%; height: auto; display: block; }
+.an-sub { font-size: var(--fs-2xs); color: var(--acc); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin: 6px 0 8px; }
+.an-tbl td, .an-tbl th { white-space: nowrap; }
+.an-num { text-align: right; font-family: var(--mono); }
+.an-def { color: var(--txt3); }
+.an-foot { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 12px; line-height: 1.6; }
+/* paired rows collapse to one column on tablet so wide cards aren't cramped */
+.an-2 { display: grid; gap: var(--gap); grid-template-columns: repeat(2, 1fr); align-items: stretch; }
+@media (max-width: 900px) { .an-2 { grid-template-columns: 1fr; } }
+/* wide metric tables scroll WITHIN their card on narrow widths (scroll, never clip) */
+.an-tblwrap { overflow-x: auto; }
+
 /* IntradayChart hover card — plain frosted glass (no tint). Net + per-broker rows:
    label left (broker label in its curve colour = legend), value right in sign colour.
    Label and figure share one size (Net just bolder). */
