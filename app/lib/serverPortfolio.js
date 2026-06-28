@@ -45,3 +45,23 @@ async function fromFile() {
 export async function loadPortfolio() {
   return (await fromKV()) || (await fromFile());
 }
+
+// Phase 2c: the dormant F&O charge overlay (real NCLFO charges, by Broker|date), applied onto the
+// committed fno-ledger at request time. Returns null if KV/the key is unreachable -> caller falls
+// back to the committed file unchanged (graceful; never breaks /api/portfolio).
+export async function loadFnoOverlay() {
+  const creds = kvCreds();
+  if (!creds) return null;
+  try {
+    const r = await fetch(creds.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['GET', 'ledger:fno:overlay']),
+      cache: 'no-store',
+    });
+    const j = await r.json();
+    return j?.result ? JSON.parse(j.result) : null;
+  } catch {
+    return null;
+  }
+}

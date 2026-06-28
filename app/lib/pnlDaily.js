@@ -15,7 +15,8 @@ export function dailySeries(rows) {
     const d = by.get(r.date) || { date: r.date, net: 0, gross: 0, charges: 0, orders: 0 };
     d.net += r.net || 0;
     d.gross += r.grossRealised || 0;
-    d.charges += r.estCharges || 0;
+    // Phase 2c: real contract-note charge where the overlay marked it 'real' (net already recomputed); else est.
+    d.charges += (r.chargeSource === 'real' ? (r.realCharge || 0) : (r.estCharges || 0));
     d.orders += r.orders || 0;
     by.set(r.date, d);
   }

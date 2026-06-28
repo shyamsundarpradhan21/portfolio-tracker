@@ -15,12 +15,17 @@ function increment(rows, sleeve, after) {
   let gross = 0, charges = 0, net = 0, lastDate = '';
   for (const r of got) {
     gross += r.grossRealised || 0;
-    charges += r.estCharges || 0;
+    // Phase 2c: prefer the REAL contract-note charge where the KV overlay marked the row 'real'
+    // (net is already recomputed for those rows in applyFnoOverlay); else keep the estimate.
+    charges += (r.chargeSource === 'real' ? (r.realCharge || 0) : (r.estCharges || 0));
     net += r.net || 0;
     days.add(r.date); brokers.add(r.broker);
     if (r.date > lastDate) lastDate = r.date;
   }
-  return { gross, charges, net, days, brokers, lastDate };
+  // chargesReal: the whole increment is real-backed (every captured day overlaid with a real charge)
+  // -> the 'est.' flag can drop. Any est day keeps it (the block is still partly estimated).
+  const chargesReal = got.length > 0 && got.every((r) => r.chargeSource === 'real');
+  return { gross, charges, net, days, brokers, lastDate, chargesReal };
 }
 
 function mergeBlock(seed, inc) {
@@ -31,6 +36,7 @@ function mergeBlock(seed, inc) {
     charges: r2(seed.charges + inc.charges),
     net: r2(seed.net + inc.net),
     auto: true,
+    chargesReal: inc.chargesReal,   // drives whether YtdFno/FreshnessTag still show the 'est.' flag
     capturedDays: inc.days.size,
     lastCapture: inc.lastDate,
   };
@@ -53,5 +59,7 @@ export function deriveFY(seedFY, ledger) {
     cf: { ...seedFY.cf, currentRealised },
     _autoDriven: s01.auto || s02.auto,
     _lastCapture: lastCapture,
+    // every captured block is real-backed (or seed-only) -> the tab can drop the 'est. charges' tag
+    _chargesReal: [s01, s02].every((b) => !b.auto || b.chargesReal === true),
   };
 }

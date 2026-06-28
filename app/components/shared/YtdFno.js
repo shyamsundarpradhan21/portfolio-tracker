@@ -7,7 +7,7 @@ export default function YtdFno({ label, data, extra, liveMtm }) {
       <div className="lbl" style={{ marginBottom: 6 }}>{label}</div>
       <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Gross</span><span className={'mono ' + cl(data.gross)}><SInrF n={data.gross} /></span></div>
       <div className="fxc" style={{ marginTop: 3 }}>
-        <span style={{ color: 'var(--txt2)' }}>Charges{data.auto && <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-2xs)' }}> est.</span>}</span>
+        <span style={{ color: 'var(--txt2)' }}>Charges{data.auto && !data.chargesReal && <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-2xs)' }}> est.</span>}</span>
         <span className="mono mut">{numC(data.charges)}</span>
       </div>
       <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Net realised</span><span className={'mono ' + cl(data.net)}><SInrF n={data.net} /></span></div>
