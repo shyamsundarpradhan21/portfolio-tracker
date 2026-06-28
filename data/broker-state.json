@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-27T06:00:02+05:30",
+  "syncedAt": "2026-06-28T06:00:02+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -22,32 +22,8 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-27T06:00:17+05:30",
+      "syncedAt": "2026-06-28T06:00:15+05:30",
       "rows": [
-        {
-          "sym": "AVANTEL",
-          "qty": 52,
-          "avg": 153.04,
-          "ltp": 171.83,
-          "pnl": 977,
-          "dayPct": 1.01
-        },
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43,
-          "ltp": 1255.1,
-          "pnl": 4586.65,
-          "dayPct": -0.62
-        },
-        {
-          "sym": "HAPPSTMNDS",
-          "qty": 20,
-          "avg": 393.5,
-          "ltp": 342.45,
-          "pnl": -1021,
-          "dayPct": -1.07
-        },
         {
           "sym": "LAURUSLABS",
           "qty": 8,
@@ -63,6 +39,30 @@
           "ltp": 279.15,
           "pnl": -354.2,
           "dayPct": -0.27
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43,
+          "ltp": 1255.1,
+          "pnl": 4586.65,
+          "dayPct": -0.62
+        },
+        {
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04,
+          "ltp": 171.83,
+          "pnl": 977,
+          "dayPct": 1.01
+        },
+        {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5,
+          "ltp": 342.45,
+          "pnl": -1021,
+          "dayPct": -1.07
         }
       ]
     },
@@ -196,12 +196,12 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-27T06:00:18+05:30",
+      "syncedAt": "2026-06-28T06:00:16+05:30",
       "rows": []
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-06-27T06:00:17+05:30",
+      "syncedAt": "2026-06-28T06:00:15+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL300PE",
@@ -242,8 +242,8 @@
       "utilized": 0
     },
     "upstox": {
-      "available": 0,
-      "utilized": 0
+      "available": 38649.3,
+      "utilized": 132238.38
     }
   }
 }
