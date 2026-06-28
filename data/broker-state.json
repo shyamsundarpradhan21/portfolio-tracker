@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-28T11:48:55+05:30",
+  "syncedAt": "2026-06-29T00:34:17+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -22,8 +22,24 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-28T11:48:56+05:30",
+      "syncedAt": "2026-06-29T00:34:18+05:30",
       "rows": [
+        {
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04,
+          "ltp": 171.83,
+          "pnl": 977,
+          "dayPct": 1.01
+        },
+        {
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86,
+          "ltp": 1453.1,
+          "pnl": 3729.95,
+          "dayPct": -0.08
+        },
         {
           "sym": "BANKBARODA",
           "qty": 28,
@@ -47,22 +63,6 @@
           "ltp": 342.45,
           "pnl": -1021,
           "dayPct": -1.07
-        },
-        {
-          "sym": "AVANTEL",
-          "qty": 52,
-          "avg": 153.04,
-          "ltp": 171.83,
-          "pnl": 977,
-          "dayPct": 1.01
-        },
-        {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86,
-          "ltp": 1453.1,
-          "pnl": 3729.95,
-          "dayPct": -0.08
         }
       ]
     },
@@ -196,12 +196,12 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-28T11:48:56+05:30",
+      "syncedAt": "2026-06-29T00:34:18+05:30",
       "rows": []
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-06-28T11:48:56+05:30",
+      "syncedAt": "2026-06-29T00:34:18+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL300PE",
@@ -229,7 +229,7 @@
     },
     "FYERS_FNO": {
       "source": "Fyers",
-      "syncedAt": "2026-06-28T11:48:56+05:30",
+      "syncedAt": "2026-06-29T00:34:19+05:30",
       "rows": []
     }
   },
@@ -238,7 +238,7 @@
       "available": 0
     },
     "dhan": {
-      "available": 640391.06,
+      "available": 640192.06,
       "utilized": 0
     },
     "upstox": {

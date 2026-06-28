@@ -1,7 +1,7 @@
 {
   "note": "NSE market wrap from Fyers index quotes (laptop token). day pct = Fyers chp. Non-personal; safe to commit.",
-  "asOf": "2026-06-28T11:48:57+05:30",
-  "capturedAt": "2026-06-28T11:48:57+05:30",
+  "asOf": "2026-06-29T00:34:19+05:30",
+  "capturedAt": "2026-06-29T00:34:19+05:30",
   "source": "Fyers · NSE indices",
   "nifty": {
     "last": 24056,
