@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
   ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
@@ -232,6 +232,12 @@ function Dashboard() {
   const prevPrices                  = useRef({});
   const headerRef                   = useRef(null);
   const prevNw                      = useRef(null);
+  // Phase 1.5 — hero fit-to-width: grow the net-worth figure so its rendered width ≈ the
+  // widest subtext line (Assets/Liabilities), per agentation mqxjsxxz-2jwh10. Refs feed the
+  // JS fitter below (no scaleX/letter-space distortion — pure font-size growth).
+  const heroBtnRef                  = useRef(null);
+  const heroValRef                  = useRef(null);
+  const heroSubRef                  = useRef(null);
 
   // RSP-001: state-driven scroll affordance for the asset-card strip. Edge fades show
   // only when there is more to reveal that direction, so the horizontal scroll is never
@@ -1080,6 +1086,60 @@ function Dashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indian.valued, usdInr, ov.nw]);
 
+  // Phase 1.5 — fit the net-worth hero figure to the width of its subtext line, so the
+  // number stretches "till the last L of Liabilities". Pure font-size growth (no scaleX /
+  // letter-spacing distortion). useLayoutEffect (pre-paint, no flash) + ResizeObserver on
+  // the hero box (viewport + subtext-width changes). Fires on the SETTLED target (ov.nw /
+  // assets / loan) — at this point AnimatedNumber still shows the prior settled value, never
+  // a mid-tick frame, so the measurement is stable. The font-size transition is suppressed
+  // DURING the measure passes (else each pass reads a mid-animation width and the correction
+  // overshoots — the +122px bug from the mock) and restored next frame.
+  useLayoutEffect(() => {
+    const btn = heroBtnRef.current;
+    if (!btn) return;
+    if (!(indian.valued && usdInr)) { const f = heroValRef.current; if (f) f.style.removeProperty('font-size'); return; } // skeleton — keep base
+
+    const textW = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+    const fit = () => {
+      // read refs FRESH each call — the .hdr-val node remounts once (heroKey bump on first
+      // NW load), so a captured node would go stale and we'd fit a detached element.
+      const fig = heroValRef.current, sub = heroSubRef.current;
+      if (!fig || !sub) return;
+      let subW = 0; // widest subtext line's TEXT width (Range — independent of container stretch)
+      sub.querySelectorAll(':scope > div').forEach((line) => { subW = Math.max(subW, textW(line)); });
+      if (subW < 1) return;
+      const prevTrans = fig.style.transition;
+      fig.style.transition = 'none';                       // suppress during measure (overshoot fix)
+      fig.style.removeProperty('font-size');               // → base clamp (.hdr-val font-size is !important)
+      const base = parseFloat(getComputedStyle(fig).fontSize);
+      void fig.offsetWidth;
+      const heroW0 = textW(fig);
+      if (heroW0 < 1) { fig.style.transition = prevTrans; return; }
+      const MIN = base * 0.7, MAX = base * 2.4;
+      let fs = Math.max(MIN, Math.min(MAX, base * (subW / heroW0)));
+      fig.style.setProperty('font-size', fs.toFixed(2) + 'px', 'important'); void fig.offsetWidth;
+      const heroW1 = textW(fig);                           // correction pass (mono → nails sub-px)
+      fs = Math.max(MIN, Math.min(MAX, fs * (subW / heroW1)));
+      fig.style.setProperty('font-size', fs.toFixed(2) + 'px', 'important'); void fig.offsetWidth;
+      requestAnimationFrame(() => { fig.style.transition = prevTrans; }); // restore for future changes
+    };
+
+    fit();
+    // Observe the GRID, not the button: once the figure is the widest element in the hero,
+    // the button's width is figure-driven (constant as the viewport changes) so a button RO
+    // misses viewport shrinks and never refits down. The grid's width is viewport-driven and
+    // figure-independent, so it fires on exactly the changes that move subW.
+    const grid = btn.parentElement;
+    let lastW = -1;
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (Math.abs(w - lastW) > 1) { lastW = w; fit(); }
+    });
+    ro.observe(grid || btn);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indian.valued, usdInr, heroKey, Math.round(ov.nw), Math.round(ov.totalAssets), Math.round(ov.loan), Math.round(ytdTotal || 0)]);
+
   // Header asset cards double as the primary navigation — each opens its tab.
   const headerCards = [
     // Every card's sub is the uniform growth/dip figure: absolute gain · return %,
@@ -1134,11 +1194,11 @@ function Dashboard() {
 
           <div className="hdr-grid">
             {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
-            <button className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
-              <div key={heroKey} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
+            <button ref={heroBtnRef} className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
+              <div key={heroKey} ref={heroValRef} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
                 {indian.valued && usdInr ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} /> : <Skel w={150} h={36} />}
               </div>
-              <div className="page-header-sub">
+              <div className="page-header-sub" ref={heroSubRef}>
                 {/* line 1 — assets (with the CMPF flag, since it has no own card) */}
                 <div>
                   Assets <strong>{indian.valued && usdInr ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
