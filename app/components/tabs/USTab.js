@@ -27,7 +27,8 @@ export default function USTab({
       {/* Live intraday US-equity day-change curve (₹), captured during US hours */}
       <EquityDayCurve kind="us" />
 
-      <div className="g3 sec">
+      {/* Phase 4: position + performance stats merged into one statgrid so they pack like the header */}
+      <div className="statgrid sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
           <div className="vmd"><UsdF n={usData.inv} /></div>
@@ -43,8 +44,6 @@ export default function USTab({
           <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <LiveUsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
           <div className="sub">{usData.val ? <>{pctS(usData.pct)} on cost · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
         </div>
-      </div>
-      <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
           <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <LiveUsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>

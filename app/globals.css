@@ -402,12 +402,17 @@ body::before {
 @media (prefers-reduced-motion: reduce) { .live-word { animation: none; } }
 
 
-/* Summary card grids (Section 0a/0c). RESPONSIVE auto-fit minmax(260,340): gains columns
-   as width grows, sheds to 1 below ~560. The fixed-px MAX caps card width (no balloon) AND
-   sets the column count (auto-fit counts off the MAX when it's a length, not the MIN).
-   Phase 3.5: inside the centered ~1760 cap the leftover is small, so cards sit at the fluid
-   --gap (space-between dropped); above the cap the container is fixed so columns stop. .g2 fixed. */
-.g3, .g4, .g5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 340px)); gap: var(--gap); align-items: stretch; }
+/* .statgrid — the ONE converged uniform stat-row primitive (Phase 4 symmetry). Every equal
+   label+value stat row packs on this: auto-fit minmax(220,260) at --gap, so cards match the
+   header sleeve width (~260) and pack 5-6 across the centered 1760 band — capped (no balloon)
+   and tight (no space-between). The fixed-px MAX both caps the card and sets the column count
+   (auto-fit counts off the MAX when it's a length). g3/g4/g5 + fdstats + ins-stats + pnl-stats
+   all map here; each keeps its own card chrome. Sheds to 1 col below ~520. .g2 + content/bespoke
+   grids are deliberately NOT on this — see audit/responsive/symmetry-audit.md. */
+.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+  gap: var(--gap); align-items: stretch;
+}
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); align-items: stretch; }
 .g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
@@ -718,7 +723,7 @@ body::before {
 .fdleg .ln { width: 11px; height: 2px; background: var(--txt); }
 /* FII/DII latest figures — the card's headline values: a spacious 3-stat footer that
    fills the bottom section, large mono values, direction kept by colour (cls). */
-.fdstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; padding-top: 16px; border-top: .5px solid var(--brd2); }
+.fdstats { margin-top: 16px; padding-top: 16px; border-top: .5px solid var(--brd2); }  /* grid via .statgrid */
 .fdstat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .fdstat .k { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
 .fdstat b { font-family: var(--mono); font-size: var(--fs-xl); }
@@ -1391,7 +1396,7 @@ body::before {
 
 /* ── Portfolio Insights card (Indian) — Section I ─────────────────────────── */
 .ins-ai { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .6px; color: var(--ai-tag, var(--pur)); background: color-mix(in srgb, var(--ai-tag, var(--pur)) 14%, transparent); border: .5px solid color-mix(in srgb, var(--ai-tag, var(--pur)) 30%, transparent); border-radius: 5px; padding: 2px 6px; }
-.ins-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.ins-stats { margin-top: 14px; }  /* grid via .statgrid */
 .ins-stat { background: color-mix(in srgb, var(--acc) 3.5%, var(--glass-bg2)); border: .5px solid color-mix(in srgb, var(--acc) 9%, var(--glass-brd)); border-radius: 11px; padding: 12px 13px; }
 .ins-stat .v { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); letter-spacing: -.5px; margin-top: 3px; }
 .ins-stat .v small { font-size: var(--fs-xs); font-weight: 600; color: var(--txt2); }
@@ -2055,17 +2060,14 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 @media (max-width: 720px) { .pnl-summary .pnl-sumrow { grid-template-columns: 1fr; } }
 .pnl-brokers { padding: 0 20px 12px; display: flex; }
 .pnl-brokers .seg { flex-wrap: wrap; }
-.pnl-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-  border-top: .5px solid var(--brd2); border-bottom: .5px solid var(--brd2); }
-.pnl-stats.has-cap { grid-template-columns: repeat(5, 1fr); }   /* trading capital leads, adjacent to Net P&L */
-/* Intermediate step so the 4/5-wide stat strip doesn't hold full width down to the 720
-   phone rule — 5/4 → 3 → 2 instead of 5/4 → 2. */
-@media (max-width: 1000px) {
-  .pnl-stats, .pnl-stats.has-cap { grid-template-columns: repeat(3, 1fr); }
-  .pnl-stats .pnl-stat:nth-child(3n) { border-right: none; }
-}
-.pnl-stat { padding: 11px 18px; border-right: .5px solid var(--brd2); }
-.pnl-stat:last-child { border-right: none; }
+/* pnl-stats grid is now the shared .statgrid primitive (Phase 4). The old connected-strip
+   chrome — gap:0, container border-top/bottom, per-cell border-right dividers, fixed 4/5-col
+   and the 1000px step-down — is dropped; the stats are now gapped cards like every other tab. */
+.pnl-stat { padding: 11px 18px; }
+/* pnl values are now compact (₹x.xxL, like the header) so they fit the 260 card with the
+   exact rupee figure in the title. This single-line ellipsis is the stress-mode safety net
+   (an injected pathological value → the certify ellipsis bucket, not a layout clip). */
+.pnl-stat .vmd, .pnl-stat .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 /* stat-card footers ("chips": used/free · Gross/Charges · wins/losses · date · streak/now) —
    one uniform, legible size across every chip (colour/weight still encode direction). */
 .pnl-stat .sub { font-size: var(--fs-sm); }
@@ -2125,8 +2127,7 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .iq-tip .iq-v .rs { font-size: 1em; font-weight: 500; }   /* mono lacks ₹ — body-font glyph at ~digit size so it sits flush */
 
 @media (max-width: 720px) {
-  .pnl-stats, .pnl-stats.has-cap { grid-template-columns: repeat(2, 1fr); }
-  .pnl-stat { border-bottom: .5px solid var(--brd2); }
+  /* pnl-stats columns + the phone strip border-bottom are gone — auto-fit via .statgrid handles it. */
   .pnl-year { grid-template-columns: repeat(3, 1fr); }
   .pnl-dp { display: none; }
 }

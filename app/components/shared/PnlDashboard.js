@@ -7,7 +7,7 @@
 // a new capture pipeline — so the Day view shows the realised summary for now.
 import { useMemo, useState, useEffect } from 'react';
 import { APP } from '../../lib/appData';
-import { cl, SInrF, inrC, MON } from '../../lib/fmt';
+import { cl, SInrF, SInrC, inrC, sFull, MON } from '../../lib/fmt';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, fyOf,
 } from '../../lib/pnlDaily';
@@ -19,10 +19,10 @@ const FY_MONTHS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
 const bucketStyle = (b) =>
   b == null ? { background: 'var(--pnl-empty)' }
   : { background: `var(--pnl-b${b > 0 ? 'p' + b : b < 0 ? 'l' + -b : 'e'})` };
-const Stat = ({ k, v, vc, foot }) => (
+const Stat = ({ k, v, vc, vt, foot }) => (
   <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
     <div className="lbl" style={{ margin: 0 }}>{k}</div>
-    <div className={'vmd ' + (vc || '')} style={{ marginTop: 5 }}>{v}</div>
+    <div className={'vmd ' + (vc || '')} title={vt} style={{ marginTop: 5 }}>{v}</div>
     {foot ? <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}>{foot}</div> : null}
   </div>
 );
@@ -160,7 +160,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
             `capital` (trading capital · live) leads, adjacent to Net P&L. ── */}
       <div className={'pnl-stats' + (capital ? ' has-cap' : '')}>
         {capital ? <Stat k={capital.label} v={capital.value} foot={capital.foot} /> : null}
-        <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrF n={stats.net} />}
+        <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
           foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />
         <DayStat stats={stats} mode={dayMode} onToggle={() => setDayMode((m) => (m === 'most' ? 'least' : 'most'))} />
@@ -433,7 +433,7 @@ function DayStat({ stats, mode, onToggle }) {
       <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
         {mode === 'most' ? 'Most profitable day' : 'Least profitable day'} <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-sm)' }}>↻</span>
       </div>
-      <div className={'vmd ' + (d ? cl(d.net) : '')} style={{ marginTop: 5 }}>{d ? <SInrF n={d.net} /> : '—'}</div>
+      <div className={'vmd ' + (d ? cl(d.net) : '')} title={d ? sFull(d.net) : undefined} style={{ marginTop: 5 }}>{d ? <SInrC n={d.net} /> : '—'}</div>
       <div className="sub" style={{ marginTop: 8 }}>{d ? prettyDate(d.date) : ''}</div>
     </div>
   );

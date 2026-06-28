@@ -60,7 +60,8 @@ export default function IndianTab({
       {/* Live intraday equity day-change curve (holdings × keyless quotes; daemon → KV) */}
       <EquityDayCurve />
 
-      <div className="g3 sec">
+      {/* Phase 4: position + performance stats merged into one statgrid so they pack like the header */}
+      <div className="statgrid sec">
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
           <div className="vmd"><InrC n={eqInv} /></div>
@@ -78,8 +79,6 @@ export default function IndianTab({
           </div>
           <div className="sub">{eqValued ? pctS(eqPct) + ' on cost' : 'value − invested'}</div>
         </div>
-      </div>
-      <div className="g3 sec">
         <div className="csm">
           <div className="lbl">Day change</div>
           <div className={'vmd ' + (eqValued ? cl(eqDayPl) : '')}>
@@ -96,7 +95,7 @@ export default function IndianTab({
         </div>
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
-          <div className={'vmd ' + cl(INDIAN_REALIZED.ytd)}><SInrF n={INDIAN_REALIZED.ytd} /></div>
+          <div className={'vmd ' + cl(INDIAN_REALIZED.ytd)} title={sFull(INDIAN_REALIZED.ytd)}><SInrC n={INDIAN_REALIZED.ytd} /></div>
           <div className="sub">{INDIAN_REALIZED.ytdLabel} · full history below</div>
         </div>
       </div>

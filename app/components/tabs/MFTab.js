@@ -1,6 +1,6 @@
 'use client';
-import { cl, pctS, Pct, InrC, InrF, SInrF, Rs } from '../../lib/fmt';
-import { LiveInrF } from '../shared/Live';
+import { cl, pctS, Pct, InrC, InrF, SInrF, Rs, inrFull } from '../../lib/fmt';
+import { LiveInrF, LiveInrC } from '../shared/Live';
 import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
@@ -107,15 +107,15 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
       <div className="g3 sec">
         <div className="csm">
           <div className="lbl">total invested</div>
-          <div className="vmd"><InrF n={mf.totCost} /></div>
+          <div className="vmd" title={inrFull(mf.totCost)}><InrC n={mf.totCost} /></div>
           <div className="sub">{MF_FUNDS.length} funds · {new Set(MF_FUNDS.map((f) => f.platform)).size} platforms</div>
         </div>
         <div className="csm">
-          <div className="fxc">
+          <div className="fxc" style={{ flexWrap: 'wrap', gap: 4 }}>{/* narrower statgrid card: freshness wraps below the label instead of clipping */}
             <div className="lbl" style={{ margin: 0 }}>current value</div>
             <FreshnessTag mode="nav" date={mfDate} casDate={UNITS_AS_OF} />
           </div>
-          <div className="vmd grn" style={{ marginTop: 6 }}><LiveInrF n={mf.totVal} /></div>
+          <div className="vmd grn" style={{ marginTop: 6 }} title={inrFull(mf.totVal)}><LiveInrC n={mf.totVal} /></div>
           <div className="sub">NAV × CAS units</div>
         </div>
         <div className="csm">
