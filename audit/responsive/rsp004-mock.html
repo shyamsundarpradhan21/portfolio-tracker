@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RSP-004 structural-fix mock — .vsm tickers &amp; .sub footers</title>
+<style>
+  /* ── Faithful subset of app/globals.css (night theme) ─────────────────────
+     Real tokens + the real .csm/.mini/.lbl/.vsm/.sub rules, copied verbatim so
+     the mock measures what the app measures. Only the .fix-* classes are new. */
+  :root{
+    --mono:'JetBrains Mono','Courier New',monospace;
+    --bg:#0C0C12; --txt:#E8E8EF; --txt2:#868693; --txt3:#79798B;
+    --grn:#34D399; --red:#F87171; --acc:#C2A9A0;
+    --glass-bg:rgba(255,255,255,.05); --glass-bg2:rgba(255,255,255,.032);
+    --glass-brd:rgba(255,255,255,.10); --glass-hi:rgba(255,255,255,.12);
+    /* fluid type tokens — current (reverted-to-p1) values, verbatim */
+    --fs-2xs:clamp(.72rem,.69rem + .12vw,.86rem);
+    --fs-xs: clamp(.8125rem,.78rem + .14vw,.95rem);
+    --fs-sm: clamp(.875rem,.83rem + .18vw,1.05rem);
+    --fs-md: clamp(.97rem,.92rem + .22vw,1.18rem);
+    --fs-lg: clamp(1.12rem,1.04rem + .32vw,1.45rem);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0C0C12;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       padding:26px 30px 60px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:30px 0 10px;color:var(--acc);letter-spacing:.04em}
+  p.note{color:var(--txt2);font-size:13px;max-width:880px;margin:6px 0}
+  code{font-family:var(--mono);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:12px}
+
+  /* ── real rules (verbatim) ── */
+  .csm{background:var(--glass-bg);border:.5px solid var(--glass-brd);border-radius:14px;padding:12px 15px;overflow:hidden;
+       box-shadow:inset 0 1px 0 var(--glass-hi)}
+  .mini{background:var(--glass-bg2);border:.5px solid var(--glass-brd);border-radius:6px;padding:9px 12px}
+  .lbl{font-size:var(--fs-2xs);color:var(--acc);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;
+       font-weight:600;overflow-wrap:anywhere;min-width:0}
+  .vmd{font-size:var(--fs-2xl,1.62rem);font-weight:700;font-family:var(--mono);letter-spacing:-.5px}
+  .vt3,.vsm{font-size:var(--fs-lg);font-weight:600;font-family:var(--mono)}
+  .vt1,.vmd,.vt2,.vt3,.vsm{overflow-wrap:normal;word-break:keep-all}
+  .csm .vmd,.csm .vt2,.csm .vsm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .mini .vsm,.mini .vmd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-md);letter-spacing:-.6px}
+  .sub{font-size:var(--fs-xs);color:var(--txt2);margin-top:4px}
+  .csm .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grn{color:var(--grn)} .red{color:var(--red)}
+
+  /* ── PROPOSED FIX A — wrap + 2-line clamp (deterministic contentX=0) ──
+     Ticker/footer WRAP instead of single-line-ellipsis. overflow-wrap:anywhere
+     lets even an unbreakable no-space token break, so scrollWidth never exceeds
+     clientWidth horizontally; -webkit-line-clamp:2 bounds the height; min-width:0
+     keeps it shrinkable inside any flex/grid parent. In the real globals.css this
+     replaces the nowrap+ellipsis in `.mini .vsm`, `.csm .vsm` and `.csm .sub`. */
+  .fix-a .vsm,.fix-a .sub{
+    white-space:normal;overflow-wrap:anywhere;word-break:break-word;min-width:0;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:clip}
+
+  /* ── ALT FIX B — single-line ellipsis + min-width:0 (keeps one line) ──
+     Fixes overRight/docOverflow (won't push layout wider) but the ellipsis'd text
+     STILL reports scrollWidth>clientWidth → certify contentX>2 stays. Shown to prove
+     why "keep one line" can't reach the deterministic-0 target. */
+  .fix-b .vsm,.fix-b .sub{min-width:0}
+
+  /* demo scaffold */
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .colhd{font-size:12px;color:var(--txt3);font-family:var(--mono);margin-bottom:2px}
+  .cell{width:var(--cw,160px)}              /* forced narrow cell = the 768 condition */
+  .m{font-family:var(--mono);font-size:11px;margin-top:3px}
+  .pass{color:var(--grn)} .fail{color:var(--red)}
+  .controls{margin:14px 0 4px;font-size:13px;color:var(--txt2);display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .tally{font-family:var(--mono);font-size:14px;margin:10px 0 0;padding:10px 14px;border:.5px solid var(--glass-brd);
+         border-radius:8px;display:inline-block}
+  .big{font-size:16px;font-weight:700}
+  input[type=range]{width:240px}
+</style>
+</head>
+<body>
+  <h1>RSP-004 structural fix — render mock (not applied)</h1>
+  <p class="note">
+    The two real offenders: <code>.mini .vsm</code> ticker cells and <code>.csm .sub</code> footers.
+    Certify counts a clip when <code>contentX = scrollWidth − clientWidth &gt; 2</code> — and a single-line
+    <b>ellipsis still reports scrollWidth&gt;clientWidth</b> when the text is truncated, so it counts as a clip.
+    Only <b>wrapping</b> drives horizontal <code>contentX</code> to 0 at any value length. Each cell below shows
+    its live <code>contentX</code> and PASS/FAIL; the tally is the per-variant RSP-004 count.
+  </p>
+
+  <div class="controls">
+    <label>cell width <input id="cw" type="range" min="96" max="320" value="160"><span id="cwv" class="m">160px</span></label>
+    <label><input id="stress" type="checkbox"> stress values (long name · pathological 80-char no-space token · 7-figure ₹)</label>
+    <span id="vw" class="m"></span>
+  </div>
+
+  <div id="tally"></div>
+
+  <div class="row" id="grid"></div>
+
+  <script>
+    // Faithful data: normal vs the exact certify stress fixtures.
+    const DATA = {
+      normal: { ticker1:'GOLDBEES', ticker2:'TINNARUBR', val:'₹5,71,234',
+                fdFoot:'4 FDs · Slice, ICICI, HDFC, Axis', cvFoot:'principal-weighted avg rate' },
+      stress: { ticker1:'THIS_IS_AN_EXTREMELY_LONG_UNBREAKABLE_HOLDING_NAME_WITH_NO_SPACES_FOR_STRESS_TESTING',
+                ticker2:'POWERGRIDCORPORATIONOFINDIALIMITED', val:'₹99,99,99,99,999.99',
+                fdFoot:'Cholamandalam Investment & Finance Company Limited · accruing live · quarterly compounding',
+                cvFoot:'THIS_IS_AN_EXTREMELY_LONG_UNBREAKABLE_HOLDING_NAME_WITH_NO_SPACES_FOR_STRESS_TESTING' }
+    };
+
+    const VARIANTS = [
+      { key:'',      label:'CURRENT (live rules)' },
+      { key:'fix-a', label:'FIX A — wrap + 2-line clamp  ✅ target' },
+      { key:'fix-b', label:'FIX B — 1-line ellipsis + min-width:0' },
+    ];
+
+    function cellHTML(v){
+      // a .mini with a .vsm ticker, and a .csm with .vmd value + .sub footer — the real shapes
+      return `
+        <div class="mini ${v}">
+          <div class="lbl">Top Winner</div>
+          <div class="vsm grn measure" data-k="vsm">__T1__</div>
+          <div class="sub measure" data-k="sub">__CV__</div>
+        </div>
+        <div class="mini ${v}">
+          <div class="lbl">Biggest Drag</div>
+          <div class="vsm red measure" data-k="vsm">__T2__</div>
+        </div>
+        <div class="csm ${v}">
+          <div class="lbl">Fixed Deposits</div>
+          <div class="vmd">₹6,61,402</div>
+          <div class="sub measure" data-k="sub">__FD__</div>
+        </div>`;
+    }
+
+    const grid = document.getElementById('grid');
+    function render(){
+      const stress = document.getElementById('stress').checked;
+      const d = stress ? DATA.stress : DATA.normal;
+      grid.innerHTML = VARIANTS.map(V => `
+        <div class="col">
+          <div class="colhd">${V.label}</div>
+          <div class="cell" data-variant="${V.key||'current'}">${
+            cellHTML(V.key)
+              .replaceAll('__T1__', d.ticker1).replaceAll('__T2__', d.ticker2)
+              .replaceAll('__VAL__', d.val).replaceAll('__FD__', d.fdFoot).replaceAll('__CV__', d.cvFoot)
+          }</div>
+        </div>`).join('');
+      measure();
+    }
+
+    function measure(){
+      const tallies = {};
+      document.querySelectorAll('.cell').forEach(cell=>{
+        const variant = cell.dataset.variant;
+        let clips = 0;
+        cell.querySelectorAll('.measure').forEach(el=>{
+          const contentX = Math.round(el.scrollWidth - el.clientWidth);
+          const overRight = Math.round(el.getBoundingClientRect().right - window.innerWidth);
+          const clip = (contentX > 2) || (overRight > 2);
+          if(clip) clips++;
+          let m = el.querySelector(':scope > .m'); // not used; append sibling instead
+          const tag = document.createElement('div');
+          tag.className = 'm ' + (clip?'fail':'pass');
+          tag.textContent = `${el.dataset.k}: contentX=${contentX>2?contentX:0}${overRight>2?(' oR='+overRight):''} ${clip?'✗ CLIP':'✓ ok'}`;
+          el.after(tag);
+        });
+        tallies[variant] = clips;
+      });
+      const t = document.getElementById('tally');
+      t.innerHTML = `<div class="tally">RSP-004 count &nbsp;
+        CURRENT <span class="big ${tallies.current?'fail':'pass'}">${tallies.current}</span> &nbsp;·&nbsp;
+        FIX&nbsp;A <span class="big ${tallies['fix-a']?'fail':'pass'}">${tallies['fix-a']}</span> &nbsp;·&nbsp;
+        FIX&nbsp;B <span class="big ${tallies['fix-b']?'fail':'pass'}">${tallies['fix-b']}</span></div>`;
+      document.getElementById('vw').textContent = 'viewport ' + window.innerWidth + 'px';
+    }
+
+    document.getElementById('cw').addEventListener('input', e=>{
+      document.documentElement.style.setProperty('--cw', e.target.value+'px');
+      document.getElementById('cwv').textContent = e.target.value+'px';
+      // re-measure (clear old tags first)
+      document.querySelectorAll('.cell .m').forEach(n=>n.remove()); measure();
+    });
+    document.getElementById('stress').addEventListener('change', render);
+    document.documentElement.style.setProperty('--cw','160px');
+    window.addEventListener('resize', ()=>{document.querySelectorAll('.cell .m').forEach(n=>n.remove());measure();});
+    render();
+  </script>
+</body>
+</html>

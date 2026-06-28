@@ -68,7 +68,7 @@ function detect(opts) {
     }
     return false;
   };
-  const clipped = [], scrollable = [];
+  const clipped = [], scrollable = [], ellipsis = [];
   for (const el of document.querySelectorAll('body *')) {
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden') continue;
@@ -80,18 +80,31 @@ function detect(opts) {
     const overLeft = Math.round(-rect.left);
     const selfScrollX = cs.overflowX === 'auto' || cs.overflowX === 'scroll';
     const contentX = selfScrollX ? 0 : Math.round(el.scrollWidth - el.clientWidth);
-    if (overRight > 2 || overLeft > 2 || contentX > 2) {
+    const escapes = overRight > 2 || overLeft > 2;  // box pushes past viewport / negative-left — a REAL layout overflow
+    if (escapes || contentX > 2) {
       const sel = el.tagName.toLowerCase() + (cls.trim() ? '.' + cls.trim().split(/\s+/).slice(0, 3).join('.') : '');
       const rec = { sel, overRight: overRight > 2 ? overRight : 0, overLeft: overLeft > 2 ? overLeft : 0, contentX: contentX > 2 ? contentX : 0, rsp: rspOf(el, sel) };
-      (inScrollX(el) ? scrollable : clipped).push(rec);
+      // Ellipsis refinement: an element whose ONLY offence is contentX>2 AND whose computed
+      // style is a single-line ellipsis truncation (white-space:nowrap + text-overflow:ellipsis
+      // + overflow[-x]:hidden) is INTENTIONAL truncation, not a layout clip — scrollWidth always
+      // exceeds clientWidth once text is ellipsised, so counting it as RSP-004 would permanently
+      // red-flag every truncated footer (e.g. .csm .sub). Route it to the 'ellipsis' bucket
+      // (counted + printed, like 'scrollable') and EXCLUDE from the clipped/RSP-004 count.
+      // Escapes (overRight/overLeft) and docOverflow are UNCHANGED — a real escape still fails,
+      // even on an ellipsis element (escapes wins, so it lands in clipped).
+      const isEllipsis = cs.whiteSpace === 'nowrap' && cs.textOverflow === 'ellipsis'
+        && (cs.overflow === 'hidden' || cs.overflowX === 'hidden');
+      if (!escapes && isEllipsis) ellipsis.push(rec);
+      else (inScrollX(el) ? scrollable : clipped).push(rec);
     }
   }
   const byRsp = (arr) => arr.reduce((a, r) => { a[r.rsp] = (a[r.rsp] || 0) + 1; return a; }, {});
   const out = {
     vw, docOverflow,
-    clippedCount: clipped.length, scrollableCount: scrollable.length,
-    clippedByRsp: byRsp(clipped), scrollableByRsp: byRsp(scrollable),
+    clippedCount: clipped.length, scrollableCount: scrollable.length, ellipsisCount: ellipsis.length,
+    clippedByRsp: byRsp(clipped), scrollableByRsp: byRsp(scrollable), ellipsisByRsp: byRsp(ellipsis),
     topClipped: clipped.sort((a, b) => (b.overRight + b.overLeft + b.contentX) - (a.overRight + a.overLeft + a.contentX)).slice(0, 10),
+    topEllipsis: ellipsis.sort((a, b) => b.contentX - a.contentX).slice(0, 10),
   };
   if (opts && opts.vclip) {
     const vclip = []; let checked = 0;
@@ -217,7 +230,7 @@ async function run() {
         const m = await page.evaluate(detect, { vclip: VCLIP });
         cells.push({ theme, surface: surface.id, w, stress: STRESS, injected, ...m });
         const cb = m.clippedByRsp, dot = m.docOverflow > 1 ? `DOC+${m.docOverflow}` : 'doc0';
-        process.stdout.write(`${theme}/${surface.id} @${w}  ${dot}  clipped=${m.clippedCount}{001:${cb['RSP-001']||0},002:${cb['RSP-002']||0},004:${cb['RSP-004']||0},other:${cb.other||0}}  scrollOK=${m.scrollableCount}\n`);
+        process.stdout.write(`${theme}/${surface.id} @${w}  ${dot}  clipped=${m.clippedCount}{001:${cb['RSP-001']||0},002:${cb['RSP-002']||0},004:${cb['RSP-004']||0},other:${cb.other||0}}  scrollOK=${m.scrollableCount}  ellipsis=${m.ellipsisCount}\n`);
       }
     }
   }
@@ -225,16 +238,17 @@ async function run() {
 
   // roll-up: per-RSP worst clipped + max docOverflow across the run
   const roll = { 'RSP-001': { maxClipped: 0, cells: 0 }, 'RSP-002': { maxClipped: 0, cells: 0 }, 'RSP-004': { maxClipped: 0, cells: 0 }, other: { maxClipped: 0 } };
-  let maxDoc = 0, docHits = 0;
+  let maxDoc = 0, docHits = 0, ellipsisCells = 0, maxEllipsis = 0;
   for (const c of cells) {
     if (c.docOverflow > 1) { docHits++; maxDoc = Math.max(maxDoc, c.docOverflow); }
+    if (c.ellipsisCount > 0) { ellipsisCells++; maxEllipsis = Math.max(maxEllipsis, c.ellipsisCount); }
     for (const k of ['RSP-001', 'RSP-002', 'RSP-004', 'other']) {
       const n = (c.clippedByRsp || {})[k] || 0;
       if (n > 0) { roll[k].maxClipped = Math.max(roll[k].maxClipped, n); if (roll[k].cells != null) roll[k].cells++; }
     }
   }
-  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, perRsp: roll };
+  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, perRsp: roll };
   fs.writeFileSync(path.join(DIR, `cert-${LABEL}.json`), JSON.stringify({ summary, cells }, null, 2));
-  process.stdout.write(`\n[${LABEL}] docOverflow cells=${docHits} maxDoc=${maxDoc}  clippedMax 001=${roll['RSP-001'].maxClipped} 002=${roll['RSP-002'].maxClipped} 004=${roll['RSP-004'].maxClipped} other=${roll.other.maxClipped}\n`);
+  process.stdout.write(`\n[${LABEL}] docOverflow cells=${docHits} maxDoc=${maxDoc}  clippedMax 001=${roll['RSP-001'].maxClipped} 002=${roll['RSP-002'].maxClipped} 004=${roll['RSP-004'].maxClipped} other=${roll.other.maxClipped}  ellipsis cells=${ellipsisCells} max=${maxEllipsis}\n`);
 }
 run().catch((e) => { console.error('FATAL', e); process.exit(1); });

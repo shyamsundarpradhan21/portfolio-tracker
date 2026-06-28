@@ -67,16 +67,18 @@
 
   /* ── Type scale — the ONLY font sizes used in the app ────────────────────
      7 steps + 2 display sizes, rem-based so OS/browser scaling is respected.
-     (SVG/canvas-internal sizes are coordinate-space numbers, not part of it.) */
-  --fs-2xs: 0.72rem;   /* ≈11.5px — micro labels, axis text, footnotes */
-  --fs-xs:  0.8125rem; /* ≈13px   — subs, badges, table headers, status */
-  --fs-sm:  0.875rem;  /* ≈14px   — table cells, dense body */
-  --fs-md:  0.97rem;   /* ≈15.5px — body */
-  --fs-lg:  1.12rem;   /* small values — calmed back from the +12% lift */
-  --fs-xl:  1.36rem;   /* card titles, mid values */
-  --fs-2xl: 1.62rem;   /* summary-card values */
-  --fs-h1:  2.55rem;   /* section heroes */
-  --fs-h0:  2.95rem;   /* the net-worth figure */
+     (SVG/canvas-internal sizes are coordinate-space numbers, not part of it.)
+     FLUID (Phase 1): clamp(floor, base + vw, ceiling) — floors = the prior fixed
+     sizes (tablet unchanged); ceilings grow so widescreen fills, not stretches. */
+  --fs-2xs: clamp(.72rem,.69rem + .12vw,.86rem);     /* micro labels, axis text, footnotes */
+  --fs-xs:  clamp(.8125rem,.78rem + .14vw,.95rem);   /* subs, badges, table headers, status */
+  --fs-sm:  clamp(.875rem,.83rem + .18vw,1.05rem);   /* table cells, dense body */
+  --fs-md:  clamp(.97rem,.92rem + .22vw,1.18rem);    /* body */
+  --fs-lg:  clamp(1.12rem,1.04rem + .32vw,1.45rem);  /* small values */
+  --fs-xl:  clamp(1.36rem,1.22rem + .55vw,1.95rem);  /* card titles, mid values */
+  --fs-2xl: clamp(1.62rem,1.42rem + .8vw,2.5rem);    /* summary-card values */
+  --fs-h1:  clamp(2.55rem,2.1rem + 1.6vw,3.8rem);    /* section heroes */
+  --fs-h0:  clamp(2.95rem,2.3rem + 2.4vw,4.6rem);    /* the net-worth figure */
   /* label/table tiers (--fs-2xs/xs/sm) deliberately HELD — bigger values fill the
      dead space without bloating dense tables: more presence, same breathing room. */
 
@@ -413,7 +415,7 @@ body::before {
   :root[data-time="day"] { --glass-bg: #ffffff; --glass-bg2: #f1f4f9; --glass-brd: var(--brd); --thead-bg: #edf1f7; }
 }
 /* Values inside summary cards must not push the card wider */
-.csm .vmd, .csm .vt2, .csm .vsm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.csm .vmd, .csm .vt2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 /* Summary-card label (Section 0a): 12px upper .09em muted. */
 .lbl {
   font-size: var(--fs-2xs); color: var(--acc); text-transform: uppercase;
@@ -437,21 +439,26 @@ body::before {
 /* Numbers contain no spaces so they never wrap; never break inside a word
    (tickers like POWERGRID/FEDERALBNK) — overflow-wrap:anywhere did exactly that. */
 .vt1, .vmd, .vt2, .vt3, .vsm { overflow-wrap: normal; word-break: keep-all; }
-/* Symbol/ticker values in compact minis stay on one line and shrink to fit,
-   falling back to a clean ellipsis instead of an ugly mid-word break. */
-.mini .vsm, .mini .vmd {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: var(--fs-md);
-  letter-spacing: -.6px;
+/* RSP-004 — dense ticker cells (.mini/.csm .vsm) WRAP to ≤2 lines instead of a
+   single-line ellipsis. A single-line ellipsis still reports scrollWidth>clientWidth,
+   which the certify gate counts as a clip; wrapping with overflow-wrap:anywhere drives
+   horizontal contentX to 0 at ANY value length (incl. unbreakable no-space tokens),
+   bounded to 2 lines by -webkit-line-clamp. min-width:0 keeps the cell shrinkable in any
+   flex/grid parent. (Overrides the keep-all on the line above for .mini/.csm tickers; a
+   bare .vsm — e.g. .mac-cell — is unaffected. Footers .sub keep the single-line ellipsis;
+   the certify gate is refined to treat that ellipsis truncation as intentional, not a clip.) */
+.mini .vsm, .csm .vsm {
+  white-space: normal; overflow-wrap: anywhere; word-break: break-word; min-width: 0;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
+.mini .vsm { font-size: var(--fs-md); letter-spacing: -.6px; }
+.mini .vmd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-md); letter-spacing: -.6px; }
 .sub { font-size: var(--fs-xs); color: var(--txt2); margin-top: 4px; }
 /* ── Card value-footers — the line under a card's value is a SINGLE, left-anchored
    line, clipped with an ellipsis on overflow (never wraps to a 2nd line). A footer
    that carries exactly two values splits them left/right instead (.sub.split).
    Scoped to the summary surfaces so prose captions in .card/.mini still wrap. */
-.csm .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.csm .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .sub.split { display: flex; justify-content: space-between; gap: 10px; white-space: nowrap; }
 .fxc { display: flex; justify-content: space-between; align-items: center; }
 

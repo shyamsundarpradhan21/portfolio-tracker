@@ -235,6 +235,39 @@ chips/lines vanished on the protected preview — runtime logs showed 22 `/api/g
   shows 0 new builds. An empty commit (`git commit --allow-empty`) + push re-triggers it
   cleanly; if that still fails it's a Vercel-side limit → redeploy from the dashboard.
 
+### Responsive certify gate — a single-line ellipsis is INTENTIONAL truncation, NOT a clip (don't revert)
+`audit/responsive/certify.mjs` `detect()` counts a clip when `contentX = scrollWidth −
+clientWidth > 2`. But a single-line **ellipsis always reports `scrollWidth > clientWidth`**
+once its text is truncated — so naively that permanently red-flags every truncated footer
+(`.csm .sub`) as RSP-004, which is wrong: the truncation is by design.
+
+**Decision (2026-06-28, user-approved):** in `detect()`, an element whose *only* offence is
+`contentX > 2` **and** whose computed style is a single-line ellipsis (`white-space:nowrap`
++ `text-overflow:ellipsis` + `overflow`/`overflow-x:hidden`) is routed to a new **`ellipsis`
+bucket** (counted + printed like `scrollable`) and **excluded from the RSP-004 `clipped`
+count**. Escapes (`overRight`/`overLeft`) and `docOverflow` are **unchanged** — a real escape
+still fails, even on an ellipsis element (escape wins → it lands in `clipped`). Rationale: the
+gate must catch *layout* overflow (a box escaping its container / the document), not a cell
+choosing to truncate its own text.
+
+**Paired CSS policy** (dense cells, `globals.css`):
+- `.vsm` ticker cells (`.mini .vsm`, `.csm .vsm`) **WRAP** to ≤2 lines —
+  `white-space:normal; overflow-wrap:anywhere; word-break:break-word; min-width:0;
+  -webkit-line-clamp:2` — so horizontal `contentX` is **0 at any value length** (incl.
+  unbreakable no-space tokens). Normal short tickers are unchanged (wrap only engages on
+  overflow). This overrides the `.vt*/.vsm{word-break:keep-all}` rule for `.mini/.csm` only.
+- `.sub` footers **keep the single-line ellipsis** (`white-space:nowrap; …ellipsis;
+  min-width:0`) — honours the standing "footers never wrap to a 2nd line" rule — and lean on
+  the gate refinement above so their truncation is bucketed as `ellipsis`, not a clip.
+- Values `.vmd`/`.vt2` stay single-line ellipsis (out of scope; their stress truncation also
+  lands in `ellipsis`).
+
+**Guard:** `audit/responsive/sanity-ellipsis.mjs` extracts the live `detect()` and proves the
+refinement doesn't blind real overflow — ellipsis-truncate → `ellipsis`; non-ellipsis overflow
+→ `clipped`; escape (and ellipsis+escape) → `clipped`. Run it before touching `detect()`.
+Don't "simplify" the ellipsis branch away — it was added deliberately. (Caught/decided while
+fixing the pre-existing `indian@768`/`fd@768` RSP-004 reds with the fluid-type rollout.)
+
 ---
 
 ## Working Style / Task Execution
