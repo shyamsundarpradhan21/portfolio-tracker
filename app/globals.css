@@ -402,19 +402,29 @@ body::before {
 @media (prefers-reduced-motion: reduce) { .live-word { animation: none; } }
 
 
-/* .statgrid — the ONE converged uniform stat-row primitive (Phase 4 symmetry). Every equal
-   label+value stat row packs on this: auto-fit minmax(220,260) at --gap, so cards match the
-   header sleeve width (~260) and pack 5-6 across the centered 1760 band — capped (no balloon)
-   and tight (no space-between). The fixed-px MAX both caps the card and sets the column count
-   (auto-fit counts off the MAX when it's a length). g3/g4/g5 + fdstats + ins-stats + pnl-stats
-   all map here; each keeps its own card chrome. Sheds to 1 col below ~520. .g2 + content/bespoke
-   grids are deliberately NOT on this — see audit/responsive/symmetry-audit.md. */
+/* .statgrid — the converged uniform stat-row primitive (Phase 4, ROW-BALANCED). Every equal
+   "label + value" stat row renders in ≤2 ROWS at desktop, balanced: columns = ceil(itemCount/2),
+   with ≤3 items kept in a single row (4→2col=2×2 · 5→3col=3+2 · 6→3col=3×2 · 3→3col=1 row).
+   Cards FILL (1fr) — width varies by viewport, by design (no fixed cap, no packed auto-fit). The
+   column count is derived from the LIVE child count via :has() quantity queries, so there's no
+   per-component wiring. Tablet (≤900) collapses to 2 columns; phone (≤560) to 1 (extra rows are
+   fine on narrow only). g3/g4/g5 + fdstats + ins-stats + pnl-stats map here; .g2 + content/bespoke
+   grids do NOT — see audit/responsive/symmetry-audit.md (row-count invariant + exclusion list). */
 .statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
-  gap: var(--gap); align-items: stretch;
+  display: grid; gap: var(--gap); align-items: stretch;
+  grid-template-columns: repeat(2, 1fr);   /* base = 2 cols (2 & 4 items; the ≤900 tablet default) */
+}
+@media (max-width: 560px) {                /* phone — single column */
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats) { grid-template-columns: 1fr; }
+}
+@media (min-width: 901px) {                /* desktop — columns = ceil(itemCount/2), ≤3 items → 1 row */
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):has(> :nth-child(1):last-child) { grid-template-columns: 1fr; }
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(5):last-child), :has(> :nth-child(6):last-child)) { grid-template-columns: repeat(3, 1fr); }
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(7):last-child), :has(> :nth-child(8):last-child)) { grid-template-columns: repeat(4, 1fr); }
 }
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); align-items: stretch; }
-.g2 > *, .g3 > *, .g4 > *, .g5 > *, .mf-g3 > * { min-width: 0; }
+.g2 > *, .statgrid > *, .g3 > *, .g4 > *, .g5 > *, .fdstats > *, .ins-stats > *, .pnl-stats > *, .mf-g3 > * { min-width: 0; }
 .sec { margin-bottom: 12px; }
 /* Analytical card (Section 0b): radius 16px; horizontal padding tightens on
    narrow viewports so dense card content keeps fitting. */
