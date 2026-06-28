@@ -16,7 +16,14 @@
 /.claude/settings.local.json
 /.claude/statusline.js
 /.claude/skills/sync/
-/.graphify/
+# Ignore the volatile graph internals, but COMMIT the portable artifacts so a
+# graph built in a cloud session survives into local (Windows) sessions — local
+# Claude Code reads these directly since the graphify CLI is cloud-only.
+/.graphify/*
+!/.graphify/graph.json
+!/.graphify/GRAPH_REPORT.md
+!/.graphify/wiki/
+!/.graphify/wiki/**
 /graphify-out/
 
 # misc
@@ -97,3 +104,8 @@ login-*.png
 
 # transient cloud secrets bundle — copy to the Remote workspace, then delete
 /cloud-secrets.txt
+.serena/
+
+# responsive-audit artifacts that render REAL private portfolio figures — never commit
+/audit/responsive/shots/
+/audit/responsive/*-mock.html
