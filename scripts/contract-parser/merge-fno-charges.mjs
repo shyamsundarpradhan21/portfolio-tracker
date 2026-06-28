@@ -66,6 +66,34 @@ export function realChargeByFy(merged) {
   return out;
 }
 
+// OVERLAY output (Phase 2c Part 1, option b): emit ONLY the dormant charge overlay - per (broker,date)
+// realCharge for committed-ledger days + opening-only days separately - NOT a full merged ledger. Part 2
+// overlays this onto the committed data/fno-ledger.json base. The override logic above stays Part-2's target.
+export function emitOverlay(ledger, realCharges) {
+  const real = new Map();
+  for (const e of realCharges) {
+    if (!(e.realCharge > 0)) continue;       // 0 = couldn't itemize (old-format) -> keep the committed estimate
+    const k = `${norm(e.broker)}|${e.date}`;
+    real.set(k, r2((real.get(k) || 0) + e.realCharge));
+  }
+  const committed = new Set(ledger.rows.map((row) => `${norm(row.broker)}|${row.date}`));
+  const byKey = {}, openingOnly = [];
+  for (const [k, rc] of real) {
+    if (committed.has(k)) byKey[k] = { realCharge: rc, chargeSource: 'real' };  // overlays onto a committed row
+    else { const [broker, date] = k.split('|'); openingOnly.push({ broker, date, sleeve: SLEEVE[broker] || null, realCharge: rc, chargeSource: 'real' }); }
+  }
+  return { byKey, openingOnly, stats: { matched: Object.keys(byKey).length, openingOnly: openingOnly.length } };
+}
+
+// per-FY real-charge total from the OVERLAY (byKey + openingOnly) - reconciliation verification quantity
+export function overlayRealChargeByFy(overlay) {
+  const out = {};
+  const add = (b, d, rc) => { const key = `${fy(d)} ${norm(b)}`; out[key] = r2((out[key] || 0) + rc); };
+  for (const [k, v] of Object.entries(overlay.byKey)) { const [b, d] = k.split('|'); add(b, d, v.realCharge); }
+  for (const e of overlay.openingOnly) add(e.broker, e.date, e.realCharge);
+  return out;
+}
+
 // ---- dry-run CLI ----
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const realPath = process.argv[2], outPath = process.argv[3];
