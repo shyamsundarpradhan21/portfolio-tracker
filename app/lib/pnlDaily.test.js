@@ -287,10 +287,15 @@ describe('summaryStats — profit factor + win/loss sums', () => {
   });
 });
 
-describe('returnsPct — net over constant deployed base', () => {
-  it('25000 on 100000 deployed = 25%', () => expect(returnsPct(25000, 100000)).toBe(25));
-  it('loss reads negative', () => expect(returnsPct(-5000, 100000)).toBe(-5));
-  it('no base → null', () => { expect(returnsPct(5000, 0)).toBe(null); expect(returnsPct(5000, -1)).toBe(null); });
+describe('returnsPct — cumulative TWR on a constant base', () => {
+  // +10% then −10% on 100k: 1.1 × 0.9 = 0.99 → −1% (geometric, NOT 0)
+  it('+10% then −10% compounds to −1%', () =>
+    expect(returnsPct([{ net: 10000 }, { net: -10000 }], 100000)).toBe(-1));
+  it('single +20k on 100k = +20%', () => expect(returnsPct([{ net: 20000 }], 100000)).toBe(20));
+  it('empty → 0, no base → null', () => {
+    expect(returnsPct([], 100000)).toBe(0);
+    expect(returnsPct([{ net: 1 }], 0)).toBe(null);
+  });
 });
 
 describe('cumulative — running ₹ curve', () => {
@@ -309,9 +314,10 @@ describe('dailyReturns — fractional on constant base', () => {
   it('no capital → []', () => expect(dailyReturns([{ date: 'a', net: 1 }], 0)).toEqual([]));
 });
 
-describe('cagr — annualised equity growth', () => {
-  const s = [{ date: '2025-01-01', net: 1000 }, { date: '2026-01-01', net: 20000 }];
-  it('+21000 on 100000 over 365d → 21%', () => expect(cagr(s, 100000)).toBe(21));
+describe('cagr — TWR annualised', () => {
+  // 1.1 × 1.1 = 1.21 growth factor over exactly 365d → 21% CAGR
+  const s = [{ date: '2025-01-01', net: 10000 }, { date: '2026-01-01', net: 10000 }];
+  it('+10%/+10% over 365d → 21%', () => expect(cagr(s, 100000)).toBe(21));
   it('guards: single point / no capital → null', () => {
     expect(cagr([{ date: '2025-01-01', net: 1 }], 100000)).toBe(null);
     expect(cagr(s, 0)).toBe(null);
@@ -333,44 +339,53 @@ describe('volatility / sharpe / sortino', () => {
   });
 });
 
-describe('drawdown — underwater depth on equity', () => {
+describe('drawdown — geometric (TWR) underwater depth', () => {
+  // geometric equity on 1000 base: r = +.1,+.1,−.3,−.1,+.5
+  //   1100, 1210(peak), 847, 762.3, 1143.45
   const s = [
     { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: 100 },
     { date: '2026-01-03', net: -300 }, { date: '2026-01-04', net: -100 },
     { date: '2026-01-05', net: 500 },
   ];
   const dd = drawdown(s, 1000);
-  it('peak 1200 → trough 800 = −33.33% max', () => expect(dd.maxDD).toBe(-33.33));
-  it('day-3 dd = (900−1200)/1200 = −25%', () => expect(dd.curve[2].dd).toBe(-25));
-  it('avgDD over 5 days = −11.67%', () => expect(dd.avgDD).toBe(-11.67));
+  it('day-3 dd = (847−1210)/1210 = −30%', () => expect(dd.curve[2].dd).toBe(-30));
+  it('max dd at day-4 = (762.3−1210)/1210 = −37%', () => expect(dd.maxDD).toBe(-37));
+  it('avg dd = (0+0−30−37−5.5)/5 = −14.5%', () => expect(dd.avgDD).toBeCloseTo(-14.5, 2));
   it('no capital → empty', () => expect(drawdown(s, 0)).toEqual({ curve: [], maxDD: 0, avgDD: 0 }));
 });
 
-describe('drawdownEpisodes — peak→trough→recovery', () => {
-  const s = [
-    { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: 100 },
-    { date: '2026-01-03', net: -300 }, { date: '2026-01-04', net: -100 },
-    { date: '2026-01-05', net: 500 },
-  ];
+describe('drawdownEpisodes — geometric peak→trough→recovery', () => {
+  // 1000 base, r = +.2,−.4,+.7 → eq 1200(peak), 720, 1224 (recovers > 1200 on day 3)
+  const s = [{ date: '2026-01-01', net: 200 }, { date: '2026-01-02', net: -400 }, { date: '2026-01-03', net: 700 }];
   const eps = drawdownEpisodes(s, 1000);
-  it('one recovered episode, depth −33.33, trough 01-04, 1 recovery day', () => {
+  it('one recovered episode, depth −40, trough 01-02, 1 recovery day', () => {
     expect(eps.length).toBe(1);
-    expect(eps[0].depth).toBe(-33.33);
-    expect(eps[0].troughDate).toBe('2026-01-04');
+    expect(eps[0].depth).toBe(-40);
+    expect(eps[0].troughDate).toBe('2026-01-02');
     expect(eps[0].recoveryDays).toBe(1);
     expect(eps[0].ongoing).toBe(false);
   });
   it('an unrecovered drawdown is flagged ongoing', () => {
-    const o = drawdownEpisodes([{ date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: -200 }], 1000);
-    expect(o[0].ongoing).toBe(true); expect(o[0].recoveryDays).toBe(null);
+    const o = drawdownEpisodes([{ date: '2026-01-01', net: 200 }, { date: '2026-01-02', net: -400 }], 1000);
+    expect(o[0].ongoing).toBe(true); expect(o[0].recoveryDays).toBe(null); expect(o[0].depth).toBe(-40);
   });
   it('sorted deepest first', () => {
+    // eq: 1200(peak),1080,1404(recover,peak),702,1263.6 → ep1 −10 (recovered), ep2 −50 (ongoing)
     const o = drawdownEpisodes([
-      { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: -50 }, { date: '2026-01-03', net: 200 },
-      { date: '2026-01-04', net: -400 }, { date: '2026-01-05', net: 600 },
+      { date: '2026-01-01', net: 200 }, { date: '2026-01-02', net: -100 }, { date: '2026-01-03', net: 300 },
+      { date: '2026-01-04', net: -500 }, { date: '2026-01-05', net: 800 },
     ], 1000);
     expect(o.length).toBe(2);
-    expect(o[0].depth).toBeLessThan(o[1].depth); // most negative first
+    expect(o[0].depth).toBe(-50); expect(o[1].depth).toBe(-10);
+  });
+});
+
+describe('TWR continuity — tiny returns ≈ arithmetic on a stable window (2nd guard)', () => {
+  it('small daily P&L vs a large base: TWR ≈ Σnet/capital', () => {
+    const s = [{ net: 100 }, { net: 200 }, { net: -50 }]; // Σ=250 on 1,000,000
+    const twr = returnsPct(s, 1_000_000);
+    const arith = (250 / 1_000_000) * 100; // 0.025%
+    expect(Math.abs(twr - arith)).toBeLessThan(0.01);
   });
 });
 

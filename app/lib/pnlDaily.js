@@ -307,7 +307,9 @@ export function monthlyRollup(series) {
 // below assume a CONSTANT deployed-capital base passed in by the caller:
 // returns on constant deployed capital (own+client); valid while capital is ~stable — revisit if material flows occur.
 // The caller picks ONE representative figure (current or window-average fundsUsed)
-// and feeds the SAME `capital` to every ratio (incl. returnsPct), no time-weighting.
+// and feeds the SAME `capital` to every ratio (incl. returnsPct). Returns are
+// TIME-WEIGHTED — daily net/capital chained geometrically (Π(1+rₜ)−1) — so a deep
+// cumulative loss can't push a ratio past −100% (equity stays > 0).
 // ─────────────────────────────────────────────────────────────────────────────
 const TRADING_DAYS = 252; // annualisation factor for σ / Sharpe / Sortino
 const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
@@ -327,9 +329,14 @@ export function seriesByStrategy(rows) {
   return { S01: bySleeve('S01'), S02: bySleeve('S02'), all: dailySeries(rows) };
 }
 
-// Return on the constant deployed-capital base (%). null when there's no usable base.
-export function returnsPct(net, deployed) {
-  return deployed > 0 ? r2((net / deployed) * 100) : null;
+// Cumulative TIME-WEIGHTED return (%) over the series on a constant capital base:
+// TWR = Π(1 + netₜ/capital) − 1. Geometric → can't fall below −100%. Empty → 0; no base → null.
+export function returnsPct(series, capital) {
+  if (!(capital > 0)) return null;
+  if (!series || !series.length) return 0;
+  let f = 1;
+  for (const d of series) f *= 1 + d.net / capital;
+  return r2((f - 1) * 100);
 }
 
 // Running ₹ cumulative (money-made curve), one point per day, ascending.
@@ -344,14 +351,15 @@ export function dailyReturns(series, capital) {
   return (series || []).map((d) => ({ date: d.date, r: d.net / capital }));
 }
 
-// CAGR (%) of equity (= capital + cumulative net) across the series' date span.
+// CAGR (%) — TWR end-of-window growth factor annualised over the series' date span.
 export function cagr(series, capital) {
   if (!series || series.length < 2 || !(capital > 0)) return null;
-  const endEq = capital + series.reduce((s, d) => s + d.net, 0);
-  if (endEq <= 0) return null;
+  let f = 1;
+  for (const d of series) f *= 1 + d.net / capital;
+  if (f <= 0) return null;
   const days = dayDiff(series[0].date, series[series.length - 1].date);
   if (days <= 0) return null;
-  return r2(((endEq / capital) ** (365 / days) - 1) * 100);
+  return r2((f ** (365 / days) - 1) * 100);
 }
 
 // Annualised volatility (%) of the daily-return stream.
@@ -382,10 +390,9 @@ export function sortino(returns, rf = 0) {
 export function drawdown(series, capital) {
   const empty = { curve: [], maxDD: 0, avgDD: 0 };
   if (!series || !series.length || !(capital > 0)) return empty;
-  let c = 0, peak = capital, sum = 0, maxDD = 0;
+  let eq = capital, peak = capital, sum = 0, maxDD = 0;
   const curve = series.map((d) => {
-    c += d.net;
-    const eq = capital + c;
+    eq *= 1 + d.net / capital;             // geometric (TWR) equity path
     if (eq > peak) peak = eq;
     const dd = peak > 0 ? ((eq - peak) / peak) * 100 : 0;
     sum += dd;
@@ -399,11 +406,10 @@ export function drawdown(series, capital) {
 // recovery days (trough → back-to-peak). Sorted deepest-first. ongoing = unrecovered at end.
 export function drawdownEpisodes(series, capital) {
   if (!series || !series.length || !(capital > 0)) return [];
-  let c = 0, peak = capital, peakDate = series[0].date, cur = null;
+  let eq = capital, peak = capital, peakDate = series[0].date, cur = null;
   const eps = [];
   for (const d of series) {
-    c += d.net;
-    const eq = capital + c;
+    eq *= 1 + d.net / capital;             // geometric (TWR) equity path
     if (eq >= peak) {
       if (cur) { cur.recoveryDate = d.date; cur.recoveryDays = dayDiff(cur.troughDate, d.date); cur.ongoing = false; eps.push(cur); cur = null; }
       peak = eq; peakDate = d.date;
