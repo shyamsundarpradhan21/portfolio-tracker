@@ -12,8 +12,10 @@ const isoDay = (sec) => new Date(sec * 1000).toISOString().slice(0, 10);
 
 // One symbol → { symbol, closes:[{date,close}], latest, latestDate } | { symbol, error }.
 // Tries both Yahoo hosts; on total failure logs and returns an error (callers map to null).
-export async function fetchYahooSeries(symbol, range) {
-  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1wk&range=${encodeURIComponent(range)}`;
+// interval defaults to '1wk' (weekly benchmark counterfactual); pass '1d' for the daily
+// series the Trading-tab Analytics needs (alpha/beta aligned to exact trading days).
+export async function fetchYahooSeries(symbol, range, interval = '1wk') {
+  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
   let lastErr;
   for (const host of HOSTS) {
     try {
@@ -44,8 +46,8 @@ export async function fetchYahooSeries(symbol, range) {
 }
 
 // Many symbols → { sym: { closes, latest, latestDate } | null }.
-export async function fetchYahooSeriesMany(symbols, range) {
-  const results = await Promise.all((symbols || []).map((s) => fetchYahooSeries(s, range)));
+export async function fetchYahooSeriesMany(symbols, range, interval = '1wk') {
+  const results = await Promise.all((symbols || []).map((s) => fetchYahooSeries(s, range, interval)));
   const series = {};
   for (const r of results) series[r.symbol] = r.error ? null : { closes: r.closes, latest: r.latest, latestDate: r.latestDate };
   return series;
