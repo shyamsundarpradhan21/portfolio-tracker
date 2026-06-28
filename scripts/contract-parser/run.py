@@ -66,8 +66,8 @@ def unmapped_benign(labels):
 
 # ---------- PII-redacted payload ----------
 def payload_of(ledger, cn_no, low_conf_fills=False):
-    # build_ledger output carries NO PAN / name / address. note_file embeds the ACCOUNT CODE
-    # (e.g. YS59535/7BB93B) -> drop it; the contract-note number identifies the note.
+    # build_ledger output carries NO PAN / name / address. note_file embeds the broker ACCOUNT CODE
+    # -> drop it; the contract-note number identifies the note.
     p = {k: v for k, v in ledger.items() if k != "note_file"}
     p["contract_note_no"] = cn_no
     if low_conf_fills:
