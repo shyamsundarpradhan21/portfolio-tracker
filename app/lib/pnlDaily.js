@@ -41,14 +41,16 @@ export const fyStartYear = (iso) => {
 export function summaryStats(series) {
   if (!series.length) {
     return { net: 0, gross: 0, charges: 0, orders: 0, tradingDays: 0, winDays: 0,
-      lossDays: 0, winPct: 0, mostProfit: null, bestStreak: 0, currentStreak: 0,
-      currentStreakWin: true, avgPerDay: 0 };
+      lossDays: 0, winPct: 0, mostProfit: null, leastProfit: null, bestStreak: 0,
+      currentStreak: 0, currentStreakWin: true, avgPerDay: 0,
+      winSum: 0, lossSum: 0, profitFactor: null };
   }
   let net = 0, gross = 0, charges = 0, orders = 0, winDays = 0, lossDays = 0;
+  let winSum = 0, lossSum = 0; // Σ net of profit days / loss days (lossSum ≤ 0) → profit factor
   let mostProfit = null, leastProfit = null;
   for (const d of series) {
     net += d.net; gross += d.gross; charges += d.charges; orders += d.orders;
-    if (d.net > 0) winDays++; else if (d.net < 0) lossDays++;
+    if (d.net > 0) { winDays++; winSum += d.net; } else if (d.net < 0) { lossDays++; lossSum += d.net; }
     if (!mostProfit || d.net > mostProfit.net) mostProfit = { date: d.date, net: d.net };
     if (!leastProfit || d.net < leastProfit.net) leastProfit = { date: d.date, net: d.net };
   }
@@ -73,6 +75,8 @@ export function summaryStats(series) {
     mostProfit, leastProfit,
     bestStreak, currentStreak, currentStreakWin,
     avgPerDay: r2(net / tradingDays),
+    winSum: r2(winSum), lossSum: r2(lossSum),
+    profitFactor: lossSum !== 0 ? r2(winSum / Math.abs(lossSum)) : null,
   };
 }
 
@@ -296,4 +300,181 @@ export function monthlyRollup(series) {
     .map((m) => ({ ...m, net: r2(m.net), gross: r2(m.gross), charges: r2(m.charges),
       label: `${MON[+m.ym.slice(5, 7) - 1]} ${m.ym.slice(0, 4)}` }))
     .sort((a, b) => (a.ym < b.ym ? 1 : -1)); // newest first, like Dhan's table
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics calc layer (Trading Journal → Analytics tab). All pure; the ratios
+// below assume a CONSTANT deployed-capital base passed in by the caller:
+// returns on constant deployed capital (own+client); valid while capital is ~stable — revisit if material flows occur.
+// The caller picks ONE representative figure (current or window-average fundsUsed)
+// and feeds the SAME `capital` to every ratio (incl. returnsPct), no time-weighting.
+// ─────────────────────────────────────────────────────────────────────────────
+const TRADING_DAYS = 252; // annualisation factor for σ / Sharpe / Sortino
+const dayDiff = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
+const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0);
+// sample standard deviation (n−1); 0 for <2 points so callers can guard cleanly.
+const stdev = (a) => {
+  if (a.length < 2) return 0;
+  const m = mean(a);
+  return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1));
+};
+const retVals = (returns) => (returns || []).map((x) => (typeof x === 'number' ? x : x.r));
+
+// Per-strategy day series. S01 = Dhan+Zerodha, S02 = Upstox+Fyers — each fno-ledger
+// row carries its `sleeve`, so just filter then reuse dailySeries. `all` = every broker.
+export function seriesByStrategy(rows) {
+  const bySleeve = (s) => dailySeries((rows || []).filter((r) => r && r.sleeve === s));
+  return { S01: bySleeve('S01'), S02: bySleeve('S02'), all: dailySeries(rows) };
+}
+
+// Return on the constant deployed-capital base (%). null when there's no usable base.
+export function returnsPct(net, deployed) {
+  return deployed > 0 ? r2((net / deployed) * 100) : null;
+}
+
+// Running ₹ cumulative (money-made curve), one point per day, ascending.
+export function cumulative(series) {
+  let c = 0;
+  return (series || []).map((d) => { c += d.net; return { date: d.date, cum: r2(c) }; });
+}
+
+// Daily fractional returns on the constant capital base: r = net / capital.
+export function dailyReturns(series, capital) {
+  if (!(capital > 0)) return [];
+  return (series || []).map((d) => ({ date: d.date, r: d.net / capital }));
+}
+
+// CAGR (%) of equity (= capital + cumulative net) across the series' date span.
+export function cagr(series, capital) {
+  if (!series || series.length < 2 || !(capital > 0)) return null;
+  const endEq = capital + series.reduce((s, d) => s + d.net, 0);
+  if (endEq <= 0) return null;
+  const days = dayDiff(series[0].date, series[series.length - 1].date);
+  if (days <= 0) return null;
+  return r2(((endEq / capital) ** (365 / days) - 1) * 100);
+}
+
+// Annualised volatility (%) of the daily-return stream.
+export function volatility(returns) {
+  return r2(stdev(retVals(returns)) * Math.sqrt(TRADING_DAYS) * 100);
+}
+
+// Sharpe — annualised excess return / annualised σ. rf = annual risk-free (fraction).
+export function sharpe(returns, rf = 0) {
+  const rs = retVals(returns);
+  const sd = stdev(rs);
+  if (sd === 0) return null;
+  return r2((mean(rs) * TRADING_DAYS - rf) / (sd * Math.sqrt(TRADING_DAYS)));
+}
+
+// Sortino — Sharpe with downside deviation (RMS of negative returns over N) as denominator.
+export function sortino(returns, rf = 0) {
+  const rs = retVals(returns);
+  if (rs.length < 2) return null;
+  const dn = rs.filter((x) => x < 0);
+  const dd = dn.length ? Math.sqrt(dn.reduce((s, x) => s + x * x, 0) / rs.length) : 0;
+  if (dd === 0) return null;
+  return r2((mean(rs) * TRADING_DAYS - rf) / (dd * Math.sqrt(TRADING_DAYS)));
+}
+
+// Drawdown over equity = capital + running cum. curve dd ≤ 0 (%). maxDD = worst (most
+// negative), avgDD = mean across the window.
+export function drawdown(series, capital) {
+  const empty = { curve: [], maxDD: 0, avgDD: 0 };
+  if (!series || !series.length || !(capital > 0)) return empty;
+  let c = 0, peak = capital, sum = 0, maxDD = 0;
+  const curve = series.map((d) => {
+    c += d.net;
+    const eq = capital + c;
+    if (eq > peak) peak = eq;
+    const dd = peak > 0 ? ((eq - peak) / peak) * 100 : 0;
+    sum += dd;
+    if (dd < maxDD) maxDD = dd;
+    return { date: d.date, dd: r2(dd) };
+  });
+  return { curve, maxDD: r2(maxDD), avgDD: r2(sum / curve.length) };
+}
+
+// Drawdown episodes — each peak→trough run, with depth (%), trough/recovery dates and
+// recovery days (trough → back-to-peak). Sorted deepest-first. ongoing = unrecovered at end.
+export function drawdownEpisodes(series, capital) {
+  if (!series || !series.length || !(capital > 0)) return [];
+  let c = 0, peak = capital, peakDate = series[0].date, cur = null;
+  const eps = [];
+  for (const d of series) {
+    c += d.net;
+    const eq = capital + c;
+    if (eq >= peak) {
+      if (cur) { cur.recoveryDate = d.date; cur.recoveryDays = dayDiff(cur.troughDate, d.date); cur.ongoing = false; eps.push(cur); cur = null; }
+      peak = eq; peakDate = d.date;
+    } else {
+      const dd = ((eq - peak) / peak) * 100;
+      if (!cur) cur = { peakDate, depth: 0, troughDate: peakDate, recoveryDate: null, recoveryDays: null, ongoing: true };
+      if (dd < cur.depth) { cur.depth = dd; cur.troughDate = d.date; }
+    }
+  }
+  if (cur) eps.push(cur);
+  return eps.map((e) => ({ ...e, depth: r2(e.depth) })).sort((a, b) => a.depth - b.depth);
+}
+
+// Calmar — CAGR / |maxDD| (both already in %, so the ratio is unit-free).
+export function calmar(cagrVal, maxDD) {
+  return cagrVal != null && maxDD < 0 ? r2(cagrVal / Math.abs(maxDD)) : null;
+}
+
+// Beta = cov(r, b) / var(b). returns/bench: equal-ish daily-return arrays (numbers or {r}).
+export function beta(returns, bench) {
+  const r = retVals(returns), b = retVals(bench), n = Math.min(r.length, b.length);
+  if (n < 2) return null;
+  const mr = mean(r.slice(0, n)), mb = mean(b.slice(0, n));
+  let cov = 0, varb = 0;
+  for (let i = 0; i < n; i++) { cov += (r[i] - mr) * (b[i] - mb); varb += (b[i] - mb) ** 2; }
+  return varb === 0 ? null : r2(cov / varb);
+}
+
+// Alpha — annualised (%) excess of the strategy over its beta-implied benchmark return.
+export function alpha(returns, bench, rf = 0) {
+  const be = beta(returns, bench);
+  if (be == null) return null;
+  const r = retVals(returns), b = retVals(bench), n = Math.min(r.length, b.length);
+  const rfD = rf / TRADING_DAYS;
+  const dailyAlpha = (mean(r.slice(0, n)) - rfD) - be * (mean(b.slice(0, n)) - rfD);
+  return r2(dailyAlpha * TRADING_DAYS * 100);
+}
+
+// Best & worst rolling-window net ₹ over `winDays` consecutive trading days.
+export function bestWorstWindows(series, winDays) {
+  if (!series || !series.length) return { best: null, worst: null };
+  const w = Math.max(1, Math.min(winDays, series.length));
+  let best = null, worst = null;
+  for (let i = 0; i + w <= series.length; i++) {
+    const slice = series.slice(i, i + w);
+    const rec = { startDate: slice[0].date, endDate: slice[w - 1].date, ret: r2(slice.reduce((s, d) => s + d.net, 0)) };
+    if (!best || rec.ret > best.ret) best = rec;
+    if (!worst || rec.ret < worst.ret) worst = rec;
+  }
+  return { best, worst };
+}
+
+// Risk:reward — avg winning-day ₹ / avg losing-day ₹ (magnitude). Reads stats from summaryStats.
+export function riskReward(stats) {
+  if (!stats || !stats.winDays || !stats.lossDays) return null;
+  const avgWin = stats.winSum / stats.winDays;
+  const avgLoss = Math.abs(stats.lossSum / stats.lossDays);
+  return avgLoss === 0 ? null : r2(avgWin / avgLoss);
+}
+
+// Trades per trading day.
+export function freqOfTrade(series) {
+  if (!series || !series.length) return 0;
+  return r2(series.reduce((s, d) => s + (d.orders || 0), 0) / series.length);
+}
+
+// Risk-o-meter band from annualised volatility (%), bumped one level on a severe drawdown.
+// Thresholds are a param so they're easy to retune.
+export function riskOMeterBand({ volatility: vol = 0, maxDD = 0 } = {}, t = { low: 15, mod: 25, high: 40 }) {
+  const order = ['Low', 'Moderate', 'Elevated', 'High'];
+  let band = vol < t.low ? 'Low' : vol < t.mod ? 'Moderate' : vol < t.high ? 'Elevated' : 'High';
+  if (Math.abs(maxDD) > 25) band = order[Math.min(order.length - 1, order.indexOf(band) + 1)];
+  return band;
 }

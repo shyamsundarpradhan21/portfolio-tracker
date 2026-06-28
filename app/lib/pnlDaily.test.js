@@ -5,6 +5,9 @@ import { describe, it, expect } from 'vitest';
 import {
   dailySeries, summaryStats, quantileBuckets, monthMatrix, monthlyRollup, fyOf,
   scaleIntraday, scaleCandles, mergeLiveTapes, niftyLevels,
+  seriesByStrategy, returnsPct, cumulative, dailyReturns, cagr, volatility,
+  sharpe, sortino, drawdown, drawdownEpisodes, calmar, beta, alpha,
+  bestWorstWindows, riskReward, freqOfTrade, riskOMeterBand,
 } from './pnlDaily.js';
 
 const rows = [
@@ -248,4 +251,175 @@ describe('niftyLevels — intraday swing S/R (option c)', () => {
     expect(o.resistances.every((l) => l.price > o.last)).toBe(true);
     expect(o.supports.some((l) => Math.abs(l.price - 90) < 0.5)).toBe(true);         // swing low 90
   });
+});
+
+// ── Analytics calc layer (Phase A) ───────────────────────────────────────────
+
+describe('seriesByStrategy — sleeve split + combined', () => {
+  const s = seriesByStrategy(rows);
+  it('S01 = Dhan rows only (3 days), 06-12 is just Dhan (5000)', () => {
+    expect(s.S01.map((d) => d.date)).toEqual(['2026-04-10', '2026-06-12', '2026-06-23']);
+    expect(s.S01.find((d) => d.date === '2026-06-12').net).toBe(5000);
+  });
+  it('S02 = Upstox+Fyers (2 days), 06-12 is just Fyers (47478)', () => {
+    expect(s.S02.map((d) => d.date)).toEqual(['2026-05-12', '2026-06-12']);
+    expect(s.S02.find((d) => d.date === '2026-06-12').net).toBe(47478);
+  });
+  it('all = every broker merged (4 days, 06-12 = 52478)', () => {
+    expect(s.all.length).toBe(4);
+    expect(s.all.find((d) => d.date === '2026-06-12').net).toBe(52478);
+  });
+});
+
+describe('summaryStats — profit factor + win/loss sums', () => {
+  const st = summaryStats(dailySeries(rows));
+  it('winSum = 26584+52478+15714 = 94776, lossSum = -49978', () => {
+    expect(st.winSum).toBe(94776); expect(st.lossSum).toBe(-49978);
+  });
+  it('profitFactor = 94776/49978 ≈ 1.9', () => expect(st.profitFactor).toBe(1.9));
+  it('no losing days → profitFactor null', () => {
+    const w = summaryStats([{ date: '2026-06-01', net: 10, gross: 10, charges: 0, orders: 1 },
+      { date: '2026-06-02', net: 20, gross: 20, charges: 0, orders: 1 }]);
+    expect(w.lossSum).toBe(0); expect(w.profitFactor).toBe(null);
+  });
+  it('empty series → profitFactor null, sums 0', () => {
+    const z = summaryStats([]); expect(z.profitFactor).toBe(null); expect(z.winSum).toBe(0); expect(z.lossSum).toBe(0);
+  });
+});
+
+describe('returnsPct — net over constant deployed base', () => {
+  it('25000 on 100000 deployed = 25%', () => expect(returnsPct(25000, 100000)).toBe(25));
+  it('loss reads negative', () => expect(returnsPct(-5000, 100000)).toBe(-5));
+  it('no base → null', () => { expect(returnsPct(5000, 0)).toBe(null); expect(returnsPct(5000, -1)).toBe(null); });
+});
+
+describe('cumulative — running ₹ curve', () => {
+  const c = cumulative(dailySeries(rows));
+  it('first = first day net, last = total net (44798)', () => {
+    expect(c[0].cum).toBe(-49978); expect(c[c.length - 1].cum).toBe(44798);
+  });
+  it('mid points accumulate (−23394, 29084)', () =>
+    expect(c.map((x) => x.cum)).toEqual([-49978, -23394, 29084, 44798]));
+});
+
+describe('dailyReturns — fractional on constant base', () => {
+  it('r = net / capital', () =>
+    expect(dailyReturns([{ date: 'a', net: 100 }, { date: 'b', net: -50 }], 1000))
+      .toEqual([{ date: 'a', r: 0.1 }, { date: 'b', r: -0.05 }]));
+  it('no capital → []', () => expect(dailyReturns([{ date: 'a', net: 1 }], 0)).toEqual([]));
+});
+
+describe('cagr — annualised equity growth', () => {
+  const s = [{ date: '2025-01-01', net: 1000 }, { date: '2026-01-01', net: 20000 }];
+  it('+21000 on 100000 over 365d → 21%', () => expect(cagr(s, 100000)).toBe(21));
+  it('guards: single point / no capital → null', () => {
+    expect(cagr([{ date: '2025-01-01', net: 1 }], 100000)).toBe(null);
+    expect(cagr(s, 0)).toBe(null);
+  });
+});
+
+describe('volatility / sharpe / sortino', () => {
+  it('volatility of constant returns is 0', () =>
+    expect(volatility([{ r: 0.02 }, { r: 0.02 }, { r: 0.02 }])).toBe(0));
+  it('volatility annualises σ (±1% → ≈18.33%)', () =>
+    expect(volatility([{ r: 0.01 }, { r: -0.01 }, { r: 0.01 }, { r: -0.01 }])).toBeCloseTo(18.33, 1));
+  it('sharpe null on zero variance, positive for positive-mean', () => {
+    expect(sharpe([{ r: 0.01 }, { r: 0.01 }])).toBe(null);
+    expect(sharpe([{ r: 0.01 }, { r: 0.03 }])).toBeGreaterThan(0);
+  });
+  it('sortino null when no negative returns, finite when some', () => {
+    expect(sortino([{ r: 0.01 }, { r: 0.02 }])).toBe(null);
+    expect(sortino([{ r: -0.01 }, { r: 0.03 }])).toBeGreaterThan(0);
+  });
+});
+
+describe('drawdown — underwater depth on equity', () => {
+  const s = [
+    { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: 100 },
+    { date: '2026-01-03', net: -300 }, { date: '2026-01-04', net: -100 },
+    { date: '2026-01-05', net: 500 },
+  ];
+  const dd = drawdown(s, 1000);
+  it('peak 1200 → trough 800 = −33.33% max', () => expect(dd.maxDD).toBe(-33.33));
+  it('day-3 dd = (900−1200)/1200 = −25%', () => expect(dd.curve[2].dd).toBe(-25));
+  it('avgDD over 5 days = −11.67%', () => expect(dd.avgDD).toBe(-11.67));
+  it('no capital → empty', () => expect(drawdown(s, 0)).toEqual({ curve: [], maxDD: 0, avgDD: 0 }));
+});
+
+describe('drawdownEpisodes — peak→trough→recovery', () => {
+  const s = [
+    { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: 100 },
+    { date: '2026-01-03', net: -300 }, { date: '2026-01-04', net: -100 },
+    { date: '2026-01-05', net: 500 },
+  ];
+  const eps = drawdownEpisodes(s, 1000);
+  it('one recovered episode, depth −33.33, trough 01-04, 1 recovery day', () => {
+    expect(eps.length).toBe(1);
+    expect(eps[0].depth).toBe(-33.33);
+    expect(eps[0].troughDate).toBe('2026-01-04');
+    expect(eps[0].recoveryDays).toBe(1);
+    expect(eps[0].ongoing).toBe(false);
+  });
+  it('an unrecovered drawdown is flagged ongoing', () => {
+    const o = drawdownEpisodes([{ date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: -200 }], 1000);
+    expect(o[0].ongoing).toBe(true); expect(o[0].recoveryDays).toBe(null);
+  });
+  it('sorted deepest first', () => {
+    const o = drawdownEpisodes([
+      { date: '2026-01-01', net: 100 }, { date: '2026-01-02', net: -50 }, { date: '2026-01-03', net: 200 },
+      { date: '2026-01-04', net: -400 }, { date: '2026-01-05', net: 600 },
+    ], 1000);
+    expect(o.length).toBe(2);
+    expect(o[0].depth).toBeLessThan(o[1].depth); // most negative first
+  });
+});
+
+describe('calmar', () => {
+  it('CAGR / |maxDD|', () => expect(calmar(45, -15)).toBe(3));
+  it('null when no drawdown or no cagr', () => {
+    expect(calmar(45, 0)).toBe(null); expect(calmar(null, -15)).toBe(null);
+  });
+});
+
+describe('beta / alpha — vs benchmark', () => {
+  const a = [{ r: 0.01 }, { r: 0.02 }, { r: -0.01 }];
+  it('identical series → beta 1, alpha 0', () => {
+    expect(beta(a, a)).toBe(1); expect(alpha(a, a)).toBe(0);
+  });
+  it('returns = 2× bench → beta 2, alpha 0', () => {
+    const two = a.map((x) => ({ r: x.r * 2 }));
+    expect(beta(two, a)).toBe(2); expect(alpha(two, a)).toBe(0);
+  });
+  it('null with <2 aligned points', () => expect(beta([{ r: 0.01 }], a)).toBe(null));
+});
+
+describe('bestWorstWindows — rolling net over a window', () => {
+  const s = [
+    { date: 'd1', net: 10 }, { date: 'd2', net: -5 }, { date: 'd3', net: 20 },
+    { date: 'd4', net: -30 }, { date: 'd5', net: 15 },
+  ];
+  const bw = bestWorstWindows(s, 2);
+  it('best 2-day window = d2→d3 (+15)', () => {
+    expect(bw.best.ret).toBe(15); expect(bw.best.startDate).toBe('d2'); expect(bw.best.endDate).toBe('d3');
+  });
+  it('worst 2-day window = d4→d5 (−15)', () => {
+    expect(bw.worst.ret).toBe(-15); expect(bw.worst.startDate).toBe('d4'); expect(bw.worst.endDate).toBe('d5');
+  });
+});
+
+describe('riskReward / freqOfTrade / riskOMeterBand', () => {
+  const st = summaryStats(dailySeries(rows));
+  it('riskReward = avgWin/avgLoss = 31592/49978 ≈ 0.63', () => expect(riskReward(st)).toBe(0.63));
+  it('riskReward null with no losing days', () =>
+    expect(riskReward({ winDays: 2, lossDays: 0, winSum: 100, lossSum: 0 })).toBe(null));
+  it('freqOfTrade = 207 orders / 4 days = 51.75', () => expect(freqOfTrade(dailySeries(rows))).toBe(51.75));
+  it('freqOfTrade empty → 0', () => expect(freqOfTrade([])).toBe(0));
+  it('risk-o-meter bands by volatility', () => {
+    expect(riskOMeterBand({ volatility: 10 })).toBe('Low');
+    expect(riskOMeterBand({ volatility: 20 })).toBe('Moderate');
+    expect(riskOMeterBand({ volatility: 30 })).toBe('Elevated');
+    expect(riskOMeterBand({ volatility: 50 })).toBe('High');
+  });
+  it('a severe drawdown bumps the band up one level', () =>
+    expect(riskOMeterBand({ volatility: 20, maxDD: -30 })).toBe('Elevated'));
 });

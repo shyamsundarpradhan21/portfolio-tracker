@@ -133,3 +133,60 @@ Key lessons recorded in `feedback.md`: never server-side self-fetch a sibling AP
 - --fs-* tokens only; private data server-side only (no deposit ledger in client bundle);
   two revertible commits (server then client); commit to current branch; no footnote;
   don't touch the certified Net-worth/value path; lift the counterfactual, don't reinvent.
+
+---
+
+# Algo Tab → "Trading Journal" redesign (STEP 2 — implementation plan, AWAITING APPROVAL)
+
+STEP 1 done: metric audit + render-mock approved across all 4 sub-tabs.
+Mock: `audit/responsive/algo-journal-mock.html` (gitignored). IA = 4 sub-tabs:
+Overview · Summary · Review · Analytics. This plan implements it for real. NOT started.
+
+## Decisions locked (from STEP 1)
+- Returns % denominator = **deployed (utilised) capital** (`fnoLive().byStrategy.*.fundsUsed`).
+- Least Profitable Day already exists (`summaryStats.leastProfit`) — just surface it.
+- Profit Factor = Σ(win-day net) / |Σ(loss-day net)| — NEW in summaryStats.
+- F&O Realised table is broker-wise (broker × FY net + all-time + charges + days).
+- Analytics = cumulative curve (S01/S02/Overall vs Nifty) · Performance (Cum Return, CAGR)
+  · Best-vs-Worst duration · Key Metrics table · Efficiency Ratios table · Worst-5 DD · Underwater.
+
+## Phase A — pure calc layer (`app/lib/pnlDaily.js` + tests first) — commit 1
+- [ ] `seriesByStrategy(rows)` — split `dailySeries` per sleeve (S01=Dhan+Zerodha, S02=Upstox+Fyers) + combined.
+- [ ] Extend `summaryStats`: add `profitFactor`, `winSum`, `lossSum` (sum of +/− day nets).
+- [ ] `returnsPct(net, deployed)` — net ÷ utilised capital.
+- [ ] `equityCurve(series)` — cumulative net, rebased to 0 per window; window slice 1M/3M/6M/Max.
+- [ ] `cagr(series)`, `volatility(series)` (annualised σ of daily returns).
+- [ ] `drawdownSeries(series)` → underwater %; `drawdownEpisodes(series)` → worst-N {depth, peak, trough, recoveryDays}; `maxDrawdown`, `avgDrawdown`.
+- [ ] `bestWorstWindows(series, win)` — strongest/weakest rolling window curves.
+- [ ] `sharpe`, `sortino`, `calmar`, `alpha`, `beta` (vs benchmark daily returns).
+- [ ] `riskReward(stats)`, `freqOfTrade(series, orders)`, `successRatio` (=winPct), `riskOMeterBand()` → Low/Moderate/Elevated/High.
+- [ ] Extend `app/lib/pnlDaily.test.js` — one case per new fn (edge: empty, single day, all-wins, all-loss, flat).
+
+## Phase B — benchmark data (daily NIFTY 50) — commit 1 (same)
+- [ ] Decide source: `app/lib/yahooHistory.js` daily ^NSEI close over window (already have intraday `nifty-ohlc.json`; analytics needs *daily* closes). Confirm route vs build-time.
+- [ ] Expose a daily Nifty close→returns series to the client for alpha/beta/benchmark curve
+      (public market data, so a cached `s-maxage` route is fine — NOT force-dynamic).
+
+## Phase C — components — commit 2
+- [ ] `AlgoTab.js`: top-level 4 sub-tab segmented control (persisted to localStorage), accent per tab.
+- [ ] **Overview**: reuse existing `PnlDashboard` (Day/Month/Year/All + IntradayChart already built) + the 6-card statgrid (add Profit Factor, Returns%, surface Least-Profitable). Header capital line stays.
+- [ ] **Summary**: F&O Positions (broker split: utilised/available from `fnoLive().brokers[].funds`) + broker-wise F&O Realised (from `fnoRealized`/ledger by broker×FY).
+- [ ] **Review**: cadence segmented control (W/M/Q/SA/A) + AnalysisCard wired to `insights.trading` scoped to the window (placeholder copy until insights feed extended).
+- [ ] **Analytics**: new `AnalyticsTab.js` — cumulative multi-line curve (reuse PerformanceCurve/scaleLines chrome), best-vs-worst, underwater, Key-Metrics table, Efficiency-Ratios table, Worst-5 DD table. Period (1M/3M/6M/Max) + Overall/S01/S02 toggles drive the slice.
+- [ ] Wire props in `app/page.js` (pass benchmark series + existing FY/ALGO/fno props).
+
+## Phase D — verify — before "done"
+- [ ] `npm test` green (pnlDaily.test.js).
+- [ ] Live render-verify in the running app (real ledger data) — figures sane vs current AlgoTab.
+- [ ] `node audit/responsive/certify.mjs` GREEN normal + stress (layout/CSS change → mandatory gate).
+- [ ] reviewer pass on the diff; then commit to current branch.
+
+## Open questions before coding
+- Benchmark: build-time committed daily Nifty series vs a cached route? (leaning cached route)
+- Per-strategy equity needs each ledger row's sleeve — confirm `fno-ledger.json` rows carry `sleeve` (S01/S02) for ALL brokers, else map broker→sleeve.
+- Risk-o-meter band thresholds (what σ / drawdown → Low/Moderate/Elevated/High)?
+
+## Constraints
+- --fs-* tokens only; colour-only direction (no +/− glyphs in figures); both themes; certify-gated.
+- Pure calc in `pnlDaily.js` (no JSX); private data rules unchanged; commit to current branch.
+- Reuse existing chrome (PnlDashboard, IntradayChart, PerformanceCurve, .statgrid, .tbl) — don't reinvent.
