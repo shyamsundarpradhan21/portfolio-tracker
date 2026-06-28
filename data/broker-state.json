@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-28T06:00:02+05:30",
+  "syncedAt": "2026-06-28T11:48:55+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -11,8 +11,8 @@
       "note": ""
     },
     "fyers": {
-      "ok": false,
-      "note": "funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"}"
+      "ok": true,
+      "note": ""
     },
     "kite": {
       "ok": true,
@@ -22,16 +22,8 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-28T06:00:15+05:30",
+      "syncedAt": "2026-06-28T11:48:56+05:30",
       "rows": [
-        {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86,
-          "ltp": 1453.1,
-          "pnl": 3729.95,
-          "dayPct": -0.08
-        },
         {
           "sym": "BANKBARODA",
           "qty": 28,
@@ -49,6 +41,14 @@
           "dayPct": -0.62
         },
         {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5,
+          "ltp": 342.45,
+          "pnl": -1021,
+          "dayPct": -1.07
+        },
+        {
           "sym": "AVANTEL",
           "qty": 52,
           "avg": 153.04,
@@ -57,12 +57,12 @@
           "dayPct": 1.01
         },
         {
-          "sym": "HAPPSTMNDS",
-          "qty": 20,
-          "avg": 393.5,
-          "ltp": 342.45,
-          "pnl": -1021,
-          "dayPct": -1.07
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86,
+          "ltp": 1453.1,
+          "pnl": 3729.95,
+          "dayPct": -0.08
         }
       ]
     },
@@ -196,12 +196,12 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-28T06:00:16+05:30",
+      "syncedAt": "2026-06-28T11:48:56+05:30",
       "rows": []
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-06-28T06:00:15+05:30",
+      "syncedAt": "2026-06-28T11:48:56+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL300PE",
@@ -229,7 +229,7 @@
     },
     "FYERS_FNO": {
       "source": "Fyers",
-      "syncedAt": "2026-06-24T07:10:27+05:30",
+      "syncedAt": "2026-06-28T11:48:56+05:30",
       "rows": []
     }
   },

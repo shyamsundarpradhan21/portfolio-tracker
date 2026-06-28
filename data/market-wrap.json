@@ -1,75 +1,75 @@
 {
   "note": "NSE market wrap from Fyers index quotes (laptop token). day pct = Fyers chp. Non-personal; safe to commit.",
-  "asOf": "2026-06-24T07:10:28+05:30",
-  "capturedAt": "2026-06-24T07:10:28+05:30",
+  "asOf": "2026-06-28T11:48:57+05:30",
+  "capturedAt": "2026-06-28T11:48:57+05:30",
   "source": "Fyers · NSE indices",
   "nifty": {
-    "last": 23824.1,
-    "prevClose": 24102.9,
-    "pct": -1.16
+    "last": 24056,
+    "prevClose": 24021.65,
+    "pct": 0.14
   },
   "vix": {
-    "last": 13.94,
-    "prevClose": 12.84,
-    "change": 1.1,
-    "pct": 8.57,
-    "high": 14.24,
+    "last": 13.05,
+    "prevClose": 13.39,
+    "change": -0.34,
+    "pct": -2.54,
+    "high": 13.38,
     "low": 12.43
   },
   "sectors": [
     {
       "name": "Metal",
-      "pct": -3.22
+      "pct": -1.37
     },
     {
       "name": "IT",
-      "pct": -2.23
-    },
-    {
-      "name": "PSU Bank",
-      "pct": -1.97
-    },
-    {
-      "name": "Bank",
-      "pct": -1.3
+      "pct": -0.86
     },
     {
       "name": "Energy",
-      "pct": -1.24
-    },
-    {
-      "name": "Realty",
-      "pct": -1.12
-    },
-    {
-      "name": "Auto",
-      "pct": -0.77
-    },
-    {
-      "name": "FMCG",
-      "pct": -0.6
+      "pct": -0.68
     },
     {
       "name": "Pharma",
-      "pct": 0.92
+      "pct": -0.2
+    },
+    {
+      "name": "Bank",
+      "pct": 0.05
+    },
+    {
+      "name": "PSU Bank",
+      "pct": 0.09
+    },
+    {
+      "name": "Realty",
+      "pct": 0.33
+    },
+    {
+      "name": "FMCG",
+      "pct": 0.68
+    },
+    {
+      "name": "Auto",
+      "pct": 2.25
     }
   ],
   "breadth": [
     {
       "name": "Nifty 50",
-      "pct": -1.16
+      "pct": 0.14
     },
     {
       "name": "Nifty 500",
-      "pct": -1.08
+      "pct": -0.05
     },
     {
       "name": "Midcap 100",
-      "pct": -1.05
+      "pct": -0.55
     },
     {
       "name": "Smallcap 100",
-      "pct": -0.48
+      "pct": -0.47
     }
   ]
 }
