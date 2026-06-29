@@ -59,6 +59,7 @@ export default function GrowthView({ fx }) {
   const [compare, setCompare] = useState(['nifty']);
   const [data, setData] = useState(null);      // { points, available }
   const [ownTape, setOwnTape] = useState([]);   // 1D only: merged intraday own P&L
+  const [hovF, setHovF] = useState(null);       // hovered x-fraction → value readout per series
 
   // server data per range (own line for 1M+, bench counterfactuals for all)
   useEffect(() => {
@@ -150,6 +151,18 @@ export default function GrowthView({ fx }) {
   const endVal = (s) => s.pts[s.pts.length - 1].v;
   const ownFill = own ? `${toPath(own)} L${X(own.pts[own.pts.length - 1].x).toFixed(1)},${Y(0).toFixed(1)} L${X(own.pts[0].x).toFixed(1)},${Y(0).toFixed(1)} Z` : '';
 
+  // Hover: nearest point per series at the cursor fraction → vertical cursor + a value card
+  // (each row in its series colour, value coloured by direction). Direction = colour, no glyph.
+  const hovPts = hovF == null ? null : series.map((s) => {
+    let best = s.pts[0];
+    for (const p of s.pts) if (Math.abs(p.x - hovF) < Math.abs(best.x - hovF)) best = p;
+    return { key: s.key, label: s.label, color: s.color, v: best.v, x: best.x };
+  });
+  const hovX = hovF == null ? 0 : X(hovF);
+  const hovLeftPct = (hovX / W) * 100;
+  const hovFlip = hovX > W * 0.5;
+  const dirCol = (v) => (cls(v) === 'up' ? 'var(--grn)' : cls(v) === 'dn' ? 'var(--red)' : 'var(--txt)');
+
   return (
     <div style={{ marginTop: 10 }}>
       {/* window + compare chips */}
@@ -174,7 +187,10 @@ export default function GrowthView({ fx }) {
         <span className="pjx-perf-beat" style={{ color: 'var(--txt3)' }}>{is1D ? 'today · live' : 'money made vs the same rupees in the index'}</span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      <div style={{ position: 'relative' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}
+        onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W; setHovF(Math.max(0, Math.min(1, (px - PADL) / (W - PADL - PADR)))); }}
+        onMouseLeave={() => setHovF(null)}>
         <defs>
           <linearGradient id="gv-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--acc)" stopOpacity=".18" />
@@ -194,9 +210,28 @@ export default function GrowthView({ fx }) {
         ))}
         {own && <path d={toPath(own)} fill="none" stroke="var(--acc)" strokeWidth="2.6" strokeLinejoin="round" />}
         {own && <circle cx={X(own.pts[own.pts.length - 1].x)} cy={Y(endVal(own))} r="4" fill="var(--acc)" />}
+        {/* hover cursor + per-series dots (the value card is the HTML overlay below) */}
+        {hovPts && (
+          <g>
+            <line x1={hovX} y1={PADT} x2={hovX} y2={H - PADB} stroke="var(--txt3)" strokeWidth=".7" opacity=".5" />
+            {hovPts.map((h) => <circle key={h.key} cx={X(h.x)} cy={Y(h.v)} r="3.5" fill={h.color} />)}
+          </g>
+        )}
         <text x={PADL} y={H - 5} fontSize="15" fill="var(--txt3)" fontFamily="var(--mono)">{xLabels[0]}</text>
         <text x={W - PADR} y={H - 5} fontSize="15" fill="var(--acc)" fontWeight="700" textAnchor="end" fontFamily="var(--mono)">{xLabels[1]}</text>
       </svg>
+
+      {hovPts && (
+        <div className="iq-tip" style={{ left: `${hovLeftPct}%`, transform: hovFlip ? 'translateX(calc(-100% - 12px))' : 'translateX(12px)' }}>
+          {hovPts.map((h) => (
+            <div key={h.key} className="iq-r">
+              <span className="iq-l" style={{ color: h.color, fontWeight: 600 }}>{h.label}</span>
+              <span className="iq-v" style={{ color: dirCol(h.v) }}><span className="rs">₹</span>{crAbs(h.v).slice(1)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      </div>
     </div>
   );
 }
