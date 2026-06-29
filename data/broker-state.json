@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-29T18:30:00+05:30",
+  "syncedAt": "2026-06-29T18:46:02+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -196,7 +196,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-29T18:30:12+05:30",
+      "syncedAt": "2026-06-29T18:46:17+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jun2026-24450-CE",
