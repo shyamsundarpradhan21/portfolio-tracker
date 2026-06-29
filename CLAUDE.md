@@ -10,8 +10,7 @@ for lessons; there is no separate lessons file, and don't rely on chat memory.
 Pinpointing order: (1) Serena MCP semantic tools (`find_symbol`, `find_referencing_symbols`,
 `get_symbols_overview`) when the server is up — symbol-level, always current; (2) grep
 `code-index.tsv` (symbol→`path:line`, ~1.2k symbols, regen with `npm run index` after
-structural changes, e.g. `grep -P "^captureTick\t" code-index.tsv`); (3) `.graphify/` if
-present (cloud sessions only); (4) this map is the human-readable fallback.
+structural changes, e.g. `grep -P "^captureTick\t" code-index.tsv`); (3) this map is the human-readable fallback.
 
 - `app/` — Next.js 14 app-router frontend. `app/api/*/route.js` = API routes (`force-dynamic` for private data); `app/components/{tabs,shared}/`; `app/lib/` = pure logic (`fmt.js`, etc., no JSX); `app/globals.css`; `app/portfolio.js` = private-data accessor (post-gate reads only).
 - `scripts/` — Node (`.mjs`) + Python (`.py`) sync/capture pipeline. Entry points: `sync-brokers.mjs` (broker pull), `capture-daemon.mjs` (always-on intraday capture), `seed-portfolio-kv.mjs` (KV seed), `backfill-*.mjs`. `.cmd` / `.ps1` = Windows Task Scheduler wrappers (the "hands-free" layer). `scripts/lib/` = shared helpers. `scripts/*.log` = runtime output, NOT source.
@@ -83,12 +82,4 @@ If something goes sideways mid-task, STOP and re-plan rather than pushing throug
 Fan out to subagents ONLY for genuinely independent, parallel research/exploration that
 would otherwise clog the main context — not for work a single pass handles. Launch the
 whole team in one message so they run concurrently; relay what matters back, since their
-output returns to you, not the user. For codebase/architecture questions, try
-`graphify query`/`path`/`explain` before sending an agent to grep.
-
-## graphify
-
-Knowledge graph at `.graphify/`.
-- For architecture questions: run `graphify query "<q>"` / `path "<A>" "<B>"` / `explain "<concept>"` (scoped subgraph) before reading `GRAPH_REPORT.md` or grepping. If `.graphify/wiki/index.md` exists, navigate it.
-- **NEVER `npx graphify`.** graphify is a local-only PATH binary (gitignored, not on npm); `npx graphify` resolves to an UNRELATED public package ("RGG / Random Graph Generator") and would download + execute foreign code. Always guard the real binary: `command -v graphify >/dev/null && graphify <cmd>`. Not on PATH → skip silently (fresh clone with no graph to update).
-- After code changes (only if installed): `command -v graphify >/dev/null && graphify hook-rebuild`. Before committing artifacts: `graphify portable-check .graphify`; commit only the portable artifacts (`graph.json`, `GRAPH_REPORT.md`, `wiki/`) with repo-relative paths; never commit `branch.json`, `worktree.json`, `needs_update`, or `cache/`.
+output returns to you, not the user.
