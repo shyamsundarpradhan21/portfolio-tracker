@@ -26,7 +26,7 @@ const BENCH = {
   gold:    { label: 'Gold',     color: '#D4AF37' },
 };
 const BENCH_ORDER = ['nifty', 'nasdaq', 'china', 'germany', 'uk', 'crypto', 'gold'];
-const RANGES = [['1D', '1D'], ['1M', '1M'], ['6M', '6M'], ['1Y', '1Y'], ['Max', 'max']];
+const RANGES = [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['Max', 'max']];
 
 // ₹ helpers (mirror ProjectionTab / GrowthCurve). Figures are UNSIGNED — direction is by
 // colour (.up/.dn), never a +/- glyph. Axis tick labels keep a sign (it's a scale).
@@ -54,8 +54,13 @@ const cls = (v) => (v == null || !isFinite(v) ? '' : v >= 0 ? 'up' : 'dn');
 const sessionIstIso = () => { const d = new Date(Date.now() + 5.5 * 3600 * 1000); if (d.getUTCHours() < 6) d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
 const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
 
-export default function GrowthView({ fx }) {
-  const [range, setRange] = useState('max');
+// `range`/`setRange` are optional controlled props — when ProjectionTab passes them, the one
+// shared window selector drives both Net worth and Growth (so the two pickers can't conflate);
+// absent, GrowthView falls back to its own state.
+export default function GrowthView({ fx, range: rangeProp, setRange: setRangeProp }) {
+  const [rangeState, setRangeState] = useState('max');
+  const range = rangeProp ?? rangeState;
+  const setRange = setRangeProp || setRangeState;
   const [compare, setCompare] = useState(['nifty']);
   const [data, setData] = useState(null);      // { points, available }
   const [ownTape, setOwnTape] = useState([]);   // 1D only: merged intraday own P&L

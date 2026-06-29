@@ -54,9 +54,11 @@ function useScHex() {
   }, []);
   return hex;
 }
+// One shared window vocabulary across Net worth + Growth (keys match GrowthView's so the
+// selected range carries across the toggle and means the same thing): 1M·3M·6M·1Y·Max.
 const RANGES = [
-  { key: 'D', days: 1 }, { key: 'W', days: 7 }, { key: 'M', days: 30 },
-  { key: 'Y', days: 365 }, { key: 'Max', days: null },
+  { key: '1M', days: 30 }, { key: '3M', days: 91 }, { key: '6M', days: 182 },
+  { key: '1Y', days: 365 }, { key: 'max', days: null },
 ];
 // Celebratory net-worth ladder — each round number the journey crosses earns a
 // star on the curve (1L, 10L, 50L, 1Cr, 5Cr, 10Cr, 50Cr, 100Cr). Levels behind
@@ -245,7 +247,7 @@ function Waffle({ parts, n = 10 }) {
 function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
-  const [range, setRange] = useState('Max');
+  const [range, setRange] = useState('max');
   // 'value' = net-worth growth + projection scrubber; 'growth' = ₹ money-made curve vs a
   // same-dated-rupees benchmark counterfactual (GrowthView), windowed 1D…Max.
   const [view, setView] = useState('value');
@@ -399,9 +401,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       }
       // MAX = all-time gain across every sleeve (= the MAX waffle); no inception
       // snapshot needed and CMPF/FD interest is counted like any other appreciation.
-      if (r.key === 'Max' && totalGains != null) {
+      if (r.key === 'max' && totalGains != null) {
         const base = liveNw - totalGains;
-        return { key: 'Max', chg: totalGains, pct: base > 0 ? (totalGains / base) * 100 : 0 };
+        return { key: 'max', chg: totalGains, pct: base > 0 ? (totalGains / base) * 100 : 0 };
       }
       let ref = hist[0];
       if (r.days != null) {
@@ -460,7 +462,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       for (const r of RANGES) {
         if (r.key === 'D') continue;
         const gains = {};
-        if (r.key === 'Max') {
+        if (r.key === 'max') {
           // ALL-TIME gain per sleeve = current value − current cost basis. The basis
           // already encodes the whole-history market gain, so MAX needs no inception
           // snapshot (per-sleeve `sl` doesn't reach back that far) and the parts sum to
@@ -563,7 +565,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   // The shorter ranges (D/W/M/Y) instead frame the VISIBLE window so the
   // day/week/month move actually has vertical room and isn't a flat sliver
   // pinned to the top of a 0→₹20L scale.
-  const zeroBase = scrubbing || range === 'Max';
+  const zeroBase = scrubbing || range === 'max';
   const seriesHi = Math.max(
     1, liveNw,
     ...pts.map((s) => Math.max(s.nw ?? 0, s.invested ?? 0)),
@@ -637,7 +639,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   const retireYr   = (ms(retireIso) - ms(lastH.d)) / YEAR_MS;
   const showRetire = scrubbing && t >= retireYr - 0.01 && retireYr > 0;
 
-  const maxRow   = growth.find((g) => g.key === 'Max');
+  const maxRow   = growth.find((g) => g.key === 'max');
   // Lifetime gains = the same all-time per-sleeve sum the MAX pill uses (CMPF/FD
   // interest included); deployed is then NW − gains so the decomposition always closes.
   const histGains = totalGains != null ? totalGains : liveNw - (lastH.invested ?? model.inv0);
@@ -696,7 +698,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           scrubber, so toggling never jumps the card. Charts are identical size. */}
       <div className="pjx-chartswap">
       <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'visible' : 'hidden' }} aria-hidden={view !== 'growth'}>
-        <GrowthView fx={fx} />
+        <GrowthView fx={fx} range={range} setRange={setRange} />
       </div>
       <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'hidden' : 'visible' }} aria-hidden={view === 'growth'}>
       <div style={{ position: 'relative', marginTop: 10 }}>
@@ -966,7 +968,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           {growth.map((g) => (
             <button key={g.key} className={'pjx-gcell' + (range === g.key ? ' on' : '')} tabIndex={scrubbing ? -1 : 0}
               onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
-              <span className="pjx-gk">{g.key === 'Max' ? 'MAX' : { D: 'DAY', W: 'WEEK', M: 'MONTH', Y: 'YEAR' }[g.key]}</span>
+              <span className="pjx-gk">{g.key === 'max' ? 'MAX' : g.key}</span>
               {/* deltas against live NW are meaningless while a sleeve is unpriced */}
               {dataReady ? (
                 /* value + % on one line — % rides adjacent in a mini font; +/- figures
@@ -975,7 +977,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                 <span className="pjx-gvrow">
                   <span className={'pjx-gv mono ' + (g.chg >= 0 ? 'up' : 'dn')}><Crs n={g.chg} /></span>
                   <span className={'pjx-gp mono ' + (g.chg >= 0 ? 'up' : 'dn')}>
-                    {g.key === 'Max' && xirrPct != null ? `${xirrPct}%` : `${Math.abs(g.pct).toFixed(2)}%`}
+                    {g.key === 'max' && xirrPct != null ? `${xirrPct}%` : `${Math.abs(g.pct).toFixed(2)}%`}
                   </span>
                 </span>
               ) : (

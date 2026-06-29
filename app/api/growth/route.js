@@ -87,7 +87,7 @@ const BENCHMARKS = [
 // Own line sums these sleeves' daily net; CMPF (pension) is EXCLUDED — its accrual isn't
 // investment performance and its corpus would swamp the curve (see the Perf-curve note).
 const INVEST_SLEEVES = ['eq', 'us', 'fd', 'mf'];
-const GROWTH_DAYS = { '1M': 30, '6M': 182, '1Y': 365 };
+const GROWTH_DAYS = { '1M': 30, '3M': 91, '6M': 182, '1Y': 365 };
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 
 async function fetchSnapshots() {
@@ -183,7 +183,7 @@ export async function GET(req) {
 
   // ── Growth view: money made (deposits stripped) + ₹ benchmark counterfactual ──
   if (params.get('view') === 'growth') {
-    const range = ['1D', '1M', '6M', '1Y', 'max'].includes(params.get('range')) ? params.get('range') : 'max';
+    const range = ['1D', '1M', '3M', '6M', '1Y', 'max'].includes(params.get('range')) ? params.get('range') : 'max';
     const fx = Math.max(1, parseFloat(params.get('fx')) || 88);
     const json = (body) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 
