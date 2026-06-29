@@ -124,3 +124,6 @@ login-*.png
 # responsive-audit artifacts that render REAL private portfolio figures — never commit
 /audit/responsive/shots/
 /audit/responsive/*-mock.html
+
+# Held basket (personal: which algos the user runs)
+/data/held-algos.json
