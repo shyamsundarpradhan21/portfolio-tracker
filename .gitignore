@@ -48,6 +48,13 @@
 # Local dev + the KV seed read this; the deployed app reads KV. .example is committed.
 /data/portfolio.private.json
 
+# Track B Dhan-Algos catalog research feed — reproducible (browser-harvest → importer)
+# and published to KV `algo-catalog:v1`. Large (per-algo correlation matrices) and
+# regenerated monthly, so kept out of git: raw harvest, paste fallback, and the snapshot.
+/data/algo-catalog.raw.json
+/data/algo-catalog.paste.csv
+/data/algo-catalog.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
