@@ -1,13 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { cl, SInrF, RsText } from '../../lib/fmt';
-import { LiveSInrF } from '../shared/Live';
+import { SInrF, RsText } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
 import FnoSummary from '../shared/FnoSummary';
 import PnlDashboard from '../shared/PnlDashboard';
 import AnalyticsTab from '../shared/AnalyticsTab';
-import Skel from '../shared/Skel';
 import { fnoLive } from '../../lib/brokerState';
 
 const SUBTABS = [['overview', 'Overview'], ['summary', 'Summary'], ['review', 'Review'], ['analytics', 'Analytics']];
@@ -17,7 +15,6 @@ const CADENCES = ['Weekly', 'Monthly', 'Quarterly', 'Semi-Annual', 'Annual'];
 const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
 
 export default function AlgoTab({
-  ytdTotal,
   insights, insightsOn, insightsFirstLoad,
   ALGO, FY,
 }) {
@@ -76,23 +73,6 @@ export default function AlgoTab({
             capital={dep.any
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
               : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
-            summary={(
-              <div className="pnl-sumrow">
-                <div className="csm">
-                  <div className="lbl">{FY.labels.verifiedLong}</div>
-                  <div className={'vmd ' + cl(FY.combinedVerified.net)}><SInrF n={FY.combinedVerified.net} /></div>
-                  <div className="sub">net realised · ITR-verified</div>
-                </div>
-                <div className="csm">
-                  <div className="lbl">{FY.labels.current} YTD</div>
-                  <div className={'vmd ' + (ytdTotal != null ? cl(ytdTotal) : '')}>{ytdTotal != null ? <LiveSInrF n={ytdTotal} /> : <Skel w={90} h={15} />}</div>
-                  <div className="sub">
-                    S01 <span className={cl(FY.s01.current.net)}><SInrF n={FY.s01.current.net} /></span> ·{' '}
-                    S02 <span className={cl(FY.s02.current.net)}><SInrF n={FY.s02.current.net} /></span>
-                  </div>
-                </div>
-              </div>
-            )}
           />
         </div>
       )}

@@ -425,23 +425,15 @@ function Legend() {
   );
 }
 
-// Win rate — the donut ring (with its centre %), which TOGGLES to a big bare % on hover
-// (pointer devices) or tap (touch/tablet, which can't hover). Footers label the win/loss
-// counts that drive the %. Cross-fade respects prefers-reduced-motion (CSS-gated).
+// Win rate — % reads as a left-aligned value like every other stat card; the donut ring is
+// a small accent tucked in the card's top corner. Footers label the win/loss counts that
+// drive the %. (winPct is a rate, not a gain/loss — neutral colour, no direction class.)
 function WinRateStat({ stats }) {
-  const [flip, setFlip] = useState(false);
-  const [hover, setHover] = useState(false);
-  const bare = hover || flip;
   return (
-    <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
+    <div className="pnl-stat" style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Win rate</div>
-      <button type="button" className="pnl-wr" aria-pressed={bare}
-        aria-label={`Win rate ${stats.winPct}% — ${stats.winDays} wins, ${stats.lossDays} losses. Tap to toggle the percentage.`}
-        onClick={() => setFlip((f) => !f)}
-        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        <span className="pnl-wr-face" style={{ opacity: bare ? 0 : 1 }}><Donut pct={stats.winPct} size="100%" showPct /></span>
-        <span className="pnl-wr-face pnl-wr-pct" style={{ opacity: bare ? 1 : 0 }}>{stats.winPct}%</span>
-      </button>
+      <div className="vmd" style={{ marginTop: 5 }}>{stats.winPct}%</div>
+      <span className="pnl-wr-corner" aria-hidden="true"><Donut pct={stats.winPct} size="100%" /></span>
       {/* labelled win / loss counts (colour-coded) — they feed the % above */}
       <div className="fxc sub pnl-wr-foot">
         <span className="grn" style={{ fontWeight: 700 }}>Wins {stats.winDays}</span>
@@ -457,10 +449,10 @@ function MostLeastStat({ stats }) {
   return (
     <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Most / Least profitable day</div>
-      <div className="vmd" title={[m && `most ${sFull(m.net)}`, l && `least ${sFull(l.net)}`].filter(Boolean).join(' · ')} style={{ marginTop: 5 }}>
-        {m ? <span className={cl(m.net)}><SInrC n={m.net} /></span> : '—'}
-        <span style={{ color: 'var(--txt3)' }}> / </span>
-        {l ? <span className={cl(l.net)}><SInrC n={l.net} /></span> : '—'}
+      {/* most (left) ↔ least (right) — split by alignment, not a "/" separator, mirroring the dates below */}
+      <div className="vmd" title={[m && `most ${sFull(m.net)}`, l && `least ${sFull(l.net)}`].filter(Boolean).join(' · ')} style={{ marginTop: 5, display: 'flex', justifyContent: 'space-between', gap: 14 }}>
+        <span className={m ? cl(m.net) : ''}>{m ? <SInrC n={m.net} /> : '—'}</span>
+        <span className={l ? cl(l.net) : ''}>{l ? <SInrC n={l.net} /> : '—'}</span>
       </div>
       <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}>
         <span>{m ? prettyDate(m.date) : '—'}</span><span>{l ? prettyDate(l.date) : '—'}</span>

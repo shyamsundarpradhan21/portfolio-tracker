@@ -2090,14 +2090,9 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 /* stat-card footers ("chips": used/free · Gross/Charges · wins/losses · date · streak/now) —
    one uniform, legible size across every chip (colour/weight still encode direction). */
 .pnl-stat .sub { font-size: var(--fs-sm); }
-/* win-rate: donut ↔ bare % cross-fade, hover (pointer) or tap (touch/tablet); reduced-motion-safe */
-.pnl-wr { position: relative; width: 3.2rem; height: 3.2rem; margin: 4px auto 0; padding: 0;
-  background: none; border: none; cursor: pointer; flex-shrink: 0; }
-.pnl-wr-face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  transition: opacity .18s var(--ease); }
-.pnl-wr-pct { font-family: var(--mono); font-weight: 800; font-size: var(--fs-2xl); color: var(--txt); letter-spacing: -.02em; }
+/* win-rate: % reads as the left-aligned value (.vmd); the donut ring is a small corner accent */
+.pnl-wr-corner { position: absolute; top: 11px; right: 14px; width: 30px; height: 30px; pointer-events: none; opacity: .9; }
 .pnl-wr-foot { margin-top: 8px; padding-top: 0; }
-@media (prefers-reduced-motion: reduce) { .pnl-wr-face { transition: none; } }
 .pnl-periodbar { padding: 14px 20px 10px; flex-wrap: wrap; gap: 10px; }
 .pnl-nav { width: 26px; height: 26px; border: .5px solid var(--brd); border-radius: 7px;
   background: none; color: var(--txt2); cursor: pointer; font-size: var(--fs-md); line-height: 1; }
