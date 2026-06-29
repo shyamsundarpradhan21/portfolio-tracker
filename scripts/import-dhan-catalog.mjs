@@ -10,14 +10,18 @@
 //   node scripts/import-dhan-catalog.mjs                         # auto: harvest file else paste
 //   node scripts/import-dhan-catalog.mjs --harvest path.json     # force harvest source
 //   node scripts/import-dhan-catalog.mjs --paste path.csv        # force paste source
+//   node scripts/import-dhan-catalog.mjs --styles "Hedged Options,Naked Option Buying"  # scope by style
 //   node scripts/import-dhan-catalog.mjs --dry                   # normalize + write file, skip KV
 //
-// HOW TO HARVEST (monthly, ~2 min): log in at https://algos.dhan.co/all-algos, open
-// DevTools console, and run the snippet in scripts/lib/dhan-harvest.snippet.js — it
-// drives the page's own (encrypted) search across categories, accumulates the
-// plaintext JSON responses, and downloads algo-catalog.raw.json. Drop that file in
-// data/ and run this importer. (We can't call UniversalAlgoSearch from Node: its
-// request body is AES-encrypted client-side.)
+// We are scoped to HEDGED OPTIONS + NAKED OPTION BUYING (the two trading styles the
+// user allocates across). The harvest snippet filters to those (tags Hedged/Buying);
+// --styles is an extra safety filter at import time (default = both).
+//
+// HOW TO HARVEST (monthly, ~30 sec): log in at https://algos.dhan.co/all-algos, open
+// DevTools console, run the snippet in scripts/lib/dhan-harvest.snippet.js — it reads
+// the page's own full catalog cache (sessionStorage `dhan_all_algos_cache_v2`, rich
+// fields incl. correlation matrices), filters to the wanted styles, and downloads
+// algo-catalog.raw.json. Drop that file in data/ and run this importer.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -53,9 +57,19 @@ if (harvestPath) {
   process.exit(1);
 }
 
+// ── scope by trading style (default: the two the user allocates across) ───────
+const DEFAULT_STYLES = ['Hedged Options', 'Naked Option Buying'];
+const stylesArg = typeof flag('--styles') === 'string' ? flag('--styles') : null;
+const styleAllow = stylesArg ? stylesArg.split(',').map((s) => s.trim()).filter(Boolean) : DEFAULT_STYLES;
+const before = rows.length;
+// Only filter when the data actually carries styles (cache source); paste/search
+// rows without a style pass through untouched so the fallback path still works.
+if (rows.some((r) => r.style)) rows = rows.filter((r) => styleAllow.includes(r.style));
+const styleBreak = rows.reduce((m, r) => ((m[r.style || 'unstyled'] = (m[r.style || 'unstyled'] || 0) + 1), m), {});
+
 // ── sanity guard — never write/push an obviously-broken catalog ───────────────
 const withMetrics = rows.filter((r) => r.returns != null || r.cagr != null || r.rank != null || r.score != null);
-console.log(`source: ${source} — ${rows.length} algos, ${withMetrics.length} with metrics`);
+console.log(`source: ${source} — ${before} algos → ${rows.length} in scope [${styleAllow.join(', ')}] ${JSON.stringify(styleBreak)}; ${withMetrics.length} with metrics`);
 if (rows.length < 5 || withMetrics.length < rows.length / 2) {
   console.error('REFUSING: catalog looks empty/broken (too few rows or missing metrics). Re-harvest.');
   process.exit(1);
@@ -63,7 +77,8 @@ if (rows.length < 5 || withMetrics.length < rows.length / 2) {
 
 // ── write committed snapshot ──────────────────────────────────────────────────
 const catalog = {
-  source: 'dhan-algos/UniversalAlgoSearch',
+  source: 'dhan-algos/all-algos-cache',
+  styles: styleAllow,
   asOf: new Date().toISOString(),
   count: rows.length,
   algos: rows.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity)),

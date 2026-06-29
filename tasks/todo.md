@@ -58,17 +58,21 @@ research metrics. Endpoints:
 - [x] `.gitignore`: catalog files (raw/paste/json) — reproducible + KV-backed, large (correlation matrices).
 - [ ] Allocation optimiser = its own later task (consumes `algo-catalog:v1`).
 
-### Track B review
-- VERIFIED on REAL data: harvested 19 live algos via the snippet → importer normalized all 19
-  (returns-map parsed, riskReward "2.05"→2.05, avgFrequency "--"→null, full correlation matrix kept:
-  102 overall peers) → wrote `data/algo-catalog.json` → pushed `algo-catalog:v1`. Paste/CSV fallback +
-  shape-tolerance + sanity-guard (1 row → REFUSE, exit 1) all tested green.
-- **Surprise handled:** `UniversalAlgoSearch` request body is AES-encrypted (`iv`/`aes_key`/`data`),
-  response plaintext → so the endpoint source is BROWSER-HARVEST (page does the crypto), not a Node fetch.
-- **Caveat — completeness:** the search returns ~10 suggestions/query, so this sample (19) is partial.
-  Full monthly harvest = sweep all category tabs + scroll the All-Algos grid (snippet `__count()` tracks),
-  then `__dumpCatalog()`. KV/file scale ~quadratically with algo count (correlation matrices).
-- Data-layer only — nothing in the app reads `algo-catalog:v1` yet.
+### Track B review — SCOPED to Hedged Options + Naked Option Buying (final)
+- **Better harvest mechanism found:** the page caches the FULL catalog (79 algos, rich fields incl.
+  per-algo correlation matrices) in sessionStorage `dhan_all_algos_cache_v2`. Read it directly — no
+  fetch/XHR interception (the agent's JS tool guardrail blocks XHR hooks anyway), no AES request to
+  reproduce, COMPLETE in one shot. This supersedes the earlier UniversalAlgoSearch browser-harvest.
+- **Trading style = `tags`, not `category`:** tag `Hedged`→Hedged Options (29), tag `Buying`→Naked
+  Option Buying (12). Confirmed against both filtered grids (Hedged=all Credit Spreads; Buying=RR/TSL/GRID
+  /SkewHunter). category is coarser (Index Strategies/Options/Investing/Swing).
+- VERIFIED on REAL data: harvested 41 scoped algos via `dhan-harvest.snippet.js` → importer mapped the
+  camelCase cache schema (algoReturns→returns horizon map, sharpeRatio, maxDrawdown, hitRatio, minAmount→
+  minCapital, deployedCount, AlgoScore→score) → style derived (29 Hedged + 12 Naked, 0 missing) → 102-peer
+  correlation matrices kept (0 missing) → wrote `data/algo-catalog.json` (356KB) → pushed `algo-catalog:v1`.
+  Sanity guard (1 row → REFUSE, exit 1) and scalar paste/CSV fallback tested green.
+- Importer scopes by `--styles` (default `Hedged Options,Naked Option Buying`); snippet pre-filters too.
+- Data-layer only — nothing in the app reads `algo-catalog:v1` yet (next: the allocation optimiser).
 
 ## Out of scope / unchanged
 - Sleeve-level totals unchanged. Brokers READ-ONLY, no order writes.

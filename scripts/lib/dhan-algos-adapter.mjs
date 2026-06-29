@@ -66,55 +66,66 @@ export function extractItems(raw) {
 
 // ── normalize ────────────────────────────────────────────────────────────────
 
-// Map one raw UniversalAlgoSearch item (ALGO_*/PascalCase keys) → canonical row.
-// Tolerant of missing keys so it also accepts paste/CSV rows pre-mapped to ALGO_*.
+// Trading-style filter (Dhan "Trading Style") lives in `tags`, NOT `category`:
+//   tag "Hedged" = Hedged Options · tag "Buying" = Naked Option Buying.
+const TAG_STYLE = { Hedged: 'Hedged Options', Buying: 'Naked Option Buying' };
+
+// Map one raw algo item → canonical row. Handles BOTH source schemas + paste:
+//   - sessionStorage `dhan_all_algos_cache_v2` (camelCase: id/name/algoReturns/tags/…) ← primary
+//   - UniversalAlgoSearch (ALGO_*/PascalCase) and CSV rows mapped to either.
 export function normalizeItem(r) {
   if (!r || typeof r !== 'object') return null;
   const id = str(r.ALGO_ID ?? r.ID ?? r.algoId ?? r.id);
-  const name = str(r.STRATEGY_NAME ?? r.ALGO_SEO_NAME ?? r.name);
+  const name = str(r.STRATEGY_NAME ?? r.name ?? r.ALGO_SEO_NAME);
   if (!id && !name) return null; // not a real row
   // Correlation matrices: { "<other algo name>": coef } — kept whole for the
   // allocation maths (diversification). Large; this is a research feed, not the bundle.
-  const corrOverall = jsonOf(r.OverallCorrelation);
-  const corrCategory = jsonOf(r.CategoryCorrelation);
+  const corrOverall = jsonOf(r.OverallCorrelation ?? r.overallCorrelation);
+  const corrCategory = jsonOf(r.CategoryCorrelation ?? r.categoryCorrelation);
+  const tagsRaw = jsonOf(r.Tags ?? r.tags);
+  const tags = Array.isArray(tagsRaw) ? tagsRaw
+    : (str(r.Tags ?? r.tags) ? String(r.Tags ?? r.tags).split(/[,|]/).map((t) => t.trim()).filter(Boolean) : null);
+  const ret = returnsMap(r.algoReturns ?? r.ALGO_RETURNS ?? r.returns);
   return {
     id,
     strategyId: str(r.STRATEGY_ID ?? r.strategyId),
     name,
-    seoName: str(r.ALGO_SEO_NAME ?? r.seoName),
-    partner: str(r.ALGO_PARTNER_NAME ?? r.ALGO_ADDED_BY ?? r.partner),
-    category: str(r.DisplayCategory ?? r.ALGO_CATEGORY ?? r.category),
-    tags: jsonOf(r.Tags) && Array.isArray(jsonOf(r.Tags)) ? jsonOf(r.Tags)
-      : (str(r.Tags) ? String(r.Tags).split(/[,|]/).map((t) => t.trim()).filter(Boolean) : null),
+    seoName: str(r.ALGO_SEO_NAME ?? r.AlgoSeoName ?? r.seoName),
+    partner: str(r.ALGO_PARTNER_NAME ?? r.ALGO_ADDED_BY ?? r.createdBy ?? r.partner),
+    category: str(r.DisplayCategory ?? r.displayCategory ?? r.ALGO_CATEGORY ?? r.category),
+    // style = the Trading-Style filter the user scopes by (from tags)
+    style: tags ? (tags.map((t) => TAG_STYLE[t]).find(Boolean) ?? null) : null,
+    tags,
     status: str(r.ALGO_STATUS ?? r.status),
-    isExpiry: bool(r.IsExpiry),
+    isExpiry: bool(r.IsExpiry ?? r.isExpiry),
     isFeatured: bool(r.IsFeaturedAlgo),
-    // returns — ALGO_RETURNS is a horizon map {1M,3M,6M,1Y,Annualized}
-    returns: returnsMap(r.ALGO_RETURNS ?? r.returns),
-    cagr: num(r.ALGO_CAGR ?? r.cagr) ?? (returnsMap(r.ALGO_RETURNS)?.Annualized ?? null),
-    nav: num(r.NetAssetValue),
-    liveSince: str(r.LiveSince),
+    // returns — horizon map {1M,3M,6M,1Y,Annualized}
+    returns: ret,
+    cagr: num(r.ALGO_CAGR ?? r.cagr) ?? (ret?.Annualized ?? null),
+    nav: num(r.NetAssetValue ?? r.netAssetValue),
+    liveSince: str(r.LiveSince ?? r.liveSince),
     // risk
     maxDrawdown: num(r.MaxDrawdown ?? r.maxDrawdown),
     avgDrawdown: num(r.ALGO_AVG_DRAWNDOWN ?? r.avgDrawdown),
-    sharpe: num(r.SharpeRatio ?? r.sharpe),
+    sharpe: num(r.SharpeRatio ?? r.sharpeRatio ?? r.sharpe),
     risk: str(r.Risk ?? r.risk),
-    riskReward: num(r.RiskRewardRatio ?? r.riskReward),
-    maxTimeToRecovery: num(r.MaxTimeToRecovery),
-    avgTimeToRecovery: num(r.AvgTimeToRecovery),
+    riskReward: num(r.RiskRewardRatio ?? r.riskRewardRatio ?? r.riskReward),
+    maxTimeToRecovery: num(r.MaxTimeToRecovery ?? r.maxTimeToRecovery),
+    avgTimeToRecovery: num(r.AvgTimeToRecovery ?? r.avgTimeToRecovery),
     correlations: (corrOverall || corrCategory) ? { overall: corrOverall, category: corrCategory } : null,
     // trade stats
     hitRatio: num(r.ALGO_HIT_RATIO ?? r.hitRatio),
     avgProfit: num(r.ALGO_AVG_PROFIT ?? r.avgProfit),
     avgLoss: num(r.ALGO_AVG_LOSS ?? r.avgLoss),
     avgFrequency: num(r.AvgFrequency ?? r.avgFrequency),
+    deployedCount: num(r.deployedCount),
     // ranking
     rank: num(r.AlgoRank ?? r.rank),
     score: num(r.AlgoScore ?? r.score),
     // capital / availability
-    minCapital: num(r.ALGO_MIN_CAPITAL ?? r.minCapital),
+    minCapital: num(r.ALGO_MIN_CAPITAL ?? r.minAmount ?? r.minCapital),
     maxCapital: num(r.ALGO_MAX_CAPITAL ?? r.maxCapital),
-    slotsLeft: num(r.ALGO_SLOTS_LEFT),
+    slotsLeft: num(r.ALGO_SLOTS_LEFT ?? r.slotsLeft),
   };
 }
 

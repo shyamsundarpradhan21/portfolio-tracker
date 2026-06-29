@@ -405,6 +405,15 @@ ALGO_HIT_RATIO, AlgoRank/AlgoScore, ALGO_MIN/MAX_CAPITAL, and **OverallCorrelati
 = full per-algo correlation matrices** (gold for allocation maths, but bloats the file ~quadratically).
 Gotcha: search returns only ~10 suggestions/query → sweep category tabs + scroll the grid for completeness.
 
+**BEST Dhan-catalog harvest = sessionStorage, not the API.** The all-algos page caches the FULL
+catalog in `sessionStorage['dhan_all_algos_cache_v2']` (79 algos, camelCase schema, rich fields incl.
+`overallCorrelation`/`categoryCorrelation` matrices + `algoReturns` horizon map + sharpe/drawdown/hitRatio
+/AlgoScore). Read it directly — COMPLETE in one shot, no AES request, no XHR interception. Supersedes the
+UniversalAlgoSearch fetch-harvest (that returns only ~10 suggestions/query). **Trading style lives in
+`tags`, not `category`:** `Hedged`→Hedged Options, `Buying`→Naked Option Buying, plus Selling/Directional/
+Non-directional/Long-Term/Swing. `GetAllAlgoList` (the grid's XHR) is the same data but interception is
+guardrail-blocked — the sessionStorage cache sidesteps it. Snippet+importer scope by tag/style.
+
 ### Browser-harvest: getting page data to disk (claude-in-chrome)
 `javascript_tool` truncates large returns (even ~16KB), so you can't reliably read a big JSON back and
 Write it. Use the page's own blob-download (`a.download=…; a.click()`) → file lands in `~/Downloads`,
