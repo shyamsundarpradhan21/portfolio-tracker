@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-06-25T18:46:00+05:30",
+  "updatedAt": "2026-06-29T18:32:54+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -271,6 +271,166 @@
       "qty": 65,
       "price": 57.55,
       "value": 3740.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "2171116",
+      "sym": "NIFTY-Jun2026-23650-PE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 260,
+      "price": 6.25,
+      "value": 1625
+    },
+    {
+      "broker": "Dhan",
+      "id": "2205344",
+      "sym": "NIFTY-Jun2026-24050-PE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 195,
+      "price": 69.75,
+      "value": 13601.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "2205345",
+      "sym": "NIFTY-Jun2026-24050-PE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 65,
+      "price": 69.75,
+      "value": 4533.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "4520756",
+      "sym": "NIFTY-Jun2026-24050-PE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 65,
+      "price": 111.9,
+      "value": 7273.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "4520757",
+      "sym": "NIFTY-Jun2026-24050-PE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 195,
+      "price": 111.9,
+      "value": 21820.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2699523",
+      "sym": "NIFTY-Jun2026-24450-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 65,
+      "price": 5.3,
+      "value": 344.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2699524",
+      "sym": "NIFTY-Jun2026-24450-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 195,
+      "price": 5.3,
+      "value": 1033.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2080987",
+      "sym": "NIFTY-Jun2026-24050-CE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 65,
+      "price": 92.6,
+      "value": 6019
+    },
+    {
+      "broker": "Dhan",
+      "id": "2080988",
+      "sym": "NIFTY-Jun2026-24050-CE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 195,
+      "price": 92.6,
+      "value": 18057
+    },
+    {
+      "broker": "Dhan",
+      "id": "4491782",
+      "sym": "NIFTY-Jun2026-23650-PE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 260,
+      "price": 9,
+      "value": 2340
+    },
+    {
+      "broker": "Dhan",
+      "id": "4581212",
+      "sym": "NIFTY-Jun2026-24400-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 65,
+      "price": 5.75,
+      "value": 373.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "4581213",
+      "sym": "NIFTY-Jun2026-24400-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 195,
+      "price": 5.75,
+      "value": 1121.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "4586229",
+      "sym": "NIFTY-Jun2026-24000-CE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 260,
+      "price": 87.45,
+      "value": 22737
+    },
+    {
+      "broker": "Dhan",
+      "id": "8602571",
+      "sym": "NIFTY-Jun2026-24000-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 65,
+      "price": 68.5,
+      "value": 4452.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "8602572",
+      "sym": "NIFTY-Jun2026-24000-CE",
+      "date": "2026-06-29",
+      "side": "BUY",
+      "qty": 195,
+      "price": 68.55,
+      "value": 13367.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "6737300",
+      "sym": "NIFTY-Jun2026-24400-CE",
+      "date": "2026-06-29",
+      "side": "SELL",
+      "qty": 260,
+      "price": 4.65,
+      "value": 1209
     }
   ]
 }

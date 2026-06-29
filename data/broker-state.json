@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-06-29T00:34:17+05:30",
+  "syncedAt": "2026-06-29T18:30:00+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -11,8 +11,8 @@
       "note": ""
     },
     "fyers": {
-      "ok": true,
-      "note": ""
+      "ok": false,
+      "note": "mint failed (funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"})"
     },
     "kite": {
       "ok": true,
@@ -22,47 +22,47 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-06-29T00:34:18+05:30",
+      "syncedAt": "2026-06-29T18:30:12+05:30",
       "rows": [
-        {
-          "sym": "AVANTEL",
-          "qty": 52,
-          "avg": 153.04,
-          "ltp": 171.83,
-          "pnl": 977,
-          "dayPct": 1.01
-        },
-        {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86,
-          "ltp": 1453.1,
-          "pnl": 3729.95,
-          "dayPct": -0.08
-        },
         {
           "sym": "BANKBARODA",
           "qty": 28,
           "avg": 291.8,
-          "ltp": 279.15,
-          "pnl": -354.2,
-          "dayPct": -0.27
-        },
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43,
-          "ltp": 1255.1,
-          "pnl": 4586.65,
-          "dayPct": -0.62
+          "ltp": 272.8,
+          "pnl": -532,
+          "dayPct": -2.27
         },
         {
           "sym": "HAPPSTMNDS",
           "qty": 20,
           "avg": 393.5,
-          "ltp": 342.45,
-          "pnl": -1021,
-          "dayPct": -1.07
+          "ltp": 337.65,
+          "pnl": -1117,
+          "dayPct": -1.4
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43,
+          "ltp": 1233,
+          "pnl": 4365.65,
+          "dayPct": -1.76
+        },
+        {
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04,
+          "ltp": 171.76,
+          "pnl": 973.36,
+          "dayPct": -0.04
+        },
+        {
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86,
+          "ltp": 1500.3,
+          "pnl": 4107.55,
+          "dayPct": 3.47
         }
       ]
     },
@@ -196,23 +196,90 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-06-29T00:34:18+05:30",
-      "rows": []
+      "syncedAt": "2026-06-29T18:30:12+05:30",
+      "rows": [
+        {
+          "sym": "NIFTY-Jun2026-24450-CE",
+          "type": "CALL",
+          "strike": 24450,
+          "expiry": "2026-06-30",
+          "status": "LONG",
+          "netQty": 260,
+          "avg": 5.3,
+          "realized": 0,
+          "unrealized": -390
+        },
+        {
+          "sym": "NIFTY-Jun2026-24050-CE",
+          "type": "CALL",
+          "strike": 24050,
+          "expiry": "2026-06-30",
+          "status": "SHORT",
+          "netQty": -260,
+          "avg": 92.6,
+          "realized": 0,
+          "unrealized": 12961
+        },
+        {
+          "sym": "NIFTY-Jun2026-23650-PE",
+          "type": "PUT",
+          "strike": 23650,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 6.25,
+          "realized": 715,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-24050-PE",
+          "type": "PUT",
+          "strike": 24050,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 111.9,
+          "realized": -10959,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-24400-CE",
+          "type": "CALL",
+          "strike": 24400,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 5.75,
+          "realized": -286,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jun2026-24000-CE",
+          "type": "CALL",
+          "strike": 24000,
+          "expiry": "2026-06-30",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 68.5375,
+          "realized": 4917.25,
+          "unrealized": 0
+        }
+      ]
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-06-29T00:34:18+05:30",
+      "syncedAt": "2026-06-29T18:30:12+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL300PE",
           "type": "PUT",
           "strike": null,
           "expiry": null,
-          "status": "LONG",
-          "netQty": 2500,
+          "status": "CLOSED",
+          "netQty": 0,
           "avg": 3.6,
-          "realized": 0,
-          "unrealized": 2250
+          "realized": 2000,
+          "unrealized": 0
         },
         {
           "sym": "ANGELONE26AUGFUT",
@@ -223,7 +290,18 @@
           "netQty": 2500,
           "avg": 346.45,
           "realized": 0,
-          "unrealized": -21125
+          "unrealized": -32375
+        },
+        {
+          "sym": "ANGELONE26JUL290PE",
+          "type": "PUT",
+          "strike": null,
+          "expiry": null,
+          "status": "LONG",
+          "netQty": 2500,
+          "avg": 0,
+          "realized": 0,
+          "unrealized": 1000
         }
       ]
     },
@@ -238,12 +316,12 @@
       "available": 0
     },
     "dhan": {
-      "available": 640192.06,
-      "utilized": 0
+      "available": 427473.16,
+      "utilized": 231182
     },
     "upstox": {
-      "available": 38649.3,
-      "utilized": 132238.38
+      "available": 10320.3,
+      "utilized": 160567.38
     }
   }
 }
