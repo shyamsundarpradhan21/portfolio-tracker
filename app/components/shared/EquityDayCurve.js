@@ -11,7 +11,6 @@
 //     before 06:00 IST, matching scripts/lib/marketHours usSessionDate).
 import { useState, useEffect } from 'react';
 import { APP } from '../../lib/appData';
-import { cl, SInrF } from '../../lib/fmt';
 import IntradayChart from './IntradayChart';
 
 const istNow = () => new Date(Date.now() + 5.5 * 3600 * 1000);
@@ -49,12 +48,10 @@ export default function EquityDayCurve({ kind = 'eq' }) {
   }, [kind, date]);
 
   if (tape.length < 2) return null;
-  const net = tape[tape.length - 1].net;
   return (
     <div className="card sec">
-      <div className="fxc">
+      <div>
         <div className="ctitle" style={{ margin: 0 }}>{cfg.title} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>live · day-change</span></div>
-        <div className={'vt2 ' + cl(net)}><SInrF n={net} /></div>
       </div>
       <IntradayChart tape={tape} ariaLabel={`${cfg.title} day-change`} />
       <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)' }}>{cfg.note}</div>

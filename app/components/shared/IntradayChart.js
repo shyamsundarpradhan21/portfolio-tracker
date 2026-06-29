@@ -55,6 +55,9 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const netVal = +pts[n - 1].net;
   const curColor = dirColor(netVal);
   const uid = `iq-${n}-${Math.round(g.zeroY)}`;
+  // Area under the net line, closed to the zero baseline → a faint green/red tint (clipped
+  // above/below 0 by the same up/dn clips as the line), so the curve reads as filled.
+  const areaPath = n ? `${path(net)} L${net[n - 1].x.toFixed(1)},${g.zeroY.toFixed(1)} L${net[0].x.toFixed(1)},${g.zeroY.toFixed(1)} Z` : '';
 
   // map a viewBox-x onto the nearest tape index (over the plot area only)
   const idxAt = (xvb) => {
@@ -178,6 +181,10 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       {drawLegs && present.map((o) => g.byKey[o.key]
         ? <path key={o.key} d={path(g.byKey[o.key])} fill="none" stroke={o.c} strokeWidth="1.3" strokeDasharray="4 3" opacity=".85" />
         : null)}
+
+      {/* net area tint — faint green above 0 / red below 0 (clipped), under the line */}
+      <path d={areaPath} fill="var(--grn)" opacity=".1" clipPath={`url(#up-${uid})`} />
+      <path d={areaPath} fill="var(--red)" opacity=".1" clipPath={`url(#dn-${uid})`} />
 
       {/* aggregate net — bold, green/red split */}
       <path d={path(net)} fill="none" stroke="var(--grn)" strokeWidth="2" clipPath={`url(#up-${uid})`} />

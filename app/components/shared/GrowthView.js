@@ -26,7 +26,6 @@ const BENCH = {
   gold:    { label: 'Gold',     color: '#D4AF37' },
 };
 const BENCH_ORDER = ['nifty', 'nasdaq', 'china', 'germany', 'uk', 'crypto', 'gold'];
-const RANGES = [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['Max', 'max']];
 
 // ₹ helpers (mirror ProjectionTab / GrowthCurve). Figures are UNSIGNED — direction is by
 // colour (.up/.dn), never a +/- glyph. Axis tick labels keep a sign (it's a scale).
@@ -54,13 +53,11 @@ const cls = (v) => (v == null || !isFinite(v) ? '' : v >= 0 ? 'up' : 'dn');
 const sessionIstIso = () => { const d = new Date(Date.now() + 5.5 * 3600 * 1000); if (d.getUTCHours() < 6) d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
 const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
 
-// `range`/`setRange` are optional controlled props — when ProjectionTab passes them, the one
-// shared window selector drives both Net worth and Growth (so the two pickers can't conflate);
-// absent, GrowthView falls back to its own state.
-export default function GrowthView({ fx, range: rangeProp, setRange: setRangeProp }) {
-  const [rangeState, setRangeState] = useState('max');
-  const range = rangeProp ?? rangeState;
-  const setRange = setRangeProp || setRangeState;
+// `range` is a controlled prop — the ONE shared window selector lives in ProjectionTab (the
+// period tiles below the chart) and drives both Net worth and Growth, so Growth carries no
+// window pills of its own. Falls back to 'max' if rendered standalone.
+export default function GrowthView({ fx, range: rangeProp }) {
+  const range = rangeProp ?? 'max';
   const [compare, setCompare] = useState(['nifty']);
   const [data, setData] = useState(null);      // { points, available }
   const [ownTape, setOwnTape] = useState([]);   // 1D only: merged intraday own P&L
@@ -170,13 +167,10 @@ export default function GrowthView({ fx, range: rangeProp, setRange: setRangePro
 
   return (
     <div style={{ marginTop: 10 }}>
-      {/* window + compare chips */}
+      {/* benchmark compare chips — the WINDOW selector is the shared period tiles below the
+          chart (ProjectionTab), so Growth no longer carries its own window pills. */}
       <div className="pjx-cmp">
-        <span className="pjx-cmp-lbl">Window</span>
-        {RANGES.map(([lbl, key]) => (
-          <button key={key} className={'pjx-cmp-chip' + (range === key ? ' on' : '')} style={{ '--bc': 'var(--acc)' }} onClick={() => setRange(key)}>{lbl}</button>
-        ))}
-        {!is1D && available.length > 0 && <span className="pjx-cmp-lbl" style={{ marginLeft: 8 }}>vs</span>}
+        {!is1D && available.length > 0 && <span className="pjx-cmp-lbl">vs</span>}
         {!is1D && BENCH_ORDER.filter((k) => available.includes(k)).map((k) => (
           <button key={k} className={'pjx-cmp-chip' + (compare.includes(k) ? ' on' : '')} style={{ '--bc': BENCH[k].color }}
             onClick={() => setCompare((c) => (c.includes(k) ? c.filter((x) => x !== k) : [...c, k]))}>{BENCH[k].label}</button>
