@@ -97,7 +97,28 @@ export default function AlgoTab({
         </div>
       )}
 
-      {sub === 'summary' && <FnoSummary fno={fno} />}
+      {sub === 'summary' && (<>
+        {/* Capital composition — own vs client + the profit-share, so it's always clear
+            what is yours vs the client's and what your cut is at settlement. */}
+        <div className="card sec">
+          <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>own + client · profit-share</span>
+          </div>
+          <div className="g2">
+            <div className="mini">
+              <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s01.title} · {ALGO.s01.broker}</div>
+              <div className="sub" style={{ margin: 0 }}><RsText>{`Total ${cap(ALGO.s01.split.own + ALGO.s01.split.client)} · Own ${cap(ALGO.s01.split.own)} · Client ${cap(ALGO.s01.split.client)}`}</RsText></div>
+              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of own + {Math.round(ALGO.s01.split.clientProfitShare * 100)}% of client profit at settlement</div>
+            </div>
+            <div className="mini">
+              <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s02.title} · {ALGO.s02.broker}</div>
+              <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s02.split.own)} · F&O ${cap(ALGO.s02.book.fno)} + Swing ${cap(ALGO.s02.book.swing)}`}</RsText></div>
+              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep {Math.round(ALGO.s02.userKeep * 100)}% of profit</div>
+            </div>
+          </div>
+        </div>
+        <FnoSummary fno={fno} />
+      </>)}
 
       {sub === 'review' && (<>
         <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>

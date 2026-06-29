@@ -182,6 +182,11 @@ Overview · Summary · Review · Analytics. This plan implements it for real. NO
       Direction = colour, no glyphs. Caught + fixed an unguarded `numC` NaN on a broker missing
       `funds.utilized`. certify GREEN normal+stress both themes on the Summary surface (via the
       new opt-in `ALGOSUB=summary` harness flag); re-shot `after-c3` algo 768/1920/2560 × themes.
+      Follow-up: restored a compact **Capital composition** card at the top of Summary (own/client
+      split + profit-share per S01/S02) — material for managing client capital, was dropped in the
+      first cut. Overview 6-card verified 3×2 (desktop/wide) / 2×3 (tablet), Day↔All drives the
+      figures; certify re-confirmed GREEN normal+stress both themes on Overview AND Summary.
+      Added opt-in `PNLVIEW` harness flag for shooting a specific Day/Month/Year/All filter state.
 - [x] **Review** (C.3): cadence segmented control (W/M/Q/SA/A) drives a scoped AI-review card
       wired to `insights.trading[cadence]`, with an honest placeholder until an AI run covers it.
 - [x] **Analytics**: new `AnalyticsTab.js` — cumulative multi-line curve, best-vs-worst, underwater,
