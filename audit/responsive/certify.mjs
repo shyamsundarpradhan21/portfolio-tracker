@@ -178,9 +178,9 @@ function injectStress(hard) {
 }
 
 async function setEnv(page, theme, region) {
-  await page.evaluate((t, r) => {
-    try { localStorage.setItem('nwTracker.theme', t); if (r) localStorage.setItem('nwTracker.wrapRegion', r); document.documentElement.dataset.time = t; } catch (e) {}
-  }, theme, region || null);
+  await page.evaluate((t, r, sub) => {
+    try { localStorage.setItem('nwTracker.theme', t); if (r) localStorage.setItem('nwTracker.wrapRegion', r); if (sub) localStorage.setItem('nwTracker.algoSub', sub); document.documentElement.dataset.time = t; } catch (e) {}
+  }, theme, region || null, process.env.ALGOSUB || null);
 }
 async function gotoSurface(page, surface, theme) {
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});

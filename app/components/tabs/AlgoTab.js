@@ -4,10 +4,7 @@ import { cl, SInrF, RsText } from '../../lib/fmt';
 import { LiveSInrF } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
 import FreshnessTag from '../shared/FreshnessTag';
-import BrokerTable from '../shared/BrokerTable';
-import YtdFno from '../shared/YtdFno';
-import FnoHistory from '../shared/FnoHistory';
-import FnoPositions from '../shared/FnoPositions';
+import FnoSummary from '../shared/FnoSummary';
 import PnlDashboard from '../shared/PnlDashboard';
 import AnalyticsTab from '../shared/AnalyticsTab';
 import Skel from '../shared/Skel';
@@ -20,22 +17,17 @@ const CADENCES = ['Weekly', 'Monthly', 'Quarterly', 'Semi-Annual', 'Annual'];
 const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
 
 export default function AlgoTab({
-  ytdTotal, ytdRealised, cfEntering, cfAfterRealised,
+  ytdTotal,
   insights, insightsOn, insightsFirstLoad,
-  ALGO, FY, fnoRealized,
+  ALGO, FY,
 }) {
-  // One strategy card at a time (S01 / S02), persisted. The overall summaries
-  // live OUTSIDE the strategy cards.
-  const [strat, setStrat] = useState('s01');
   const [sub, setSub] = useState('overview');     // Trading Journal sub-tab
   const [cadence, setCadence] = useState('Monthly'); // Review cadence (placeholder selector)
   useEffect(() => {
     try {
-      const s = localStorage.getItem('nwTracker.algoStrat'); if (s === 's01' || s === 's02') setStrat(s);
       const t = localStorage.getItem('nwTracker.algoSub'); if (SUBTABS.some(([k]) => k === t)) setSub(t);
     } catch {}
   }, []);
-  const pick = (s) => { setStrat(s); try { localStorage.setItem('nwTracker.algoStrat', s); } catch {} };
   const pickSub = (s) => { setSub(s); try { localStorage.setItem('nwTracker.algoSub', s); } catch {} };
   // Live F&O positions (all brokers, open + closed) — one derivation feeds both the
   // panel below and the YTD open-MTM line in each strategy card, so they agree.
@@ -105,93 +97,7 @@ export default function AlgoTab({
         </div>
       )}
 
-      {sub === 'summary' && (<>
-      {/* Strategy toggle — one card at a time; the overall summaries sit OUTSIDE */}
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <div className="seg" role="tablist" aria-label="Strategy">
-          {[['s01', ALGO.s01.title], ['s02', ALGO.s02.title]].map(([k, label]) => (
-            <button key={k} type="button" role="tab" aria-selected={strat === k} className={strat === k ? 'on' : ''} onClick={() => pick(k)}>{label}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sec">
-        {strat === 's01' ? (
-          <div className="card card-accent" style={{ borderLeftColor: 'var(--acc)', display: 'flex', flexDirection: 'column' }}>
-            <div className="fxc" style={{ marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>{ALGO.s01.title}</div>
-                <div className="sub" style={{ margin: 0 }}>{ALGO.s01.broker}</div>
-              </div>
-              <span className="badge ba">{ALGO.s01.badge}</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-              <div className="mini">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="lbl" style={{ margin: '0 0 3px' }}>pool</div>
-                    <div className="sub" style={{ margin: 0 }}><RsText>{`Total ${cap(ALGO.s01.split.own + ALGO.s01.split.client)} · Own ${cap(ALGO.s01.split.own)} · Client ${cap(ALGO.s01.split.client)} · 100% own + ${Math.round(ALGO.s01.split.clientProfitShare * 100)}% client profit`}</RsText></div>
-                  </div>
-                  <div className="vt2" style={{ flexShrink: 0 }}><RsText>{cap(ALGO.s01.split.own)}</RsText></div>
-                </div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                  {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
-                </div>
-                <BrokerTable data={FY.s01.verified} />
-              </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s01.current.label}`} data={FY.s01.current} liveMtm={fno.byStrategy.S01.openMtm} />
-              <div className="mini" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                  CF absorption — {FY.labels.current} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR</span>
-                </div>
-                <div className="fxc"><span style={{ color: 'var(--txt2)' }}>CF entering {FY.labels.current}</span><span className="red mono"><SInrF n={-cfEntering} /></span></div>
-                <div className="fxc" style={{ marginTop: 8 }}><span style={{ color: 'var(--txt2)' }}>Realised F&amp;O YTD (S01 + S02)</span><span className="grn mono"><SInrF n={ytdRealised} /></span></div>
-                <div className="fxc" style={{ marginTop: 10, paddingTop: 8, borderTop: '.5px solid var(--brd)' }}>
-                  <span style={{ color: 'var(--txt2)' }}>CF remaining</span><span className="red mono"><SInrF n={-cfAfterRealised} /></span>
-                </div>
-              </div>
-            </div>
-            <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
-              Day-trading F&amp;O profits are non-speculative business income (Sec 44AB). The loss carryforward pool below absorbs future profits — tracked live as you trade.
-            </div>
-          </div>
-        ) : (
-          <div className="card card-accent" style={{ borderLeftColor: 'var(--grn)', display: 'flex', flexDirection: 'column' }}>
-            <div className="fxc" style={{ marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>{ALGO.s02.title}</div>
-                <div className="sub" style={{ margin: 0 }}>{ALGO.s02.broker}</div>
-              </div>
-              <span className="badge bg">{ALGO.s02.badge}</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-              <div className="mini">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="lbl" style={{ margin: '0 0 3px' }}>capital</div>
-                    <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s02.split.own)} · F&O ${cap(ALGO.s02.book.fno)} + Swing ${cap(ALGO.s02.book.swing)} · user keeps ${Math.round(ALGO.s02.userKeep * 100)}%`}</RsText></div>
-                  </div>
-                  <div className="vt2" style={{ flexShrink: 0 }}><RsText>{cap(ALGO.s02.split.own)}</RsText></div>
-                </div>
-              </div>
-              <div className="mini">
-                <div className="lbl" style={{ marginBottom: 7, display: 'flex', gap: 6 }}>
-                  {FY.labels.verifiedLong} <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>ITR-verified</span>
-                </div>
-                <BrokerTable data={FY.s02.verified} />
-              </div>
-              <YtdFno label={`${FY.labels.currentLong} YTD — ${FY.s02.current.label}`} data={FY.s02.current} liveMtm={fno.byStrategy.S02.openMtm} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {fno.hasAny ? <div className="sec"><FnoPositions data={fno} /></div> : null}
-
-      {fnoRealized ? <div className="sec"><FnoHistory data={fnoRealized} /></div> : null}
-      </>)}
+      {sub === 'summary' && <FnoSummary fno={fno} />}
 
       {sub === 'review' && (<>
         <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>

@@ -8,6 +8,7 @@ import {
   seriesByStrategy, returnsPct, cumulative, dailyReturns, cagr, volatility,
   sharpe, sortino, drawdown, drawdownEpisodes, calmar, beta, alpha,
   bestWorstWindows, riskReward, freqOfTrade, riskOMeterBand,
+  brokerRealisedMatrix,
 } from './pnlDaily.js';
 
 const rows = [
@@ -79,6 +80,45 @@ describe('quantileBuckets — relative to own distribution', () => {
 describe('fyOf — Indian FY boundary at Apr 1', () => {
   it('Mar 31 stays in the prior FY', () => expect(fyOf('2026-03-31')).toBe('FY 25-26'));
   it('Apr 1 starts the new FY', () => expect(fyOf('2026-04-01')).toBe('FY 26-27'));
+});
+
+describe('brokerRealisedMatrix — broker rows × FY cols, overlaid charges', () => {
+  const brRows = [
+    { date: '2025-03-20', broker: 'Dhan',  sleeve: 'S01', grossRealised: 12000, estCharges: 1000, net: 11000 }, // FY 24-25
+    { date: '2026-06-12', broker: 'Dhan',  sleeve: 'S01', grossRealised: 5200,  estCharges: 200,  net: 5000 },  // FY 26-27
+    // Fyers row carries a REAL contract-note charge → must use realCharge (3000), NOT estCharges (2522)
+    { date: '2026-06-12', broker: 'Fyers', sleeve: 'S02', grossRealised: 50000, estCharges: 2522, net: 47000, chargeSource: 'real', realCharge: 3000 },
+    { date: '2026-06-23', broker: 'Fyers', sleeve: 'S02', grossRealised: -8000, estCharges: 500,  net: -8500 }, // FY 26-27
+  ];
+  const m = brokerRealisedMatrix(brRows, ['Fyers', 'Dhan']);
+
+  it('lists FYs ascending', () => expect(m.fys).toEqual(['FY 24-25', 'FY 26-27']));
+  it('orders brokers by the supplied order (Fyers before Dhan)', () =>
+    expect(m.brokers.map((b) => b.broker)).toEqual(['Fyers', 'Dhan']));
+  it('Dhan: per-FY net + all-time + est charges + distinct days', () => {
+    const d = m.brokers.find((b) => b.broker === 'Dhan');
+    expect(d.byFy).toEqual({ 'FY 24-25': 11000, 'FY 26-27': 5000 });
+    expect(d.net).toBe(16000);
+    expect(d.charges).toBe(1200); // 1000 + 200, both estimated
+    expect(d.days).toBe(2);
+  });
+  it('Fyers: real charge overrides est (3000 + 500 = 3500), nets merge within FY', () => {
+    const f = m.brokers.find((b) => b.broker === 'Fyers');
+    expect(f.byFy).toEqual({ 'FY 26-27': 38500 }); // 47000 − 8500
+    expect(f.net).toBe(38500);
+    expect(f.charges).toBe(3500); // realCharge 3000 (not est 2522) + est 500
+    expect(f.days).toBe(2);
+  });
+  it('total row sums every column', () => {
+    expect(m.total.byFy).toEqual({ 'FY 24-25': 11000, 'FY 26-27': 43500 });
+    expect(m.total.net).toBe(54500);
+    expect(m.total.charges).toBe(4700);
+    expect(m.total.days).toBe(4);
+  });
+  it('empty input → empty matrix', () => {
+    const e = brokerRealisedMatrix([]);
+    expect(e).toEqual({ fys: [], brokers: [], total: { byFy: {}, net: 0, charges: 0, days: 0 } });
+  });
 });
 
 describe('monthMatrix — Sun-first calendar', () => {

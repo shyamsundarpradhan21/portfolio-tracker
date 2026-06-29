@@ -168,12 +168,26 @@ Overview · Summary · Review · Analytics. This plan implements it for real. NO
       (public market data, so a cached `s-maxage` route is fine — NOT force-dynamic).
 
 ## Phase C — components — commit 2
-- [ ] `AlgoTab.js`: top-level 4 sub-tab segmented control (persisted to localStorage), accent per tab.
-- [ ] **Overview**: reuse existing `PnlDashboard` (Day/Month/Year/All + IntradayChart already built) + the 6-card statgrid (add Profit Factor, Returns%, surface Least-Profitable). Header capital line stays.
-- [ ] **Summary**: F&O Positions (broker split: utilised/available from `fnoLive().brokers[].funds`) + broker-wise F&O Realised (from `fnoRealized`/ledger by broker×FY).
-- [ ] **Review**: cadence segmented control (W/M/Q/SA/A) + AnalysisCard wired to `insights.trading` scoped to the window (placeholder copy until insights feed extended).
-- [ ] **Analytics**: new `AnalyticsTab.js` — cumulative multi-line curve (reuse PerformanceCurve/scaleLines chrome), best-vs-worst, underwater, Key-Metrics table, Efficiency-Ratios table, Worst-5 DD table. Period (1M/3M/6M/Max) + Overall/S01/S02 toggles drive the slice.
-- [ ] Wire props in `app/page.js` (pass benchmark series + existing FY/ALGO/fno props).
+- [x] `AlgoTab.js`: top-level 4 sub-tab segmented control (persisted to localStorage), accent per tab. (C.2)
+- [x] **Overview** (C.3, `553a5b2`): `PnlDashboard` + the 6-card statgrid — Net P&L · Win Rate ·
+      Returns% (TWR on deployed) · Profit Factor · Most/Least profitable day · Trading days. Cards
+      recompute per EXACT period in view × active broker. Per-broker Returns → "—" (no attributable
+      base; see Analytics). Trading-capital moved to a context line (`.pnl-capline`) above the grid.
+- [x] **Summary** (C.3, `FnoSummary.js`): two broker-wise `.ovx/.tbl` tables —
+      ① F&O Positions (live broker split: Open MTM · capital utilised · available + Total, from
+      `fnoLive`), ② F&O Realised (all-years broker × FY net, all-time net, OVERLAID charges +
+      distinct days + Total, via new pure `brokerRealisedMatrix` on the fno-ledger rows — same
+      net/charge basis as the Overview dashboard). Replaced the S01/S02 strategy cards + the
+      per-leg `FnoPositions` panel + gross-by-FY `FnoHistory` on Summary (CF already → Review).
+      Direction = colour, no glyphs. Caught + fixed an unguarded `numC` NaN on a broker missing
+      `funds.utilized`. certify GREEN normal+stress both themes on the Summary surface (via the
+      new opt-in `ALGOSUB=summary` harness flag); re-shot `after-c3` algo 768/1920/2560 × themes.
+- [x] **Review** (C.3): cadence segmented control (W/M/Q/SA/A) drives a scoped AI-review card
+      wired to `insights.trading[cadence]`, with an honest placeholder until an AI run covers it.
+- [x] **Analytics**: new `AnalyticsTab.js` — cumulative multi-line curve, best-vs-worst, underwater,
+      Key-Metrics, Efficiency-Ratios, Worst-5 DD. (C.2; C.3 switched cards/tables to unsigned %
+      — direction = colour — keeping signed only on the multi-line chart where colour = series id.)
+- [x] Wire props in `app/page.js` (benchmark series + FY/ALGO/fno props). (C.1/C.2)
 
 ## Phase D — verify — before "done"
 - [ ] `npm test` green (pnlDaily.test.js).

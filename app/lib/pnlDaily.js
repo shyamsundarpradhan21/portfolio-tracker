@@ -476,6 +476,42 @@ export function freqOfTrade(series) {
   return r2(series.reduce((s, d) => s + (d.orders || 0), 0) / series.length);
 }
 
+// Broker-wise all-years realised from the ledger rows — one row per broker carrying
+// per-FY net, all-time net, OVERLAID charges (real contract-note where the overlay
+// marked it, else estimated — the SAME basis as dailySeries / the Overview dashboard),
+// and distinct trading days. `order` (broker names, e.g. the live FNO_META order) drives
+// row order; brokers absent from it sort after, by all-time net desc. The total row sums
+// each column. Returns { fys (ascending), brokers, total }.
+export function brokerRealisedMatrix(rows, order = []) {
+  const fySet = new Set();
+  const by = new Map();
+  for (const r of rows || []) {
+    if (!r || !r.date || !r.broker) continue;
+    const fy = fyOf(r.date);
+    fySet.add(fy);
+    let b = by.get(r.broker);
+    if (!b) { b = { broker: r.broker, sleeve: r.sleeve || null, byFy: {}, net: 0, charges: 0, days: new Set() }; by.set(r.broker, b); }
+    b.byFy[fy] = r2((b.byFy[fy] || 0) + (r.net || 0));
+    b.net += r.net || 0;
+    b.charges += (r.chargeSource === 'real' ? (r.realCharge || 0) : (r.estCharges || 0));
+    b.days.add(r.date);
+    if (!b.sleeve && r.sleeve) b.sleeve = r.sleeve;
+  }
+  const fys = [...fySet].sort();
+  const rank = (name) => { const i = order.indexOf(name); return i === -1 ? Infinity : i; };
+  const brokers = [...by.values()]
+    .map((b) => ({ broker: b.broker, sleeve: b.sleeve, byFy: b.byFy, net: r2(b.net), charges: r2(b.charges), days: b.days.size }))
+    .sort((a, b) => (rank(a.broker) - rank(b.broker)) || (b.net - a.net));
+  const total = { byFy: {}, net: 0, charges: 0, days: 0 };
+  for (const b of brokers) {
+    for (const fy of fys) if (b.byFy[fy] != null) total.byFy[fy] = r2((total.byFy[fy] || 0) + b.byFy[fy]);
+    total.net = r2(total.net + b.net);
+    total.charges = r2(total.charges + b.charges);
+    total.days += b.days;
+  }
+  return { fys, brokers, total };
+}
+
 // Risk-o-meter band from annualised volatility (%), bumped one level on a severe drawdown.
 // Thresholds are a param so they're easy to retune.
 export function riskOMeterBand({ volatility: vol = 0, maxDD = 0 } = {}, t = { low: 15, mod: 25, high: 40 }) {
