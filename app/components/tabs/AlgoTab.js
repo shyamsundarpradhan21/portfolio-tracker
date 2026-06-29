@@ -109,12 +109,9 @@ export default function AlgoTab({
           </div>
         </div>
         {insightsOn && (
-          cadenceData && (cadenceData.performance || cadenceData.outlook)
-            ? <AnalysisCard data={cadenceData} on={insightsOn} loading={insightsFirstLoad} accent="var(--pnk)" title={`AI review · ${cadence}`} />
-            : <div className="card sec">
-                <div className="ctitle" style={{ marginBottom: 8 }}>AI review · {cadence}</div>
-                <div className="sub" style={{ lineHeight: 1.6 }}>No {cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.</div>
-              </div>
+          <AnalysisCard data={cadenceData} on={insightsOn} loading={insightsFirstLoad} accent="var(--pnk)"
+            title={`AI review · ${cadence}`}
+            emptyHint={`No ${cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.`} />
         )}
 
         <div className="card">

@@ -201,7 +201,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
           <span style={{ fontWeight: 600 }}>{periodLabel(view, periodKey)}</span>
           <button className="pnl-nav" onClick={() => nav(1)} disabled={cur[view] >= lists[view].length - 1} aria-label="Next">›</button>
         </div>
-        <PeriodSummary view={view} periodKey={periodKey} byDate={byDate} series={series} liveToday={liveToday} />
+        {/* per-period Days/Charges/Net summary removed — already carried by the stat cards above */}
       </div>
 
       {/* ── view body ── */}
