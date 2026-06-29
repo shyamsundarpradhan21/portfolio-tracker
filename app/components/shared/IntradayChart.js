@@ -102,6 +102,21 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const tipLeftPct = hp ? (hp.x / W) * 100 : 0;
   const tipFlip = hp ? hp.x > W * 0.5 : false;
 
+  // Session split (Overview day-curve only): the largest inter-point time gap is the
+  // India-close → US-open break, so the single continuous curve can label its two stretches
+  // by zone — IND (NSE, IST) then US (NYSE, evening IST). Only when a real gap exists.
+  let splitX = -1, indMidX = 0, usMidX = 0;
+  if (legsInHoverOnly && n > 3) {
+    const gaps = []; for (let i = 0; i < n - 1; i++) gaps.push(tRank(pts[i + 1].t) - tRank(pts[i].t));
+    const med = [...gaps].sort((a, b) => a - b)[gaps.length >> 1] || 1;
+    let maxGap = 0, gi = -1; for (let i = 0; i < gaps.length; i++) if (gaps[i] > maxGap) { maxGap = gaps[i]; gi = i; }
+    if (gi >= 0 && maxGap >= Math.max(30, med * 6)) {
+      splitX = (net[gi].x + net[gi + 1].x) / 2;
+      indMidX = (net[0].x + net[gi].x) / 2;
+      usMidX = (net[gi + 1].x + net[n - 1].x) / 2;
+    }
+  }
+
   return (
     <div className="iq-wrap" style={{ position: 'relative', marginTop: 12 }}>
     <svg viewBox={`0 0 ${W} ${H + 34}`} width="100%" style={{ display: 'block', height: 'auto' }}
@@ -148,6 +163,16 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       })}
 
       <line x1="0" y1={g.zeroY} x2={PLOT_W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
+
+      {/* IND / US session zones — a faint divider at the India-close→US-open gap + a zone
+          label over each stretch, so the one continuous curve reads as a full trading day */}
+      {splitX >= 0 && (
+        <g>
+          <line x1={splitX} y1="0" x2={splitX} y2={H} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 5" opacity=".5" />
+          <text x={indMidX} y="9" className="pnl-axt" textAnchor="middle" opacity=".7">IND</text>
+          <text x={usMidX} y="9" className="pnl-axt" textAnchor="middle" opacity=".7">US</text>
+        </g>
+      )}
 
       {/* per-leg overlay — DASHED, coloured (suppressed when legsInHoverOnly: net line only) */}
       {drawLegs && present.map((o) => g.byKey[o.key]

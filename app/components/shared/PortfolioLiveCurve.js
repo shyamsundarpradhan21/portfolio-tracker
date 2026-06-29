@@ -9,7 +9,6 @@
 // Reads nothing at module-eval; all data comes from the runtime API. Hidden until
 // at least one sleeve has logged a point today, so it never shows a stale frame.
 import { useEffect, useState } from 'react';
-import { cl, SInrF } from '../../lib/fmt';
 import { mergeLiveTapes } from '../../lib/pnlDaily';
 import IntradayChart from './IntradayChart';
 
@@ -58,14 +57,12 @@ export default function PortfolioLiveCurve() {
   const tape = mergeLiveTapes(parts);
   if (tape.length < 2) return null;                 // hidden until the day has shape
 
-  const net = tape[tape.length - 1].net;
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div className="fxc" style={{ padding: '16px 20px 8px' }}>
+      <div style={{ padding: '16px 20px 8px' }}>
         <div className="ctitle" style={{ margin: 0 }}>
           Live P&amp;L <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>today · all sleeves</span>
         </div>
-        <div className={'vt2 ' + cl(net)}><SInrF n={net} /></div>
       </div>
       <div style={{ padding: '0 16px 16px' }}>
         <IntradayChart tape={tape} overlays={SLEEVES} legsInHoverOnly ariaLabel="Live portfolio P&L today" />
