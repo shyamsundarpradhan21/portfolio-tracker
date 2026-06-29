@@ -13,11 +13,14 @@ import { cl, SInrF } from '../../lib/fmt';
 import { mergeLiveTapes } from '../../lib/pnlDaily';
 import IntradayChart from './IntradayChart';
 
-// Overlay config for the three sleeves (distinct from the broker palette).
+// Sleeve config — the curve draws ONE net line; these only label the hover split, each in
+// its TAB accent (Indian / US / Algo tab colours) so a row says which sleeve it is without a
+// second on-chart curve. (Resolve via the --tab-* vars so they're the real tab colours, not a
+// bespoke palette — per "hover labels always use the tab colour".)
 const SLEEVES = [
-  { key: 'fno', c: '#7C9CF0', label: 'F&O' },
-  { key: 'eq', c: '#5FC9B5', label: 'Equity' },
-  { key: 'us', c: '#E0A35C', label: 'US' },
+  { key: 'fno', c: 'var(--tab-algo)', label: 'F&O' },
+  { key: 'eq', c: 'var(--tab-indian)', label: 'Equity' },
+  { key: 'us', c: 'var(--tab-us)', label: 'US' },
 ];
 // The portfolio "day" the curve shows. The US sleeve runs overnight (IST), so
 // before 06:00 IST the live session still belongs to the PREVIOUS IST date — and
@@ -65,7 +68,7 @@ export default function PortfolioLiveCurve() {
         <div className={'vt2 ' + cl(net)}><SInrF n={net} /></div>
       </div>
       <div style={{ padding: '0 16px 16px' }}>
-        <IntradayChart tape={tape} overlays={SLEEVES} ariaLabel="Live portfolio P&L today" />
+        <IntradayChart tape={tape} overlays={SLEEVES} legsInHoverOnly ariaLabel="Live portfolio P&L today" />
       </div>
     </div>
   );

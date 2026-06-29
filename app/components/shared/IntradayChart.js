@@ -27,14 +27,19 @@ const f = (v) => {
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
 
-export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, ariaLabel = 'Intraday P&L' }) {
+export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, legsInHoverOnly = false, ariaLabel = 'Intraday P&L' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
   const [hov, setHov] = useState(null);   // hovered point index
 
   const pts = (tape || []).filter((p) => p && p.t != null && Number.isFinite(+p.net));
   const present = overlays.filter((o) => pts.some((p) => p && p[o.key] != null));
-  const overlay = present.length > 1;     // only split out legs when there's more than one
-  const g = scaleLines(pts, ['net', ...(overlay ? present.map((o) => o.key) : [])], PLOT_W, H);
+  const multi = present.length > 1;          // >1 sleeve → break the point down in the hover card
+  // legsInHoverOnly (Overview): draw ONLY the aggregate net line — each sleeve's divergence is
+  // shown solely in the hover, not as its own on-chart curve. The merged tape already carries
+  // each sleeve's last value forward, so the single net line is continuous across the day (a
+  // sleeve holds flat while its market is shut). Default (Algo per-broker chart) still draws legs.
+  const drawLegs = multi && !legsInHoverOnly;
+  const g = scaleLines(pts, ['net', ...(drawLegs ? present.map((o) => o.key) : [])], PLOT_W, H);
   if (!g || !g.byKey.net) return null;
   // Candle-derived geometry + S/R levels — memoized on `candles` so a hover (which only flips
   // `hov`) doesn't re-run scaleCandles over ~376 bars or the O(n·window) niftyLevels scan.
@@ -73,7 +78,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   // DIMMED sign-colour (the global +/- codes, NOT the line colour — direction must read
   // at a glance and stay subordinate to the net). Which leg is which reads off its line.
   const labels = [{ y: lastNet.y, v: netVal, c: curColor, bold: true, dim: false }];
-  if (overlay) for (const o of present) {
+  if (drawLegs) for (const o of present) {
     const arr = g.byKey[o.key];
     if (arr && arr[arr.length - 1]) {
       const v = +pts[n - 1][o.key];
@@ -87,7 +92,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const tipRows = [];
   if (ht) {
     tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
-    if (overlay) for (const o of present) {
+    if (multi) for (const o of present) {
       const raw = ht[o.key];
       if (raw == null || !Number.isFinite(+raw)) continue;   // skip a broker with no value this minute
       tipRows.push({ kind: 'broker', label: o.label, v: +raw, vc: dirColor(+raw), lc: o.c });
@@ -144,8 +149,8 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
 
       <line x1="0" y1={g.zeroY} x2={PLOT_W} y2={g.zeroY} stroke="var(--txt3)" strokeWidth=".5" strokeDasharray="2 3" />
 
-      {/* per-leg overlay — DASHED, coloured */}
-      {overlay && present.map((o) => g.byKey[o.key]
+      {/* per-leg overlay — DASHED, coloured (suppressed when legsInHoverOnly: net line only) */}
+      {drawLegs && present.map((o) => g.byKey[o.key]
         ? <path key={o.key} d={path(g.byKey[o.key])} fill="none" stroke={o.c} strokeWidth="1.3" strokeDasharray="4 3" opacity=".85" />
         : null)}
 
@@ -185,22 +190,22 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       <text x={PLOT_W} y={H + 16} className="pnl-axt" textAnchor="end">{lastNet.t}{pending ? ' · pending order' : ''}</text>
 
       {/* legend (when overlaying, watermark, or fills present) */}
-      {(overlay || nifty || marks.length > 0) && (
+      {(drawLegs || nifty || marks.length > 0) && (
         <g transform={`translate(2 ${H + 30})`} className="pnl-axt">
-          {overlay && present.map((o, i) => (
+          {drawLegs && present.map((o, i) => (
             <g key={o.key} transform={`translate(${i * 70} 0)`}>
               <line x1="0" y1="-4" x2="9" y2="-4" stroke={o.c} strokeWidth="1.6" strokeDasharray="3 2" />
               <text x="13" y="0">{o.label}</text>
             </g>
           ))}
           {nifty && (
-            <g transform={`translate(${overlay ? present.length * 70 : 0} 0)`}>
+            <g transform={`translate(${drawLegs ? present.length * 70 : 0} 0)`}>
               <rect x="0" y="-7" width="9" height="3" rx="1" fill="var(--txt2)" opacity=".4" />
               <text x="13" y="0">NIFTY 50</text>
             </g>
           )}
           {marks.length > 0 && (
-            <g transform={`translate(${(overlay ? present.length * 70 : 0) + (nifty ? 70 : 0)} 0)`}>
+            <g transform={`translate(${(drawLegs ? present.length * 70 : 0) + (nifty ? 70 : 0)} 0)`}>
               <polygon points="2,-2 -1,3 5,3" fill="var(--blu)" />
               <text x="9" y="0">buy</text>
               <polygon points="25,3 22,-2 28,-2" fill="var(--acc)" />
