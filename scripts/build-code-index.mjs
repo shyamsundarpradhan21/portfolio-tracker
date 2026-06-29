@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 // build-code-index.mjs — dependency-free, cross-platform symbol index.
 //
-// WHY: the graphify CLI is cloud-only (see tasks/feedback.md). On this Windows
-// machine there is no graph, so the agent greps the world. This script emits a
-// committed, greppable map of symbol -> file:line that local Claude Code can
-// read to pinpoint definitions without any external binary.
+// WHY: a committed, greppable map of symbol -> file:line so the agent can
+// pinpoint definitions without grepping the whole tree, and without relying on
+// any external binary or language server.
 //
 // RUN:  npm run index        (or: node scripts/build-code-index.mjs)
 // OUT:  code-index.tsv        columns: symbol <TAB> kind <TAB> path <TAB> line
@@ -20,7 +19,7 @@ const ROOT = process.cwd();
 // Only these dirs hold source worth indexing.
 const INCLUDE_DIRS = ['app', 'scripts', 'mcp', 'audit', 'data'];
 
-// Never descend into these (mirrors .graphifyignore).
+// Never descend into these (generated, vendored, or secret-bearing dirs).
 const SKIP_DIRS = new Set([
   'node_modules', '.next', '.git', '.playwright-mcp', '_sandbox',
   'build', 'out', '.vercel', '__pycache__', '.venv', 'reports',
