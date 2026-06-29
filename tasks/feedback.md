@@ -52,6 +52,16 @@ as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
 
+### Hover/tooltip labels use the TAB (sleeve) accent colour — always
+On any curve hover/tooltip that breaks a point into per-sleeve rows, colour each
+sleeve's LABEL by that sleeve's **tab accent** (Indian-tab accent for the India
+sleeve, US-tab accent for the US sleeve, etc.) — "always pick tab colours as the
+colour of choice on hover." The VALUE still uses gain/loss colour (grn/red) since
+direction = colour; only the row label carries the tab/sleeve identity colour. This
+keeps the green/red reserved for P&L direction while the hover still says which
+sleeve each row is. (Caught while mocking the merged IND→US day curve — the hover
+splits into India + US, each label in its tab colour, Net in the direction colour.)
+
 ### Type scale is TIER-DRIVEN — a figure's size is set by its card's ROLE, never by the component, the card's dimensions, or the value's length
 The app has a clean 9-step `--fs-*` scale, but the **value figure** on a card is sized
 ad hoc — by whichever value class or inline `fontSize` the component happened to reach
