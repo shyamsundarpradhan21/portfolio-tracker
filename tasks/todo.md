@@ -83,3 +83,27 @@ research metrics. Endpoints:
 1. Build order: Track A first (live attribution), then Track B (monthly research)? (recommended)
 2. KV keys `algos:v1` (A) and `algo-catalog:v1` (B) ok? App reads now, or data-layer only for now?
 3. Track A reconcile target = F&O sleeve net, stopped algos labeled-historical — confirm?
+
+---
+
+## Stratzy daily capture + Dhan join (DONE 2026-06-30) — data only, no screen yet
+B+C built behind the same adapter pattern (paste fallback intact). Discovery in feedback.md.
+- [x] `scripts/lib/stratzy-adapter.mjs` — pure normalizer + the LIVE/BACKTEST SPLIT at `liveSince`
+      (date < liveSince = backtest, ≥ = live); `hasBacktestSegment` only at ≥5 backtest days (off-by-one
+      excluded); `liveDays`; headline + backtest metrics. `fromHarvest`/`fromPaste`.
+- [x] `scripts/lib/stratzy-adapter.test.mjs` — 10 tests: backtest-head, fully-live, <5-day-head fixtures
+      assert every point labeled + the ≥5 threshold. Green.
+- [x] `scripts/lib/stratzy-harvest.snippet.js` — one `GET /api/web/algo/list` (credentials:include) → download.
+- [x] `scripts/import-stratzy-daily.mjs` — normalize 148 → JOIN Dhan on `_id==id` (prefers full-79
+      `data/dhan-full.raw.json`, falls back to scoped-41 `algo-catalog.raw.json`) → `record.dhan` |
+      `correlationAvailable` → `data/stratzy-daily.json` → KV `stratzy-daily:v1`.
+- [x] gitignore the Stratzy/dhan-full data files.
+
+### Review (verified on real data)
+- 148 algos: 140 with curve, **62 with ≥5-day backtest segment**, 41/148 correlation-joined (scoped Dhan).
+- Split verified: Wave-Return 78 backtest + 52 live (overfit case: clean backtest, live −50% mdd); held
+  IV-Imbalance/Damper fully-live (0 backtest); BTST split fine despite empty `liveSinceBacktested`.
+- KV push 1.43 MB OK. DATA ONLY — no scores computed (next step: the screen).
+- **GAP:** Dhan-full 79 download was blocked by Chrome's multi-download prompt → join used scoped 41.
+  Drop `data/dhan-full.raw.json` (79) in and re-run → coverage jumps to ~79 (importer already prefers it).
+- SKIPPED per instruction: per-algo `advisorMetrics` loop (per-range winRatio/avgProfit/booksizes).

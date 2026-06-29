@@ -390,6 +390,21 @@ it was based on field existence, before checking that the values discriminate.)
   sleeve=`algoData.category`, net=`overallPnL`. No charges field (net only) → reconcile to broker
   sleeve net (broker=total truth, Stratzy=split).
 - **`GET /api/algo/liveReturns`** → `data.returns{<algoId>:number}` (sum = "Live Returns" headline).
+- **`GET /api/web/algo/list`** (resolved 2026-06-30) → `{data:[…148 algos]}`, ONE call, BULK — each item
+  has the full daily `performance` {DD/MM/YYYY:n} curve + `rollingReturns30Day` + 77 metric fields. This is
+  the cleanest Stratzy source (no per-algo loop, no encryption — plain credentialed GET). advisorMetrics
+  (per-algo) only adds per-range trade stats (winRatio/avgProfit/booksizes); skipped for now.
+- **LIVE/BACKTEST SPLIT (the crux): boundary = `liveSince`.** A `performance` point is BACKTEST if its date
+  < `liveSince`, else LIVE. Curve starts at `liveSinceBacktested` (may be ""); when == liveSince the curve is
+  100% live (no backtest head). Use a ≥5-day threshold for `hasBacktestSegment` (a 1-day off-by-one head
+  doesn't count). Confirmed by `pastAdvices[].backtestTrade` (Stratzy's own per-trade flag). GOTCHA: the raw
+  `backtestSharpeRatio`/`backtestMaxDrawdown` fields are often **0/unreliable** — compute backtest stats from
+  the SPLIT SERIES (`split.backtest`), not those fields. Of 148: ~62 have a ≥5-day backtest segment; the
+  user's HELD algos are fully-live (no in-curve backtest) — the overfit screen is for SCREENING candidates.
+- **IDs:** Stratzy catalog `_id` == Dhan cache `id` (verified) → join Stratzy._id == Dhan.id. But the
+  portfolio's `activeAlgos[]._id` is the DEPLOYMENT id; use `activeAlgos[].advisorId` to map a held algo to
+  the catalog. Pipeline: `scripts/import-stratzy-daily.mjs` (+ `lib/stratzy-adapter.mjs`, harvest snippet) →
+  `data/stratzy-daily.json` → KV `stratzy-daily:v1`. Correlations only for the ~79 Dhan-listed algos.
 - Catalog/roster (NOT user P&L; user has 0 deployed on Dhan Algos): **Dhan** `algos.dhan.co`, host
   `algo-api.dhan.co` → `POST /algo/sub/UniversalAlgoSearch` (all-algos catalog), published under
   `/managers/stratzy/…`. Use Dhan catalog for monthly capital-allocation research, NOT for live P&L.

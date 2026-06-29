@@ -55,6 +55,14 @@
 /data/algo-catalog.paste.csv
 /data/algo-catalog.json
 
+# Track B (Stratzy) — daily live+backtest capture + Dhan join. Reproducible
+# (browser-harvest → importer) and KV-backed; large (daily curves + correlation
+# matrices). Raw captures, paste fallback, and the joined snapshot stay out of git.
+/data/stratzy-raw.json
+/data/stratzy-daily.paste.csv
+/data/stratzy-daily.json
+/data/dhan-full.raw.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
