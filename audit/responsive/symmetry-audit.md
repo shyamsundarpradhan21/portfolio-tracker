@@ -174,3 +174,40 @@ deliberate-fail sanity (force a 6-item grid to 2 cols → 3 rows → FAIL). Comp
 
 _Per-grid row counts at the converged state (desktop): Indian/US `.statgrid` 6→3×2, MF `.g3`
 3→1 row, FD/algo `.g4` 4→2×2, algo `.pnl-stats` 5→3+2, `.ins-stats` 6→3×2 — all ≤2 rows._
+
+---
+
+## Two more consistency gates — same spirit (globals = the fix, certify = the guard)
+
+Both scope to value figures inside the **converged stat cards** (`.csm` / `.pnl-stat`). They
+leave the escape / `docOverflow` / row-symmetry checks untouched; a run fails if ANY of
+symmetry / direction / value-size fails (`exit 1`).
+
+### CHECK 1 — DIRECTION colour (a gain/loss figure can never render neutral)
+- **The mapping (locked by a unit test):** `cl()` lives in `app/lib/direction.js` (JSX-free,
+  re-exported by `fmt.js`) → `n>0 → 'grn dirv'`, `n<0 → 'red dirv'`, `n===0 → 'dirv'` (neutral).
+  `app/lib/fmt.test.js` asserts positive→gain, negative→loss, zero→neutral, and that the `dirv`
+  marker is always present. This proves the colour is the **RIGHT** one.
+- **The gate (`detect()` → `DIRECTION`):** every `.dirv` figure inside a stat card with a
+  **non-zero** magnitude must compute to the `--grn` or `--red` colour; if it resolves to the
+  neutral text colour it FAILS and names the element. The DOM is glyph-free (direction = colour,
+  no `+`/`−`), so certify can only prove the colour is **PRESENT** — there is no sign in the DOM
+  to check it against; that is the unit test's job. Zero and `—` placeholders are neutral by
+  design → exempt (magnitude parsed from the glyph-free text). Reads the **computed** colour, so
+  it catches a CSS/inline override that neutralises a `.grn`/`.red` class, not just a missing class.
+
+### CHECK 2 — VALUE-SIZE consistency (no "big here, small there")
+- **The fix (globals.css):** every converged stat-card primary value is the Tier-1 token
+  (`.vt1`/`.vmd` = `--fs-2xl`). The tablet step-down (`@media (max-width:1080px)`) now targets the
+  **whole** `.vt1, .vmd` tier, not just `.g3/.g4` — previously a stat `.vmd` in a tight grid
+  (fd/mf/us) rendered `--fs-xl` while a `.pnl-stat`/`.csm` `.vmd` stayed `--fs-2xl` at 768/1024.
+- **The gate (`detect()` + `run()` → `VALUE-SIZE`):** records each stat value's computed
+  font-size by tier (`.vt1/.vmd`→T1, `.vt2`→T2, `.vt3/.vsm`→T3) and, **per breakpoint**, clusters
+  them within ±2px; >1 bucket for a tier = FAIL (names an exemplar from each bucket). Tiers are
+  gated **independently** — a deliberate secondary tier is allowed, but must be internally uniform
+  at each width. Buckets print on the `VALUE-SIZE` line and persist to `cert-*.json`
+  (`valueSizeBuckets` / `valueSizePass`, `directionPass` / `colourViolations`).
+
+**Sanity (must hold):** forcing the first Overview stat value to a wrong size **and** a neutral
+colour fails BOTH gates (DIRECTION names `div.vmd.grn="₹1.66L"`; VALUE-SIZE shows T1 spanning two
+sizes) and exits 1, while symmetry / overflow stay green — then reverted.

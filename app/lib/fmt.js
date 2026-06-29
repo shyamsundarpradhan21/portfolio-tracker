@@ -2,7 +2,10 @@
 
 import { Fragment } from 'react';
 
-export const cl  = (n) => (n >= 0 ? 'grn' : 'red');
+// cl() lives in ./direction.js (JSX-free, so it unit-tests directly) and is re-exported
+// here — every call site still imports `cl` from '../lib/fmt'. See direction.js for the
+// sign→colour contract; fmt.test.js locks it.
+export { cl } from './direction.js';
 export const sg  = (n) => (n >= 0 ? '+' : '-');
 //   = narrow no-break space, the typographic separator before a % sign so
 // it doesn't jam against the digits.

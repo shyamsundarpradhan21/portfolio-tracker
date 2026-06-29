@@ -122,6 +122,53 @@ function detect(opts) {
     statRows.push({ cls, rows: tops.size, items: kids.length });
   }
   out.statRows = statRows;
+
+  // ── CHECK 1 (direction colour PRESENT) + CHECK 2 (stat-value size consistency) ──
+  // Same spirit as the row-symmetry gate: globals.css is the fix, certify is the guard.
+  // Scope: value figures inside the converged stat cards (.csm / .pnl-stat).
+  // CHECK 1 — every directional figure (.dirv, emitted by cl()) with a NON-ZERO magnitude
+  //   must render a gain/loss colour, never the neutral text colour. The DOM is glyph-free,
+  //   so certify only proves the colour is PRESENT; fmt.test.js proves it is the RIGHT one
+  //   (sign→colour). Zero and "—" placeholders are neutral by design → exempt.
+  // CHECK 2 — record each stat value's computed font-size by tier (.vt1/.vmd=T1, .vt2=T2,
+  //   .vt3/.vsm=T3) so the run can assert ONE size per tier per breakpoint.
+  const rootCS = getComputedStyle(de);
+  const asRGB = (c) => { const s = document.createElement('span'); s.style.color = c; s.style.display = 'none'; document.body.appendChild(s); const v = getComputedStyle(s).color; s.remove(); return v; };
+  const grnRGB = asRGB(rootCS.getPropertyValue('--grn').trim() || 'green');
+  const redRGB = asRGB(rootCS.getPropertyValue('--red').trim() || 'red');
+  // magnitude of a glyph-free figure: strip ₹ $ , % spaces + the L/K/Cr scale suffix; a
+  // dash/blank → null (not a figure); anything non-numeric (e.g. "S01 64.6%") → null (skip).
+  const magOf = (txt) => {
+    const raw = (txt || '').trim();
+    if (!raw || /^[—–-]+$/.test(raw)) return null;
+    const t = raw.replace(/[₹$,\s%]/g, '').replace(/(L|K|Cr)$/i, '');
+    return /^\d*\.?\d+$/.test(t) ? Math.abs(parseFloat(t)) : null;
+  };
+  const tierOf = (el) => (el.classList.contains('vt1') || el.classList.contains('vmd')) ? 'T1'
+    : el.classList.contains('vt2') ? 'T2'
+    : (el.classList.contains('vt3') || el.classList.contains('vsm')) ? 'T3' : null;
+  const shortSel = (el) => el.tagName.toLowerCase() + (clsOf(el).trim() ? '.' + clsOf(el).trim().split(/\s+/).slice(0, 2).join('.') : '');
+  const statVals = [];     // CHECK 2: {tier, px, sel}
+  const neutralDir = [];   // CHECK 1: directional figures rendering neutral
+  for (const card of document.querySelectorAll('.csm, .pnl-stat')) {
+    for (const el of card.querySelectorAll('.vt1, .vmd, .vt2, .vt3, .vsm')) {
+      const cs2 = getComputedStyle(el);
+      if (cs2.display === 'none' || cs2.visibility === 'hidden') continue;
+      const tier = tierOf(el);
+      if (tier) statVals.push({ tier, px: Math.round(parseFloat(cs2.fontSize)), sel: shortSel(el) });
+    }
+    for (const el of card.querySelectorAll('.dirv')) {
+      const cs2 = getComputedStyle(el);
+      if (cs2.display === 'none' || cs2.visibility === 'hidden') continue;
+      const mag = magOf(el.textContent);
+      if (mag == null || mag === 0) continue;   // zero / placeholder → neutral is correct
+      if (cs2.color !== grnRGB && cs2.color !== redRGB)
+        neutralDir.push({ sel: shortSel(el), txt: (el.textContent || '').trim().slice(0, 18) });
+    }
+  }
+  out.statVals = statVals;
+  out.neutralDir = neutralDir;
+
   if (opts && opts.vclip) {
     const vclip = []; let checked = 0;
     for (const el of document.querySelectorAll('body *')) {
@@ -279,10 +326,42 @@ async function run() {
   }
   const symPass = symMaxRows <= 2;
 
-  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, symmetryPass: symPass, symmetryMaxRowsDesktop: symMaxRows, maxRowsByWidth: symDetail, symmetryViolations: symWorst, perRsp: roll };
+  // ── CHECK 1 rollup (DIRECTION colour) — same spirit as symmetry: any non-zero directional
+  // stat figure (.dirv) rendering the neutral text colour instead of gain/loss = FAIL.
+  const colourViolations = [];
+  for (const c of cells) for (const v of (c.neutralDir || [])) colourViolations.push(`@${c.w} ${c.theme}/${c.surface} ${v.sel}="${v.txt}"`);
+  const colourPass = colourViolations.length === 0;
+
+  // ── CHECK 2 rollup (VALUE-SIZE) — per breakpoint × tier, every stat value must cluster into
+  // ONE ±2px bucket. >1 bucket at a width = "big here, small there" → FAIL. Tiers are gated
+  // independently (a deliberate secondary tier is allowed, but must be internally uniform).
+  const cluster = (pxs) => { const s = [...new Set(pxs)].sort((a, b) => a - b); const b = []; for (const p of s) { if (!b.length || p - b[b.length - 1].max > 2) b.push({ min: p, max: p }); else b[b.length - 1].max = p; } return b; };
+  const sizeBuckets = {}; const sizeWorst = [];
+  for (const w of WIDTHS) {
+    sizeBuckets[w] = {};
+    for (const tier of ['T1', 'T2', 'T3']) {
+      const pxs = [];
+      for (const c of cells) if (c.w === w) for (const v of (c.statVals || [])) if (v.tier === tier) pxs.push(v.px);
+      if (!pxs.length) continue;
+      const b = cluster(pxs);
+      sizeBuckets[w][tier] = b.map((x) => x.min === x.max ? `${x.min}` : `${x.min}-${x.max}`).join('|');
+      if (b.length > 1) {
+        const ex = b.map((bk) => { for (const c of cells) if (c.w === w) for (const v of (c.statVals || [])) if (v.tier === tier && v.px >= bk.min && v.px <= bk.max) return `${v.sel}@${v.px}px(${c.theme}/${c.surface})`; return ''; });
+        sizeWorst.push(`@${w} ${tier}: ${b.length} sizes [${ex.filter(Boolean).join(' vs ')}]`);
+      }
+    }
+  }
+  const sizePass = sizeWorst.length === 0;
+
+  const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, symmetryPass: symPass, symmetryMaxRowsDesktop: symMaxRows, maxRowsByWidth: symDetail, symmetryViolations: symWorst, directionPass: colourPass, colourViolations, valueSizePass: sizePass, valueSizeBuckets: sizeBuckets, valueSizeViolations: sizeWorst, perRsp: roll };
   fs.writeFileSync(path.join(DIR, `cert-${LABEL}.json`), JSON.stringify({ summary, cells }, null, 2));
   process.stdout.write(`\n[${LABEL}] docOverflow cells=${docHits} maxDoc=${maxDoc}  clippedMax 001=${roll['RSP-001'].maxClipped} 002=${roll['RSP-002'].maxClipped} 004=${roll['RSP-004'].maxClipped} other=${roll.other.maxClipped}  ellipsis cells=${ellipsisCells} max=${maxEllipsis}\n`);
   process.stdout.write(`[${LABEL}] SYMMETRY ${symPass ? 'PASS' : '*** FAIL ***'} (≤2 rows @desktop) — max stat-grid rows/width: ${WIDTHS.map((w) => `@${w}:${symDetail[w]}r${w >= 1280 ? '' : '(tablet)'}`).join('  ')}\n`);
-  if (!symPass) { console.error(`[${LABEL}] symmetry gate FAILED — converged .statgrid rows exceed 2 rows at desktop:\n  ${symWorst.slice(0, 8).join('\n  ')}`); process.exit(1); }
+  process.stdout.write(`[${LABEL}] DIRECTION ${colourPass ? 'PASS' : '*** FAIL ***'} (non-zero stat figures must render gain/loss colour, never neutral)${colourPass ? '' : ' — ' + colourViolations.slice(0, 6).join('; ')}\n`);
+  process.stdout.write(`[${LABEL}] VALUE-SIZE ${sizePass ? 'PASS' : '*** FAIL ***'} (one size per tier per width, ±2px) — ${WIDTHS.map((w) => `@${w}:${['T1', 'T2', 'T3'].map((t) => sizeBuckets[w][t] ? `${t}=${sizeBuckets[w][t]}` : '').filter(Boolean).join(',')}`).join('  ')}\n`);
+  if (!symPass) console.error(`[${LABEL}] symmetry gate FAILED — converged .statgrid rows exceed 2 rows at desktop:\n  ${symWorst.slice(0, 8).join('\n  ')}`);
+  if (!colourPass) console.error(`[${LABEL}] DIRECTION gate FAILED — non-zero figures rendering neutral:\n  ${colourViolations.slice(0, 10).join('\n  ')}`);
+  if (!sizePass) console.error(`[${LABEL}] VALUE-SIZE gate FAILED — a tier spans >1 size bucket at a width:\n  ${sizeWorst.slice(0, 10).join('\n  ')}`);
+  if (!symPass || !colourPass || !sizePass) process.exit(1);
 }
 run().catch((e) => { console.error('FATAL', e); process.exit(1); });

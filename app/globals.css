@@ -934,9 +934,14 @@ body::before {
    orphan. If a value clips at tablet width, tighten the tile, don't drop a column. */
 /* Tablet/small-laptop (~720–1080): keep the 3-up (per the note above) but step the
    headline figure down a tier so a 7-figure value doesn't hit the .csm nowrap+ellipsis
-   clip while the tile is narrow — "tighten the tile, don't drop a column". */
+   clip while the tile is narrow — "tighten the tile, don't drop a column". The step is
+   applied to the WHOLE Tier-1 value (.vt1/.vmd), not just .g3/.g4, so every converged
+   stat-card primary value shares ONE size at this breakpoint — otherwise a stat .vmd in
+   a tight grid (fd/mf/us) rendered --fs-xl while a .pnl-stat/.csm .vmd stayed --fs-2xl
+   ("big here, small there"). The certify VALUE-SIZE gate guards this. (.hdr-card .vmd is
+   the header band, not a stat card — its own rule keeps it --fs-2xl, out of gate scope.) */
 @media (max-width: 1080px) {
-  .g3 .vmd, .g4 .vmd { font-size: var(--fs-xl); }
+  .vt1, .vmd { font-size: var(--fs-xl); }
 }
 @media (max-width: 720px) {
   /* g3/g4/g5 now shed to 1 column on their own via auto-fit (≤~560), so the old fixed
