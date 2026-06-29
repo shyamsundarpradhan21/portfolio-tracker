@@ -9,7 +9,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { APP } from '../../lib/appData';
 import { cl, SInrF, SInrC, inrC, sFull, MON } from '../../lib/fmt';
 import {
-  dailySeries, summaryStats, quantileBuckets, monthMatrix, fyOf,
+  dailySeries, summaryStats, quantileBuckets, monthMatrix, fyOf, returnsPct,
 } from '../../lib/pnlDaily';
 import IntradayChart from './IntradayChart';
 
@@ -26,8 +26,13 @@ const Stat = ({ k, v, vc, vt, foot }) => (
     {foot ? <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}>{foot}</div> : null}
   </div>
 );
+// Returns % — magnitude only; direction is colour-coded by the caller (cl), per the
+// repo's "direction = colour, never a +/− glyph" rule.
+const sPctG = (n) => Math.abs(n).toFixed(1) + '%';
+// Profit factor display: the number, ∞ when there are wins but no losses, else —.
+const pfDisplay = (s) => (s.profitFactor != null ? s.profitFactor.toFixed(2) : (s.winDays && !s.lossDays ? '∞' : '—'));
 
-export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null } = {}) {
+export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null, deployed = null } = {}) {
   const allRows = rowsProp || APP.fnoLedger?.rows || [];
   // Brokers present, busiest first — drives the broker toggle (All + each broker).
   const brokers = useMemo(() => {
@@ -39,7 +44,6 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   const [view, setView] = useState('year');
   const [broker, setBroker] = useState('all');
   const [metric, setMetric] = useState('net');   // 'net' | 'gross' — what the whole dashboard counts
-  const [dayMode, setDayMode] = useState('most'); // 'most' | 'least' profitable day
   useEffect(() => {
     try {
       const v = localStorage.getItem('nwTracker.pnlView'); if (['day', 'month', 'year', 'all'].includes(v)) setView(v);
@@ -121,9 +125,19 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
     : view === 'year' ? periodKey
     : view === 'month' ? fyOf(periodKey + '-01')
     : fyOf(periodKey);
-  // The stat panel scopes to the period in view — all-time for All, else the FY in scope.
-  const statSeries = view === 'all' ? series : series.filter((d) => fyOf(d.date) === scopeFy);
-  const stats = summaryStats(statSeries);
+  // The six stat cards recompute for the EXACT period in view (Day=day · Month=month ·
+  // Year=FY · All=all-time) and the active broker — TWR returns on the deployed base.
+  const statScope = view === 'all' ? series
+    : view === 'year' ? series.filter((d) => fyOf(d.date) === periodKey)
+    : view === 'month' ? series.filter((d) => d.date.slice(0, 7) === periodKey)
+    : series.filter((d) => d.date === periodKey);
+  const stats = summaryStats(statScope);
+  // Deployed capital is configured per STRATEGY (own+client), not per broker — so a
+  // single-broker filter has no attributable base (Dhan's P&L ÷ the whole S01 pool would
+  // understate it). Show Returns% only for the combined view; per-broker → '—' (the
+  // Analytics tab carries the per-strategy returns).
+  const capBase = (deployed && activeBroker === 'all') ? deployed.all : null;
+  const ret = returnsPct(statScope, capBase);
   const nav = (dir) => setCur((c) => ({ ...c, [view]: Math.min(lists[view].length - 1, Math.max(0, c[view] + dir)) }));
 
   return (
@@ -140,10 +154,17 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         </div>
       </div>
 
-      {/* capital / verified / YTD summary — folded into the journal as its top row */}
+      {/* capital line + verified/YTD summary — the journal's top context row */}
+      {capital ? (
+        <div className="pnl-capline">
+          <span className="lbl" style={{ margin: 0 }}>{capital.label}</span>
+          <span className="pnl-capval">{capital.value}</span>
+          {capital.foot ? <span className="pnl-capfoot">{capital.foot}</span> : null}
+        </div>
+      ) : null}
       {summary ? <div className="pnl-summary">{summary}</div> : null}
 
-      {/* ── controls: broker filter (Net/Gross removed — captured in the cards) ── */}
+      {/* ── controls: broker filter (drives the calendar AND recomputes the six cards) ── */}
       {brokers.length > 1 && (
         <div className="pnl-brokers">
           <div className="seg" role="tablist" aria-label="Broker">
@@ -156,14 +177,19 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         </div>
       )}
 
-      {/* ── stat panel — every subtext is a 2-corner FOOTER (value left / right, colour-coded).
-            `capital` (trading capital · live) leads, adjacent to Net P&L. ── */}
-      <div className={'pnl-stats' + (capital ? ' has-cap' : '')}>
-        {capital ? <Stat k={capital.label} v={capital.value} foot={capital.foot} /> : null}
+      {/* ── stat panel — the spec's SIX on the .statgrid (3×2). Each foot is a 2-corner
+            footer (value left/right, colour-coded). All recompute per period × broker. ── */}
+      <div className="pnl-stats">
         <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
           foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />
-        <DayStat stats={stats} mode={dayMode} onToggle={() => setDayMode((m) => (m === 'most' ? 'least' : 'most'))} />
+        <Stat k="Returns" vc={ret == null ? '' : cl(ret)} v={ret == null ? '—' : sPctG(ret)} vt="TWR on deployed capital"
+          foot={activeBroker === 'all'
+            ? <span style={{ color: 'var(--txt2)' }}>on {inrC(deployed?.all || 0)} deployed</span>
+            : <span style={{ color: 'var(--txt3)' }}>per-broker capital n/a · see Analytics</span>} />
+        <Stat k="Profit Factor" v={pfDisplay(stats)} vt="gross profit / gross loss"
+          foot={<><span className="grn">profits {inrC(stats.winSum)}</span><span className="red">losses {inrC(Math.abs(stats.lossSum))}</span></>} />
+        <MostLeastStat stats={stats} />
         <Stat k="Trading days" v={stats.tradingDays}
           foot={<><span>streak 🔥 {stats.bestStreak}</span><span>now {stats.currentStreak}{stats.currentStreakWin ? '' : ' (loss)'}</span></>} />
       </div>
@@ -425,16 +451,20 @@ function WinRateStat({ stats }) {
   );
 }
 
-// Most / least profitable day, click to toggle.
-function DayStat({ stats, mode, onToggle }) {
-  const d = mode === 'most' ? stats.mostProfit : stats.leastProfit;
+// Most & Least profitable day shown together — exact ₹ on hover (title), foot = the two dates.
+function MostLeastStat({ stats }) {
+  const m = stats.mostProfit, l = stats.leastProfit;
   return (
-    <div className="pnl-stat" onClick={onToggle} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }} title="Click to toggle most / least profitable day">
-      <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        {mode === 'most' ? 'Most profitable day' : 'Least profitable day'} <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-sm)' }}>↻</span>
+    <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="lbl" style={{ margin: 0 }}>Most / Least profitable day</div>
+      <div className="vmd" title={[m && `most ${sFull(m.net)}`, l && `least ${sFull(l.net)}`].filter(Boolean).join(' · ')} style={{ marginTop: 5 }}>
+        {m ? <span className={cl(m.net)}><SInrC n={m.net} /></span> : '—'}
+        <span style={{ color: 'var(--txt3)' }}> / </span>
+        {l ? <span className={cl(l.net)}><SInrC n={l.net} /></span> : '—'}
       </div>
-      <div className={'vmd ' + (d ? cl(d.net) : '')} title={d ? sFull(d.net) : undefined} style={{ marginTop: 5 }}>{d ? <SInrC n={d.net} /> : '—'}</div>
-      <div className="sub" style={{ marginTop: 8 }}>{d ? prettyDate(d.date) : ''}</div>
+      <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}>
+        <span>{m ? prettyDate(m.date) : '—'}</span><span>{l ? prettyDate(l.date) : '—'}</span>
+      </div>
     </div>
   );
 }

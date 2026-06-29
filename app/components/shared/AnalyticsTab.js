@@ -22,7 +22,10 @@ const r2 = (n) => Math.round(n * 100) / 100;
 const ms = (d) => Date.parse(d);
 // compact ₹ for chart labels (no +/- glyph — colour encodes direction)
 const cmpRs = (v) => { const a = Math.abs(Math.round(v)); return a >= 1e5 ? (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? Math.round(a / 1e3) + 'K' : '' + a; };
+// Signed % — ONLY for the multi-line chart labels, where colour = series identity (not
+// gain/loss), so the sign is the direction cue. cl-coloured cards/tables use uPct (no glyph).
 const sPct = (n) => (n == null ? '—' : (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1) + '%');
+const uPct = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
 const sNum = (n, d = 2) => (n == null ? '—' : n.toFixed(d));
 
 // cumulative TWR % path over a day series on a constant base, keyed by date-ms.
@@ -170,7 +173,7 @@ export default function AnalyticsTab({ ALGO }) {
 
   const COLS = [['S01', M.S01], ['S02', M.S02], ['Overall', M.all]];
   const cell = (key, v, c) => <td key={key} className={'an-num ' + (c || '')}>{v}</td>;
-  const sCellPct = (m, k) => cell(m.key, sPct(m[k]), m[k] == null ? '' : cl(m[k]));
+  const sCellPct = (m, k) => cell(m.key, uPct(m[k]), m[k] == null ? '' : cl(m[k]));
 
   return (
     <div>
@@ -196,10 +199,10 @@ export default function AnalyticsTab({ ALGO }) {
       {/* Performance — cumulative return + CAGR (TWR) */}
       <div className="an-sub">Performance</div>
       <div className="an-2 sec">
-        <div className="csm"><div className="lbl">Cumulative Return (TWR)</div><div className={'vmd ' + (cur.ret == null ? '' : cl(cur.ret))}>{sPct(cur.ret)}</div>
-          <div className="sub split"><span className={cl(M.S01.ret || 0)}>S01 {sPct(M.S01.ret)}</span><span className={cl(M.S02.ret || 0)}>S02 {sPct(M.S02.ret)}</span></div></div>
-        <div className="csm"><div className="lbl">CAGR (TWR)</div><div className={'vmd ' + (cur.cagr == null ? '' : cl(cur.cagr))}>{sPct(cur.cagr)}</div>
-          <div className="sub split"><span className={cl(M.S01.cagr || 0)}>S01 {sPct(M.S01.cagr)}</span><span className={cl(M.S02.cagr || 0)}>S02 {sPct(M.S02.cagr)}</span></div></div>
+        <div className="csm"><div className="lbl">Cumulative Return (TWR)</div><div className={'vmd ' + (cur.ret == null ? '' : cl(cur.ret))}>{uPct(cur.ret)}</div>
+          <div className="sub split"><span className={cl(M.S01.ret || 0)}>S01 {uPct(M.S01.ret)}</span><span className={cl(M.S02.ret || 0)}>S02 {uPct(M.S02.ret)}</span></div></div>
+        <div className="csm"><div className="lbl">CAGR (TWR)</div><div className={'vmd ' + (cur.cagr == null ? '' : cl(cur.cagr))}>{uPct(cur.cagr)}</div>
+          <div className="sub split"><span className={cl(M.S01.cagr || 0)}>S01 {uPct(M.S01.cagr)}</span><span className={cl(M.S02.cagr || 0)}>S02 {uPct(M.S02.cagr)}</span></div></div>
       </div>
 
       {/* Best vs Worst duration */}

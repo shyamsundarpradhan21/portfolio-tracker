@@ -53,6 +53,14 @@ export default function AlgoTab({
   // Headline capital: the LIVE trading-account total (deployed + free) from the broker funds
   // reads when present — dynamic, moves with the account — else the static own-capital config.
   const ownStatic = ALGO.s01.split.own + ALGO.s02.split.own;
+  // Deployed (own+client) base per strategy → per broker (sleeve map), for the Overview
+  // Returns% card. Dhan/Zerodha → S01, Upstox/Fyers → S02; 'all' = combined.
+  const s01Base = ALGO.s01.split.own + ALGO.s01.split.client;
+  const s02Base = ALGO.s02.split.own + ALGO.s02.split.client;
+  const deployed = { all: s01Base + s02Base, Dhan: s01Base, Zerodha: s01Base, Upstox: s02Base, Fyers: s02Base };
+  // Review cadence → scoped insights (the feed is flat today: only the default cadence
+  // carries data; other cadences show a placeholder until the AI run covers them).
+  const cadenceData = insights?.trading?.[cadence.toLowerCase()] || (cadence === 'Monthly' ? insights?.trading : null);
   return (
     <div>
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -72,6 +80,7 @@ export default function AlgoTab({
       {sub === 'overview' && (
         <div className="sec">
           <PnlDashboard
+            deployed={deployed}
             capital={dep.any
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
               : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
@@ -185,7 +194,6 @@ export default function AlgoTab({
       </>)}
 
       {sub === 'review' && (<>
-        <AnalysisCard data={insights?.trading} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--pnk)" />
         <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
           <div className="seg" role="tablist" aria-label="Review cadence">
             {CADENCES.map((c) => (
@@ -193,6 +201,14 @@ export default function AlgoTab({
             ))}
           </div>
         </div>
+        {insightsOn && (
+          cadenceData && (cadenceData.performance || cadenceData.outlook)
+            ? <AnalysisCard data={cadenceData} on={insightsOn} loading={insightsFirstLoad} accent="var(--pnk)" title={`AI review · ${cadence}`} />
+            : <div className="card sec">
+                <div className="ctitle" style={{ marginBottom: 8 }}>AI review · {cadence}</div>
+                <div className="sub" style={{ lineHeight: 1.6 }}>No {cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.</div>
+              </div>
+        )}
 
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
