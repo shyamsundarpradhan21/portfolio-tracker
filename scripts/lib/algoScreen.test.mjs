@@ -5,9 +5,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   mean, std, downsideDeviation, skewness, maxDrawdown, segmentMetrics,
-  overfitRatio, confidenceTier, correlationToHeld, styleOf, flagOutReasons,
+  overfitRatio, confidenceTier, correlationToHeld, styleOf,
+  riskStructure, tierFor, CAPITAL_TIERS, classifyElimination, regimeBuckets,
   runScreen, DEFAULT_PARAMS,
 } from './algoScreen.mjs';
+import { buildRegimeCalendar } from './regime.mjs';
 
 // points from a returns array with sequential weekday-ish dates in 2026.
 const pts = (returns, startMs = Date.UTC(2026, 0, 1)) =>
@@ -79,61 +81,105 @@ describe('correlationToHeld', () => {
   });
 });
 
-describe('flagOutReasons (eliminate, don\'t score)', () => {
-  const base = { liveDays: 200, live: { maxDD: -10 }, overfit: null };
-  it('clean survivor → no reasons', () => {
-    expect(flagOutReasons(base)).toEqual([]);
+describe('(4) riskStructure', () => {
+  it('defined = hedged/credit-spread; undefined = naked buying/selling; equity/other', () => {
+    expect(riskStructure({ dhan: { tags: ['Hedged'] }, displayCategory: 'Credit Spread' })).toBe('defined');
+    expect(riskStructure({ displayCategory: 'Index Strategies', name: 'Flow Credit Spread Overnight' })).toBe('defined');
+    expect(riskStructure({ dhan: { tags: ['Buying'] }, displayCategory: 'Option Buying' })).toBe('undefined');
+    expect(riskStructure({ displayCategory: 'Short Strangle' })).toBe('undefined');
+    expect(riskStructure({ displayCategory: 'Investing' })).toBe('equity');
+    expect(riskStructure({ displayCategory: 'Index Strategies', name: 'Something Else' })).toBe('other');
   });
-  it('flags maxDD < -35, overfit < 0.5, liveDays < 90', () => {
-    expect(flagOutReasons({ ...base, live: { maxDD: -40 } })[0]).toMatch(/maxDD/);
-    expect(flagOutReasons({ ...base, overfit: { sharpe: 0.4 } })[0]).toMatch(/overfitRatio/);
-    expect(flagOutReasons({ ...base, liveDays: 80 })[0]).toMatch(/liveDays/);
+});
+
+describe('(2) capital tiers', () => {
+  it('tierFor maps capital → tier; today ~2.3L = conservative/defined-only', () => {
+    expect(tierFor(231216).name).toBe('conservative');
+    expect(tierFor(231216).admit).toEqual(['defined']);
+    expect(tierFor(800000).name).toBe('balanced');
+    expect(tierFor(5_000_000).name).toBe('aggressive');
+    expect(CAPITAL_TIERS[0].dd.defined).toBeGreaterThan(CAPITAL_TIERS[0].dd.undefined); // naked tolerates deeper DD
+  });
+});
+
+describe('(3) classifyElimination — OUT (kills) vs PARK (capital/drawdown)', () => {
+  const tier = tierFor(231216); // conservative, admit defined only
+  it('overfit / no-live / thin → OUT', () => {
+    expect(classifyElimination({ structure: 'defined', live: { maxDD: -10 }, overfit: { sharpe: 0.4 }, liveDays: 200 }, tier).out[0]).toMatch(/overfitRatio/);
+    expect(classifyElimination({ structure: 'defined', live: null, liveDays: 200 }, tier).out).toContain('no live series');
+    expect(classifyElimination({ structure: 'defined', live: { maxDD: -10 }, liveDays: 50 }, tier).out[0]).toMatch(/liveDays/);
+  });
+  it('undefined structure at conservative tier → PARK (not OUT)', () => {
+    const r = classifyElimination({ structure: 'undefined', live: { maxDD: -10 }, liveDays: 200 }, tier);
+    expect(r.out).toEqual([]);
+    expect(r.park[0]).toMatch(/not admitted/);
+  });
+  it('defined algo too deep for tier tolerance → PARK on drawdown', () => {
+    const r = classifyElimination({ structure: 'defined', live: { maxDD: -30 }, liveDays: 200 }, tier); // -30 < -25
+    expect(r.park[0]).toMatch(/tolerance -25/);
   });
 });
 
 // ── the screen end-to-end on a tiny universe ─────────────────────────────────
-function rec(id, name, tags, liveReturns, liveDays, corr, opts = {}) {
+function rec(id, name, cat, liveReturns, liveDays, corr, opts = {}) {
   return {
-    id, name, displayCategory: 'X', category: 'X', correlationAvailable: !!corr,
+    id, name, displayCategory: cat, category: cat, correlationAvailable: !!corr,
     stratzy: {
       liveDays, hasBacktestSegment: !!opts.backtest,
-      split: { live: pts(liveReturns), backtest: opts.backtest ? pts(opts.backtest) : [] },
+      split: { live: pts(liveReturns, opts.start), backtest: opts.backtest ? pts(opts.backtest) : [] },
     },
-    dhan: corr ? { tags, correlations: { overall: corr } } : null,
+    dhan: corr ? { tags: opts.tags || [], correlations: { overall: corr } } : null,
   };
 }
 
-describe('runScreen — confront-my-picks + redundancy', () => {
-  // Two held Hedged algos, mutually correlated 0.8 (redundant). A Hedged survivor C
-  // with higher live sortino AND lower corr-to-basket dominates them. A different-style
-  // survivor must NOT confront. A maxDD blowup is flagged OUT.
-  const H1 = rec('h1', 'H1', ['Hedged'], [1, -1, 1, -1, 2], 200, { H2: 0.8, C: 0.2, D: 0.1 });
-  const H2 = rec('h2', 'H2', ['Hedged'], [1, -1, 1, 0, 1], 200, { H1: 0.8, C: 0.3, D: 0.1 });
-  const C = rec('c', 'C', ['Hedged'], [2, -0.5, 2, 1, 3], 200, { H1: 0.2, H2: 0.3 });
-  const Dother = rec('d', 'D', ['Selling'], [3, 1, 2, 1, 2], 200, { H1: 0.1, H2: 0.1 });
-  const BlowUp = rec('e', 'E', ['Hedged'], [5, -50, 5, 5, 5], 200, { H1: 0.1, H2: 0.1 });
+describe('runScreen — out/parked split, confront, redundancy (aggressive tier to admit all)', () => {
+  // Two held Credit-Spread (defined) algos, mutually correlated 0.8 (redundant). A
+  // defined survivor C beats them on live sortino AND is more diversifying. A Selling
+  // (undefined) survivor must not confront. A defined maxDD blowup is PARKED (drawdown),
+  // not OUT. Use aggressive tier so structure-admit doesn't park C/D.
+  const H1 = rec('h1', 'H1', 'Credit Spread', [1, -1, 1, -1, 2], 200, { H2: 0.8, C: 0.2, D: 0.1 }, { tags: ['Hedged'] });
+  const H2 = rec('h2', 'H2', 'Credit Spread', [1, -1, 1, 0, 1], 200, { H1: 0.8, C: 0.3, D: 0.1 }, { tags: ['Hedged'] });
+  const C = rec('c', 'C', 'Credit Spread', [2, -0.5, 2, 1, 3], 200, { H1: 0.2, H2: 0.3 }, { tags: ['Hedged'] });
+  const Dother = rec('d', 'D', 'Short Strangle', [3, 1, 2, 1, 2], 200, { H1: 0.1, H2: 0.1 }, { tags: ['Selling'] });
+  const BlowUp = rec('e', 'E', 'Credit Spread', [5, -50, 5, 5, 5], 200, { H1: 0.1 }, { tags: ['Hedged'] });
+  const Overfit = rec('f', 'F', 'Credit Spread', [1, -1, 1, -1, 2], 200, { H1: 0.1 }, { tags: ['Hedged'], backtest: [10, 9, 11, 10, 12] });
 
-  const out = runScreen([H1, H2, C, Dother, BlowUp], { heldIds: ['h1', 'h2'] });
+  const out = runScreen([H1, H2, C, Dother, BlowUp, Overfit], { heldIds: ['h1', 'h2'], capital: 5_000_000 });
 
-  it('held set is surfaced and judged (not flagged out)', () => {
+  it('held set surfaced (never eliminated)', () => {
     expect(out.held.map((h) => h.name).sort()).toEqual(['H1', 'H2']);
+    expect(out.tier.name).toBe('aggressive');
   });
-  it('maxDD blowup is flagged OUT, clean ones survive', () => {
-    expect(out.flaggedOut.map((r) => r.name)).toContain('E');
+  it('maxDD blowup → PARKED (drawdown), not OUT', () => {
+    expect(out.parked.map((r) => r.name)).toContain('E');
+    expect(out.out.map((r) => r.name)).not.toContain('E');
+    expect(out.parked.find((r) => r.name === 'E').revisitTier).toBeNull(); // -50 too deep even for aggressive (-45)
+  });
+  it('clean defined + undefined survive at aggressive tier', () => {
     expect(out.survivors.map((r) => r.name).sort()).toEqual(['C', 'D']);
   });
-  it('emits "held dominated by" for the same-style, higher-sortino, more-diversifying candidate', () => {
-    const h1conf = out.confrontations.find((c) => c.held === 'H1');
-    expect(h1conf.dominatedBy.map((d) => d.name)).toContain('C');     // C beats H1, lower corr
-    expect(h1conf.dominatedBy.map((d) => d.name)).not.toContain('D'); // different style
-    expect(h1conf.dominatedBy[0].line).toMatch(/dominated by "C"/);
+  it('confront: same-style higher-sortino more-diversifying candidate dominates held', () => {
+    const h1 = out.confrontations.find((c) => c.held === 'H1');
+    expect(h1.dominatedBy.map((d) => d.name)).toContain('C');
+    expect(h1.dominatedBy.map((d) => d.name)).not.toContain('D'); // different style (undefined)
   });
-  it('flags the redundant held pair (corr 0.8 > 0.7)', () => {
+  it('redundant held pair flagged (corr 0.8)', () => {
     expect(out.redundant).toEqual([{ a: 'H1', b: 'H2', corr: 0.8 }]);
   });
-  it('carries provisional / noOverfitCheck / noCorrelation flags', () => {
-    const c = out.survivors.find((r) => r.name === 'C');
-    expect(c.flags.noOverfitCheck).toBe(true); // no backtest segment
-    expect(c.flags.provisional).toBe(false);   // 200 days
+});
+
+describe('(1) regimeBuckets — bucket live returns by regime, flag thin', () => {
+  it('buckets by the day\'s trend and flags thin buckets', () => {
+    // 22-day up-ramp calendar; an algo trading only the up-trend days → up bucket filled, others empty/thin.
+    const nifty = Array.from({ length: 22 }, (_, i) => ({ date: `2026-01-${String(i + 1).padStart(2, '0')}`, c: 100 + i }));
+    const vix = nifty.map((d) => ({ date: d.date, vix: 13 }));
+    const cal = buildRegimeCalendar(nifty, vix);
+    const live = [21, 22].map((d) => ({ date: `${String(d).padStart(2, '0')}/01/2026`, v: 1 }))
+      .concat(Array.from({ length: 6 }, (_, i) => ({ date: `${String(21).padStart(2, '0')}/01/2026`, v: 1 }))); // pad to >=5 up-days
+    const rb = regimeBuckets({ stratzy: { split: { live } } }, cal);
+    expect(rb.up.dayCount).toBeGreaterThanOrEqual(5);
+    expect(rb.up.thin).toBe(rb.up.dayCount < 25);
+    expect(rb.down.dayCount).toBe(0);
+    expect(rb.down.thin).toBe(true); // empty bucket IS the finding
   });
 });

@@ -9,8 +9,11 @@
 // backtest* fields read 0 on fully-live algos, so we compute backtest stats from the
 // series, never from those fields.
 
+import { regimeForDate } from './regime.mjs';
+
 const DAY = 86400000;
-const MIN_POINTS = 5; // below this a segment is too thin to characterise
+const MIN_POINTS = 5;  // below this a segment is too thin to characterise
+const THIN_DAYS = 25;  // a regime bucket below this is "untested" (flagged, not hidden)
 
 // ── stat primitives (pure) ───────────────────────────────────────────────────
 export const mean = (xs) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
@@ -123,49 +126,136 @@ export function screenAlgo(record, heldNames) {
   };
 }
 
-// ── the screen: eliminate, don't score ───────────────────────────────────────
-export const DEFAULT_PARAMS = { maxDDFloor: -35, overfitMin: 0.5, minLiveDays: 90, redundantCorr: 0.7 };
-
-// Reasons an algo is flagged OUT of "consider". Empty array = survivor.
-export function flagOutReasons(row, p = DEFAULT_PARAMS) {
-  const out = [];
-  if (row.live?.maxDD != null && row.live.maxDD < p.maxDDFloor) out.push(`maxDD ${row.live.maxDD} < ${p.maxDDFloor}`);
-  if (row.overfit?.sharpe != null && row.overfit.sharpe < p.overfitMin) out.push(`overfitRatio ${row.overfit.sharpe} < ${p.overfitMin}`);
-  if (row.liveDays != null && row.liveDays < p.minLiveDays) out.push(`liveDays ${row.liveDays} < ${p.minLiveDays}`);
-  if (!row.live) out.push('no live series');
-  return out;
+// ── (1) regime conditioning — bucket LIVE returns by the day's regime ─────────
+const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); const i = (s.length - 1) / 2; return s.length % 2 ? s[i] : (s[i - 0.5] + s[i + 0.5]) / 2; };
+function livePeriodsPerYear(record) {
+  const pts = record.stratzy.split.live;
+  if (pts.length < 2) return null;
+  const span = spanDaysOf(pts) || pts.length;
+  return (pts.length * 365.25) / span;
+}
+// Per-regime metrics for an algo's LIVE returns. Thin buckets (<25 days) are FLAGGED,
+// not hidden — an empty/thin trend bucket IS the finding.
+export function regimeBuckets(record, cal) {
+  const ppy = livePeriodsPerYear(record);
+  const b = { up: [], down: [], chop: [], stressed: [] };
+  let matched = 0, unmatched = 0;
+  for (const pt of record.stratzy.split.live) {
+    const r = regimeForDate(cal, pt.date);
+    if (!r) { unmatched++; continue; }
+    matched++;
+    if (r.trend && b[r.trend]) b[r.trend].push(pt.v);
+    if (r.vol === 'stressed') b.stressed.push(pt.v);
+  }
+  const M = (vs) => {
+    const dayCount = vs.length;
+    if (dayCount < MIN_POINTS) return { dayCount, thin: true, sortino: null, cagr: null, maxDD: null };
+    const m = mean(vs), dd = downsideDeviation(vs);
+    return { dayCount, thin: dayCount < THIN_DAYS, sortino: dd ? round((m / dd) * Math.sqrt(ppy)) : null, cagr: ppy ? round(m * ppy) : null, maxDD: round(maxDrawdown(vs)) };
+  };
+  return { matched, unmatched, up: M(b.up), down: M(b.down), chop: M(b.chop), stressed: M(b.stressed) };
 }
 
-// Full screen over the universe. Descriptive: returns held rows, survivors,
-// flagged-out, and confront-my-picks lines. NOT a single ranking.
-export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS } = {}) {
+// ── (4) risk STRUCTURE from style/category — defined vs undefined risk ────────
+export function riskStructure(record) {
+  const tags = record?.dhan?.tags || [];
+  const cat = record?.displayCategory || record?.category || '';
+  const name = record?.name || '';
+  if (tags.includes('Hedged') || cat === 'Credit Spread' || /credit spread|iron condor|butterfly/i.test(name)) return 'defined';
+  if (tags.includes('Buying') || tags.includes('Selling') ||
+    ['Option Buying', 'Short Strangle', 'Short Straddle', 'Options', 'Stock Options'].includes(cat) ||
+    /straddle|strangle/i.test(name)) return 'undefined';
+  if (['Investing', 'Swing', 'Intraday Cash', 'Intraday'].includes(cat)) return 'equity';
+  return 'other';
+}
+
+// ── (2) capital-tiered thresholds — looser DD + more structures as capital grows ─
+// Defined-risk (spreads) tolerate less DD than naked; tolerance widens with capital.
+// Today's deployed capital (~₹2.3L) → conservative/defined-risk tier. Tunable.
+export const CAPITAL_TIERS = [
+  { name: 'conservative', upTo: 500000, admit: ['defined'], dd: { defined: -25, undefined: -45, equity: -20, other: -30 } },
+  { name: 'balanced', upTo: 1500000, admit: ['defined', 'undefined'], dd: { defined: -35, undefined: -60, equity: -25, other: -40 } },
+  { name: 'aggressive', upTo: Infinity, admit: ['defined', 'undefined', 'equity', 'other'], dd: { defined: -45, undefined: -75, equity: -35, other: -55 } },
+];
+export const tierFor = (capital) => CAPITAL_TIERS.find((t) => (capital ?? Infinity) <= t.upTo) || CAPITAL_TIERS.at(-1);
+// Lowest tier that would admit this row (structure admitted AND DD within tolerance).
+function revisitTierFor(row) {
+  for (const t of CAPITAL_TIERS) {
+    if (!t.admit.includes(row.structure)) continue;
+    const tol = t.dd[row.structure];
+    if (row.live?.maxDD == null || tol == null || row.live.maxDD >= tol) return t.name;
+  }
+  return null; // too deep even for the top tier
+}
+
+// ── (3) split elimination: genuinely OUT vs PARKED (capital/drawdown watchlist) ─
+export const DEFAULT_PARAMS = { overfitMin: 0.5, minLiveDays: 90, redundantCorr: 0.7, structureOutlierMAD: 2 };
+
+// OUT = overfit / no-live / thin (genuine kills). PARK = structure-not-admitted or
+// drawdown-below-tier (re-screened higher-octane algos for when capital scales).
+export function classifyElimination(row, tier, p = DEFAULT_PARAMS) {
+  const out = [], park = [];
+  if (!row.live) out.push('no live series');
+  if (row.overfit?.sharpe != null && row.overfit.sharpe < p.overfitMin) out.push(`overfitRatio ${row.overfit.sharpe} < ${p.overfitMin}`);
+  if (row.liveDays != null && row.liveDays < p.minLiveDays) out.push(`liveDays ${row.liveDays} < ${p.minLiveDays} (thin)`);
+  if (!tier.admit.includes(row.structure)) park.push(`structure '${row.structure}' not admitted at ${tier.name} tier`);
+  const tol = tier.dd[row.structure];
+  if (row.live?.maxDD != null && tol != null && row.live.maxDD < tol) park.push(`live maxDD ${row.live.maxDD} below ${tier.name} ${row.structure} tolerance ${tol}`);
+  return { out, park };
+}
+
+// Full screen. Descriptive: held + survivors + OUT + PARKED + confront + redundancy.
+// Optional regimeCal enables per-regime buckets; capital selects the tier.
+export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regimeCal = null, capital = null } = {}) {
   const p = { ...DEFAULT_PARAMS, ...params };
+  const tier = tierFor(capital);
   const heldSet = new Set(heldIds);
   const heldNames = records.filter((r) => heldSet.has(r.id)).map((r) => r.name);
 
-  const rows = records.map((r) => ({ ...screenAlgo(r, heldNames), held: heldSet.has(r.id) }));
-  const byId = new Map(rows.map((r) => [r.id, r]));
+  const rows = records.map((r) => {
+    const row = { ...screenAlgo(r, heldNames), held: heldSet.has(r.id), structure: riskStructure(r) };
+    row.regime = regimeCal ? regimeBuckets(r, regimeCal) : null;
+    return row;
+  });
 
-  for (const row of rows) row.outReasons = flagOutReasons(row, p);
+  // (4) structure-relative DD: flag within-structure OUTLIERS (a spread drawing down
+  // like a naked) instead of one flat floor. median ± k·MAD over same-structure peers.
+  const structureDD = {};
+  for (const st of ['defined', 'undefined', 'equity', 'other']) {
+    const dds = rows.filter((r) => r.structure === st && r.live?.maxDD != null).map((r) => r.live.maxDD);
+    const med = median(dds);
+    structureDD[st] = dds.length ? { median: round(med), mad: round(median(dds.map((x) => Math.abs(x - med)))), n: dds.length } : null;
+  }
+  for (const row of rows) {
+    const s = structureDD[row.structure];
+    row.structureOutlier = !!(s && s.mad > 0 && row.live?.maxDD != null && row.live.maxDD < s.median - p.structureOutlierMAD * s.mad);
+  }
+
+  // classify into held / survivors / out / parked
+  for (const row of rows) {
+    const { out, park } = classifyElimination(row, tier, p);
+    row.outReasons = out; row.parkReasons = park;
+    row.revisitTier = !out.length && park.length ? revisitTierFor(row) : null;
+  }
   const held = rows.filter((r) => r.held);
-  const survivors = rows.filter((r) => !r.held && r.outReasons.length === 0);
-  const flaggedOut = rows.filter((r) => !r.held && r.outReasons.length > 0);
-
-  // sort survivors for PRESENTATION only (live sortino desc, then diversification).
+  const nonHeld = rows.filter((r) => !r.held);
+  const outAlgos = nonHeld.filter((r) => r.outReasons.length > 0);
+  const parked = nonHeld.filter((r) => r.outReasons.length === 0 && r.parkReasons.length > 0);
+  const survivors = nonHeld.filter((r) => r.outReasons.length === 0 && r.parkReasons.length === 0);
   survivors.sort((a, b) => (b.live?.sortino ?? -Infinity) - (a.live?.sortino ?? -Infinity));
 
-  // confront-my-picks: per held algo, same-style survivors that beat it on live
-  // sortino AND are more diversifying (lower corr-to-basket than the incumbent).
+  // confront-my-picks: same-style survivors beating a held algo on live sortino AND
+  // more diversifying (lower corr-to-basket than the incumbent).
   const confrontations = [];
   for (const h of held) {
     if (!h.live) continue;
-    const incumbentCorr = h.corr.avg; // held's own corr to the rest of the basket
+    const incumbentCorr = h.corr.avg;
     const challengers = survivors
-      .filter((c) => c.style === h.style && c.live?.sortino != null && h.live.sortino != null && c.live.sortino > h.live.sortino)
+      .filter((c) => c.style === h.style && c.live?.sortino != null && c.live.sortino > h.live.sortino)
       .filter((c) => incumbentCorr == null || c.corr.avg == null || c.corr.avg < incumbentCorr)
-      .sort((a, b) => (b.live.sortino - a.live.sortino));
+      .sort((a, b) => b.live.sortino - a.live.sortino);
     confrontations.push({
-      held: h.name, heldSortino: h.live.sortino, heldCorrToBasket: incumbentCorr,
+      held: h.name, heldSortino: h.live.sortino, heldCorrToBasket: incumbentCorr, heldStructureOutlier: h.structureOutlier,
       dominatedBy: challengers.slice(0, 3).map((c) => ({
         name: c.name, sortino: c.live.sortino, corrToBasket: c.corr.avg, liveDays: c.liveDays, confidence: c.confidence,
         line: `held "${h.name}" (sortino ${h.live.sortino}) dominated by "${c.name}" (sortino ${c.live.sortino}` +
@@ -174,13 +264,12 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS } = {
     });
   }
 
-  // redundancy: held pairs whose mutual correlation exceeds the threshold.
   const redundant = [];
   for (let i = 0; i < held.length; i++) for (let j = i + 1; j < held.length; j++) {
-    const a = records.find((r) => r.id === held[i].id), b = held[j];
-    const c = a?.dhan?.correlations?.overall?.[b.name];
+    const a = records.find((r) => r.id === held[i].id);
+    const c = a?.dhan?.correlations?.overall?.[held[j].name];
     if (c != null && c > p.redundantCorr) redundant.push({ a: held[i].name, b: held[j].name, corr: round(c) });
   }
 
-  return { params: p, heldNames, held, survivors, flaggedOut, confrontations, redundant };
+  return { params: p, tier, capital, heldNames, structureDD, held, survivors, out: outAlgos, parked, flaggedOut: [...outAlgos, ...parked], confrontations, redundant };
 }

@@ -127,3 +127,9 @@ login-*.png
 
 # Held basket (personal: which algos the user runs)
 /data/held-algos.json
+
+# Screen output (renders the user's held-algo analysis)
+/audit/algo-screen.md
+
+# Regime classifier inputs (regenerable: public Nifty/VIX from Yahoo)
+/data/regime-inputs.json
