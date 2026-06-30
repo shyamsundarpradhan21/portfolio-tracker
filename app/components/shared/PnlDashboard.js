@@ -180,7 +180,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
       {/* ── stat panel — the spec's SIX on the .statgrid (3×2). Each foot is a 2-corner
             footer (value left/right, colour-coded). All recompute per period × broker. ── */}
       <div className="pnl-stats">
-        <Stat k="Net P&L" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
+        <Stat k="Net realised" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
           foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />
         <Stat k="Returns" vc={ret == null ? '' : cl(ret)} v={ret == null ? '—' : sPctG(ret)} vt="TWR on deployed capital"
@@ -323,6 +323,7 @@ function DayPanel({ date, byDate }) {
     return () => { on = false; if (id) clearInterval(id); };
   }, [date]);
   const tape = liveTape != null ? liveTape : (APP.fnoIntraday?.days?.[date] || []);
+  const mtmTape = toLiveMtmTape(tape);
   const pending = tape.some((p) => p.pending);
   // Durability guard: a PAST day that has data but isn't in this deployment's committed
   // archive lives only in the 3-day KV cache — flag it so a missed close-commit is visible
@@ -339,19 +340,19 @@ function DayPanel({ date, byDate }) {
           <span><b style={{ color: 'var(--sc-opt)', fontWeight: 700 }}>Live-cache only.</b> This day isn&apos;t in the committed archive this build ships, so it survives only in the 3-day live cache and will vanish once that expires. Commit &amp; redeploy the intraday archive to keep it.</span>
         </div>
       ) : null}
-      {tape.length >= 2 ? <IntradayChart tape={tape} candles={candles} pending={pending} fills={fills} /> : null}
+      {mtmTape.length >= 2 ? <IntradayChart tape={mtmTape} candles={candles} pending={pending} fills={fills} ariaLabel="Live MTM" primaryLabel="Live MTM" /> : null}
 
       {d ? (
         <div className="g3" style={{ marginTop: 12 }}>
           <Mini k="Gross" v={<SInrF n={d.gross} />} vc={cl(d.gross)} />
           <Mini k="Charges" v={<SInrF n={d.charges} />} />
-          <Mini k="Net" v={<SInrF n={d.net} />} vc={cl(d.net)} />
+          <Mini k="Net realised" v={<SInrF n={d.net} />} vc={cl(d.net)} />
         </div>
       ) : (tape.length ? null : <div className="sub" style={{ marginTop: 12 }}>No trades captured this day.</div>)}
 
       {tape.length < 2 ? (
         <div className="sub" style={{ marginTop: 14, color: 'var(--txt3)', lineHeight: 1.6 }}>
-          The intraday P&amp;L curve (green above 0 / red below) draws once the live capture has logged a few points — it snapshots realised + open MTM every few minutes through the session.
+          The live MTM curve (green above 0 / red below) draws once the capture has logged a few points — it snapshots open MTM through the session.
         </div>
       ) : null}
     </>
@@ -362,6 +363,20 @@ const Mini = ({ k, v, vc }) => (
   <div className="csm"><div className="sub" style={{ margin: 0 }}>{k}</div><div className={'vsm ' + (vc || '')} style={{ marginTop: 4 }}>{v}</div></div>
 );
 
+function toLiveMtmTape(tape) {
+  if (!Array.isArray(tape)) return [];
+  return tape.map((p) => {
+    if (!p || p.mtm == null || !Number.isFinite(+p.mtm)) return p;
+    return {
+      ...p,
+      net: +p.mtm,
+      dhan: p.dhanMtm ?? null,
+      upstox: p.upstoxMtm ?? null,
+      fyers: p.fyersMtm ?? null,
+    };
+  });
+}
+
 function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   const sub = view === 'all' ? series
     : view === 'year' ? series.filter((d) => fyOf(d.date) === periodKey)
@@ -370,7 +385,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
   const s = summaryStats(sub);
   // Today has no realised LEDGER row until the evening sync — so show LIVE figures, not a
   // misleading ₹0. The post-2026-06-25 capture splits realised (closed legs) vs open MTM;
-  // older points carry net only, so fall back to a single Live P&L figure.
+  // older points carry net only, so fall back to a single live figure.
   const liveDay = view === 'day' && periodKey === todayIstIso() && liveToday != null;
   const split = liveDay && liveToday.realised != null && liveToday.mtm != null;
   // Charges is a COST, not a P&L direction → neutral, never red. Booked at the evening
@@ -385,7 +400,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
         <span><span className="lbl">Realised</span> <span className={'mono ' + cl(liveToday.realised)}><SInrF n={liveToday.realised} /></span></span>
         <span><span className="lbl">Open MTM</span> <span className={'mono ' + cl(liveToday.mtm)}><SInrF n={liveToday.mtm} /></span></span>
         <Charges n={dayCharges} />
-        <span><span className="lbl">Net</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
+        <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(liveToday.realised)}><SInrF n={liveToday.realised} /></span></span>
       </div>
     );
   }
@@ -393,7 +408,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
     return (
       <div className="pnl-psum">
         <Charges n={dayCharges} />
-        <span><span className="lbl">Live P&amp;L</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
+        <span><span className="lbl">Live MTM</span> <span className={'mono ' + cl(liveToday.net)}><SInrF n={liveToday.net} /></span></span>
       </div>
     );
   }
@@ -401,7 +416,7 @@ function PeriodSummary({ view, periodKey, byDate, series, liveToday }) {
     <div className="pnl-psum">
       <span><span className="lbl">Days</span> <span className="mono">{s.tradingDays}</span></span>
       <Charges n={s.charges} />
-      <span><span className="lbl">Net</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
+      <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(s.net)}><SInrF n={s.net} /></span></span>
     </div>
   );
 }
@@ -475,7 +490,7 @@ function Donut({ pct, color = 'var(--grn)', size = 26, showPct = false }) {
   );
 }
 
-// Live P&L for today, polled from the intraday tape (broker-aware). Hidden until a
+// Live figure for today, polled from the intraday tape (broker-aware). Hidden until a
 // point exists today (market hours), so it never shows a stale/zero ticker.
 function LivePnl({ broker }) {
   const [net, setNet] = useState(null);

@@ -41,6 +41,12 @@ export function upsertPoint(json, date, point) {
     dhan: round2(point.byBroker?.dhan ?? null),
     upstox: round2(point.byBroker?.upstox ?? null),
     fyers: round2(point.byBroker?.fyers ?? null),
+    dhanRealised: round2(point.byBrokerRealised?.dhan ?? null),
+    upstoxRealised: round2(point.byBrokerRealised?.upstox ?? null),
+    fyersRealised: round2(point.byBrokerRealised?.fyers ?? null),
+    dhanMtm: round2(point.byBrokerMtm?.dhan ?? null),
+    upstoxMtm: round2(point.byBrokerMtm?.upstox ?? null),
+    fyersMtm: round2(point.byBrokerMtm?.fyers ?? null),
     // `pending` is STICKY within a minute: the daemon only runs the order-book
     // check ~1/min, so a later same-minute tick (which skips it → pending:false)
     // must not clear a pending flag an earlier tick set. OR with the prior point.

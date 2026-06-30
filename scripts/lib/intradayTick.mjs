@@ -79,7 +79,19 @@ export async function captureTick({ withOrders = true, nowMs = Date.now(), file 
 
   // Per-leg P&L snapshot only on the ~1/min withOrders ticks — minute resolution is
   // plenty for the hover and keeps the tape (and KV writes) from ballooning 6×.
-  const point = { t: hhmm, net: snap.net, realised: snap.realised, mtm: snap.mtm, byBroker: snap.byBroker, legs: withOrders ? snap.legs : undefined, fills: snap.fills, pending: snap.pending, istNow: iso };
+  const point = {
+    t: hhmm,
+    net: snap.net,
+    realised: snap.realised,
+    mtm: snap.mtm,
+    byBroker: snap.byBroker,
+    byBrokerRealised: snap.byBrokerRealised,
+    byBrokerMtm: snap.byBrokerMtm,
+    legs: withOrders ? snap.legs : undefined,
+    fills: snap.fills,
+    pending: snap.pending,
+    istNow: iso,
+  };
   const { count, kvPromise } = publish(file, kvKey, date, point);
 
   // NIFTY 50 1-min OHLC watermark — refreshed on the heavier ~1/min pass only

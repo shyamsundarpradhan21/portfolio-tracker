@@ -185,18 +185,20 @@ const BROKERS = [
 export async function pullPositions({ withOrders = true } = {}) {
   const active = BROKERS.filter((b) => b.enabled);
   const results = await Promise.all(active.map((b) => b.pull(withOrders)));
-  const byBroker = {}, bySleeve = { S01: 0, S02: 0 }, fills = [], legs = [];
+  const byBroker = {}, byBrokerRealised = {}, byBrokerMtm = {}, bySleeve = { S01: 0, S02: 0 }, fills = [], legs = [];
   let net = 0, realised = 0, mtm = 0, pending = false, any = false;
   results.forEach((r, i) => {
     if (!r) return;
     any = true;
     const name = active[i].name;
     byBroker[name] = round(r.net);
+    byBrokerRealised[name] = round(r.realised);
+    byBrokerMtm[name] = round(r.mtm);
     bySleeve[SLEEVE[name]] += r.net;
     net += r.net; realised += num(r.realised); mtm += num(r.mtm);
     pending = pending || !!r.pending;
     if (Array.isArray(r.fills)) for (const f of r.fills) fills.push({ ...f, broker: name });
     if (Array.isArray(r.legs)) for (const l of r.legs) legs.push({ ...l, broker: name });
   });
-  return { any, byBroker, bySleeve, net: round(net), realised: round(realised), mtm: round(mtm), pending, fills, legs };
+  return { any, byBroker, byBrokerRealised, byBrokerMtm, bySleeve, net: round(net), realised: round(realised), mtm: round(mtm), pending, fills, legs };
 }

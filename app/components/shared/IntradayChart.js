@@ -27,7 +27,7 @@ const f = (v) => {
 };
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
 
-export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, legsInHoverOnly = false, ariaLabel = 'Intraday P&L' }) {
+export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, legsInHoverOnly = false, ariaLabel = 'Intraday P&L', primaryLabel = 'Net' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
   const [hov, setHov] = useState(null);   // hovered point index
 
@@ -103,7 +103,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   // (below) so it can be a plain frosted-glass card.
   const tipRows = [];
   if (ht) {
-    tipRows.push({ kind: 'net', label: 'Net', v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
+    tipRows.push({ kind: 'net', label: primaryLabel, v: +ht.net, vc: dirColor(+ht.net), lc: 'var(--txt)' });
     if (multi) for (const o of present) {
       const raw = ht[o.key];
       if (raw == null || !Number.isFinite(+raw)) continue;   // skip a broker with no value this minute
