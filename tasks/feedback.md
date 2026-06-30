@@ -217,6 +217,19 @@ full use of the knowledge graph everywhere:
   intermittently fails on github.com. If pushes fail with "could not resolve
   host", check DNS first.
 - Repo-local git identity: shyamsundar.pradhan21@gmail.com.
+- **F&O day curve empty in the morning = dead broker token, not a code bug.**
+  `capture-in.log` shows `F&O no-tokens`; equity capture keeps working (no broker
+  auth). SEBI invalidates Dhan/Upstox tokens at the daily pre-open cycle, so the
+  evening-minted token returns DH-906 / 401 by 09:13. Immediate fix: force-mint
+  (`mcp/dhan/.venv/Scripts/python.exe mcp/dhan/mint.py`; Upstox `mcp/upstox/login.py`).
+  Root cause of the recurrence (fixed 2026-06-30): the **repo moved
+  `C:\Users\Business\portfolio-tracker` → `E:\Work\portfolio-tracker`**, and the
+  absolute-path scheduled tasks (`UpstoxDailyLogin` result 0x80070002; Dhan had no
+  task) never repointed. The morning refresh now lives in `scripts/capture.cmd`
+  (repo-relative, can't rot). If other `*.cmd`/Task-Scheduler actions misbehave,
+  suspect the same `C:\Users\Business` → `E:\Work` path rot. The Dhan cache also
+  lies (server.py `_token()` trusts mint+23h, so it won't re-mint a dead morning
+  token) — `mint.py` calls `_mint()` directly to bypass it.
 
 ### Deployment (Vercel) — API routes must NOT server-side self-fetch a sibling route
 A server-side `fetch(\`${origin}/api/other\`)` from inside one API route carries NO auth
