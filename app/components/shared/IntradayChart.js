@@ -74,7 +74,16 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   // Buy/sell fills → markers, anchored to the nearest tape point by time (midnight-aware).
   const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x = h * 60 + m; return x < 360 ? x + 1440 : x; };
   const nearestIdx = (t) => { const fr = tRank(t); let best = 0, bd = Infinity; for (let i = 0; i < n; i++) { const d = Math.abs(tRank(pts[i].t) - fr); if (d < bd) { bd = d; best = i; } } return best; };
-  const marks = (fills || []).filter((fl) => fl && fl.t).map((fl) => { const i = nearestIdx(fl.t); return { ...fl, x: net[i].x, y: net[i].y, idx: i }; });
+  const marks = (fills || []).filter((fl) => fl && fl.t).map((fl) => {
+    const i = nearestIdx(fl.t);
+    // Anchor each fill to its OWN broker's leg (not the aggregate net line), so a Dhan
+    // fill sits on the Dhan curve and an Upstox fill on the Upstox curve — position tells
+    // you which book traded. Falls back to net only when that leg isn't drawn (a single-
+    // broker day, where net == that broker, or the legs-in-hover-only Overview curve).
+    const series = (drawLegs && fl.broker && g.byKey[fl.broker]) ? g.byKey[fl.broker] : net;
+    const p = series[i] || net[i];
+    return { ...fl, x: p.x, y: p.y, idx: i };
+  });
   // (marks above feed the on-chart buy/sell triangles; the hover card no longer lists fills/orders)
 
   // right-edge value labels at each line's last y. Net = bold sign-colour; each leg =

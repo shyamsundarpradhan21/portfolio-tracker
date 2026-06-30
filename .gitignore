@@ -132,6 +132,8 @@ login-*.png
 /audit/algo-screen.md
 # Structured screen payload (held names + capital tier → /api/algo-screen; KV is prod source)
 /data/algo-screen.json
+# Eyeball-only render shots (binaries; not committed)
+/audit/algo-review-shots/
 
 # Regime classifier inputs (regenerable: public Nifty/VIX from Yahoo)
 /data/regime-inputs.json
