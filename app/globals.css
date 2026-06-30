@@ -417,11 +417,12 @@ body::before {
 @media (max-width: 560px) {                /* phone — single column */
   :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats) { grid-template-columns: 1fr; }
 }
-@media (min-width: 901px) {                /* desktop — columns = ceil(itemCount/2), ≤3 items → 1 row */
+/* Tablet + desktop (≥561): BINARY row-balance — a 6-stat grid renders 3×2; everything else
+   stays the base 2 columns (4→2×2, 3→2+1, 2→one row). The 6-stat 3×2 is now held at TABLET
+   too (no 2-col collapse). A lone item keeps its single column. Phone (≤560) = 1-col above. */
+@media (min-width: 561px) {
   :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):has(> :nth-child(1):last-child) { grid-template-columns: 1fr; }
-  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
   :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(5):last-child), :has(> :nth-child(6):last-child)) { grid-template-columns: repeat(3, 1fr); }
-  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(7):last-child), :has(> :nth-child(8):last-child)) { grid-template-columns: repeat(4, 1fr); }
 }
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); align-items: stretch; }
 .g2 > *, .statgrid > *, .g3 > *, .g4 > *, .g5 > *, .fdstats > *, .ins-stats > *, .pnl-stats > *, .mf-g3 > * { min-width: 0; }
