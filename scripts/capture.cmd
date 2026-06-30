@@ -11,4 +11,21 @@ REM
 cd /d "%~dp0.."
 set SESSION=%1
 if "%SESSION%"=="" set SESSION=in
+
+REM ── Refresh broker tokens before the India F&O window ────────────────────────
+REM SEBI invalidates access tokens at the daily pre-open cycle, so a token minted
+REM the evening before is dead by morning. Mint HERE (repo-relative — can't rot like
+REM the absolute-path DhanDailyLogin/UpstoxDailyLogin tasks did after the repo moved).
+REM Non-fatal: the daemon skips any broker whose token is missing, so a mint failure
+REM degrades to one sleeve, never a crash. India session only (US has no F&O).
+set DHANPY=mcp\dhan\.venv\Scripts\python.exe
+if not exist "%DHANPY%" set DHANPY=python
+set UPSTOXPY=mcp\upstox\.venv\Scripts\python.exe
+if not exist "%UPSTOXPY%" set UPSTOXPY=python
+if /I "%SESSION%"=="in" (
+  echo [capture] %DATE% %TIME% refreshing broker tokens ^(dhan + upstox^)>> "%~dp0capture-%SESSION%.log"
+  call "%DHANPY%" mcp\dhan\mint.py >> "%~dp0capture-%SESSION%.log" 2>&1
+  call "%UPSTOXPY%" mcp\upstox\login.py >> "%~dp0capture-%SESSION%.log" 2>&1
+)
+
 node scripts\capture-daemon.mjs >> "%~dp0capture-%SESSION%.log" 2>&1
