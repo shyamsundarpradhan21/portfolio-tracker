@@ -9,7 +9,7 @@
 // backtest* fields read 0 on fully-live algos, so we compute backtest stats from the
 // series, never from those fields.
 
-import { regimeForDate } from './regime.mjs';
+import { regimeForDate } from '../../app/lib/regime.mjs';
 
 const DAY = 86400000;
 const MIN_POINTS = 5;  // below this a segment is too thin to characterise
@@ -272,4 +272,87 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regi
   }
 
   return { params: p, tier, capital, heldNames, structureDD, held, survivors, out: outAlgos, parked, flaggedOut: [...outAlgos, ...parked], confrontations, redundant };
+}
+
+// ── structured payload for KV (algo-screen:v1) — the Review component READS this ──
+// Pure serialization of a runScreen() result into the render-ready shape. Figures are
+// already computed (never the LLM); this only reshapes. asOf is the data vintage.
+export function buildScreenPayload(s, { asOf = null } = {}) {
+  const liveOf = (r) => r.live
+    ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n }
+    : null;
+  const flagsList = (f) => ['provisional', 'noOverfitCheck', 'noCorrelation'].filter((k) => f[k]);
+  // per-regime rows: tested ∈ empty (the finding) | thin (<25d, untested) | ok
+  const regimeRows = (rg) => rg ? ['up', 'down', 'chop', 'stressed'].map((k) => {
+    const b = rg[k];
+    return { regime: k, days: b.dayCount, sortino: b.sortino, cagr: b.cagr, maxDD: b.maxDD, tested: b.dayCount === 0 ? 'empty' : (b.thin ? 'thin' : 'ok') };
+  }) : [];
+  const caveatOf = (rg) => regimeRows(rg).filter((x) => x.tested !== 'ok').map((x) => `${x.regime} ${x.tested.toUpperCase()}`).join(', ') || null;
+
+  const held = s.held.map((r) => ({
+    algo: r.name, style: r.style, structure: r.structure, liveDays: r.liveDays, confidence: r.confidence,
+    liveMetrics: liveOf(r),
+    regimeBreakdown: regimeRows(r.regime),
+    regimeMatched: r.regime ? { matched: r.regime.matched, unmatched: r.regime.unmatched } : null,
+    flags: flagsList(r.flags), structureOutlier: r.structureOutlier,
+    parkReason: r.parkReasons?.length ? r.parkReasons : null, revisitTier: r.revisitTier,
+  }));
+
+  // confront — dominatedBy (strict: higher sortino AND more diversifying) WITH the
+  // challenger's regime caveat, so a "better" number can't mislead without its samples.
+  const survByName = new Map(s.survivors.map((r) => [r.name, r]));
+  const dominatedBy = [];
+  for (const c of s.confrontations) for (const d of c.dominatedBy) {
+    const ch = survByName.get(d.name);
+    dominatedBy.push({
+      held: c.held, heldSortino: c.heldSortino, heldCorrToBasket: c.heldCorrToBasket,
+      challenger: d.name, sortino: d.sortino, corrToBasket: d.corrToBasket,
+      liveDays: d.liveDays, confidence: d.confidence,
+      regimeCaveat: ch ? caveatOf(ch.regime) : null, line: d.line,
+    });
+  }
+  // supplementary — same-style survivors with higher live sortino but NOT a strict
+  // dominator (shown so the comparison isn't hidden; not "dominators").
+  const supplementary = [];
+  for (const h of s.held) {
+    if (!h.live) continue;
+    const dom = new Set((s.confrontations.find((c) => c.held === h.name)?.dominatedBy || []).map((d) => d.name));
+    for (const r of s.survivors.filter((x) => x.style === h.style && x.live?.sortino != null && x.live.sortino > h.live.sortino && !dom.has(x.name))) {
+      supplementary.push({
+        held: h.name, heldSortino: h.live.sortino, challenger: r.name, sortino: r.live.sortino,
+        corrToBasket: r.corr.avg, heldCorrToBasket: h.corr.avg,
+        moreDiversifying: r.corr.avg != null && h.corr.avg != null ? r.corr.avg < h.corr.avg : null,
+        liveDays: r.liveDays, confidence: r.confidence, regimeCaveat: caveatOf(r.regime),
+      });
+    }
+  }
+
+  const survivorsByStyle = {};
+  for (const r of s.survivors) (survivorsByStyle[r.style] ||= []).push({
+    algo: r.name, liveDays: r.liveDays, confidence: r.confidence, liveMetrics: liveOf(r),
+    corrToBasket: r.corr.avg, structure: r.structure, structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
+  });
+  for (const k of Object.keys(survivorsByStyle)) survivorsByStyle[k].sort((a, b) => (b.liveMetrics?.sortino ?? -Infinity) - (a.liveMetrics?.sortino ?? -Infinity));
+
+  const parked = s.parked.map((r) => ({
+    algo: r.name, style: r.style, structure: r.structure, liveDays: r.liveDays, confidence: r.confidence,
+    liveMetrics: liveOf(r), parkReason: r.parkReasons, revisitTier: r.revisitTier,
+    structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
+  }));
+
+  const flaggedOutTally = {};
+  for (const r of s.out) for (const why of r.outReasons) {
+    const k = why.startsWith('overfit') ? 'overfit' : why.startsWith('liveDays') ? 'thin' : why.startsWith('no live') ? 'no-live' : why.split(' ')[0];
+    flaggedOutTally[k] = (flaggedOutTally[k] || 0) + 1;
+  }
+
+  const universe = s.held.length + s.survivors.length + s.out.length + s.parked.length;
+  return {
+    asOf,
+    capitalTier: { name: s.tier.name, capital: s.capital, admit: s.tier.admit, dd: s.tier.dd },
+    thresholds: { overfitMin: s.params.overfitMin, minLiveDays: s.params.minLiveDays, redundantCorr: s.params.redundantCorr, structureOutlierMAD: s.params.structureOutlierMAD, thinDays: THIN_DAYS },
+    structureDD: s.structureDD,
+    counts: { universe, held: s.held.length, survivors: s.survivors.length, parked: s.parked.length, out: s.out.length, flaggedOut: s.out.length + s.parked.length },
+    held, confront: { dominatedBy, supplementary }, survivorsByStyle, parked, redundant: s.redundant, flaggedOutTally,
+  };
 }

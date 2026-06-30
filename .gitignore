@@ -130,6 +130,8 @@ login-*.png
 
 # Screen output (renders the user's held-algo analysis)
 /audit/algo-screen.md
+# Structured screen payload (held names + capital tier → /api/algo-screen; KV is prod source)
+/data/algo-screen.json
 
 # Regime classifier inputs (regenerable: public Nifty/VIX from Yahoo)
 /data/regime-inputs.json

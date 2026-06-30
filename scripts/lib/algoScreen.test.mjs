@@ -7,9 +7,9 @@ import {
   mean, std, downsideDeviation, skewness, maxDrawdown, segmentMetrics,
   overfitRatio, confidenceTier, correlationToHeld, styleOf,
   riskStructure, tierFor, CAPITAL_TIERS, classifyElimination, regimeBuckets,
-  runScreen, DEFAULT_PARAMS,
+  runScreen, DEFAULT_PARAMS, buildScreenPayload,
 } from './algoScreen.mjs';
-import { buildRegimeCalendar } from './regime.mjs';
+import { buildRegimeCalendar } from '../../app/lib/regime.mjs';
 
 // points from a returns array with sequential weekday-ish dates in 2026.
 const pts = (returns, startMs = Date.UTC(2026, 0, 1)) =>
@@ -165,6 +165,45 @@ describe('runScreen — out/parked split, confront, redundancy (aggressive tier 
   });
   it('redundant held pair flagged (corr 0.8)', () => {
     expect(out.redundant).toEqual([{ a: 'H1', b: 'H2', corr: 0.8 }]);
+  });
+});
+
+describe('buildScreenPayload — KV (algo-screen:v1) shape', () => {
+  // reuse the runScreen universe; empty regime calendar → buckets all-empty (shape only)
+  const H1 = rec('h1', 'H1', 'Credit Spread', [1, -1, 1, -1, 2], 200, { H2: 0.8, C: 0.2 }, { tags: ['Hedged'] });
+  const H2 = rec('h2', 'H2', 'Credit Spread', [1, -1, 1, 0, 1], 200, { H1: 0.8, C: 0.3 }, { tags: ['Hedged'] });
+  const C = rec('c', 'C', 'Credit Spread', [2, -0.5, 2, 1, 3], 200, { H1: 0.2, H2: 0.3 }, { tags: ['Hedged'] });
+  const Dother = rec('d', 'D', 'Short Strangle', [3, 1, 2, 1, 2], 200, { H1: 0.1 }, { tags: ['Selling'] });
+  const BlowUp = rec('e', 'E', 'Credit Spread', [5, -50, 5, 5, 5], 200, { H1: 0.1 }, { tags: ['Hedged'] });
+  const Overfit = rec('f', 'F', 'Credit Spread', [1, -1, 1, -1, 2], 200, { H1: 0.1 }, { tags: ['Hedged'], backtest: [10, 9, 11, 10, 12] });
+  const s = runScreen([H1, H2, C, Dother, BlowUp, Overfit], { heldIds: ['h1', 'h2'], capital: 5_000_000, regimeCal: new Map() });
+  const pay = buildScreenPayload(s, { asOf: '2026-06-30' });
+
+  it('top-level fields + counts reconcile to universe', () => {
+    expect(pay.asOf).toBe('2026-06-30');
+    expect(pay.capitalTier.name).toBe('aggressive');
+    expect(pay.capitalTier.admit).toContain('defined');
+    expect(pay.counts.universe).toBe(6);
+    expect(pay.counts.held + pay.counts.survivors + pay.counts.parked + pay.counts.out).toBe(pay.counts.universe);
+    expect(pay.counts.flaggedOut).toBe(pay.counts.parked + pay.counts.out);
+  });
+  it('held carries a 4-row regime breakdown (ordered, tested enum) + visible flags', () => {
+    expect(pay.held.map((h) => h.algo).sort()).toEqual(['H1', 'H2']);
+    const rb = pay.held[0].regimeBreakdown;
+    expect(rb.map((r) => r.regime)).toEqual(['up', 'down', 'chop', 'stressed']);
+    for (const r of rb) expect(['empty', 'thin', 'ok']).toContain(r.tested);
+    expect(Array.isArray(pay.held[0].flags)).toBe(true);
+  });
+  it('confront: dominatedBy entry carries challenger + regimeCaveat field; supplementary is an array', () => {
+    const d = pay.confront.dominatedBy.find((x) => x.held === 'H1' && x.challenger === 'C');
+    expect(d).toBeTruthy();
+    expect('regimeCaveat' in d).toBe(true); // caveat shown beside the "better" number
+    expect(Array.isArray(pay.confront.supplementary)).toBe(true);
+  });
+  it('survivorsByStyle grouped; parked + flaggedOutTally populated', () => {
+    expect(Object.keys(pay.survivorsByStyle)).toContain('Hedged Options');
+    expect(pay.parked.find((r) => r.algo === 'E').parkReason.length).toBeGreaterThan(0);
+    expect(pay.flaggedOutTally.overfit).toBe(1); // F overfit → OUT
   });
 });
 

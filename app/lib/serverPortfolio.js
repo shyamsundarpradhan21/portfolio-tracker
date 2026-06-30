@@ -65,3 +65,29 @@ export async function loadFnoOverlay() {
     return null;
   }
 }
+
+// Precomputed algo-screen payload (held names + per-regime metrics + capital tier),
+// served lazily by /api/algo-screen only when the Trading→Review sub-tab opens — kept
+// OFF the hot /api/portfolio payload. Prod source = KV `algo-screen:v1` (built by
+// scripts/build-algo-screen.mjs); local dev falls back to the gitignored JSON. Private
+// (reveals the held basket) → same edge protection as the rest of the private data.
+export async function loadAlgoScreen() {
+  const creds = kvCreds();
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', 'algo-screen:v1']),
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (j?.result) return JSON.parse(j.result);
+    } catch { /* fall through to the local file */ }
+  }
+  try {
+    return JSON.parse(await readFile(join(process.cwd(), 'data', 'algo-screen.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+}

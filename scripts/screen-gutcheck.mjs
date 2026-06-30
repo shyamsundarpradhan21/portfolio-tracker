@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { buildRegimeCalendar, regimeDistribution } from './lib/regime.mjs';
+import { buildRegimeCalendar, regimeDistribution } from '../app/lib/regime.mjs';
 import { runScreen } from './lib/algoScreen.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
