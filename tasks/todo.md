@@ -83,12 +83,16 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
       (6 new tests, 336 total green). Validated at ₹10L: book = IV-Imbalance → Zen → SkewHunter (matches the
       approved mock); −100 floor excludes 16 catastrophic algos (Index Scalper −307, etc.).
 
-### Phase 4 — Monthly review + self-learning (`scripts/review-monthly.mjs`, new)
-- [ ] (i) Pull the prior month's picks; compute realised forward return per pick (from the fresh curve);
-      compare to metrics-at-decision (rank→forward-return correlation, hit rate, realised vs gated DD,
-      did any stress-untested pick get stress-tested and how did it do).
-- [ ] (j) Write `data/algo-monthly/reviews/<YYYY-MM>.json`; print a calibration summary + **proposed**
-      threshold tweaks (never auto-applied). Graduate confirmed lessons to `tasks/feedback.md`.
+### Phase 4 — Monthly review + self-learning (`scripts/review-monthly.mjs`, new) ✅ DONE (commit pending)
+- [x] (i) `scripts/lib/algoReview.mjs` (pure, fixture-tested): `reviewMonth(artifact, freshRecords, {regimeCal})`
+      → per-pick forward return (SUM of in-window per-day returns), realised vs gated DD (breach flag), worst day,
+      days observed; calibration = rank→forward Spearman + hit rate + DD breaches + stressed-regime-forward;
+      counterfactual = EXITed + top-unfunded-NEW value-add; thin-window guard (<15 fwd days → LOW-CONFIDENCE).
+- [x] (j) `scripts/review-monthly.mjs`: picks the latest artifact STRICTLY older than this month (none → clean
+      "nothing to review yet" exit 0); warns HARD if `stratzy-daily.json` is stale; writes
+      `data/algo-monthly/reviews/<YYYY-MM>.json`; prints calibration + **proposed** tweaks (`proposeTweaks`,
+      suggestions ONLY — never auto-applied; confirmed lessons graduate to feedback.md by hand). 10 new tests,
+      346 total green. Smoke-tested on real data (backdated artifact → Spearman 0.68, 100% hit, +26% KEEP/EXIT value-add).
 
 ### Phase 5 — Surface in app (optional, confirm scope)
 - [ ] (k) Render the month's reco + justification + last-month review in Trading→Review (reuses
@@ -118,9 +122,9 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
 - Capital basis = **parameter each run** (`--capital <rupees>`; no fixed default baked in).
 - Cadence = **scheduled reminder** (Phase 3.5): a cron/routine nudges at month-start to re-harvest (browser) + run.
 
-### Phase 3.5 — Schedule the monthly nudge
-- [ ] (g2) Add a month-start routine/cron that reminds to re-harvest Stratzy + run `build-monthly-reco.mjs`
-      (harvest stays browser-based, so the reminder prompts the manual pull, then the rest is one command).
+### Phase 3.5 — Schedule the monthly nudge ✅ DONE (external)
+- [x] (g2) Lives in the Cowork scheduled task `monthly-algo-reco` (1st of month 09:00), NOT in `scripts/` —
+      it prompts the re-harvest + runs `build-monthly-reco.mjs` (then `review-monthly.mjs` for the prior month).
 
 ---
 
