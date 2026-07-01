@@ -493,6 +493,25 @@ FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a s
 (Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
 the elegant answer.)
 
+### Never `git stash`/`checkout` an intraday tape path while its capture session may be live
+`data/us-intraday.json`, `data/eq-intraday.json`, `data/fno-intraday.json`, `data/nifty-ohlc.json`
+are NOT append-only logs the daemon buffers in memory — `appendIntraday`/`publishNifty`
+(`scripts/lib/intraday.mjs`, `intradayTick.mjs`) `readFileSync` the file **fresh every tick**,
+upsert one point, and `writeFileSync` the whole thing back. The file on disk IS the daemon's
+only state. Reverting it via `git stash`/`git checkout` to a stale committed version doesn't
+just touch git history — the next tick (seconds to ~1 min later) reads that stale version and
+resumes from THERE, silently discarding every point captured since the last commit. A live
+session showed this instantly: `capture-us.log`'s point counter went 363→1 the moment a stash
+touched `data/us-intraday.json`. Caught only because the log's running counter was cross-checked
+against the file — a plain `git status`/diff looked completely normal (smaller file, no error).
+**Before stashing/checking out any of these paths, check whether a session window is live**
+(India 09:13–15:32 IST, US 18:45→02:30 IST) or grep the relevant `capture-*.log` for a recent
+timestamp — if live, exclude that path from the stash pathspec entirely. If you already
+clobbered it: the pre-stash content is still in `git show stash@{N}:<path>`; recover by merging
+that snapshot's day-array with whatever the daemon wrote since (dedupe by `t`, later/live read
+wins on overlap, sort by the same `tRank` used in `intraday.mjs`) rather than blindly restoring
+one side.
+
 ### Dev-server verification gotchas (Next.js + a live data daemon)
 Two traps cost real time verifying live changes while the capture daemon rewrites
 `data/*.json` every ~10s:
