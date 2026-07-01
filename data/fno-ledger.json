@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated realised F&O P&L ledger. Each evening sync appends one row per (date, broker) with that day's gross realised (broker-native or same-day round-trip), modeled charges (est., snapped to exact at the annual ITR ritual), and net. app/page.js rolls these up on top of the FY seed into the Trading tab's current-FY S01/S02 blocks — so the only manual touch left is the yearly ITR-verified prior-FY pass. Sleeve map: Dhan/Zerodha→S01, Upstox/Fyers→S02. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-06-30T18:31:33+05:30",
+  "updatedAt": "2026-07-01T18:46:00+05:30",
   "rows": [
     {
       "date": "2023-08-14",
@@ -8039,6 +8039,17 @@
       "grossRealised": 17592.25,
       "estCharges": 0,
       "net": 17592.25,
+      "turnover": 0,
+      "orders": 0,
+      "source": "positions"
+    },
+    {
+      "date": "2026-07-01",
+      "broker": "Dhan",
+      "sleeve": "S01",
+      "grossRealised": 2821,
+      "estCharges": 0,
+      "net": 2821,
       "turnover": 0,
       "orders": 0,
       "source": "positions"
