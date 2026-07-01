@@ -493,6 +493,47 @@ FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a s
 (Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
 the elegant answer.)
 
+### Algo screen capital tiers are RETAIL-calibrated, not institutional
+The user is a retail F&O trader, not an institution — the `CAPITAL_TIERS` in
+`scripts/lib/algoScreen.mjs` were too conservative. Full F&O admission (both `defined`
+/hedged AND `undefined`/naked buying+selling) with realistic drawdown tolerance should
+kick in from **~₹5–6L of capital**, NOT gated behind ₹15L (the old "aggressive" tier).
+Someone deploying ₹5–6L into hedged spreads + naked buying/selling is already a full-F&O
+allocator; a −45%/−75% DD tolerance is normal at that size, not aggressive. When screening
+/ recommending for this user, apply the retail tier: at ≥~₹5–6L use
+`admit:['defined','undefined']`, `dd:{defined:-45, undefined:-75, equity:-35, other:-55}`.
+(The old ladder put ₹10L in "balanced" with −35/−60 and only reached −45/−75 above ₹15L,
+which wrongly parked the user's own +100% holding IV-Imbalance at its −38% DD.) Not yet
+persisted into `CAPITAL_TIERS` — confirm before editing the live screen, since it changes
+the deployed Review tab. **Why:** the user said plainly "your tolerance is too conservative
+for fno... bring it down to 5-6L. we are not institutional investors." **How to apply:** for
+any algo screen/recommendation, gate DD/worst-day + rank on Sortino (see below), using the
+retail tier tolerances above.
+
+### Algo ranking: gate on drawdown/worst-day, RANK on Sortino (not return/DD)
+For screening/ranking algos: use max-drawdown + worst-day as a GATE (veto), and live
+**Sortino** as the ranking key. Return/drawdown (Calmar) is a noisy single-path extreme
+statistic that mechanically punishes longer track records and flatters thin-history algos —
+bad as a ranking key, fine as a floor. Sortino's blind spot: it can't see a fat left tail
+that hasn't fired yet (naked SELLING = pennies-in-front-of-steamroller), so always surface
+`worstDay` + `skew` alongside and prefer naked BUYING (defined max loss) with positive skew.
+**Why:** established while walking the user through why the screen sorts by Sortino.
+**How to apply:** rank survivors by `live.sortino`; show worstDay/skew for tail awareness;
+treat DD as admission tolerance only.
+
+### Backtests over a captured window carry look-ahead + survivorship bias — say so
+When "what would I have picked N months ago" is asked, a naive run of the current screen is
+NOT an honest answer: (a) metrics (Sortino/DD/liveDays) computed over FULL history through
+today leak the outcome window into the pick, and (b) the algo universe is only what's LISTED
+today — blown-up/delisted algos are absent (survivorship). For an honest point-in-time answer,
+TRUNCATE each algo's live series at the cutoff, recompute metrics as-of-then, screen on that,
+THEN measure forward. Even then, disclose the residual biases you can't remove (survivorship;
+catalog capital-limits/correlations are current-dated). Don't present a backtered number as a
+recommendation you "would have made." **Why:** the user explicitly probed "so this would have
+been your recommendation 3 months ago?" **How to apply:** freeze inputs at the cutoff for any
+retrospective; label forward figures as backtest, not projection; state the tail/DD risk a
+return table hides.
+
 ### Never `git stash`/`checkout` an intraday tape path while its capture session may be live
 `data/us-intraday.json`, `data/eq-intraday.json`, `data/fno-intraday.json`, `data/nifty-ohlc.json`
 are NOT append-only logs the daemon buffers in memory — `appendIntraday`/`publishNifty`
