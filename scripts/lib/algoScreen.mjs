@@ -60,6 +60,8 @@ export function segmentMetrics(points) {
   return {
     n: v.length,
     spanDays: Math.round(span),
+    tradesPerYear: Math.round(perYear), // observation frequency — exposes the √ppy annualisation baked
+    // into sharpe/sortino, so a high-frequency algo's higher ratio is read with eyes open (council #2).
     cagr: round(v.reduce((s, x) => s + x, 0) * (365.25 / span)), // additive annualisation (matches Stratzy)
     sharpe: sd ? round((m / sd) * Math.sqrt(perYear)) : null,
     sortino: dd ? round((m / dd) * Math.sqrt(perYear)) : null,
@@ -167,6 +169,18 @@ export function regimeBuckets(record, cal) {
   return { matched, unmatched, up: M(b.up), down: M(b.down), chop: M(b.chop), stressed: M(b.stressed) };
 }
 
+// Volatility side — the regime-risk axis the /council flagged: short-vol strategies
+// (credit spreads, option selling, strangles/straddles) all lose together in a vol
+// spike, so their CALM-regime low correlations understate crash risk. long = premium
+// BUYING (long vol/gamma); short = premium selling / defined credit spreads; else neutral.
+export function volSideOf(row) {
+  const style = row.style || '';
+  const name = row.name || '';
+  if (/buying/i.test(style)) return 'long';
+  if (row.structure === 'defined' || /selling/i.test(style) || /strangle|straddle/i.test(name)) return 'short';
+  return 'neutral';
+}
+
 // ── (4) risk STRUCTURE from style/category — defined vs undefined risk ────────
 export function riskStructure(record) {
   const tags = record?.dhan?.tags || [];
@@ -230,6 +244,15 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regi
   const rows = records.map((r) => {
     const row = { ...screenAlgo(r, heldNames), held: heldSet.has(r.id), structure: riskStructure(r) };
     row.regime = regimeCal ? regimeBuckets(r, regimeCal) : null;
+    row.volSide = volSideOf(row);
+    // stress-tested = ≥THIN_DAYS live days inside a stressed (high-VIX) regime — i.e. actually
+    // traded through a vol spike. NOTE: the 2023–26 sample is a low-vol era (~5% stressed days),
+    // so this is near-uniformly FALSE and non-discriminating right now — the book-level caveat is
+    // the useful output, and the allocator (Phase 2) defends via the short-vol cap + DOWN-regime
+    // health below, which has real sample (down-trend days are common). Kept for when vol returns.
+    row.stressTested = !!(row.regime && row.regime.stressed && row.regime.stressed.dayCount >= THIN_DAYS);
+    row.downTested = !!(row.regime && row.regime.down && row.regime.down.dayCount >= THIN_DAYS);
+    row.downSortino = row.regime?.down?.sortino ?? null; // risk-adjusted return in down-trend days
     return row;
   });
 
@@ -298,7 +321,7 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regi
 // already computed (never the LLM); this only reshapes. asOf is the data vintage.
 export function buildScreenPayload(s, { asOf = null } = {}) {
   const liveOf = (r) => r.live
-    ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, gateMaxDD: r.gateMaxDD ?? r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n }
+    ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, gateMaxDD: r.gateMaxDD ?? r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n, tradesPerYear: r.live.tradesPerYear }
     : null;
   const flagsList = (f) => ['provisional', 'shortLive', 'noOverfitCheck', 'noCorrelation'].filter((k) => f[k]);
   // per-regime rows: tested ∈ empty (the finding) | thin (<25d, untested) | ok
@@ -309,7 +332,8 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
   const caveatOf = (rg) => regimeRows(rg).filter((x) => x.tested !== 'ok').map((x) => `${x.regime} ${x.tested.toUpperCase()}`).join(', ') || null;
 
   const held = s.held.map((r) => ({
-    algo: r.name, style: r.style, structure: r.structure, liveDays: r.liveDays, confidence: r.confidence,
+    algo: r.name, style: r.style, structure: r.structure, volSide: r.volSide, stressTested: r.stressTested, downTested: r.downTested, downSortino: r.downSortino,
+    liveDays: r.liveDays, confidence: r.confidence,
     liveMetrics: liveOf(r),
     regimeBreakdown: regimeRows(r.regime),
     regimeMatched: r.regime ? { matched: r.regime.matched, unmatched: r.regime.unmatched } : null,
@@ -349,16 +373,32 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
   const survivorsByStyle = {};
   for (const r of s.survivors) (survivorsByStyle[r.style] ||= []).push({
     algo: r.name, liveDays: r.liveDays, confidence: r.confidence, liveMetrics: liveOf(r),
-    corrToBasket: r.corr.avg, structure: r.structure, structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
+    corrToBasket: r.corr.avg, structure: r.structure, volSide: r.volSide, stressTested: r.stressTested, downTested: r.downTested, downSortino: r.downSortino,
+    structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
   });
   const est = (x) => (x.confidence === 'ok' ? 0 : 1); // established-first, matching runScreen
   for (const k of Object.keys(survivorsByStyle)) survivorsByStyle[k].sort((a, b) => est(a) - est(b) || (b.liveMetrics?.sortino ?? -Infinity) - (a.liveMetrics?.sortino ?? -Infinity));
 
   const parked = s.parked.map((r) => ({
-    algo: r.name, style: r.style, structure: r.structure, liveDays: r.liveDays, confidence: r.confidence,
+    algo: r.name, style: r.style, structure: r.structure, volSide: r.volSide, stressTested: r.stressTested, downTested: r.downTested, downSortino: r.downSortino,
+    liveDays: r.liveDays, confidence: r.confidence,
     liveMetrics: liveOf(r), parkReason: r.parkReasons, revisitTier: r.revisitTier,
     structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
   }));
+
+  // Book-level regime-risk caveat (council #1): what share of surviving candidates is short-vol,
+  // and how many are UNTESTED in a stress regime — the low mutual correlation is calm-regime only.
+  const survForRisk = s.survivors;
+  const shortVolN = survForRisk.filter((r) => r.volSide === 'short').length;
+  const stressUntestedN = survForRisk.filter((r) => !r.stressTested).length;
+  const shortVolShare = survForRisk.length ? Math.round((shortVolN / survForRisk.length) * 100) : 0;
+  const regimeRisk = {
+    survivors: survForRisk.length, shortVol: shortVolN, shortVolShare,
+    stressUntested: stressUntestedN, longVol: survForRisk.filter((r) => r.volSide === 'long').length,
+    caveat: survForRisk.length
+      ? `${shortVolShare}% of surviving candidates are short-volatility and ${stressUntestedN}/${survForRisk.length} are untested in a stress regime — their low mutual correlation is calm-regime only and converges toward 1 in a vol spike. Cap short-vol exposure and prefer stress-tested / long-vol sleeves.`
+      : null,
+  };
 
   const flaggedOutTally = {};
   for (const r of s.out) for (const why of r.outReasons) {
@@ -374,5 +414,6 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
     structureDD: s.structureDD,
     counts: { universe, held: s.held.length, survivors: s.survivors.length, parked: s.parked.length, out: s.out.length, flaggedOut: s.out.length + s.parked.length },
     held, confront: { dominatedBy, supplementary }, survivorsByStyle, parked, redundant: s.redundant, flaggedOutTally,
+    regimeRisk,
   };
 }

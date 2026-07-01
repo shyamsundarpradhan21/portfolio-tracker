@@ -1,3 +1,102 @@
+# Plan — Monthly algo decision-maker: regime/short-vol gate + capital allocator + self-learning review
+
+Status: **APPROVED — building.** Decisions locked (2026-07-02): allocation caps = proposed defaults;
+capital basis = **parameter each run** (`--capital`); cadence = **scheduled reminder** to re-harvest + run.
+Supersedes the ad-hoc recommendation flow. Turns the screen from a data-review into a repeatable **monthly decision
+engine** that runs the full pipeline and emits an allocation **with written justification**, then
+**reviews last month's picks against realised performance and learns**.
+
+Context / why: the /council review found the screen's foundation sound (transparent metrics,
+gate-on-risk/rank-on-quality, the young-algo guard) but flagged three structural gaps — (1) the
+book is ~short-vol and **none of it has survived a stress regime** (stressed buckets all THIN:
+6–20 days), so the low correlations are regime-conditional and converge to ~1 in a vol spike;
+(2) **Sortino isn't frequency-normalised** (√ppy gives a daily algo a ~×13 vs weekly ~×7 boost),
+distorting the ranking; (3) precise ₹ backtests invite return-anchoring on a survivorship-biased
+bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly loop the user wants.
+
+## Design decisions (flag for sign-off before building)
+
+1. **Regime/short-vol gate lives in the SCREEN + the ALLOCATOR, not just a hidden bucket.**
+   - Screen: add `stressTested` (stressed-bucket dayCount ≥ `THIN_DAYS`) + `downRegime` health to each
+     row; expose in the payload. An algo untested in stress is admitted but **flagged in the headline**,
+     not buried.
+   - Allocator: treat **all short-vol structures (defined credit-spreads + option-selling) as ONE
+     correlated cluster in a stress regime** (calm-regime pairwise corr is not trusted for sizing).
+2. **New pure module `scripts/lib/algoAllocate.mjs`** (unit-tested) = the capital-allocation gate.
+   Inputs: ranked survivors + capital + per-algo min/max + structure + gateMaxDD + stressTested +
+   correlation. Constraints (all tunable, values below are proposals to confirm):
+   - short-vol cluster ≤ **60%** of capital; single-algo ≤ **30%**; ≥ **1 long-vol** (naked buying) sleeve if available.
+   - drawdown-scaled cap: max weight shrinks as `gateMaxDD` deepens (e.g. −20%→full, −45%→half, −60%→¼).
+   - stress-untested algos capped at a **smaller** max weight than stress-tested peers.
+   - respect each algo's real `minAmount`/`maxCapital`; start from the user's "max-out then move on"
+     rank order but **bounded by every cap above** (concentration is opt-in, not the default).
+   Output: per-algo ₹ + the binding reason for each size.
+3. **Frequency-normalise Sortino** for the ranking (report trades/yr alongside), so cross-frequency
+   ranks are honest. Additive CAGR annualisation left as-is (already `shortLive`-flagged; council agreed
+   it's not worth a rewrite this cycle).
+4. **Monthly artifacts + KV.** `data/algo-monthly/<YYYY-MM>.json` (picks + metrics-at-decision +
+   justification), `data/algo-monthly/reviews/<YYYY-MM>.json` (retrospective). KV `algo-monthly:latest`.
+   Gitignored (derived from gitignored harvest), like `algo-screen.json`.
+5. **Self-learning = surfaced suggestions, NOT auto-tuning.** The review computes realised vs
+   expected and proposes threshold tweaks for the user to accept — we do NOT let the machine silently
+   refit parameters to a handful of months (overfitting risk). Confirmed lessons graduate to
+   `tasks/feedback.md`.
+6. **Harvest stays semi-manual** (browser + logged-in Stratzy) — the monthly run is "re-harvest →
+   then fully automated screen→allocate→justify." The complete process is one command after the pull.
+
+## Steps
+
+### Phase 1 — Regime/short-vol gate + trade-frequency exposure (`algoScreen.mjs`) ✅ DONE (commit pending)
+- [x] (a) `volSide` (short/long/neutral), `stressTested`, `downTested`, `downSortino` on each row; threaded into
+      `buildScreenPayload` held/survivors/parked + a book-level `regimeRisk` block (shortVolShare, stressUntested, caveat).
+- [x] (b) Exposed `tradesPerYear` on live metrics (makes the √ppy annualisation visible). NOTE: deferred the
+      deeper frequency-*normalised* ranking rewrite — visibility first; revisit if it distorts real picks.
+- [x] (c) Auto-generated headline caveat in `regimeRisk.caveat`.
+- [x] (d) Tests: `volSideOf`, `tradesPerYear`, `regimeRisk` block. 313 green.
+- **Calibration finding:** 2023–26 is a low-vol era (40/736 stressed days, ~5%; VIX max 27.9), so `stressTested`
+  is near-uniformly FALSE and non-discriminating. The book-level "42/42 untested" caveat is the useful output;
+  the **allocator's operative regime defence is the short-vol cap + DOWN-regime health** (`downTested` 15/42,
+  down-Sortino spread 0.9–17 — genuinely discriminating), NOT a stress-tested preference. Kept stressTested for
+  when vol returns.
+
+### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested)
+- [ ] (e) `allocate(survivors, { capital, caps })` → `[{ algo, rupees, bindingReason, structure, stressTested }]`
+      enforcing the Design-2 constraints; deterministic + unit-tested on a constructed universe.
+- [ ] (f) Justification builder: per-pick "why in / why this size" + book-level structure/stress/corr summary.
+
+### Phase 3 — Monthly orchestrator (`scripts/build-monthly-reco.mjs`, new)
+- [ ] (g) Pipeline: (assumes fresh harvest) → `runScreen` (retail tier, Phase-1 gate) → `allocate` →
+      write `data/algo-monthly/<YYYY-MM>.json` + seed KV `algo-monthly:latest`; refuse-on-empty guard.
+- [ ] (h) Emit the month's recommendation + justification to stdout (and the JSON) — structure-first,
+      backtest shown only as a small survivorship-caveated reference, per council #3.
+
+### Phase 4 — Monthly review + self-learning (`scripts/review-monthly.mjs`, new)
+- [ ] (i) Pull the prior month's picks; compute realised forward return per pick (from the fresh curve);
+      compare to metrics-at-decision (rank→forward-return correlation, hit rate, realised vs gated DD,
+      did any stress-untested pick get stress-tested and how did it do).
+- [ ] (j) Write `data/algo-monthly/reviews/<YYYY-MM>.json`; print a calibration summary + **proposed**
+      threshold tweaks (never auto-applied). Graduate confirmed lessons to `tasks/feedback.md`.
+
+### Phase 5 — Surface in app (optional, confirm scope)
+- [ ] (k) Render the month's reco + justification + last-month review in Trading→Review (reuses
+      `AlgoScreenReview` patterns; tokens only; must pass `certify.mjs`). Hold until Phases 1–4 land.
+
+## Out of scope (this plan)
+- Auto-parameter-tuning / ML (deliberately — suggestions only).
+- Fully headless harvest (Stratzy auth stays browser-based).
+- Any broker order placement (brokers remain READ-ONLY).
+
+## Decisions (locked 2026-07-02)
+- Caps = proposed defaults (short-vol ≤60%, single-algo ≤30%, DD-scaled sizing, stress-untested penalty, ≥1 long-vol).
+- Capital basis = **parameter each run** (`--capital <rupees>`; no fixed default baked in).
+- Cadence = **scheduled reminder** (Phase 3.5): a cron/routine nudges at month-start to re-harvest (browser) + run.
+
+### Phase 3.5 — Schedule the monthly nudge
+- [ ] (g2) Add a month-start routine/cron that reminds to re-harvest Stratzy + run `build-monthly-reco.mjs`
+      (harvest stays browser-based, so the reminder prompts the manual pull, then the rest is one command).
+
+---
+
 # Plan — Wire the algo screen into the app (computed data-review in Review sub-tab)
 
 Status: **BUILT — awaiting user eyeball before commit.** All steps (a)–(f) done; 34

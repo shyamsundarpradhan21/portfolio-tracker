@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   mean, std, downsideDeviation, skewness, maxDrawdown, segmentMetrics,
   overfitRatio, confidenceTier, correlationToHeld, styleOf,
-  riskStructure, tierFor, CAPITAL_TIERS, classifyElimination, regimeBuckets,
+  riskStructure, volSideOf, tierFor, CAPITAL_TIERS, classifyElimination, regimeBuckets,
   runScreen, DEFAULT_PARAMS, buildScreenPayload,
 } from './algoScreen.mjs';
 import { buildRegimeCalendar } from '../../app/lib/regime.mjs';
@@ -45,6 +45,18 @@ describe('segmentMetrics', () => {
     expect(m.maxDD).toBe(-4);
     expect(m.worstDay).toBe(-3);
     expect(m.cagr).toBeLessThan(0); // sum = -1 → negative annualized
+    expect(m.tradesPerYear).toBeGreaterThan(0); // observation frequency exposed (council #2)
+  });
+});
+
+describe('volSideOf — regime-risk axis (short-vol vs long-vol)', () => {
+  it('buying = long vol; credit spreads / selling / strangles = short vol; else neutral', () => {
+    expect(volSideOf({ style: 'Naked Option Buying' })).toBe('long');
+    expect(volSideOf({ style: 'Option Buying' })).toBe('long');
+    expect(volSideOf({ structure: 'defined', style: 'Hedged Options' })).toBe('short'); // credit spread
+    expect(volSideOf({ style: 'Option Selling' })).toBe('short');
+    expect(volSideOf({ style: 'x', name: 'Bazaar Short Strangle' })).toBe('short');
+    expect(volSideOf({ style: 'Index Strategies', structure: 'equity' })).toBe('neutral');
   });
 });
 
@@ -210,6 +222,18 @@ describe('buildScreenPayload — KV (algo-screen:v1) shape', () => {
     expect(Object.keys(pay.survivorsByStyle)).toContain('Hedged Options');
     expect(pay.parked.find((r) => r.algo === 'E').parkReason.length).toBeGreaterThan(0);
     expect(pay.flaggedOutTally.overfit).toBe(1); // F overfit → OUT
+  });
+  it('regimeRisk block: short-vol share + stress-untested count + caveat (council #1)', () => {
+    expect(pay.regimeRisk).toBeTruthy();
+    expect(pay.regimeRisk.survivors).toBe(2);              // C (spread) + D (selling)
+    expect(pay.regimeRisk.shortVolShare).toBe(100);        // both are short-vol
+    expect(pay.regimeRisk.stressUntested).toBe(2);         // empty regime cal → none stress-tested
+    expect(pay.regimeRisk.caveat).toMatch(/short-volatility.*stress regime/);
+    // survivor entries carry the new axes
+    const c = Object.values(pay.survivorsByStyle).flat().find((x) => x.algo === 'C');
+    expect(c.volSide).toBe('short');
+    expect(typeof c.stressTested).toBe('boolean');
+    expect(c.liveMetrics.tradesPerYear).toBeGreaterThan(0);
   });
 });
 
