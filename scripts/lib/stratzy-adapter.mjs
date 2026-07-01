@@ -80,6 +80,18 @@ export function normalizeAlgo(raw, opts = {}) {
       backtestDays: backtest.length,
       liveDays,
       rollingReturns30Day: raw.rollingReturns30Day && typeof raw.rollingReturns30Day === 'object' ? raw.rollingReturns30Day : {},
+      // Stratzy's own deploy bounds — the conviction allocator's per-algo min/ceiling
+      // (Stratzy is the locked source; the Dhan-joined minAmount/maxCapital are NOT used).
+      minimumCapital: num(raw.minimumCapital),
+      maximumCapital: num(raw.maximumCapital),
+      // Horizon PnLs (%) — EXACTLY the four the persistence rank is defined on
+      // (2nd-worst-horizon rank over 1M/3M/6M/1Y; 7D too noisy, pastReturn unbounded).
+      horizons: {
+        oneMonth: num(raw.oneMonthPnl),
+        threeMonth: num(raw.threeMonthPnl),
+        sixMonth: num(raw.sixMonthPnl),
+        oneYear: num(raw.oneYearPnl),
+      },
       pastReturn: num(raw.pastReturn),
       annualizedReturns: num(raw.annualizedReturns),
       backtestMetrics: {

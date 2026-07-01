@@ -89,6 +89,76 @@ export function confidenceTier(liveDays) {
   return 'ok';
 }
 
+// ── persistence rank (the frozen ranking signal, locked 2026-07-02) ───────────
+// Rank the FULL universe on each horizon PnL (desc, rank 1 = best), then per algo take
+// the 2nd-WORST of its horizon ranks — robust to one outlier horizon, so a single hot or
+// cold month can't dominate (the fix for the Fixed-RR / Zik-Zak brittleness). Records need
+// `stratzy.horizons {oneMonth,threeMonth,sixMonth,oneYear}`. Returns Map(id → persist2);
+// null when an algo has no horizon data (the caller sorts nulls last).
+export const PERSIST_HORIZONS = ['oneMonth', 'threeMonth', 'sixMonth', 'oneYear'];
+
+// 2nd-largest (2nd-worst) finite value; the only value if one; null if none.
+export function secondWorst(ranks) {
+  const xs = (ranks || []).filter((x) => Number.isFinite(x));
+  if (!xs.length) return null;
+  if (xs.length === 1) return xs[0];
+  const sorted = [...xs].sort((a, b) => a - b);
+  return sorted[sorted.length - 2];
+}
+
+export function persistenceRanks(records) {
+  const byHorizon = {};
+  for (const h of PERSIST_HORIZONS) {
+    const ranked = records
+      .filter((r) => Number.isFinite(r?.stratzy?.horizons?.[h]))
+      .sort((a, b) => b.stratzy.horizons[h] - a.stratzy.horizons[h]);
+    const m = new Map();
+    ranked.forEach((r, i) => m.set(r.id, i + 1)); // rank 1 = best
+    byHorizon[h] = m;
+  }
+  const out = new Map();
+  for (const r of records) {
+    const ranks = PERSIST_HORIZONS.map((h) => byHorizon[h].get(r.id)).filter((x) => x != null);
+    out.set(r.id, secondWorst(ranks));
+  }
+  return out;
+}
+
+// ── conviction candidate pool (the monthly engine's input to allocateConviction) ─
+// held + survivors + PARKED (DD-park IGNORED in conviction mode); screen OUTs (quality
+// kills) are excluded by construction. Structure ∈ tier.admit; catastrophic floor
+// gateMaxDD ≤ CATASTROPHIC_DD excluded (wiped-out algos). Sizing from Stratzy
+// minimumCapital/maximumCapital (NOT the Dhan-joined min/max). Ranked by 2nd-worst
+// persistence asc (nulls last) → live Sortino desc. Pure; unit-tests on a runScreen result.
+export const CATASTROPHIC_DD = -100;
+export function convictionCandidates(screen, records, heldIds, { catastrophicDD = CATASTROPHIC_DD, persist } = {}) {
+  const heldSet = new Set(heldIds);
+  const recById = new Map(records.map((a) => [a.id, a]));
+  const pmap = persist || persistenceRanks(records);
+  const pool = [...screen.held, ...screen.survivors, ...screen.parked]
+    .filter((r) => screen.tier.admit.includes(r.structure))
+    .filter((r) => r.gateMaxDD == null || r.gateMaxDD > catastrophicDD);
+  const cands = pool.map((r) => {
+    const rec = recById.get(r.id);
+    return {
+      algo: r.name, volSide: r.volSide, structure: r.structure,
+      gateMaxDD: r.gateMaxDD, liveMaxDD: r.live?.maxDD ?? null,
+      sortino: r.live?.sortino ?? null, cagr: r.live?.cagr ?? null,
+      worstDay: r.live?.worstDay ?? null, skew: r.live?.skew ?? null,
+      liveDays: r.liveDays, confidence: r.confidence,
+      downTested: r.downTested, downSortino: r.downSortino,
+      held: heldSet.has(r.id), persist2: pmap.get(r.id) ?? null,
+      min: rec?.stratzy?.minimumCapital ?? null, max: rec?.stratzy?.maximumCapital ?? null,
+    };
+  });
+  cands.sort((a, b) => {
+    const pa = a.persist2 == null ? Infinity : a.persist2;
+    const pb = b.persist2 == null ? Infinity : b.persist2;
+    return pa - pb || (b.sortino ?? -Infinity) - (a.sortino ?? -Infinity);
+  });
+  return cands;
+}
+
 // Signed correlation of `record` to a held basket (by name; overall matrix is name→coef).
 // avg = mean corr to basket (low = diversifying); max = most-positive corr (high = redundant).
 export function correlationToHeld(record, heldNames) {

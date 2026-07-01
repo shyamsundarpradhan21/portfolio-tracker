@@ -1,7 +1,7 @@
 // Tests for the capital allocation gate. A wrong cap here would size a real book, so the
 // constraints are checked against a constructed candidate universe with known numbers.
 import { describe, it, expect } from 'vitest';
-import { allocate, ddScale, downScale, justify, allocateConviction, CONVICTION_MIN_LONGVOL_SHARE, DEFAULT_CAPS } from './algoAllocate.mjs';
+import { allocate, ddScale, downScale, justify, allocateConviction, labelBook, CONVICTION_MIN_LONGVOL_SHARE, DEFAULT_CAPS } from './algoAllocate.mjs';
 
 // helper: a ranked candidate
 const cand = (algo, volSide, over = {}) => ({
@@ -121,6 +121,17 @@ describe('allocateConviction — chase returns, mandatory long-vol hedge', () =>
 
   it('throws on non-positive capital', () => {
     expect(() => allocateConviction([cand('A', 'short')], { capital: 0 })).toThrow();
+  });
+});
+
+describe('labelBook — KEEP / EXIT / ADD', () => {
+  it('held+funded=KEEP, held+unfunded=EXIT, new+funded=ADD', () => {
+    const candidates = [{ algo: 'H1', held: true }, { algo: 'H2', held: true }, { algo: 'N', held: false }];
+    const book = { picks: [{ algo: 'H1' }, { algo: 'N' }] }; // H2 not funded
+    const l = labelBook(book, candidates);
+    expect(l.keep).toEqual(['H1']);
+    expect(l.exit).toEqual(['H2']);
+    expect(l.add).toEqual(['N']);
   });
 });
 

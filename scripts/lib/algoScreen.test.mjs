@@ -7,8 +7,10 @@ import {
   mean, std, downsideDeviation, skewness, maxDrawdown, segmentMetrics,
   overfitRatio, confidenceTier, correlationToHeld, styleOf,
   riskStructure, volSideOf, tierFor, CAPITAL_TIERS, classifyElimination, regimeBuckets,
-  runScreen, DEFAULT_PARAMS, buildScreenPayload,
+  runScreen, DEFAULT_PARAMS, buildScreenPayload, secondWorst, persistenceRanks,
+  convictionCandidates,
 } from './algoScreen.mjs';
+import { allocateConviction, justify, labelBook } from './algoAllocate.mjs';
 import { buildRegimeCalendar } from '../../app/lib/regime.mjs';
 
 // points from a returns array with sequential weekday-ish dates in 2026.
@@ -46,6 +48,31 @@ describe('segmentMetrics', () => {
     expect(m.worstDay).toBe(-3);
     expect(m.cagr).toBeLessThan(0); // sum = -1 → negative annualized
     expect(m.tradesPerYear).toBeGreaterThan(0); // observation frequency exposed (council #2)
+  });
+});
+
+describe('persistence rank (2nd-worst horizon)', () => {
+  it('secondWorst: 2nd-largest of many, the value if one, null if none', () => {
+    expect(secondWorst([2, 2, 3, 4])).toBe(3);       // IV-Imbalance shape
+    expect(secondWorst([9, 13, 14, 26])).toBe(14);   // Damper shape (worst 26 dropped)
+    expect(secondWorst([10, 20])).toBe(10);          // 2 ranks → 2nd-largest = smaller
+    expect(secondWorst([5])).toBe(5);                // single horizon → itself
+    expect(secondWorst([])).toBeNull();
+    expect(secondWorst([1, null, 3, undefined])).toBe(1); // ignores non-finite → [1,3] → 2nd-worst 1
+  });
+  it('persistenceRanks: full-universe desc rank per horizon, then 2nd-worst; nulls when no data', () => {
+    const rec = (id, o) => ({ id, stratzy: { horizons: o } });
+    const recs = [
+      rec('A', { oneMonth: 100, threeMonth: 100, sixMonth: 100, oneYear: 100 }), // rank 1 everywhere
+      rec('B', { oneMonth: 50, threeMonth: 50, sixMonth: 50, oneYear: 50 }),      // rank 2 everywhere
+      rec('C', { oneMonth: 10, threeMonth: 10, sixMonth: 10, oneYear: null }),    // rank 3 on 3 horizons
+      rec('D', { oneMonth: null, threeMonth: null, sixMonth: null, oneYear: null }),
+    ];
+    const m = persistenceRanks(recs);
+    expect(m.get('A')).toBe(1);
+    expect(m.get('B')).toBe(2);
+    expect(m.get('C')).toBe(3);       // ranks [3,3,3] → 2nd-worst 3
+    expect(m.get('D')).toBeNull();    // no horizon data → sorts last
   });
 });
 
@@ -234,6 +261,56 @@ describe('buildScreenPayload — KV (algo-screen:v1) shape', () => {
     expect(c.volSide).toBe('short');
     expect(typeof c.stressTested).toBe('boolean');
     expect(c.liveMetrics.tradesPerYear).toBeGreaterThan(0);
+  });
+});
+
+describe('convictionCandidates — monthly pool (conviction mode)', () => {
+  it('pool = held+survivors+PARKED; OUT excluded; catastrophic-DD (≤-100) excluded', () => {
+    const S = rec('s', 'S', 'Credit Spread', [1, -1, 1, -1, 2], 200, null, { tags: ['Hedged'] });     // clean → survivor
+    const P = rec('p', 'P', 'Credit Spread', [5, -55, 5, 5, 5], 200, null, { tags: ['Hedged'] });      // maxDD ~-55 → parked (DD)
+    const X = rec('x', 'X', 'Credit Spread', [5, -110, 5, 5, 5], 200, null, { tags: ['Hedged'] });     // maxDD ~-110 → catastrophic
+    const O = rec('o', 'O', 'Credit Spread', [1, -1, 1, -1, 2], 200, null, { tags: ['Hedged'], backtest: [10, 9, 11, 10, 12] }); // overfit → OUT
+    const screen = runScreen([S, P, X, O], { heldIds: [], capital: 5_000_000 });
+    const names = convictionCandidates(screen, [S, P, X, O], []).map((c) => c.algo);
+    expect(names).toContain('S');
+    expect(names).toContain('P');        // PARKED is included in conviction mode (DD-park ignored)
+    expect(names).not.toContain('X');    // catastrophic floor
+    expect(names).not.toContain('O');    // quality kill (OUT) still excluded
+  });
+
+  it('ranks 2nd-worst persistence asc → live Sortino desc; Stratzy min/max carried', () => {
+    const row = (id, name, horizons, sortino, min, max) => ({
+      id, name, structure: 'defined', volSide: 'short', live: { maxDD: -20, sortino },
+      gateMaxDD: -20, liveDays: 200, confidence: 'ok', downTested: true, downSortino: 2,
+      stratzy: { horizons, minimumCapital: min, maximumCapital: max },
+    });
+    const A = row('a', 'A', { oneMonth: 100, threeMonth: 100, sixMonth: 100, oneYear: 100 }, 2, 100000, 300000); // persist2 1
+    const B = row('b', 'B', { oneMonth: 50, threeMonth: 50, sixMonth: 50, oneYear: 50 }, 9, 100000, 300000);     // persist2 2 (higher sortino, still ranks below)
+    const screen = { tier: { admit: ['defined', 'undefined'] }, held: [], survivors: [A, B], parked: [] };
+    const c = convictionCandidates(screen, [A, B], []);
+    expect(c.map((x) => x.algo)).toEqual(['A', 'B']); // persist2 dominates sortino
+    expect(c[0].min).toBe(100000);
+    expect(c[0].max).toBe(300000);
+  });
+});
+
+describe('monthly engine — end-to-end artifact shape', () => {
+  const S = rec('s', 'S', 'Credit Spread', [2, -0.5, 2, 1, 3], 200, null, { tags: ['Hedged'] });
+  const T = rec('t', 'T', 'Option Buying', [3, -1, 2, 1, 2], 200, null, { tags: ['Buying'] }); // long-vol
+  const recs = [S, T];
+  const screen = runScreen(recs, { heldIds: ['s'], capital: 1_000_000, regimeCal: new Map() });
+  const candidates = convictionCandidates(screen, recs, ['s']);
+  const book = allocateConviction(candidates, { capital: 1_000_000 });
+  const justification = justify(book, { regimeCaveat: 'caveat' });
+  const labels = labelBook(book, candidates);
+
+  it('candidates → allocate → justify → label assemble a complete artifact', () => {
+    expect(candidates.length).toBeGreaterThan(0);
+    for (const c of candidates) expect(c).toHaveProperty('persist2'); // present even if null
+    expect(book.mode).toBe('conviction');
+    expect(justification.headline).toMatch(/algos/);
+    for (const k of ['keep', 'exit', 'add']) expect(labels).toHaveProperty(k);
+    expect(labels.keep).toContain('S'); // held + funded
   });
 });
 

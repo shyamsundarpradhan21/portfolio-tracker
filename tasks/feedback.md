@@ -493,6 +493,18 @@ FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a s
 (Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
 the elegant answer.)
 
+### Cowork sessions hand off an implementation prompt; Claude Code makes the changes
+User instruction (2026-07-02): a "Cowork" session does the design/analysis and hands Claude Code
+a concrete implementation prompt (verified formulas, file targets, decisions locked); **Claude Code
+is the one that makes the code changes.** So when a task arrives already-specced from a Cowork
+session, build to that spec (don't re-derive it), but still VERIFY the handed state first (below).
+
+### Cowork mount writes can land TRUNCATED — `node --check` / re-read before running
+A Cowork-side write to a file (via the shared mount) can arrive **truncated** — a partial file that
+looks plausible. After ANY Cowork-side edit, before trusting or running it: `node --check <file>`
+(syntax), re-read the diff on disk, and run its vitest suite. (Caught 2026-07-02: `stratzy-adapter.mjs`
+had a truncated write that was repaired; the handoff flagged it explicitly — verify, don't assume.)
+
 ### Re-harvest Stratzy BEFORE giving any algo recommendation — the data is manual + stale
 `data/stratzy-daily.json` is gitignored and BROWSER-harvested from the logged-in stratzy.in
 session (`scripts/lib/stratzy-harvest.snippet.js` → `data/stratzy-raw.json` →

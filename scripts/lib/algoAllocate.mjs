@@ -152,6 +152,19 @@ export function justify(book, { regimeCaveat = null } = {}) {
 // give-back — the specific defence against "a single event wiping out months of gains".
 export const CONVICTION_MIN_LONGVOL_SHARE = 0.20;
 
+// KEEP / EXIT / ADD verdict for the month's holdings vs the funded book. Held+funded = KEEP,
+// held+unfunded = EXIT (the method dropped it — the signal the monthly review exists to catch),
+// new+funded = ADD. Pure.
+export function labelBook(book, candidates) {
+  const funded = new Set(book.picks.map((p) => p.algo));
+  const heldNames = new Set(candidates.filter((c) => c.held).map((c) => c.algo));
+  return {
+    keep: book.picks.filter((p) => heldNames.has(p.algo)).map((p) => p.algo),
+    exit: candidates.filter((c) => c.held && !funded.has(c.algo)).map((c) => c.algo),
+    add: book.picks.filter((p) => !heldNames.has(p.algo)).map((p) => p.algo),
+  };
+}
+
 export function allocateConviction(cands, { capital, minLongVolShare = CONVICTION_MIN_LONGVOL_SHARE } = {}) {
   if (!Number.isFinite(capital) || capital <= 0) throw new Error('allocateConviction: capital must be a positive number');
   const earmark = Math.round(minLongVolShare * capital); // capital non-long picks may NOT touch

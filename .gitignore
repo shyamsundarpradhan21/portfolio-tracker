@@ -137,3 +137,6 @@ login-*.png
 
 # Regime classifier inputs (regenerable: public Nifty/VIX from Yahoo)
 /data/regime-inputs.json
+
+# Monthly algo decision artifacts (derived from gitignored harvest; KV is prod source)
+/data/algo-monthly/

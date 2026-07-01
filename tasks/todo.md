@@ -46,7 +46,7 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
 
 ## Steps
 
-### Phase 1 — Regime/short-vol gate + trade-frequency exposure (`algoScreen.mjs`) ✅ DONE (commit pending)
+### Phase 1 — Regime/short-vol gate + trade-frequency exposure (`algoScreen.mjs`) ✅ DONE (commit e68e646)
 - [x] (a) `volSide` (short/long/neutral), `stressTested`, `downTested`, `downSortino` on each row; threaded into
       `buildScreenPayload` held/survivors/parked + a book-level `regimeRisk` block (shortVolShare, stressUntested, caveat).
 - [x] (b) Exposed `tradesPerYear` on live metrics (makes the √ppy annualisation visible). NOTE: deferred the
@@ -59,7 +59,7 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
   down-Sortino spread 0.9–17 — genuinely discriminating), NOT a stress-tested preference. Kept stressTested for
   when vol returns.
 
-### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested) ✅ DONE (commit pending)
+### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested) ✅ DONE (commits dd25343 + 5d10039)
 - [x] (e) `allocate(candidates, { capital, caps })` — capped variant (single ≤30%, short-vol ≤60%, DD/down scaling).
       KEPT but NOT the default (superseded by conviction mode per user).
 - [x] (e2) **`allocateConviction(candidates, { capital, minLongVolShare })`** — the LOCKED default: max-out to
@@ -73,11 +73,15 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
   **Phase 3 must build a composite candidate rank** (user's persistence signal + Sortino + down-regime health,
   held-pinned) and feed THAT to `allocate`. The allocator is correct; the ranking is the lever.
 
-### Phase 3 — Monthly orchestrator (`scripts/build-monthly-reco.mjs`, new)
-- [ ] (g) Pipeline: (assumes fresh harvest) → `runScreen` (retail tier, Phase-1 gate) → `allocate` →
-      write `data/algo-monthly/<YYYY-MM>.json` + seed KV `algo-monthly:latest`; refuse-on-empty guard.
-- [ ] (h) Emit the month's recommendation + justification to stdout (and the JSON) — structure-first,
-      backtest shown only as a small survivorship-caveated reference, per council #3.
+### Phase 3 — Monthly orchestrator (`scripts/build-monthly-reco.mjs`, new) ✅ DONE (commit pending)
+- [x] (g) Pipeline: `runScreen` → `convictionCandidates` (pool + 2nd-worst persistence rank, Stratzy min/max,
+      −100 catastrophic floor) → `allocateConviction` (long-vol hedge) → `justify` + `labelBook`. `--capital`
+      REQUIRED, `--dry` skips KV. Writes `data/algo-monthly/<YYYY-MM>.json` + KV `algo-monthly:latest`;
+      refuse-on-empty guard. `data/algo-monthly/` gitignored.
+- [x] (h) Emits KEEP/EXIT/ADD + justification + regime caveat to stdout, structure-first; backtest only as a
+      survivorship-caveated aside. Persistence rank + convictionCandidates + labelBook are PURE + tested
+      (6 new tests, 336 total green). Validated at ₹10L: book = IV-Imbalance → Zen → SkewHunter (matches the
+      approved mock); −100 floor excludes 16 catastrophic algos (Index Scalper −307, etc.).
 
 ### Phase 4 — Monthly review + self-learning (`scripts/review-monthly.mjs`, new)
 - [ ] (i) Pull the prior month's picks; compute realised forward return per pick (from the fresh curve);
