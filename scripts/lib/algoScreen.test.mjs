@@ -92,11 +92,12 @@ describe('(4) riskStructure', () => {
   });
 });
 
-describe('(2) capital tiers', () => {
-  it('tierFor maps capital → tier; today ~2.3L = conservative/defined-only', () => {
+describe('(2) capital tiers (retail-calibrated)', () => {
+  it('tierFor maps capital → tier; ~2.3L = conservative/defined-only, full F&O by ~₹6–10L', () => {
     expect(tierFor(231216).name).toBe('conservative');
     expect(tierFor(231216).admit).toEqual(['defined']);
-    expect(tierFor(800000).name).toBe('balanced');
+    expect(tierFor(800000).name).toBe('balanced');       // ₹8L → full F&O (defined+undefined)
+    expect(tierFor(800000).admit).toEqual(['defined', 'undefined']);
     expect(tierFor(5_000_000).name).toBe('aggressive');
     expect(CAPITAL_TIERS[0].dd.defined).toBeGreaterThan(CAPITAL_TIERS[0].dd.undefined); // naked tolerates deeper DD
   });
@@ -115,8 +116,13 @@ describe('(3) classifyElimination — OUT (kills) vs PARK (capital/drawdown)', (
     expect(r.park[0]).toMatch(/not admitted/);
   });
   it('defined algo too deep for tier tolerance → PARK on drawdown', () => {
-    const r = classifyElimination({ structure: 'defined', live: { maxDD: -30 }, liveDays: 200 }, tier); // -30 < -25
-    expect(r.park[0]).toMatch(/tolerance -25/);
+    const r = classifyElimination({ structure: 'defined', live: { maxDD: -40 }, liveDays: 200 }, tier); // -40 < -35
+    expect(r.park[0]).toMatch(/tolerance -35/);
+  });
+  it('young algo gates drawdown on the deeper full-curve DD, not the shallow live-only one', () => {
+    // live-only maxDD -10 would pass, but the full-curve gateMaxDD -50 breaches the -35 tol.
+    const r = classifyElimination({ structure: 'defined', live: { maxDD: -10 }, gateMaxDD: -50, liveDays: 120 }, tier);
+    expect(r.park[0]).toMatch(/maxDD -50 below.*tolerance -35/);
   });
 });
 

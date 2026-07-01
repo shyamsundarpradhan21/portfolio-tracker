@@ -8,7 +8,7 @@
 // Direction = colour only (cl(): grn/red, glyph-free); magnitudes shown unsigned.
 import { cl, pctS } from '../../lib/fmt';
 
-const FLAG_LABEL = { provisional: 'provisional', noOverfitCheck: 'no overfit check', noCorrelation: 'no correlation' };
+const FLAG_LABEL = { provisional: 'provisional', shortLive: 'short-live · annualized', noOverfitCheck: 'no overfit check', noCorrelation: 'no correlation' };
 const TESTED = {
   ok: { label: 'ok', style: { color: 'var(--txt3)' } },
   thin: { label: 'thin', style: { color: 'var(--acc)', fontWeight: 600 } },
@@ -205,7 +205,7 @@ export default function AlgoScreenReview({ data, loading, error }) {
                   <tr key={r.algo}>
                     <td style={{ color: 'var(--txt)' }}>{r.algo}</td>
                     <td className="sub" style={{ margin: 0 }}>{r.structure}</td>
-                    <td className="ra mono"><PC v={r.liveMetrics?.maxDD} /></td>
+                    <td className="ra mono"><PC v={r.liveMetrics?.gateMaxDD ?? r.liveMetrics?.maxDD} /></td>
                     <td className="sub" style={{ margin: 0, lineHeight: 1.5 }}>{r.parkReason?.join('; ')}</td>
                     <td className="ra">{r.revisitTier || '—'}</td>
                   </tr>

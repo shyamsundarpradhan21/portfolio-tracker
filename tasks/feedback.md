@@ -493,6 +493,20 @@ FD/CMPF show their daily accrual. Reach for the minimal correctness fix, not a s
 (Pairs with Demand-Elegance: I built skip+DELETE infra where a small attribution tweak was
 the elegant answer.)
 
+### Re-harvest Stratzy BEFORE giving any algo recommendation — the data is manual + stale
+`data/stratzy-daily.json` is gitignored and BROWSER-harvested from the logged-in stratzy.in
+session (`scripts/lib/stratzy-harvest.snippet.js` → `data/stratzy-raw.json` →
+`node scripts/import-stratzy-daily.mjs`); it is NOT on the auto-sync daemon, so it only
+refreshes when re-scraped and is typically days stale. The user's standing instruction:
+"re-harvest and re-run for latest numbers whenever I ask for a recommendation." So for ANY
+algo pick/recommendation, FIRST re-harvest (`GET /api/web/algo/list` in a logged-in Stratzy
+tab → blob-download → cp Downloads/stratzy-raw.json → data/ → `import-stratzy-daily.mjs --dry`
+to refresh the local file WITHOUT touching KV/deployed dashboard), THEN run the screen. If the
+browser/login isn't available, say the numbers are as-of the file's `asOf` and offer to refresh.
+**Why:** the user caught that a recommendation rested on a 3-day-stale (asOf 2026-06-29) snapshot.
+**How to apply:** treat "recommend / what would you pick" as implying a fresh harvest first;
+use `--dry` on the import so a recommendation run doesn't reseed KV. [[algo-screen-retail-tiers]]
+
 ### Algo screen capital tiers are RETAIL-calibrated, not institutional
 The user is a retail F&O trader, not an institution — the `CAPITAL_TIERS` in
 `scripts/lib/algoScreen.mjs` were too conservative. Full F&O admission (both `defined`

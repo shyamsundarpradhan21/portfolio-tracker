@@ -36,8 +36,13 @@ const data = JSON.parse(readFileSync(join(ROOT, 'data', 'stratzy-daily.json'), '
 const { heldIds, deployedCapital } = JSON.parse(readFileSync(join(ROOT, 'data', 'held-algos.json'), 'utf8'));
 const { nifty, vix } = JSON.parse(readFileSync(join(ROOT, 'data', 'regime-inputs.json'), 'utf8'));
 
+// Optional `--capital <rupees>` overrides the tier's capital basis (e.g. to screen the
+// month's target allocation) WITHOUT editing data/held-algos.json's real deployedCapital.
+const cIdx = process.argv.indexOf('--capital');
+const capital = (cIdx >= 0 && Number(process.argv[cIdx + 1])) ? Number(process.argv[cIdx + 1]) : deployedCapital;
+
 const cal = buildRegimeCalendar(nifty, vix);
-const screen = runScreen(data.algos, { heldIds, regimeCal: cal, capital: deployedCapital });
+const screen = runScreen(data.algos, { heldIds, regimeCal: cal, capital });
 const payload = buildScreenPayload(screen, { asOf: data.asOf });
 
 // Sanity guard — refuse to publish an empty/degenerate screen (would blank the tab).

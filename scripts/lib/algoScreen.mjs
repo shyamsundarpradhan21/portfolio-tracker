@@ -114,12 +114,23 @@ export function screenAlgo(record, heldNames) {
   const bt = record.stratzy.hasBacktestSegment ? segmentMetrics(record.stratzy.split.backtest) : null;
   const liveDays = record.stratzy.liveDays;
   const corr = correlationToHeld(record, heldNames);
+  // A young algo's live-only metrics extrapolate a short window: CAGR/Sortino annualise a
+  // few hot months (overstated) and its live maxDD hasn't seen a full cycle (understated).
+  // shortLive flags it; and when a backtest segment exists we GATE drawdown on the DEEPER of
+  // the live and the full (backtest+live) curve, so an as-yet-unlived crash isn't hidden.
+  const shortLive = liveDays != null && liveDays <= 180;
+  let gateMaxDD = live ? live.maxDD : null;
+  if (live && shortLive && record.stratzy.hasBacktestSegment) {
+    const full = [...(record.stratzy.split.backtest || []), ...(record.stratzy.split.live || [])].map((p) => p.v);
+    gateMaxDD = Math.min(live.maxDD, round(maxDrawdown(full)));
+  }
   return {
     id: record.id, name: record.name, style: styleOf(record),
     liveDays, confidence: confidenceTier(liveDays),
-    live, backtest: bt, overfit: live ? overfitRatio(live, bt) : null, corr,
+    live, backtest: bt, overfit: live ? overfitRatio(live, bt) : null, corr, gateMaxDD,
     flags: {
       provisional: liveDays != null && liveDays < 90,
+      shortLive,
       noOverfitCheck: !record.stratzy.hasBacktestSegment,
       noCorrelation: corr.noCorrelation,
     },
@@ -170,20 +181,23 @@ export function riskStructure(record) {
 }
 
 // ── (2) capital-tiered thresholds — looser DD + more structures as capital grows ─
-// Defined-risk (spreads) tolerate less DD than naked; tolerance widens with capital.
-// Today's deployed capital (~₹2.3L) → conservative/defined-risk tier. Tunable.
+// RETAIL-calibrated (not institutional): full F&O admission (defined hedged + undefined
+// naked buying/selling) opens at the BALANCED band from ~₹5–6L up to ₹10L — it is NOT
+// gated behind ₹15L. Defined-risk (spreads) tolerate less DD than naked; tolerance widens
+// with capital. Tunable. (See tasks/feedback.md "retail-calibrated algo tiers".)
 export const CAPITAL_TIERS = [
-  { name: 'conservative', upTo: 500000, admit: ['defined'], dd: { defined: -25, undefined: -45, equity: -20, other: -30 } },
-  { name: 'balanced', upTo: 1500000, admit: ['defined', 'undefined'], dd: { defined: -35, undefined: -60, equity: -25, other: -40 } },
-  { name: 'aggressive', upTo: Infinity, admit: ['defined', 'undefined', 'equity', 'other'], dd: { defined: -45, undefined: -75, equity: -35, other: -55 } },
+  { name: 'conservative', upTo: 500000, admit: ['defined'], dd: { defined: -35, undefined: -60, equity: -25, other: -35 } },
+  { name: 'balanced', upTo: 1000000, admit: ['defined', 'undefined'], dd: { defined: -45, undefined: -75, equity: -30, other: -45 } },
+  { name: 'aggressive', upTo: Infinity, admit: ['defined', 'undefined', 'equity', 'other'], dd: { defined: -48, undefined: -80, equity: -35, other: -55 } },
 ];
 export const tierFor = (capital) => CAPITAL_TIERS.find((t) => (capital ?? Infinity) <= t.upTo) || CAPITAL_TIERS.at(-1);
 // Lowest tier that would admit this row (structure admitted AND DD within tolerance).
 function revisitTierFor(row) {
+  const dd = row.gateMaxDD ?? row.live?.maxDD;
   for (const t of CAPITAL_TIERS) {
     if (!t.admit.includes(row.structure)) continue;
     const tol = t.dd[row.structure];
-    if (row.live?.maxDD == null || tol == null || row.live.maxDD >= tol) return t.name;
+    if (dd == null || tol == null || dd >= tol) return t.name;
   }
   return null; // too deep even for the top tier
 }
@@ -200,7 +214,8 @@ export function classifyElimination(row, tier, p = DEFAULT_PARAMS) {
   if (row.liveDays != null && row.liveDays < p.minLiveDays) out.push(`liveDays ${row.liveDays} < ${p.minLiveDays} (thin)`);
   if (!tier.admit.includes(row.structure)) park.push(`structure '${row.structure}' not admitted at ${tier.name} tier`);
   const tol = tier.dd[row.structure];
-  if (row.live?.maxDD != null && tol != null && row.live.maxDD < tol) park.push(`live maxDD ${row.live.maxDD} below ${tier.name} ${row.structure} tolerance ${tol}`);
+  const dd = row.gateMaxDD ?? row.live?.maxDD; // full-curve DD for young algos (see screenAlgo)
+  if (dd != null && tol != null && dd < tol) park.push(`maxDD ${dd} below ${tier.name} ${row.structure} tolerance ${tol}`);
   return { out, park };
 }
 
@@ -242,7 +257,11 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regi
   const outAlgos = nonHeld.filter((r) => r.outReasons.length > 0);
   const parked = nonHeld.filter((r) => r.outReasons.length === 0 && r.parkReasons.length > 0);
   const survivors = nonHeld.filter((r) => r.outReasons.length === 0 && r.parkReasons.length === 0);
-  survivors.sort((a, b) => (b.live?.sortino ?? -Infinity) - (a.live?.sortino ?? -Infinity));
+  // Established (≥180 live days, confidence 'ok') rank ABOVE short-live algos, THEN by live
+  // sortino — a young algo's annualised sortino extrapolates a hot window and must not top
+  // the list (fixes the Sookshma-Nazar 112-day "#1" artifact). See screenAlgo shortLive.
+  const estFirst = (r) => (r.confidence === 'ok' ? 0 : 1);
+  survivors.sort((a, b) => estFirst(a) - estFirst(b) || (b.live?.sortino ?? -Infinity) - (a.live?.sortino ?? -Infinity));
 
   // confront-my-picks: same-style survivors beating a held algo on live sortino AND
   // more diversifying (lower corr-to-basket than the incumbent).
@@ -279,9 +298,9 @@ export function runScreen(records, { heldIds = [], params = DEFAULT_PARAMS, regi
 // already computed (never the LLM); this only reshapes. asOf is the data vintage.
 export function buildScreenPayload(s, { asOf = null } = {}) {
   const liveOf = (r) => r.live
-    ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n }
+    ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, gateMaxDD: r.gateMaxDD ?? r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n }
     : null;
-  const flagsList = (f) => ['provisional', 'noOverfitCheck', 'noCorrelation'].filter((k) => f[k]);
+  const flagsList = (f) => ['provisional', 'shortLive', 'noOverfitCheck', 'noCorrelation'].filter((k) => f[k]);
   // per-regime rows: tested ∈ empty (the finding) | thin (<25d, untested) | ok
   const regimeRows = (rg) => rg ? ['up', 'down', 'chop', 'stressed'].map((k) => {
     const b = rg[k];
@@ -332,7 +351,8 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
     algo: r.name, liveDays: r.liveDays, confidence: r.confidence, liveMetrics: liveOf(r),
     corrToBasket: r.corr.avg, structure: r.structure, structureOutlier: r.structureOutlier, flags: flagsList(r.flags),
   });
-  for (const k of Object.keys(survivorsByStyle)) survivorsByStyle[k].sort((a, b) => (b.liveMetrics?.sortino ?? -Infinity) - (a.liveMetrics?.sortino ?? -Infinity));
+  const est = (x) => (x.confidence === 'ok' ? 0 : 1); // established-first, matching runScreen
+  for (const k of Object.keys(survivorsByStyle)) survivorsByStyle[k].sort((a, b) => est(a) - est(b) || (b.liveMetrics?.sortino ?? -Infinity) - (a.liveMetrics?.sortino ?? -Infinity));
 
   const parked = s.parked.map((r) => ({
     algo: r.name, style: r.style, structure: r.structure, liveDays: r.liveDays, confidence: r.confidence,
