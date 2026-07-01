@@ -142,3 +142,76 @@ export function justify(book, { regimeCaveat = null } = {}) {
     regimeCaveat,
   };
 }
+
+// ── CONVICTION mode (locked 2026-07-02) ───────────────────────────────────────
+// The user chose to CHASE RETURNS: rank the candidates (persistence → live Sortino),
+// then max-out each to its OWN maxCapital in order — NO single-algo cap, NO short-vol
+// cluster cap, NO drawdown scaling (drawdown is shown per-pick, not a limit). The ONE
+// enforced safety element is a mandatory LONG-VOL (premium-BUYING) hedge of ≥ this share
+// of capital: long-vol GAINS in a vol spike, so it caps the short-vol cluster's correlated
+// give-back — the specific defence against "a single event wiping out months of gains".
+export const CONVICTION_MIN_LONGVOL_SHARE = 0.20;
+
+export function allocateConviction(cands, { capital, minLongVolShare = CONVICTION_MIN_LONGVOL_SHARE } = {}) {
+  if (!Number.isFinite(capital) || capital <= 0) throw new Error('allocateConviction: capital must be a positive number');
+  const earmark = Math.round(minLongVolShare * capital); // capital non-long picks may NOT touch
+  const picks = [], skipped = [], funded = new Set();
+  let spent = 0, longSpent = 0, shortSpent = 0;
+  const minOf = (c) => c.min ?? 0;
+  const ceilOf = (c) => (c.max == null ? capital : c.max);
+  const inr = (n) => '₹' + round(n).toLocaleString('en-IN');
+  const fund = (c, target, reason) => {
+    picks.push({ algo: c.algo, volSide: c.volSide ?? 'neutral', structure: c.structure ?? null, rupees: target,
+      weight: +(target / capital).toFixed(4), gateMaxDD: c.gateMaxDD ?? null, liveMaxDD: c.liveMaxDD ?? null, bindingReason: reason });
+    funded.add(c.algo); spent += target;
+    if (c.volSide === 'long') longSpent += target; else if (c.volSide === 'short') shortSpent += target;
+  };
+
+  // Main pass — conviction max-out by rank. Non-long picks may not consume the long-vol
+  // earmark, so ≥ minLongVolShare of capital stays reserved for a long-vol sleeve.
+  for (const c of cands) {
+    const totalRem = capital - spent;
+    if (totalRem <= 0) break;
+    const earmarkLeft = Math.max(0, earmark - longSpent);
+    const avail = c.volSide === 'long' ? totalRem : Math.max(0, totalRem - earmarkLeft);
+    const target = Math.min(ceilOf(c), avail);
+    if (target < minOf(c)) { skipped.push({ algo: c.algo, volSide: c.volSide ?? 'neutral', reason: `needs ${inr(minOf(c))} min, ${inr(avail)} available` }); continue; }
+    const reason = c.volSide === 'long'
+      ? (target === c.max ? `long-vol hedge · maxed to capacity ${inr(c.max)}` : 'long-vol hedge sleeve')
+      : (target === c.max ? `maxed to algo capacity ${inr(c.max)}` : 'filled remaining capital');
+    fund(c, target, reason);
+  }
+
+  // Cleanup — if too little long-vol could be funded, don't force idle cash: release the
+  // earmark to the best remaining non-long picks, and WARN the hedge is incomplete.
+  const warnings = [];
+  if (longSpent < earmark) {
+    warnings.push(`long-vol hedge INCOMPLETE: ${inr(longSpent)} of ${inr(earmark)} target (${pct(minLongVolShare)}) — too few long-vol candidates to fully hedge the short-vol cluster`);
+    // Release the earmark: GROW already-funded non-long picks toward their max (they were held
+    // back by the earmark), then fund any new ones — so we never force idle cash.
+    for (const c of cands) {
+      if (c.volSide === 'long') continue;
+      const rem = capital - spent; if (rem <= 0) break;
+      const existing = picks.find((p) => p.algo === c.algo);
+      const curr = existing ? existing.rupees : 0;
+      const add = Math.min(ceilOf(c), curr + rem) - curr;
+      if (add <= 0) continue;
+      if (existing) {
+        existing.rupees += add; existing.weight = +(existing.rupees / capital).toFixed(4);
+        existing.bindingReason += ' (+hedge earmark released)';
+        spent += add; if (c.volSide === 'short') shortSpent += add;
+      } else if (add >= minOf(c)) {
+        fund(c, add, `${add === c.max ? `maxed to algo capacity ${inr(c.max)}` : 'filled remaining capital'} (hedge earmark released)`);
+      }
+    }
+  }
+
+  return {
+    capital, mode: 'conviction', minLongVolShare,
+    picks, skipped,
+    deployed: spent, idle: capital - spent,
+    shortVol: shortSpent, shortVolShare: +(shortSpent / capital).toFixed(4),
+    longVol: picks.filter((p) => p.volSide === 'long').length, longVolRupees: longSpent, longVolShare: +(longSpent / capital).toFixed(4),
+    warnings,
+  };
+}

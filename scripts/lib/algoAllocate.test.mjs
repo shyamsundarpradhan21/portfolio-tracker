@@ -1,7 +1,7 @@
 // Tests for the capital allocation gate. A wrong cap here would size a real book, so the
 // constraints are checked against a constructed candidate universe with known numbers.
 import { describe, it, expect } from 'vitest';
-import { allocate, ddScale, downScale, justify, DEFAULT_CAPS } from './algoAllocate.mjs';
+import { allocate, ddScale, downScale, justify, allocateConviction, CONVICTION_MIN_LONGVOL_SHARE, DEFAULT_CAPS } from './algoAllocate.mjs';
 
 // helper: a ranked candidate
 const cand = (algo, volSide, over = {}) => ({
@@ -81,6 +81,46 @@ describe('allocate — caps enforced', () => {
 
   it('throws on non-positive capital', () => {
     expect(() => allocate([cand('A', 'short')], { capital: 0 })).toThrow();
+  });
+});
+
+describe('allocateConviction — chase returns, mandatory long-vol hedge', () => {
+  it('no single-algo or short-vol cap — a top pick maxes to its own capacity beyond 30%', () => {
+    // A short-vol with a ₹5L max at ₹10L capital would be capped to 30% under allocate();
+    // conviction lets it take its full ₹5L (50%).
+    const book = allocateConviction([cand('A', 'short', { max: 500_000 }), cand('L', 'long', { max: 300_000 })], { capital: 1_000_000 });
+    expect(book.picks.find((p) => p.algo === 'A').rupees).toBe(500_000);
+  });
+
+  it('guarantees the long-vol hedge floor (≥20%) even when short-vol ranks first', () => {
+    const cands = [cand('A', 'short', { max: 500_000 }), cand('B', 'short', { max: 500_000 }), cand('L', 'long', { max: 300_000 })];
+    const book = allocateConviction(cands, { capital: 1_000_000 });
+    expect(book.longVolShare).toBeGreaterThanOrEqual(CONVICTION_MIN_LONGVOL_SHARE);
+    expect(book.longVolRupees).toBeGreaterThanOrEqual(200_000);
+    // and short-vol did NOT eat the whole book despite ranking first
+    expect(book.shortVol).toBeLessThanOrEqual(800_000);
+  });
+
+  it('a high-ranked long-vol can exceed the floor (maxes out like any conviction pick)', () => {
+    const book = allocateConviction([cand('L', 'long', { max: 500_000 }), cand('A', 'short', { max: 500_000 })], { capital: 1_000_000 });
+    expect(book.picks.find((p) => p.algo === 'L').rupees).toBe(500_000); // took its full max, not just the 20% floor
+  });
+
+  it('no long-vol candidate → warns hedge incomplete + releases earmark (no forced idle cash)', () => {
+    const book = allocateConviction([cand('A', 'short', { max: 600_000 }), cand('B', 'short', { max: 600_000 })], { capital: 1_000_000 });
+    expect(book.warnings.join(' ')).toMatch(/hedge INCOMPLETE/);
+    expect(book.deployed).toBe(1_000_000); // earmark released, fully deployed
+    expect(book.idle).toBe(0);
+  });
+
+  it('respects min/max and is deterministic', () => {
+    const cands = [cand('L', 'long', { max: 300_000, min: 100_000 }), cand('A', 'short', { max: 320_000 }), cand('B', 'short', { max: 320_000 })];
+    expect(allocateConviction(cands, { capital: 1_000_000 })).toEqual(allocateConviction(cands, { capital: 1_000_000 }));
+    for (const p of allocateConviction(cands, { capital: 1_000_000 }).picks) expect(p.rupees).toBeLessThanOrEqual(p.algo === 'L' ? 300_000 : 320_000);
+  });
+
+  it('throws on non-positive capital', () => {
+    expect(() => allocateConviction([cand('A', 'short')], { capital: 0 })).toThrow();
   });
 });
 

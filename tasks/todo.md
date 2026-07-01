@@ -60,11 +60,13 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
   when vol returns.
 
 ### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested) ✅ DONE (commit pending)
-- [x] (e) `allocate(candidates, { capital, caps })` → `{ picks[], skipped[], deployed, idle, shortVolShare, longVol, warnings }`
-      enforcing single-algo ≤30%, short-vol cluster ≤60%, DD-scaled sizing (`ddScale`), down-regime haircut
-      (`downScale` — the operative adverse-condition modifier), ≥1 long-vol guarantee, real min/max. Deterministic.
+- [x] (e) `allocate(candidates, { capital, caps })` — capped variant (single ≤30%, short-vol ≤60%, DD/down scaling).
+      KEPT but NOT the default (superseded by conviction mode per user).
+- [x] (e2) **`allocateConviction(candidates, { capital, minLongVolShare })`** — the LOCKED default: max-out to
+      Stratzy `maximumCapital` by rank, no caps, no DD scaling, with the mandatory long-vol hedge ≥20% (earmark
+      that non-long picks can't touch; released if too few long-vol candidates, with a warning). Deterministic.
 - [x] (f) `justify(book, { regimeCaveat })` — headline + per-pick "why this size" lines + vol mix + caveat passthrough.
-- [x] 11 allocator tests; 324 total green. Validated on real ₹10L data: caps hold exactly (short-vol 60%, 2 long-vol).
+- [x] 17 allocator tests; 330 total green. Validated on real data: ₹10L → hedge 36%, ₹25L → hedge 40% (holds as it scales).
 - **Handoff finding for Phase 3:** the allocator faithfully fills whatever ORDER it's given, and the raw
   `runScreen` survivor order (established-first by annualised Sortino) is NOT a pick-quality rank — the real-data
   preview funded mediocre names (Ignitor/IIFL/TejNiti) and the long-vol guarantee grabbed a −67%-DD Fixed RR.
@@ -93,8 +95,22 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
 - Fully headless harvest (Stratzy auth stays browser-based).
 - Any broker order placement (brokers remain READ-ONLY).
 
-## Decisions (locked 2026-07-02)
-- Caps = proposed defaults (short-vol ≤60%, single-algo ≤30%, DD-scaled sizing, stress-untested penalty, ≥1 long-vol).
+## Decisions (locked 2026-07-02) — REVISED to CONVICTION mode (user chose returns)
+- **Posture = CHASE RETURNS** (explicit: "we need to chase returns; risk capital; can take 40-60% but not a
+  complete wipeout of 1-3 months of gains"). So the capped `allocate` is NOT the default — `allocateConviction` is:
+  - Rank: **2nd-worst-horizon persistence → live Sortino** (skew/worst-day display-only). Held ranked by method
+    → KEEP (funded) / EXIT (not funded); new → ADD.
+  - Sizing: **max-out to each algo's Stratzy `maximumCapital`** in rank order. NO single-algo cap, NO short-vol
+    cluster cap, NO DD scaling (drawdown is a VISIBLE per-pick flag, not a limit).
+  - Pool: quality-OK F&O (defined+undefined), **DD-park removed**, **−100% catastrophic-DD floor** (kills
+    wiped-out algos; a quality kill, not the structure-relative park).
+  - **The ONE enforced safety element = mandatory LONG-VOL hedge ≥20% of capital** (`CONVICTION_MIN_LONGVOL_SHARE`).
+    Long-vol (premium-BUYING) GAINS in a vol spike → caps the short-vol cluster's correlated give-back. This is the
+    specific defence against the "single event wipes out months of gains" the user won't accept. Nearly free here
+    (long-vol names rank high on merit; ₹10L book already holds SkewHunter as the hedge).
+  - Data source: **Stratzy only** (Dhan numbers are inflated — dropped). `minimumCapital`/`maximumCapital` +
+    live/backtest series all from Stratzy (148/148 coverage).
+- (superseded) Caps = proposed defaults (short-vol ≤60%, single-algo ≤30%, DD-scaled sizing, ≥1 long-vol).
 - Capital basis = **parameter each run** (`--capital <rupees>`; no fixed default baked in).
 - Cadence = **scheduled reminder** (Phase 3.5): a cron/routine nudges at month-start to re-harvest (browser) + run.
 
