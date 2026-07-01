@@ -59,10 +59,17 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
   down-Sortino spread 0.9–17 — genuinely discriminating), NOT a stress-tested preference. Kept stressTested for
   when vol returns.
 
-### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested)
-- [ ] (e) `allocate(survivors, { capital, caps })` → `[{ algo, rupees, bindingReason, structure, stressTested }]`
-      enforcing the Design-2 constraints; deterministic + unit-tested on a constructed universe.
-- [ ] (f) Justification builder: per-pick "why in / why this size" + book-level structure/stress/corr summary.
+### Phase 2 — Capital allocation gate (`scripts/lib/algoAllocate.mjs`, new, pure + tested) ✅ DONE (commit pending)
+- [x] (e) `allocate(candidates, { capital, caps })` → `{ picks[], skipped[], deployed, idle, shortVolShare, longVol, warnings }`
+      enforcing single-algo ≤30%, short-vol cluster ≤60%, DD-scaled sizing (`ddScale`), down-regime haircut
+      (`downScale` — the operative adverse-condition modifier), ≥1 long-vol guarantee, real min/max. Deterministic.
+- [x] (f) `justify(book, { regimeCaveat })` — headline + per-pick "why this size" lines + vol mix + caveat passthrough.
+- [x] 11 allocator tests; 324 total green. Validated on real ₹10L data: caps hold exactly (short-vol 60%, 2 long-vol).
+- **Handoff finding for Phase 3:** the allocator faithfully fills whatever ORDER it's given, and the raw
+  `runScreen` survivor order (established-first by annualised Sortino) is NOT a pick-quality rank — the real-data
+  preview funded mediocre names (Ignitor/IIFL/TejNiti) and the long-vol guarantee grabbed a −67%-DD Fixed RR.
+  **Phase 3 must build a composite candidate rank** (user's persistence signal + Sortino + down-regime health,
+  held-pinned) and feed THAT to `allocate`. The allocator is correct; the ranking is the lever.
 
 ### Phase 3 — Monthly orchestrator (`scripts/build-monthly-reco.mjs`, new)
 - [ ] (g) Pipeline: (assumes fresh harvest) → `runScreen` (retail tier, Phase-1 gate) → `allocate` →
