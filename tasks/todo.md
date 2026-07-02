@@ -79,8 +79,13 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       API + Pub/Sub, OAuth desktop client (`gmail.readonly`), topic `gmail-tx` (+ grant
       `gmail-api-push@system.gserviceaccount.com` publisher), pull subscription, SA key.
       Gmail filter → label `portfolio/tx` (broker + CAMS/KFintech senders).
-- [ ] (b) Pure libs `scripts/ingest/` (unit-tested): registry, manifest read/write, sha256 +
+- [x] (b) Pure libs `scripts/ingest/` (unit-tested): registry, manifest read/write, sha256 +
       naturalKey dedup, router/queue; gmail lib (history-gap detection, PDF attachment selection).
+      DONE: registry.mjs (interface + first-claim classify), manifest.mjs (event-log ledger,
+      atomic writes, strict-read guard), dedup.mjs (sha256 + naturalKey vs PASS rows only —
+      FAIL never establishes dedup, retry-after-fix is first-class), router.mjs (single path,
+      4 dispositions, dry mode writes NOTHING), gmail.mjs (pure: pdfAttachments/history-delta/
+      404-gap/safeName/state; lazy googleapis for daemon-only fns). 27 tests; 373 total green.
 - [ ] (c) `scripts/ingest-daemon.mjs`: Pub/Sub pull + inbox fs-watcher → single queue → classify
       → parse → PASS delete clone / FAIL quarantine / UNRECOGNIZED park → manifest + state.
       `--dry` (parse, no KV/store writes, no deletes). Watch re-arm.
@@ -451,4 +456,8 @@ B+C built behind the same adapter pattern (paste fallback intact). Discovery in 
 ### Review (verified on real data)
 - 148 algos: 140 with curve, **62 with ≥5-day backtest segment**, 41/148 correlation-joined (scoped Dhan).
 - Split verified: Wave-Return 78 backtest + 52 live (overfit case: clean backtest, live −50% mdd); held
-  IV-Imbala
+  IV-Imbalance/Damper fully-live (0 backtest); BTST split fine despite empty `liveSinceBacktested`.
+- KV push 1.43 MB OK. DATA ONLY — no scores computed (next step: the screen).
+- **GAP:** Dhan-full 79 download was blocked by Chrome's multi-download prompt → join used scoped 41.
+  Drop `data/dhan-full.raw.json` (79) in and re-run → coverage jumps to ~79 (importer already prefers it).
+- SKIPPED per instruction: per-algo `advisorMetrics` loop (per-range winRatio/avgProfit/booksizes).
