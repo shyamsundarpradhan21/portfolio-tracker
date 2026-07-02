@@ -1,0 +1,2 @@
+casparser==1.2.1
+casparser-isin==2026.6.9

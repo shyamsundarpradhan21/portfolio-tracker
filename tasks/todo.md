@@ -94,8 +94,16 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       OAuth; --once sweep; --dry proven on empty inbox with zero GCP. keepAwake is WORK-SCOPED
       (held only while the queue is busy, released 30s after idle) — a 24/7 daemon must not
       block laptop sleep, unlike the session-scoped capture daemon. 5 tests; 378 total green.
-- [ ] (d) `scripts/cas-parser/` (casparser-first; live-sample discovery for per-transaction
+- [x] (d) `scripts/cas-parser/` (casparser-first; live-sample discovery for per-transaction
       confirmation formats; regression tests mirroring `test_engine.py` discipline).
+      DONE (code): venv + casparser==1.2.1 pinned; engine.py = pure post-processing (validate
+      refuse-on-fail via close vs close_calculated reconciliation, natural_key = period +
+      folio-set hash, redact drops name/email/mobile/PAN/nominees + hashes folio numbers);
+      run.py mirrors contract-parser (CAS_PW_* .env, KV ledger:mf:<key> + index, --dry-run,
+      --porcelain for the registry wrapper); registry wrapper cas-mf.mjs + shared py.mjs.
+      37 python regression tests + 6 vitest; 384 total green.
+      PENDING (user sample): verify casparser handles the real CAMS/KFintech CAS before
+      trusting coverage — refuse-on-fail protects until then.
 - [ ] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
       (payslip PASS auto-chains the guarded KV seed). No rewrite of proven engines.
 - [ ] (e2) NEW `itr-json` parser (per-AY schema validation; FY-anchor extraction; derived

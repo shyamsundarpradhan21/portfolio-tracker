@@ -9,4 +9,8 @@
 //   itr-json       → NEW per-AY schema validator + anchor diff   (phase e2)
 //   vested-statement → backlog (registry-ready; manual curation until then)
 
-export const PARSERS = [];
+import { casMfParser } from './cas-mf.mjs';
+
+export const PARSERS = [
+  casMfParser,
+];

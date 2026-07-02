@@ -35,7 +35,17 @@ ALWAYS-READ layer before starting.
    `ledger:cn:*` pattern). Regression tests mirroring `test_engine.py` discipline.
 3b. **(d2) contract-parser: NEW Groww + Rupeezy adapters** — the engine covers only
    Zerodha/Fyers/Upstox/Dhan today. Real samples are pre-dropped by the user in `inbox/`
-   (gitignored). Per adapter: parse → per-segment checksum PASS against the note's own
+   (gitignored). **Sample inventory (probed 2026-07-02, metadata only):**
+   - `206403980300724.json` / `926639580260825.json` — ITR-3, AY 2024-25 / AY 2025-26 ✓
+   - `NSEFUTURES_CONTRACT_20230601_AG4907_0125557.pdf` — UNencrypted, "Astha" markers →
+     [Likely] Rupeezy (ex-Astha Trade); page-1 text extraction didn't match "Contract Note"
+     (cover page or extraction quirk — inspect at build).
+   - `CONTRACT NOTE 0258131546.pdf` — ENCRYPTED; [Likely] Groww by elimination — confirm on
+     first decrypt (user adds `CN_PW_*` to the existing `.env`).
+   - `SEP2025_AA47186032_TXN.pdf` — ENCRYPTED, identity unconfirmed (payslip vs transaction
+     statement) — user confirming; route to the right parser once known.
+   Single note per broker + a 2023-dated Rupeezy sample = enough to BUILD adapters; the
+   Gmail backfill (h) supplies volume for confidence. Per adapter: parse → per-segment checksum PASS against the note's own
    totals → derive PII-redacted SYNTHETIC fixtures for `test_engine.py` (the raw note is
    never persisted as a fixture) → only then register the broker. Passwords = new `CN_PW_*`
    entries the user adds to the existing gitignored `scripts/contract-parser/.env`.
@@ -61,23 +71,4 @@ ALWAYS-READ layer before starting.
 10. **(j) `scripts/ingest-reconcile.mjs`** — REPORT-ONLY, per the plan's authority order
     (parsed ITR anchor → checksum-PASS docs → broker API → hand-curated) and the
     cross-granularity invariant (notes SUM to ITR FY schedules; Schedule S vs PAYSLIPS).
-    Apply corp-action adjustments BEFORE flagging any MF drift (CUB lesson).
-
-## User-side prerequisites (generate docs first, then STOP and wait)
-- **GCP setup (plan step a):** write `mcp/gmail/README.md` as a click-by-click walkthrough
-  (project → Gmail API + Pub/Sub → OAuth desktop client `gmail.readonly` → topic `gmail-tx` +
-  grant `gmail-api-push@system.gserviceaccount.com` publisher → pull subscription → SA key →
-  Gmail filter → label `portfolio/tx`), then wait for the user to complete it and provide the
-  client-secret file. Everything through phase (b)–(e2) builds and tests WITHOUT GCP (fixtures
-  + `--dry`).
-- **Real samples needed from the user:** one contract-note mail, one CAS PDF (+ password
-  convention), one payslip PDF, the annual ITR JSONs.
-- **[Unconfirmed → verify live at build]:** GCP "Testing"-mode OAuth refresh tokens expire ~7
-  days (publish the consent screen if so); casparser coverage of current CAS formats.
-
-## Non-negotiables (repo-wide, enforced in review)
-- Gmail scope `gmail.readonly` ONLY; zero mailbox mutation ever. Brokers untouched/read-only.
-- PANs / statement passwords / OAuth tokens: local gitignored files only — never logged,
-  echoed, committed, or pushed to KV. KV receives redacted DERIVED data only.
-- Raw documents never persisted: PASS → delete, FAIL → quarantine. Seed sanity guard never
-  bypassed. Manifest invariant holds at all times.
+    Apply corp-action adjustment
