@@ -86,9 +86,14 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       FAIL never establishes dedup, retry-after-fix is first-class), router.mjs (single path,
       4 dispositions, dry mode writes NOTHING), gmail.mjs (pure: pdfAttachments/history-delta/
       404-gap/safeName/state; lazy googleapis for daemon-only fns). 27 tests; 373 total green.
-- [ ] (c) `scripts/ingest-daemon.mjs`: Pub/Sub pull + inbox fs-watcher → single queue → classify
+- [x] (c) `scripts/ingest-daemon.mjs`: Pub/Sub pull + inbox fs-watcher → single queue → classify
       → parse → PASS delete clone / FAIL quarantine / UNRECOGNIZED park → manifest + state.
       `--dry` (parse, no KV/store writes, no deletes). Watch re-arm.
+      DONE: two intakes → makeIngest's one serial queue; gmail intake optional (creds absent →
+      fs-watch only, logged); startup catch-up + 6h poll + 6d watch re-arm; --auth loopback
+      OAuth; --once sweep; --dry proven on empty inbox with zero GCP. keepAwake is WORK-SCOPED
+      (held only while the queue is busy, released 30s after idle) — a 24/7 daemon must not
+      block laptop sleep, unlike the session-scoped capture daemon. 5 tests; 378 total green.
 - [ ] (d) `scripts/cas-parser/` (casparser-first; live-sample discovery for per-transaction
       confirmation formats; regression tests mirroring `test_engine.py` discipline).
 - [ ] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
