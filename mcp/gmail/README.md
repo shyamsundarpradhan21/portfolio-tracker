@@ -1,27 +1,41 @@
-# Gmail ingestion — one-time GCP setup (user-assisted)
+# Gmail ingestion — one-time setup (user-assisted)
 
-Feeds the unified ingestion pipeline (`scripts/ingest-daemon.mjs`): Gmail pushes a
-Pub/Sub notification when a broker contract note / CAS mail lands, the LOCAL daemon
-pulls it (streaming pull — **no public webhook**, documents and PANs never leave this
-machine), downloads the PDF attachment into `inbox/`, and the parser registry takes
-it from there.
+Feeds the unified ingestion pipeline (`scripts/ingest-daemon.mjs`): when a broker
+contract note / CAS mail lands under the `portfolio/tx` label, the LOCAL daemon
+downloads the PDF attachment into `inbox/` and the parser registry takes it from
+there. Documents and PANs never leave this machine.
 
 Scope is **`gmail.readonly` ONLY** — the pipeline physically cannot modify, label,
 or delete anything in the mailbox. Originals stay untouched forever; only the
 downloaded clone is destroyed after a checksum-verified parse.
 
-Everything below is clicked once. Allow ~20 minutes.
+## Two modes — pick one
+
+- **POLL-ONLY (default; no GCP billing, no card).** The daemon polls Gmail
+  (`history.list`) on startup and every 15 minutes. Needs ONLY the OAuth desktop
+  client (§3–4) + the Gmail label/filter (§8) + `--auth` (§9). **Skip §1, §2, §5,
+  §6, §7** — no project, no Pub/Sub, no service account. Documents land within ~15
+  min of arriving, which is ample for notes/CAS/payslips. This is the recommended
+  path when the Google account has no billing account.
+- **PUSH (optional; near-real-time).** Adds Gmail→Pub/Sub push on top. Requires a
+  GCP project with a **billing account linked** (Pub/Sub sits in the free tier at
+  ~$0 for this volume, but Google requires a card on file). Do the full §1–§9. The
+  daemon auto-detects push: if `mcp/gmail/.sa.json` is present it arms `users.watch`
+  + streams the pull subscription; if absent it runs poll-only. Switching later is
+  just adding/removing that one file.
+
+Everything below is clicked once. Poll-only ≈ 10 min; push ≈ 20 min.
 
 ---
 
-## 1. Create the project
+## 1. Create the project  *(PUSH mode only — skip for poll-only)*
 
 1. Open https://console.cloud.google.com/ and sign in as **shyamsundar.pradhan21@gmail.com**.
 2. Top bar → project selector → **New project**.
    - Name: `portfolio-ingest` (any name works; keep it obvious).
    - No organization → **Create**, then switch the selector to it.
 
-## 2. Enable the two APIs
+## 2. Enable the two APIs  *(PUSH mode only — skip for poll-only)*
 
 3. Left menu → **APIs & Services → Library**.
 4. Search **Gmail API** → open → **Enable**.
@@ -53,7 +67,7 @@ Everything below is clicked once. Allow ~20 minutes.
 12. **Download JSON** on the created client → save it as exactly:
     `mcp/gmail/.client_secret.json`   (gitignored — never commit)
 
-## 5. Pub/Sub topic — where Gmail pushes "new mail" events
+## 5. Pub/Sub topic — where Gmail pushes "new mail" events  *(PUSH mode only — skip for poll-only)*
 
 13. Left menu → **Pub/Sub → Topics → + Create topic**.
     - Topic ID: `gmail-tx` → **Create** (leave "Add a default subscription" OFF —
@@ -64,7 +78,7 @@ Everything below is clicked once. Allow ~20 minutes.
     - Role: **Pub/Sub → Pub/Sub Publisher**
     - **Save.**  (This is what lets *Gmail itself* publish into your topic.)
 
-## 6. Pull subscription — what the local daemon drains
+## 6. Pull subscription — what the local daemon drains  *(PUSH mode only — skip for poll-only)*
 
 15. **Pub/Sub → Subscriptions → + Create subscription**.
     - Subscription ID: `gmail-tx-pull`
@@ -73,7 +87,7 @@ Everything below is clicked once. Allow ~20 minutes.
       machine is exposed to the internet).
     - Everything else default → **Create**.
 
-## 7. Service account key — the daemon's Pub/Sub credentials
+## 7. Service account key — the daemon's Pub/Sub credentials  *(PUSH mode only — skip for poll-only)*
 
 16. **IAM & Admin → Service accounts → + Create service account**.
     - Name: `ingest-subscriber` → **Create and continue**.
@@ -101,15 +115,16 @@ Everything below is clicked once. Allow ~20 minutes.
 
 ## 9. Hand back to the pipeline
 
-20. Confirm these two files exist (both are gitignored):
-    - `mcp/gmail/.client_secret.json`
-    - `mcp/gmail/.sa.json`
+20. Confirm the required file(s) exist (all gitignored):
+    - `mcp/gmail/.client_secret.json` — **required in both modes** (§4).
+    - `mcp/gmail/.sa.json` — **PUSH mode only** (§7). Absent ⇒ the daemon runs
+      poll-only automatically.
 21. Tell Claude Code the setup is done. The one-time interactive auth
     (`node scripts/ingest-daemon.mjs --auth`) opens a browser, you approve the
     **read-only** Gmail scope (click through the unverified-app warning), and the
     refresh token lands in `mcp/gmail/.token.json` (gitignored). After that the
-    daemon runs hands-free: it re-arms the Gmail `users.watch` on startup and
-    every 6 days, and catches up any gap via `history.list` after every wake.
+    daemon runs hands-free: poll-only catches up via `history.list` on startup +
+    every 15 min; push mode additionally re-arms `users.watch` every 6 days.
 
 ## File map (all gitignored, never committed)
 

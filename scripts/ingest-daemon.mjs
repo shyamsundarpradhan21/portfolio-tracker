@@ -44,7 +44,8 @@ export const INBOX = join(ROOT, 'inbox');
 const DIRS = { failed: join(INBOX, 'failed'), unrecognized: join(INBOX, 'unrecognized') };
 const MANIFEST = join(ROOT, 'data', 'ingest-manifest.json');
 const REARM_MS = 6 * 24 * 3600 * 1000;   // users.watch expires at 7d — re-arm at 6d
-const POLL_MS = 6 * 3600 * 1000;         // belt-and-suspenders catch-up even if pushes vanish
+const POLL_MS = 6 * 3600 * 1000;         // push-backstop catch-up when Pub/Sub IS configured
+const POLL_ONLY_MS = 15 * 60 * 1000;     // PRIMARY catch-up when there is no Pub/Sub (poll-only)
 const SETTLE_MS = 700;                    // a drop must hold size for this long before parsing
 
 const ts = () => new Date().toLocaleTimeString('en-IN', { hour12: false });  // local (IST) like the other script logs
@@ -126,8 +127,13 @@ export async function sweepInbox(ingest, { source = 'manual' } = {}) {
 }
 
 // ── gmail intake ──────────────────────────────────────────────────────────────
-const gmailCredsPresent = () =>
-  existsSync(GMAIL_PATHS.clientSecret) && existsSync(GMAIL_PATHS.token) && existsSync(GMAIL_PATHS.saKey);
+// Two tiers: OAuth alone (clientSecret + token) enables POLL-ONLY intake
+// (history.list catch-up — no Pub/Sub, no service account, no GCP billing); the
+// service-account key (.sa.json) is OPTIONAL and, when present, additionally
+// arms Gmail push via Pub/Sub for near-real-time capture. Documents here arrive
+// a few times a day, so the 15-min poll is a complete intake on its own.
+const oauthPresent = () => existsSync(GMAIL_PATHS.clientSecret) && existsSync(GMAIL_PATHS.token);
+const pushConfigured = () => existsSync(GMAIL_PATHS.saKey);
 
 async function labelId(gmail) {
   const { data } = await gmail.users.labels.list({ userId: 'me' });
@@ -218,12 +224,26 @@ async function startGmailIntake(ingest, timers) {
   const auth = await oauthClient();
   const gmail = await gmailClient(auth);
   const lid = await labelId(gmail);
-  const projectId = JSON.parse(readFileSync(GMAIL_PATHS.saKey, 'utf8')).project_id;
+  const push = pushConfigured();                 // .sa.json present ⇒ Pub/Sub push available
 
-  await gmailCatchUp(gmail, ingest, lid);        // startup catch-up covers downtime/sleep
-  await armWatch(gmail, lid, projectId).catch((e) => log(`gmail: watch arm failed (push disabled, poll still on): ${e.message}`));
-  timers.push(setInterval(() => armWatch(gmail, lid, projectId).catch((e) => log(`gmail: re-arm failed: ${e.message}`)), REARM_MS));
-  timers.push(setInterval(() => gmailCatchUp(gmail, ingest, lid).catch((e) => log(`gmail: poll failed: ${e.message}`)), POLL_MS));
+  await gmailCatchUp(gmail, ingest, lid);        // startup catch-up (OAuth only — always runs)
+
+  // Push tier (optional): arm users.watch + re-arm, and stream-pull the pull
+  // subscription. Skipped entirely in poll-only mode (no .sa.json / no billing).
+  if (push) {
+    const projectId = JSON.parse(readFileSync(GMAIL_PATHS.saKey, 'utf8')).project_id;
+    await armWatch(gmail, lid, projectId).catch((e) => log(`gmail: watch arm failed (push disabled, poll still on): ${e.message}`));
+    timers.push(setInterval(() => armWatch(gmail, lid, projectId).catch((e) => log(`gmail: re-arm failed: ${e.message}`)), REARM_MS));
+  }
+
+  // Poll tier (always): PRIMARY intake when poll-only (15 min), or a push backstop (6 h).
+  const pollMs = push ? POLL_MS : POLL_ONLY_MS;
+  timers.push(setInterval(() => gmailCatchUp(gmail, ingest, lid).catch((e) => log(`gmail: poll failed: ${e.message}`)), pollMs));
+
+  if (!push) {
+    log(`gmail intake up: OAuth poll every ${Math.round(POLL_ONLY_MS / 60000)}min (poll-only — no Pub/Sub)`);
+    return null;
+  }
 
   // Streaming pull: any notification just triggers a catch-up from stored state.
   // Ack immediately — idempotency lives in gmail-state + the manifest, not redelivery.
@@ -362,13 +382,13 @@ async function main() {
   const timers = [];
   const watcher = startWatchIntake(ingest);
   let sub = null;
-  if (gmailCredsPresent()) {
+  if (oauthPresent()) {
     sub = await startGmailIntake(ingest, timers).catch((e) => {
       log(`gmail intake DISABLED: ${e.message}`);
       return null;
     });
   } else {
-    log('gmail intake disabled (no creds — see mcp/gmail/README.md); fs-watch only');
+    log('gmail intake disabled (no OAuth token — run --auth, see mcp/gmail/README.md); fs-watch only');
   }
   await sweepInbox(ingest);                      // drops that landed while we were down
 
