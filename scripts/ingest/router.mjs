@@ -130,6 +130,7 @@ export async function processFile(path, { parsers, manifestPath, dirs, source, d
     ...base, parser: parser.id, parserVersion: result.parserVersion,
     naturalKey: result.naturalKey ?? null, status: result.status,
     target: result.target ?? null, reason: result.reason ?? null,
+    meta: result.meta ?? null,
   });
 }
 

@@ -15,14 +15,17 @@ const SCRIPT = join(ROOT, 'scripts', 'contract-parser', 'run.py');
 export function mapCnStatus(st) {
   if (!st) return { status: 'FAIL', reason: 'contract-parser gave no porcelain status' };
   const cn = st.cn || null;
+  // trade date + broker ride into the manifest row (PII-free) — the
+  // completeness report matches them against the F&O ledger's traded days
+  const meta = { date: st.date || null, broker: (st.broker || '').toLowerCase() || null };
   switch (st.status) {
     case 'PUSHED':
     case 'OK':      // dry-run or no-KV-creds parse-verified
-      return { status: 'PASS', naturalKey: cn, target: cn ? `ledger:cn:${cn}` : null, reason: st.reason || null };
+      return { status: 'PASS', naturalKey: cn, target: cn ? `ledger:cn:${cn}` : null, reason: st.reason || null, meta };
     case 'CARRY':
-      return { status: 'PASS', naturalKey: cn, target: null, reason: 'carry/MTM note — inert, no trades' };
+      return { status: 'PASS', naturalKey: cn, target: null, reason: 'carry/MTM note — inert, no trades', meta: { ...meta, carry: true } };
     default:        // REFUSED (checksum FAIL) / HELD (unmapped charge) / SKIP (no pw) / KVFAIL / KVERR
-      return { status: 'FAIL', naturalKey: cn, target: null, reason: `${st.status}: ${st.reason || ''}`.trim() };
+      return { status: 'FAIL', naturalKey: cn, target: null, reason: `${st.status}: ${st.reason || ''}`.trim(), meta };
   }
 }
 

@@ -65,6 +65,7 @@ export function appendRow(manifest, row) {
     target: row.target ?? null,           // where the DERIVED data went (KV key / file) — never the raw doc
     reason: row.reason ?? null,
     of: row.of ?? null,                   // DUP → sha256 of the original PASS row
+    meta: row.meta ?? null,               // small PII-free parser facts (e.g. {date, broker}) — feeds ingest-report
   };
   manifest.rows.push(r);
   return r;

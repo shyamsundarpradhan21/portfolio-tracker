@@ -123,7 +123,15 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       PartB-TI heads floor losses at 0). Real finding for reconcile: AY2025-26 CFL
       speculative = 84,268 vs seed 84,307 (₹39 gap to sign off); CFL non-spec MATCHES
       exactly (5,13,011). 12 tests; 405 total green.
-- [ ] (f) `scripts/ingest-report.mjs` + `expects` cadences; weekly scheduled run.
+- [x] (f) `scripts/ingest-report.mjs` + `expects` cadences; weekly scheduled run.
+      DONE (report; weekly task registers in step g): contract notes expected per (broker,
+      traded day) FROM THE LEDGER (fno-ledger.json — holidays/idle days excluded by
+      construction, stricter than a calendar sweep); payslip/CAS monthly from baseline;
+      ITR per closed AY; per-parser staleness vs cadence. Manifest rows gained a PII-free
+      `meta` field (contract-note carries {date, broker}) to join against the ledger.
+      Live smoke vs the real ledger flagged all 5 recent Dhan traded days as missing notes.
+      The "deliberately-missing month/day is caught" phase-(i) proof is encoded as unit
+      tests. 11 tests; 416 total green.
 - [ ] (g) Windows wrappers + registration; `.gitignore`: `inbox/`, `data/ingest-manifest.json`,
       `data/gmail-state.json`, `mcp/gmail/.token.json`, `.sa.json`, parser `.env`s.
 - [ ] (h) Historical backfill (`--backfill --from <date> [--to <date>]`): date-ranged
