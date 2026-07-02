@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { buildRegimeCalendar } from '../app/lib/regime.mjs';
 import { runScreen, buildScreenPayload, convictionCandidates, CATASTROPHIC_DD } from './lib/algoScreen.mjs';
-import { allocateConviction, justify, labelBook } from './lib/algoAllocate.mjs';
+import { allocateConviction, justify, labelBook } from '../app/lib/algoAllocate.mjs';
 import { kvSetJSON, kvConfigured } from './lib/kv.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');

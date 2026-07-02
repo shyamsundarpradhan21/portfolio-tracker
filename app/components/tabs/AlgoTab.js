@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { SInrF, RsText } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import AlgoScreenReview from '../shared/AlgoScreenReview';
+import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
 import FreshnessTag from '../shared/FreshnessTag';
 import FnoSummary from '../shared/FnoSummary';
 import PnlDashboard from '../shared/PnlDashboard';
@@ -24,6 +25,7 @@ export default function AlgoTab({
   // Computed screen — lazy-loaded ONLY when the Review sub-tab opens (off the hot
   // private payload). null=unfetched · 'loading' · object=loaded · 'error'.
   const [screen, setScreen] = useState(null);
+  const [monthly, setMonthly] = useState(null); // monthly decision + review (KV algo-monthly:latest)
   useEffect(() => {
     try {
       const t = localStorage.getItem('nwTracker.algoSub'); if (SUBTABS.some(([k]) => k === t)) setSub(t);
@@ -31,11 +33,15 @@ export default function AlgoTab({
   }, []);
   useEffect(() => {
     if (sub !== 'review' || screen !== null) return;
-    setScreen('loading');
+    setScreen('loading'); setMonthly('loading');
     fetch('/api/algo-screen', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((j) => setScreen(j))
       .catch(() => setScreen('error'));
+    fetch('/api/algo-monthly', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((j) => setMonthly(j))
+      .catch(() => setMonthly('error'));
   }, [sub, screen]);
   const pickSub = (s) => { setSub(s); try { localStorage.setItem('nwTracker.algoSub', s); } catch {} };
   // Live F&O positions (all brokers, open + closed) — one derivation feeds both the
@@ -125,6 +131,9 @@ export default function AlgoTab({
             title={`AI review · ${cadence}`}
             emptyHint={`No ${cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.`} />
         )}
+
+        {/* The month's DECISION — the headline (KV algo-monthly:latest); the data-review below is background */}
+        <AlgoMonthlyReco data={typeof monthly === 'object' ? monthly : null} loading={monthly === 'loading'} error={monthly === 'error'} />
 
         {/* Computed data-review — figures from the screen calc (KV algo-screen:v1), beside the AI prose */}
         <AlgoScreenReview data={typeof screen === 'object' ? screen : null} loading={screen === 'loading'} error={screen === 'error'} />

@@ -501,6 +501,12 @@ body::before {
 .bg { background: var(--grn-bg); color: var(--grn); }
 .bb { background: var(--blu-bg); color: var(--blu); }
 
+/* Monthly-reco capital input — theme-token styled (no raw px on the figure; size via --fs-xl) */
+.algo-cap-in { font-family: var(--mono); font-size: var(--fs-xl); font-weight: 700; width: 4.5em;
+  background: color-mix(in srgb, var(--txt) 8%, transparent); border: 1px solid var(--warn-brd);
+  border-radius: 8px; color: var(--txt); padding: 3px 10px; }
+.algo-cap-in:focus { outline: none; border-color: var(--acc); }
+
 .tbl { width: 100%; border-collapse: collapse; }
 /* Table-cell spec across tabs (Section 0e). Horizontal padding scales down so
    wide multi-column tables fit narrower cards/viewports without overflowing. */

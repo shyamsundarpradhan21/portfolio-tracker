@@ -94,9 +94,23 @@ bull sample. This plan closes (1) and (2) and reframes (3), and adds the monthly
       suggestions ONLY — never auto-applied; confirmed lessons graduate to feedback.md by hand). 10 new tests,
       346 total green. Smoke-tested on real data (backdated artifact → Spearman 0.68, 100% hit, +26% KEEP/EXIT value-add).
 
-### Phase 5 — Surface in app (optional, confirm scope)
-- [ ] (k) Render the month's reco + justification + last-month review in Trading→Review (reuses
-      `AlgoScreenReview` patterns; tokens only; must pass `certify.mjs`). Hold until Phases 1–4 land.
+### Phase 5 — Surface in app (Trading→Review) ✅ DONE (commit pending)
+- [x] (k) `AlgoMonthlyReco` (app/components/shared) renders the month's decision ABOVE `AlgoScreenReview`
+      (decision = headline, data-review = background). Built from the approved mock: capital input (live,
+      re-runs the CLIENT allocator on the artifact's precomputed candidates → relabels KEEP/EXIT/ADD),
+      pick cards with KEEP/EXIT/ADD, chips, regime caveat, collapsible all-candidates, + a last-month review
+      block (calibration; "nothing to review yet" until Aug). Read path: `loadAlgoMonthly` (KV
+      `algo-monthly:latest` + local fallback) + `loadAlgoReview`; `/api/algo-monthly` (force-dynamic, no-store,
+      no sibling self-fetch). `algoAllocate.mjs` moved scripts/lib → app/lib (regime.mjs pattern) so the client
+      allocator is bundler-importable; heavy screen still never runs at render.
+      **Verified:** 346 vitest green · certify normal+stress PASS (001/002/004=0, docOverflow=0, DIRECTION +
+      VALUE-SIZE + SYMMETRY pass, 6 widths × both themes) · render-verified live both themes · 6 shots in
+      audit/algo-review-shots/ (gitignored). **Mock deviations (flagged):** amounts use the house `inrCd`
+      abbreviation (₹3.20L) + `.rs` not the mock's full ₹3,20,000; the EXIT block + the review-calibration
+      section are new (Phase-5 additions the mock didn't cover); slider stays a live NUMBER input per Daksh's scope call.
+
+## ✅ PLAN COMPLETE (2026-07-02) — all phases landed
+Phase 1 `e68e646` · Phase 2 `dd25343`+`5d10039` · Phase 3 `337e8d7` · Phase 3.5 (Cowork task) · Phase 4 `dd3537f` · Phase 5 (this commit).
 
 ## Out of scope (this plan)
 - Auto-parameter-tuning / ML (deliberately — suggestions only).

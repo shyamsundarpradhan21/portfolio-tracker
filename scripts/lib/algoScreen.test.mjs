@@ -10,7 +10,7 @@ import {
   runScreen, DEFAULT_PARAMS, buildScreenPayload, secondWorst, persistenceRanks,
   convictionCandidates,
 } from './algoScreen.mjs';
-import { allocateConviction, justify, labelBook } from './algoAllocate.mjs';
+import { allocateConviction, justify, labelBook } from '../../app/lib/algoAllocate.mjs';
 import { buildRegimeCalendar } from '../../app/lib/regime.mjs';
 
 // points from a returns array with sequential weekday-ish dates in 2026.

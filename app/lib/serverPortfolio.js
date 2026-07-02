@@ -4,7 +4,7 @@
 // (`portfolio:v1`) with a local-dev fallback to the gitignored JSON. Same source
 // the /api/portfolio route serves to the client.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const KEY = 'portfolio:v1';
@@ -90,4 +90,41 @@ export async function loadAlgoScreen() {
   } catch {
     return null;
   }
+}
+
+// Latest local data/algo-monthly[/<sub>]/<YYYY-MM>.json (gitignored, derived). Shared by
+// the monthly reco + review loaders below.
+async function latestMonthly(...sub) {
+  try {
+    const dir = join(process.cwd(), 'data', 'algo-monthly', ...sub);
+    const files = (await readdir(dir)).filter((f) => /^\d{4}-\d{2}\.json$/.test(f)).sort();
+    if (!files.length) return null;
+    return JSON.parse(await readFile(join(dir, files[files.length - 1]), 'utf8'));
+  } catch { return null; }
+}
+
+// Monthly decision artifact (Phase 3). Prod source = KV `algo-monthly:latest` (built by
+// scripts/build-monthly-reco.mjs); local dev falls back to the latest gitignored file.
+// Private (held basket) → served at request time like loadAlgoScreen, never in the bundle.
+export async function loadAlgoMonthly() {
+  const creds = kvCreds();
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', 'algo-monthly:latest']),
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (j?.result) return JSON.parse(j.result);
+    } catch { /* fall through to the local file */ }
+  }
+  return latestMonthly();
+}
+
+// Latest monthly REVIEW (Phase 4). Reviews are user-first and NOT seeded to KV yet, so this
+// reads the latest local file only — null (→ "nothing to review yet") until the first review.
+export async function loadAlgoReview() {
+  return latestMonthly('reviews');
 }
