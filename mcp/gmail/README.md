@@ -28,18 +28,20 @@ Everything below is clicked once. Poll-only ≈ 10 min; push ≈ 20 min.
 
 ---
 
-## 1. Create the project  *(PUSH mode only — skip for poll-only)*
+## 1. Create the project  *(both modes — a project holds the OAuth client; automatable via `gcloud projects create`)*
 
 1. Open https://console.cloud.google.com/ and sign in as **shyamsundar.pradhan21@gmail.com**.
 2. Top bar → project selector → **New project**.
    - Name: `portfolio-ingest` (any name works; keep it obvious).
    - No organization → **Create**, then switch the selector to it.
 
-## 2. Enable the two APIs  *(PUSH mode only — skip for poll-only)*
+## 2. Enable the APIs  *(Gmail API = both modes; Pub/Sub API = PUSH only)*
 
 3. Left menu → **APIs & Services → Library**.
-4. Search **Gmail API** → open → **Enable**.
-5. Search **Cloud Pub/Sub API** → open → **Enable**.
+4. Search **Gmail API** → open → **Enable**. *(Both modes — the token can't call
+   Gmail unless its project has this on. Automatable: `gcloud services enable
+   gmail.googleapis.com`. No billing required.)*
+5. *(PUSH only)* Search **Cloud Pub/Sub API** → open → **Enable**.
 
 ## 3. OAuth consent screen (needed before a client can be created)
 
