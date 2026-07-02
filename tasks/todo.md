@@ -1,7 +1,13 @@
 # Plan — Unified ingestion: ONE inbox folder → dispatcher → parsers → tiered stores (v2)
 
-Status: **APPROVED — building** (locked 2026-07-02; Cowork-specced, handed to Claude Code
-via `tasks/ingest-handoff.md`). v2 ABSORBS the earlier Gmail-pipeline plan — one pipeline.
+Status: **BUILT — all code phases landed 2026-07-02** (b→j committed phase-by-phase, 428
+vitest green; IngestDaemon task registered + running in fs-watch mode). REMAINING, gated
+on the user: (a) GCP setup per `mcp/gmail/README.md` → `--auth` → live push + backfill +
+mail-untouched proofs; real CAS sample + `CAS_PW_*` → casparser coverage verify; (d2)
+Groww/Rupeezy note samples; re-run `ingest-reconcile` after backfill. ⚠ Re-download the
+May-2023 payslip from COALNET before any `parse-payslip --write` (see step i incident).
+Originally: APPROVED — building (locked 2026-07-02; Cowork-specced via
+`tasks/ingest-handoff.md`). v2 ABSORBS the earlier Gmail-pipeline plan — one pipeline.
 Background: `tasks/value-lineage-audit.md` (capture families F1–F6, source registry).
 
 **Design answer to "why not a single file/folder":** ONE folder for source DOCUMENTS — yes,
@@ -167,7 +173,13 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       the PDF itself needs a COALNET re-download; until re-dropped, do NOT run
       parse-payslip --write (it would re-drop 2023-05). Lesson filed in feedback.md;
       wrapper now records meta.savedAs so cleanup is never guesswork.
-- [ ] (j) **Old-figures reconciliation (one-time, after backfill h) — diff, don't re-enter.**
+- [x] (j) — BUILT + first live run 2026-07-02 (report-only; re-run after the Gmail backfill).
+      scripts/ingest-reconcile.mjs + pure reconcile.mjs (9 tests; 428 total green). First
+      report: F&O FY23-24/24-25 DRIFT vs ITR (−1.92L vs −1.31L, −4.58L vs −4.04L — ledger
+      coverage starts 2023-08 + modeled charges; backfill will close); CFL latest-AY
+      non-spec MATCHES seed exactly, spec ₹39 NEAR, stcg 4,700 timing item; overlay = 5
+      real notes; MF PENDING first CAS; Vested/Indian stores staleness-only (untouched).
+- [ ] (j-orig) **Old-figures reconciliation (one-time, after backfill h) — diff, don't re-enter.**
       `scripts/ingest-reconcile.mjs`, REPORT-ONLY (no auto-overwrite; corrections go through
       the normal edit-private-JSON → guarded-seed path after user sign-off).
       Authority order (top wins): **parsed ITR JSON** (the filed return itself; supersedes the
