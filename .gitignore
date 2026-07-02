@@ -117,6 +117,24 @@ login-*.png
 # laptop KV credentials for the Fyers refresh-token handoff (the .example is committed)
 /mcp/.kv.env
 
+# ── unified ingestion pipeline ────────────────────────────────────────────────
+# Source-document intake: raw PDFs/JSONs (contract notes, CAS, payslips, ITR)
+# live here transiently — PASS deletes the clone, FAIL/UNRECOGNIZED quarantines
+# inside. NOTHING under inbox/ is ever committed.
+/inbox/
+# Ingestion ledger + Gmail idempotency state (machine-local, PII-adjacent provenance)
+/data/ingest-manifest.json
+/data/gmail-state.json
+# Gmail credentials: OAuth desktop client, Pub/Sub subscriber SA key, token cache.
+# (.token.json is also covered by the global pattern — explicit here on purpose.)
+/mcp/gmail/.client_secret.json
+/mcp/gmail/.sa.json
+/mcp/gmail/.token.json
+# CAS statement passwords (PAN-derived) — same discipline as contract-parser/.env
+/scripts/cas-parser/.env
+# ITR-derived candidate seeds — carry FY financial detail; applied only via sign-off
+/data/itr-candidate-*.json
+
 # transient cloud secrets bundle — copy to the Remote workspace, then delete
 /cloud-secrets.txt
 .serena/
