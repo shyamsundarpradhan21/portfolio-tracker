@@ -4,7 +4,7 @@
 // naturalKey = statement period + folio-set hash (from the engine).
 
 import { join } from 'node:path';
-import { pythonFor, runPy, lastJsonLine, isPdf, ROOT } from './py.mjs';
+import { venvPythonStrict, runPy, lastJsonLine, isPdf, ROOT } from './py.mjs';
 
 const SCRIPT = join(ROOT, 'scripts', 'cas-parser', 'run.py');
 
@@ -18,9 +18,11 @@ export const casMfParser = {
   expects: { cadence: 'monthly', label: 'CAS (CAMS/KFintech)' },
   canHandle: ({ name, head }) => isPdf(head) && CAS_NAME.test(name),
   async run(file, { dry }) {
+    const venv = venvPythonStrict('scripts/cas-parser/.venv');
+    if (venv.error) return { status: 'FAIL', reason: venv.error };
     const args = [file.path, '--porcelain'];
     if (dry) args.push('--dry-run');
-    const { code, stdout, stderr } = await runPy(pythonFor('scripts/cas-parser/.venv'), SCRIPT, args);
+    const { code, stdout, stderr } = await runPy(venv.python, SCRIPT, args);
     const st = lastJsonLine(stdout);
     if (!st) {
       return { status: 'FAIL', reason: `cas-parser gave no porcelain status (exit ${code}): ${(stderr || stdout).slice(0, 200)}` };

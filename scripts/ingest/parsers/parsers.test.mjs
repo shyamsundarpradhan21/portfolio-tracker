@@ -4,7 +4,7 @@
 // tests never spawn python.
 
 import { describe, it, expect } from 'vitest';
-import { lastJsonLine, isPdf } from './py.mjs';
+import { lastJsonLine, isPdf, venvPythonStrict } from './py.mjs';
 import { casMfParser } from './cas-mf.mjs';
 import { contractNoteParser, mapCnStatus } from './contract-note.mjs';
 import { payslipParser, nextFormName } from './payslip.mjs';
@@ -28,6 +28,14 @@ describe('py helpers', () => {
     expect(isPdf(PDF)).toBe(true);
     expect(isPdf(TXT)).toBe(false);
     expect(isPdf(undefined)).toBeFalsy();
+  });
+  it('venvPythonStrict: missing venv → actionable error, NEVER a PATH fallback', () => {
+    const missing = venvPythonStrict('scripts/no-such-tool/.venv');
+    expect(missing.python).toBeUndefined();
+    expect(missing.error).toMatch(/missing.*README.*refusing PATH-python fallback/s);
+    const real = venvPythonStrict('scripts/cas-parser/.venv');
+    expect(real.error).toBeUndefined();
+    expect(real.python).toMatch(/cas-parser.*python\.exe$/);
   });
 });
 

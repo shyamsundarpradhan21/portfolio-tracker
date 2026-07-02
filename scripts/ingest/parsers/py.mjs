@@ -16,6 +16,17 @@ export function pythonFor(venvDir) {
   return existsSync(venvPy) ? venvPy : 'python';
 }
 
+// STRICT variant for engines whose deps live ONLY in their venv (cas-parser,
+// contract-parser): a missing venv must FAIL FAST with an actionable reason —
+// never fall back to PATH python, where the import error surfaces as a cryptic
+// traceback (the pymupdf/payslip failure class; hit again on a fresh clone
+// where gitignored .venv dirs don't exist).
+export function venvPythonStrict(venvDir) {
+  const venvPy = join(ROOT, venvDir, 'Scripts', 'python.exe');
+  if (existsSync(venvPy)) return { python: venvPy };
+  return { error: `${venvDir} missing — create it per that folder's README (python -m venv + pip install -r requirements.txt); refusing PATH-python fallback` };
+}
+
 export function runPy(python, script, args = [], { timeoutMs = 180_000, cwd = ROOT } = {}) {
   return new Promise((resolve) => {
     // PYTHONIOENCODING: piped stdout on Windows defaults to cp1252, and the

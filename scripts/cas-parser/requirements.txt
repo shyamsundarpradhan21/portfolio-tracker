@@ -1,2 +1,7 @@
+# Pins verified LIVE against PyPI on 2026-07-02 via `pip index versions casparser`
+# (latest: 1.2.1; casparser-isin latest: 2026.6.9). A stale package index — e.g. a
+# sandbox image frozen around early-2025 — resolves 0.8.1/2025.3.1 instead; if
+# install fails on these pins, check `pip index versions` THERE before editing.
+# run.py's normalize_cas() handles both generations' return shapes.
 casparser==1.2.1
 casparser-isin==2026.6.9

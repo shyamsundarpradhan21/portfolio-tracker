@@ -6,7 +6,7 @@
 // number read from the note CONTENT (re-sent note = same number = DUP).
 
 import { join } from 'node:path';
-import { pythonFor, runPy, lastJsonLine, isPdf, ROOT } from './py.mjs';
+import { venvPythonStrict, runPy, lastJsonLine, isPdf, ROOT } from './py.mjs';
 
 const SCRIPT = join(ROOT, 'scripts', 'contract-parser', 'run.py');
 
@@ -34,9 +34,11 @@ export const contractNoteParser = {
   expects: { cadence: 'per-trading-day', label: 'F&O contract note' },
   canHandle: ({ name, head }) => isPdf(head) && /contract.?note|\bcnote\b|tax.?invoice.*note/i.test(name),
   async run(file, { dry }) {
+    const venv = venvPythonStrict('scripts/contract-parser/.venv');
+    if (venv.error) return { status: 'FAIL', reason: venv.error };
     const args = [file.path, '--porcelain'];
     if (dry) args.push('--dry-run');
-    const { code, stdout, stderr } = await runPy(pythonFor('scripts/contract-parser/.venv'), SCRIPT, args);
+    const { code, stdout, stderr } = await runPy(venv.python, SCRIPT, args);
     const st = lastJsonLine(stdout);
     if (!st) return { status: 'FAIL', reason: `contract-parser no porcelain (exit ${code}): ${(stderr || stdout).slice(0, 200)}` };
     return { ...mapCnStatus(st), parserVersion: 'contract-parser' };

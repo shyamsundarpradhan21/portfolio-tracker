@@ -57,6 +57,17 @@ def kv_cmd(url, tok, cmd):
         return json.loads(r.read().decode())
 
 
+def normalize_cas(cas):
+    """casparser returns a pydantic CASData even with output='dict' (seen live on
+    1.2.1 and 0.8.1). Normalize to JSON-safe primitives — mode='json' matters:
+    engine's validators/redactors compare plain dict/str/float shapes."""
+    if hasattr(cas, "model_dump"):
+        return cas.model_dump(mode="json")
+    if hasattr(cas, "dict"):
+        return cas.dict()
+    return cas
+
+
 def parse_with_passwords(path, passwords):
     """Try each CAS_PW_* until one decrypts. -> (cas_dict, None) | (None, reason)."""
     from casparser import read_cas_pdf
@@ -64,7 +75,7 @@ def parse_with_passwords(path, passwords):
     last = "no CAS_PW_* decrypts"
     for pw in passwords:
         try:
-            return read_cas_pdf(path, pw, output="dict"), None
+            return normalize_cas(read_cas_pdf(path, pw, output="dict")), None
         except IncorrectPasswordError:
             continue
         except Exception as e:                       # noqa: BLE001 — casparser raises various parse errors
@@ -74,37 +85,42 @@ def parse_with_passwords(path, passwords):
 
 
 def evaluate(path, passwords, dry, kv_url, kv_tok):
+    """ONE porcelain row per file, ALWAYS — an unhandled exception anywhere in
+    the parse/validate/redact/push chain degrades to a FAIL row, never a
+    traceback (a traceback exits 1 and the daemon can only report the useless
+    'no porcelain status' — the exact P1 shape hit live on the real CAS)."""
     base = os.path.basename(path)
     st = {"note": base, "status": "FAIL", "key": None, "target": None, "reason": ""}
-    cas, err = parse_with_passwords(path, passwords)
-    if cas is None:
-        st["reason"] = err
-        return st
-    v = engine.validate(cas)
-    key = engine.natural_key(cas)
-    st["key"] = key
-    if not v["pass"]:
-        st["reason"] = "; ".join(v["errors"])[:300]
-        return st
-    payload = engine.redact(cas)
-    payload["validation"] = {"pass": True, "warnings": v["warnings"]}
-    st["target"] = f"ledger:mf:{key}"
-    if dry:
-        st["status"] = "PASS"
-        st["reason"] = "dry-run (not pushed)"
-        return st
-    if not (kv_url and kv_tok):
-        st["status"] = "PASS"
-        st["reason"] = "no KV creds (parsed, not pushed)"
-        return st
     try:
+        cas, err = parse_with_passwords(path, passwords)
+        if cas is None:
+            st["reason"] = err
+            return st
+        v = engine.validate(cas)
+        key = engine.natural_key(cas)
+        st["key"] = key
+        if not v["pass"]:
+            st["reason"] = "; ".join(v["errors"])[:300]
+            return st
+        payload = engine.redact(cas)
+        payload["validation"] = {"pass": True, "warnings": v["warnings"]}
+        st["target"] = f"ledger:mf:{key}"
+        if dry:
+            st["status"] = "PASS"
+            st["reason"] = "dry-run (not pushed)"
+            return st
+        if not (kv_url and kv_tok):
+            st["status"] = "PASS"
+            st["reason"] = "no KV creds (parsed, not pushed)"
+            return st
         r1 = kv_cmd(kv_url, kv_tok, ["SET", f"ledger:mf:{key}", json.dumps(payload)])
         kv_cmd(kv_url, kv_tok, ["SADD", "ledger:mf:index", key])
         st["status"] = "PASS" if r1.get("result") == "OK" else "FAIL"
         if st["status"] == "FAIL":
             st["reason"] = f"KV: {str(r1)[:120]}"
-    except Exception as e:                           # noqa: BLE001
-        st["status"], st["reason"] = "FAIL", f"KV {type(e).__name__}"
+    except Exception as e:                           # noqa: BLE001 — crash-to-FAIL, never a traceback
+        st["status"] = "FAIL"
+        st["reason"] = f"unhandled {type(e).__name__}: {e}"[:300]
     return st
 
 

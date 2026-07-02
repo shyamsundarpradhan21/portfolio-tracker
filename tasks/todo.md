@@ -110,6 +110,14 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       37 python regression tests + 6 vitest; 384 total green.
       PENDING (user sample): verify casparser handles the real CAMS/KFintech CAS before
       trusting coverage — refuse-on-fail protects until then.
+      CORRECTION (P2, 2026-07-02 late): the first REAL CAS crashed run.py — casparser
+      returns a pydantic CASData even with output='dict', engine's .get() threw, and the
+      traceback surfaced only as "no porcelain status". The phase's synthetic-green state
+      was NOT runtime verification (lesson filed in feedback.md). Fixed: normalize_cas()
+      (model_dump(mode='json')), crash-to-FAIL porcelain in evaluate(), venvPythonStrict
+      (no PATH-python fallback on fresh clones), test_run.py regression. Pins RE-VERIFIED
+      live against PyPI (1.2.1/2026.6.9 ARE current; the sandbox that read them as
+      fabricated had a stale package index resolving 0.8.1/2025.3.1).
 - [x] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
       (payslip PASS auto-chains the guarded KV seed). No rewrite of proven engines.
       DONE: additive-only python entry points (--one/--porcelain probes; contract-parser

@@ -511,6 +511,29 @@ a concrete implementation prompt (verified formulas, file targets, decisions loc
 is the one that makes the code changes.** So when a task arrives already-specced from a Cowork
 session, build to that spec (don't re-derive it), but still VERIFY the handed state first (below).
 
+### Package pins: verify against the LIVE index (`pip index versions <pkg>`) — and expect ENVIRONMENTS to disagree
+Cas-parser P2 (2026-07-02): a Cowork-sandbox verification concluded the pinned
+`casparser==1.2.1` was "fabricated" because ITS pip resolved 0.8.1 as latest — the sandbox
+image's package index was frozen ~early-2025, while live PyPI (and the local venv, installed
+and frozen this session) really does have 1.2.1. **Rules:** (a) never write a pin from
+memory — run `pip index versions <pkg>` (or install + `pip freeze`) at pin time and note the
+verification date in requirements.txt; (b) when two environments disagree about a version,
+suspect a STALE INDEX/base image before suspecting fabrication — run the same
+`pip index versions` in BOTH; (c) gitignored `.venv` dirs don't travel — a fresh clone has
+NO runtime, so venv-dependent wrappers must fail fast with a create-the-venv message
+(`venvPythonStrict`), never fall back to PATH python (the pymupdf failure class).
+(Pairs with "Verify external facts live".)
+
+### A phase isn't "verified" until the REAL dependency executed on REAL input at least once
+Cas-parser shipped with green synthetic tests + a venv install, but `read_cas_pdf` had never
+run against an actual CAS — and the first real statement crashed it (casparser returns a
+pydantic CASData even with `output='dict'`; engine's `.get()` calls threw, run.py leaked a
+traceback, the daemon logged only "no porcelain status"). Mocked imports passing ≠ runtime
+verification. **How to apply:** every parser/integration phase ends with one REAL-input
+execution (dry mode is fine) before it's marked done; until then the phase log says
+PENDING-REAL-SAMPLE, and wrappers must convert engine crashes to porcelain FAIL rows so the
+first real failure is diagnosable from the manifest, not a truncated traceback.
+
 ### State files need ATOMIC writes: unique tmp + fsync + rename — bare writeFileSync is a truncation bug
 P1 (2026-07-02): `data/ingest-manifest.json` was reported truncated mid-append (dangling
 `{`, json.load dead). Two real defects in the same class even though the on-disk file
@@ -530,6 +553,19 @@ A Cowork-side write to a file (via the shared mount) can arrive **truncated** �
 looks plausible. After ANY Cowork-side edit, before trusting or running it: `node --check <file>`
 (syntax), re-read the diff on disk, and run its vitest suite. (Caught 2026-07-02: `stratzy-adapter.mjs`
 had a truncated write that was repaired; the handoff flagged it explicitly — verify, don't assume.)
+
+### Cowork mount READS can pin a stale mid-write snapshot — Cowork file tools are the authoritative view
+The Cowork bash-mount view of a file a daemon is actively writing can freeze at a mid-write
+snapshot and serve it INDEFINITELY (caught 2026-07-02: `data/ingest-manifest.json` served a
+4,349-byte snapshot, mtime 20:21:03.555, ending in a dangling `{`, for >1h — across daemon
+restarts and successful Windows-side appends; dir-listing and `cp` did NOT invalidate it).
+Rules: (1) Cowork must NOT declare daemon-written data corrupt/stale/complete from a bash-mount
+read alone — Cowork's FILE tools (Read/Edit on the `E:\` path) read the real filesystem and are
+the authoritative check; the daemon's own integrity log line / a Claude Code strict read also
+count. (2) Pairs with the truncated-WRITES lesson above: the shared mount is unreliable in BOTH
+directions on hot files — treat bash-mount reads of actively-written JSON as advisory only.
+(Cost: a P1 "manifest corruption" filed for a completed write behind a pinned stale cache —
+though the report still surfaced real defects: missing fsync, fixed tmp name, orphaned-writer wedge.)
 
 ### Re-harvest Stratzy BEFORE giving any algo recommendation — the data is manual + stale
 `data/stratzy-daily.json` is gitignored and BROWSER-harvested from the logged-in stratzy.in
