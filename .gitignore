@@ -122,14 +122,17 @@ login-*.png
 # live here transiently — PASS deletes the clone, FAIL/UNRECOGNIZED quarantines
 # inside. NOTHING under inbox/ is ever committed.
 /inbox/
-# Ingestion ledger + Gmail idempotency state (machine-local, PII-adjacent provenance)
+# Ingestion ledger + Gmail idempotency state (machine-local, PII-adjacent provenance).
+# gmail-state*.json = per-account (self + mom + …).
 /data/ingest-manifest.json
 /data/gmail-state.json
-# Gmail credentials: OAuth desktop client, Pub/Sub subscriber SA key, token cache.
-# (.token.json is also covered by the global pattern — explicit here on purpose.)
+/data/gmail-state.*.json
+# Gmail credentials: OAuth desktop client, Pub/Sub subscriber SA key, per-account token
+# caches (.token.json = self, .token.<label>.json = additional mailboxes e.g. mom's Kite).
 /mcp/gmail/.client_secret.json
 /mcp/gmail/.sa.json
 /mcp/gmail/.token.json
+/mcp/gmail/.token.*.json
 # CAS statement passwords (PAN-derived) — same discipline as contract-parser/.env
 /scripts/cas-parser/.env
 # ITR-derived candidate seeds — carry FY financial detail; applied only via sign-off

@@ -128,6 +128,25 @@ Everything below is clicked once. Poll-only ≈ 10 min; push ≈ 20 min.
     daemon runs hands-free: poll-only catches up via `history.list` on startup +
     every 15 min; push mode additionally re-arms `users.watch` every 6 days.
 
+## 10. Additional mailboxes (e.g. mom's Kite/Zerodha equity)
+
+Some documents live in a DIFFERENT Google account — the INDIAN equity sleeve is
+held in mom's Zerodha, whose contract notes go to *her* mailbox, not yours. The
+daemon supports N accounts off the SAME OAuth client (§4) — each just gets its
+own token + idempotency state, and all stream into the one `inbox/`.
+
+Per extra account (label it e.g. `mom`):
+1. `node scripts/ingest-daemon.mjs --auth mom` → the browser opens; sign in as
+   **that account** (mom's Google login) and approve read-only. The token lands
+   in `mcp/gmail/.token.mom.json` (gitignored).
+2. In **that account's** Gmail, create the `portfolio/tx` label + a filter
+   (§8) — e.g. `from:noreply@reports.zerodha.com` or
+   `subject:"contract note" has:attachment filename:pdf`.
+3. Restart the daemon. It auto-discovers every `.token*.json` and polls each
+   mailbox; downloaded files carry the label in their manifest source
+   (`gmail:mom:<msgId>`) so two mailboxes' message-ids never collide.
+Backfill a specific account: `--backfill --account mom --from <date>`.
+
 ## File map (all gitignored, never committed)
 
 | File | What | Written by |

@@ -8,7 +8,7 @@
 // Idempotency lives in data/gmail-state.json (lastHistoryId + seen message ids),
 // NOT in Gmail labels (readonly scope can't write labels anyway).
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { atomicWriteJSON } from './manifest.mjs';
@@ -22,6 +22,41 @@ export const GMAIL_PATHS = {
 };
 export const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 export const GMAIL_LABEL = 'portfolio/tx';
+
+// ── multi-account (plan: mom's Kite equity is in a separate mailbox) ───────────
+// The SAME OAuth desktop client authorizes every account (each --auth picks the
+// account); per-account token + idempotency state keep them isolated. Label
+// 'self' = the default files (.token.json / gmail-state.json); any other label
+// suffixes them (.token.mom.json / gmail-state.mom.json). All accounts stream
+// into the ONE inbox/ + manifest; the manifest source carries the label so two
+// mailboxes' (colliding) message-ids never dedup across each other.
+export function gmailAccount(label = 'self') {
+  const s = label && label !== 'self' ? `.${label}` : '';
+  return {
+    label,
+    clientSecret: GMAIL_PATHS.clientSecret,     // shared OAuth client
+    saKey: GMAIL_PATHS.saKey,                   // push (optional) — self only
+    token: join(ROOT, 'mcp', 'gmail', `.token${s}.json`),
+    state: join(ROOT, 'data', `gmail-state${s}.json`),
+  };
+}
+
+// pure: token filenames → account labels ('.token.json' → 'self',
+// '.token.mom.json' → 'mom'); 'self' sorts first, then alphabetical.
+export function accountLabelsFromFiles(files) {
+  const labels = [];
+  for (const f of files || []) {
+    const m = f.match(/^\.token(?:\.([a-z0-9_-]+))?\.json$/i);
+    if (m) labels.push(m[1] ? m[1].toLowerCase() : 'self');
+  }
+  return [...new Set(labels)].sort((a, b) => (a === 'self' ? -1 : b === 'self' ? 1 : a.localeCompare(b)));
+}
+
+// Labels with an authorized token on disk. 'self' sorts first.
+export function discoverGmailAccounts() {
+  try { return accountLabelsFromFiles(readdirSync(join(ROOT, 'mcp', 'gmail'))); }
+  catch { return []; }
+}
 
 // ── pure: attachment selection ────────────────────────────────────────────────
 // Walk a users.messages.get (format:'full') payload and pick the real PDF

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   pdfAttachments, newMessageIdsFromHistory, isHistoryGone, safeName,
-  readGmailState, writeGmailState, backfillQuery,
+  readGmailState, writeGmailState, backfillQuery, gmailAccount, accountLabelsFromFiles,
 } from './gmail.mjs';
 
 describe('pdfAttachments', () => {
@@ -76,6 +76,27 @@ describe('safeName', () => {
   });
   it('handles missing filename', () => {
     expect(safeName('', 'abcd1234')).toMatch(/attachment\.pdf$/);
+  });
+});
+
+describe('multi-account (mom Kite equity in a separate mailbox)', () => {
+  it('gmailAccount: self uses the base files; a label suffixes token + state, shares the client', () => {
+    const self = gmailAccount('self');
+    expect(self.token.endsWith('.token.json')).toBe(true);
+    expect(self.state.endsWith('gmail-state.json')).toBe(true);
+    const mom = gmailAccount('mom');
+    expect(mom.token.endsWith('.token.mom.json')).toBe(true);
+    expect(mom.state.endsWith('gmail-state.mom.json')).toBe(true);
+    expect(mom.clientSecret).toBe(self.clientSecret);   // ONE OAuth client authorizes both
+    expect(gmailAccount().label).toBe('self');          // default
+  });
+  it('accountLabelsFromFiles: token files → labels, self-first, ignores non-token files', () => {
+    expect(accountLabelsFromFiles(['.token.json', '.token.mom.json', '.client_secret.json', '.sa.json', 'README.md']))
+      .toEqual(['self', 'mom']);
+    expect(accountLabelsFromFiles(['.token.mom.json', '.token.dad.json', '.token.json']))
+      .toEqual(['self', 'dad', 'mom']);   // self first, then alphabetical
+    expect(accountLabelsFromFiles([])).toEqual([]);
+    expect(accountLabelsFromFiles(['.token.json.9999.tmp'])).toEqual([]);   // in-flight atomic write ignored
   });
 });
 

@@ -35,7 +35,7 @@ import { readManifest, seenSource, assertManifestIntegrity } from './ingest/mani
 import {
   GMAIL_PATHS, GMAIL_LABEL, pdfAttachments, newMessageIdsFromHistory, isHistoryGone,
   safeName, readGmailState, writeGmailState, oauthClient, interactiveAuth, gmailClient,
-  pubsubSubscription, backfillQuery,
+  pubsubSubscription, backfillQuery, gmailAccount, discoverGmailAccounts,
 } from './ingest/gmail.mjs';
 import { keepSystemAwake } from './lib/keepAwake.mjs';
 
@@ -127,12 +127,13 @@ export async function sweepInbox(ingest, { source = 'manual' } = {}) {
 }
 
 // ── gmail intake ──────────────────────────────────────────────────────────────
-// Two tiers: OAuth alone (clientSecret + token) enables POLL-ONLY intake
-// (history.list catch-up — no Pub/Sub, no service account, no GCP billing); the
-// service-account key (.sa.json) is OPTIONAL and, when present, additionally
-// arms Gmail push via Pub/Sub for near-real-time capture. Documents here arrive
-// a few times a day, so the 15-min poll is a complete intake on its own.
-const oauthPresent = () => existsSync(GMAIL_PATHS.clientSecret) && existsSync(GMAIL_PATHS.token);
+// Two tiers: OAuth alone (clientSecret + per-account token) enables POLL-ONLY
+// intake (history.list catch-up — no Pub/Sub, no service account, no GCP
+// billing); the service-account key (.sa.json) is OPTIONAL and, when present,
+// additionally arms Gmail push via Pub/Sub for the SELF account. Documents here
+// arrive a few times a day, so the 15-min poll is a complete intake on its own.
+// Accounts are discovered from their token files (see discoverGmailAccounts) so
+// a second mailbox (mom's Kite equity) is just another `--auth mom` away.
 const pushConfigured = () => existsSync(GMAIL_PATHS.saKey);
 
 async function labelId(gmail) {
@@ -142,25 +143,25 @@ async function labelId(gmail) {
   return hit.id;
 }
 
-async function downloadMessagePdfs(gmail, ingest, msgId) {
+async function downloadMessagePdfs(gmail, ingest, msgId, account) {
   const { data: msg } = await gmail.users.messages.get({ userId: 'me', id: msgId, format: 'full' });
   const atts = pdfAttachments(msg);
   for (const a of atts) {
     const { data } = await gmail.users.messages.attachments.get({ userId: 'me', messageId: msgId, id: a.attachmentId });
     const bytes = Buffer.from(data.data, 'base64url');
     mkdirSync(INBOX, { recursive: true });
-    const dest = join(INBOX, safeName(a.filename, msgId));
+    const dest = join(INBOX, safeName(a.filename, `${account.label}-${msgId}`));
     writeFileSync(dest, bytes);
     ingest.claimed.add(dest);                    // fs-watcher must not double-queue it
-    ingest.enqueue(dest, `gmail:${msgId}`);
+    ingest.enqueue(dest, `gmail:${account.label}:${msgId}`);   // label keeps cross-mailbox msg-ids distinct
   }
   return atts.length;
 }
 
 // history.list catch-up since lastHistoryId; expired/absent history → full
 // label re-query. Idempotent via gmail-state done-map + manifest source rows.
-async function gmailCatchUp(gmail, ingest, lid) {
-  const state = readGmailState();
+async function gmailCatchUp(gmail, ingest, lid, account) {
+  const state = readGmailState(account.state);
   const manifest = readManifest(MANIFEST);
   let msgIds = [];
   let newHistoryId = null;
@@ -197,9 +198,9 @@ async function gmailCatchUp(gmail, ingest, lid) {
 
   let fetched = 0;
   for (const id of msgIds) {
-    if (state.done[id] || seenSource(manifest, `gmail:${id}`)) continue;
-    const n = await downloadMessagePdfs(gmail, ingest, id).catch((e) => {
-      log(`gmail: message ${id} download failed: ${e.message}`);
+    if (state.done[id] || seenSource(manifest, `gmail:${account.label}:${id}`)) continue;
+    const n = await downloadMessagePdfs(gmail, ingest, id, account).catch((e) => {
+      log(`gmail[${account.label}]: message ${id} download failed: ${e.message}`);
       return null;                               // NOT marked done — retried next catch-up
     });
     if (n == null) continue;
@@ -207,8 +208,8 @@ async function gmailCatchUp(gmail, ingest, lid) {
     fetched += n;
   }
   if (newHistoryId) state.lastHistoryId = String(newHistoryId);
-  writeGmailState(state);
-  if (msgIds.length || fetched) log(`gmail: catch-up — ${msgIds.length} candidate mails, ${fetched} pdfs queued`);
+  writeGmailState(state, account.state);
+  if (msgIds.length || fetched) log(`gmail[${account.label}]: catch-up — ${msgIds.length} candidate mails, ${fetched} pdfs queued`);
   return fetched;
 }
 
@@ -220,28 +221,28 @@ async function armWatch(gmail, lid, projectId) {
   log('gmail: users.watch armed (re-arms every 6d)');
 }
 
-async function startGmailIntake(ingest, timers) {
-  const auth = await oauthClient();
+async function startGmailIntake(ingest, timers, account) {
+  const auth = await oauthClient({ clientSecretPath: account.clientSecret, tokenPath: account.token });
   const gmail = await gmailClient(auth);
   const lid = await labelId(gmail);
-  const push = pushConfigured();                 // .sa.json present ⇒ Pub/Sub push available
+  // Push (Pub/Sub) is a self-account add-on and needs billing; additional
+  // mailboxes (mom) are always poll-only.
+  const push = account.label === 'self' && pushConfigured();
 
-  await gmailCatchUp(gmail, ingest, lid);        // startup catch-up (OAuth only — always runs)
+  await gmailCatchUp(gmail, ingest, lid, account);   // startup catch-up (OAuth only — always runs)
 
-  // Push tier (optional): arm users.watch + re-arm, and stream-pull the pull
-  // subscription. Skipped entirely in poll-only mode (no .sa.json / no billing).
   if (push) {
     const projectId = JSON.parse(readFileSync(GMAIL_PATHS.saKey, 'utf8')).project_id;
-    await armWatch(gmail, lid, projectId).catch((e) => log(`gmail: watch arm failed (push disabled, poll still on): ${e.message}`));
-    timers.push(setInterval(() => armWatch(gmail, lid, projectId).catch((e) => log(`gmail: re-arm failed: ${e.message}`)), REARM_MS));
+    await armWatch(gmail, lid, projectId).catch((e) => log(`gmail[${account.label}]: watch arm failed (push disabled, poll still on): ${e.message}`));
+    timers.push(setInterval(() => armWatch(gmail, lid, projectId).catch((e) => log(`gmail[${account.label}]: re-arm failed: ${e.message}`)), REARM_MS));
   }
 
   // Poll tier (always): PRIMARY intake when poll-only (15 min), or a push backstop (6 h).
   const pollMs = push ? POLL_MS : POLL_ONLY_MS;
-  timers.push(setInterval(() => gmailCatchUp(gmail, ingest, lid).catch((e) => log(`gmail: poll failed: ${e.message}`)), pollMs));
+  timers.push(setInterval(() => gmailCatchUp(gmail, ingest, lid, account).catch((e) => log(`gmail[${account.label}]: poll failed: ${e.message}`)), pollMs));
 
   if (!push) {
-    log(`gmail intake up: OAuth poll every ${Math.round(POLL_ONLY_MS / 60000)}min (poll-only — no Pub/Sub)`);
+    log(`gmail[${account.label}] intake up: OAuth poll every ${Math.round(POLL_ONLY_MS / 60000)}min (poll-only)`);
     return null;
   }
 
@@ -253,12 +254,12 @@ async function startGmailIntake(ingest, timers) {
     m.ack();
     if (catchUpBusy) return;
     catchUpBusy = true;
-    gmailCatchUp(gmail, ingest, lid)
-      .catch((e) => log(`gmail: push catch-up failed: ${e.message}`))
+    gmailCatchUp(gmail, ingest, lid, account)
+      .catch((e) => log(`gmail[${account.label}]: push catch-up failed: ${e.message}`))
       .finally(() => { catchUpBusy = false; });
   });
   sub.on('error', (e) => log(`pubsub: stream error (poll continues): ${e.message}`));
-  log('gmail intake up: pub/sub streaming pull + 6h poll');
+  log(`gmail[${account.label}] intake up: pub/sub streaming pull + 6h poll`);
   return sub;
 }
 
@@ -268,23 +269,24 @@ async function startGmailIntake(ingest, timers) {
 // recorded in state.backfill, and both live (gmail:<id>) and backfill
 // (backfill:<id>) source rows in the manifest block a re-intake. Polite rate
 // limit between message fetches — this can sweep years of mail.
-async function runBackfill(ingest, fromIso, toIso) {
+async function runBackfill(ingest, fromIso, toIso, account) {
   const q = backfillQuery(fromIso, toIso);            // fail-loud on bad dates
-  const auth = await oauthClient();
+  const auth = await oauthClient({ clientSecretPath: account.clientSecret, tokenPath: account.token });
   const gmail = await gmailClient(auth);
   const lid = await labelId(gmail);
-  const state = readGmailState();
+  const state = readGmailState(account.state);
   const manifest = readManifest(MANIFEST);
   const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const src = (id) => `backfill:${account.label}:${id}`;
 
-  log(`backfill: sweeping "${q}" under ${GMAIL_LABEL}`);
+  log(`backfill[${account.label}]: sweeping "${q}" under ${GMAIL_LABEL}`);
   let pageToken, listed = 0, fetched = 0, skipped = 0;
   do {
     const { data } = await gmail.users.messages.list({ userId: 'me', labelIds: [lid], q, maxResults: 50, pageToken });
     for (const m of data.messages || []) {
       listed++;
       if (state.backfill[m.id] || state.done[m.id]
-          || seenSource(manifest, `gmail:${m.id}`) || seenSource(manifest, `backfill:${m.id}`)) {
+          || seenSource(manifest, `gmail:${account.label}:${m.id}`) || seenSource(manifest, src(m.id))) {
         skipped++;
         continue;
       }
@@ -293,25 +295,25 @@ async function runBackfill(ingest, fromIso, toIso) {
         for (const a of pdfAttachments(msg)) {
           const { data: att } = await gmail.users.messages.attachments.get({ userId: 'me', messageId: m.id, id: a.attachmentId });
           mkdirSync(INBOX, { recursive: true });
-          const dest = join(INBOX, safeName(a.filename, m.id));
+          const dest = join(INBOX, safeName(a.filename, `${account.label}-${m.id}`));
           writeFileSync(dest, Buffer.from(att.data, 'base64url'));
           ingest.claimed.add(dest);
-          ingest.enqueue(dest, `backfill:${m.id}`);
+          ingest.enqueue(dest, src(m.id));
           fetched++;
         }
         state.backfill[m.id] = new Date().toISOString();   // resumable: only after full download
-        writeGmailState(state);
+        writeGmailState(state, account.state);
       } catch (e) {
-        log(`backfill: message ${m.id} failed (${e.message}) — will retry on the next run`);
+        log(`backfill[${account.label}]: message ${m.id} failed (${e.message}) — will retry on the next run`);
       }
       await pause(250);                                    // polite: ~4 msg/s
-      if (listed % 100 === 0) log(`backfill: ${listed} listed · ${fetched} pdfs queued · ${skipped} already done`);
+      if (listed % 100 === 0) log(`backfill[${account.label}]: ${listed} listed · ${fetched} pdfs queued · ${skipped} already done`);
     }
     pageToken = data.nextPageToken;
   } while (pageToken);
 
   await ingest.queue.idle();
-  log(`backfill done: ${listed} mails listed · ${fetched} pdfs through the pipeline · ${skipped} already ingested`);
+  log(`backfill[${account.label}] done: ${listed} mails listed · ${fetched} pdfs through the pipeline · ${skipped} already ingested`);
 }
 
 // ── fs-watch intake ───────────────────────────────────────────────────────────
@@ -338,8 +340,15 @@ function startWatchIntake(ingest) {
 // ── main ─────────────────────────────────────────────────────────────────────
 async function main() {
   const args = new Set(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const val = (f) => { const i = argv.indexOf(f); return i > -1 ? argv[i + 1] : undefined; };
+  const argLabel = (f, dflt = 'self') => { const v = val(f); return v && !v.startsWith('-') ? v : dflt; };
+
   if (args.has('--auth')) {
-    await interactiveAuth();
+    const label = argLabel('--auth');   // `--auth` = self; `--auth mom` = a second mailbox
+    const acct = gmailAccount(label);
+    log(`--auth: authorize gmail account '${label}' → token ${acct.token.replace(ROOT, '.')}`);
+    await interactiveAuth({ clientSecretPath: acct.clientSecret, tokenPath: acct.token });
     return;
   }
   const dry = args.has('--dry');
@@ -363,9 +372,7 @@ async function main() {
   const ingest = makeIngest({ parsers, dry });
 
   if (args.has('--backfill')) {
-    const argv = process.argv.slice(2);
-    const val = (f) => { const i = argv.indexOf(f); return i > -1 ? argv[i + 1] : undefined; };
-    await runBackfill(ingest, val('--from'), val('--to'));
+    await runBackfill(ingest, val('--from'), val('--to'), gmailAccount(argLabel('--account')));
     ingest.awake.stop();
     return;
   }
@@ -381,14 +388,18 @@ async function main() {
 
   const timers = [];
   const watcher = startWatchIntake(ingest);
-  let sub = null;
-  if (oauthPresent()) {
-    sub = await startGmailIntake(ingest, timers).catch((e) => {
-      log(`gmail intake DISABLED: ${e.message}`);
-      return null;
-    });
+  const subs = [];
+  const accounts = discoverGmailAccounts();      // every mailbox with a token (self + mom + …)
+  if (accounts.length) {
+    for (const label of accounts) {
+      const sub = await startGmailIntake(ingest, timers, gmailAccount(label)).catch((e) => {
+        log(`gmail[${label}] intake DISABLED: ${e.message}`);
+        return null;
+      });
+      if (sub) subs.push(sub);
+    }
   } else {
-    log('gmail intake disabled (no OAuth token — run --auth, see mcp/gmail/README.md); fs-watch only');
+    log('gmail intake disabled (no OAuth token — run --auth [label], see mcp/gmail/README.md); fs-watch only');
   }
   await sweepInbox(ingest);                      // drops that landed while we were down
 
@@ -396,7 +407,7 @@ async function main() {
     log(`${sig} — draining queue…`);
     timers.forEach(clearInterval);
     try { watcher.close(); } catch {}
-    try { await sub?.close(); } catch {}
+    for (const sub of subs) { try { await sub?.close(); } catch {} }
     await ingest.queue.idle();
     ingest.awake.stop();
     log('stopped.');

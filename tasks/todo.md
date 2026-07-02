@@ -1,10 +1,16 @@
 # Plan — Unified ingestion: ONE inbox folder → dispatcher → parsers → tiered stores (v2)
 
-Status: **BUILT — all code phases landed 2026-07-02** (b→j committed phase-by-phase, 428
-vitest green; IngestDaemon task registered + running in fs-watch mode). REMAINING, gated
-on the user: (a) GCP setup per `mcp/gmail/README.md` → `--auth` → live push + backfill +
-mail-untouched proofs; real CAS sample + `CAS_PW_*` → casparser coverage verify; (d2)
-Groww/Rupeezy note samples; re-run `ingest-reconcile` after backfill. ⚠ Re-download the
+Status: **BUILT — all code phases + all parsers landed (b→j + d2 Astha/Groww + cas-mf +
+eCAS); 442 vitest green**. Poll-only Gmail mode (no billing) + MULTI-ACCOUNT support (mom's
+Kite equity is a separate mailbox → `--auth mom`, auto-discovered, poll-only). GCP: project
+`portfolio-ingest-80416` created + Gmail API enabled via gcloud. REMAINING, gated on the user:
+create the OAuth Desktop client (`mcp/gmail/.client_secret.json`) + `portfolio/tx` label/filter
+per `mcp/gmail/README.md` §3–4/§8 → `--auth` (self) + `--auth mom` → verify. Then re-run
+`ingest-reconcile` after backfill. Doc-source findings (2026-07-03): PAYSLIPS are NOT emailed
+(COALNET portal → stays a manual inbox/ drop; parser+seed works). VESTED (US) emails the P&L
+Statement (xlsx → broker-tax parser → US_REALIZED) + "Year End Tax Documents" (dividends →
+US_DIVIDENDS, no parser yet) — auto-capture needs a filter clause for the xlsx + broker-tax
+stays manual-seed by design; a Vested-dividends parser is a follow-up. ⚠ Re-download the
 May-2023 payslip from COALNET before any `parse-payslip --write` (see step i incident).
 Originally: APPROVED — building (locked 2026-07-02; Cowork-specced via
 `tasks/ingest-handoff.md`). v2 ABSORBS the earlier Gmail-pipeline plan — one pipeline.
