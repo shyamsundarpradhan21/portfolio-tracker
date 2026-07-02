@@ -44,7 +44,7 @@ TABLE_LABELS = [
     (r"sebi turnover|sebi fee|sebi.?toc|sebitoc", "sebi_turnover"),
     (r"\bipft\b", "ipft"),
     (r"stamp", "stamp_duty"),
-    (r"other tax", "other_tax"),   # old-Dhan tiny sub-line, already folded into the inclusive pay-in
+    (r"other tax|\butt\b|union territory tax", "other_tax"),   # old-Dhan tiny sub-line; Groww's UTT (Union Territory Tax, 0 outside UTs) — recognised, not a CHARGE_KEY
     (r"span\s*mg|exp\.?\s*mg|del\.?\s*mg|exposure margin|span margin", "margin"),   # F&O COLLATERAL (SPAN/EXP/DEL)
 ]                                  # other_tax/margin -> recognised, NOT in CHARGE_KEYS. margin balances the NET (checksum), is not a cost.
 CHARGE_KEYS = ["brokerage", "exchange_txn", "clearing", "cgst", "sgst", "igst",
@@ -141,11 +141,16 @@ def detect_broker(text):
     if "zerodha" in t: return "zerodha"
     if "fyers" in t: return "fyers"
     if "upstox" in t or "rksv" in t: return "upstox"
-    # Astha Trade (rebranded Rupeezy) — checked BEFORE dhan: an Astha note's body
-    # carries an unrelated "...dhan..." substring that the loose dhan test would
-    # otherwise claim. "astha"/"asthatrade" is unambiguous (member name + domain).
+    # Astha Trade (rebranded Rupeezy) and Groww — checked BEFORE dhan. The loose
+    # "dhan" substring was actually matching the CLIENT NAME "Pra-dhan" on notes
+    # that no earlier broker claimed (Astha, Groww), mis-tagging them as dhan and
+    # silently dropping their trades. Fixed two ways: name these brokers explicitly,
+    # AND word-bound the dhan test (\bdhan\b) so a "-dhan" surname can't match —
+    # real Dhan notes carry "Dhan"/"Moneylicious"/"Raise Securities" as standalone
+    # tokens. (Groww = Nextbillion Technology.)
     if "asthatrade" in t or "astha" in t or "rupeezy" in t: return "astha"
-    if "dhan" in t or "moneylicious" in t: return "dhan"
+    if "groww" in t or "nextbillion" in t: return "groww"
+    if re.search(r"\bdhan\b", t) or "moneylicious" in t or "raise securities" in t: return "dhan"
     return "unknown"
 
 # Note-level metadata from the note CONTENT (NOT the account-coded filename): the contract-note
@@ -184,7 +189,7 @@ def extract_tables_for(pdf, broker, text=""):
     # Upstox (always) and old-Dhan 2023-24 rule COLUMNS but not ROWS, so pdfplumber's default
     # line-based extraction merges every fill into one cell. Use text-position rows for those;
     # keep the proven line-based default for everything else (changing it would regress them).
-    if (broker in ("upstox", "astha")                        # Astha rules columns but not rows (like Upstox)
+    if (broker in ("upstox", "astha")                        # these rule columns but not rows (like Upstox)
             or (broker == "dhan" and _OLD_DHAN_RE.search(text or ""))):
         settings = {"vertical_strategy": "lines", "horizontal_strategy": "text",
                     "snap_tolerance": 4, "join_tolerance": 4, "text_tolerance": 3}
@@ -580,9 +585,11 @@ def map_table(tbl, broker=""):
         instr_n = _nh(g("instrument"))
         instr_alnum = re.sub(r"[^a-z0-9]", "", instr_n)        # strip *,space so "* NET *"/"*NET*" both -> "net"
         side_alnum = re.sub(r"[^a-z0-9]", "", _nh(g("side")))
+        order_alnum = re.sub(r"[^a-z0-9]", "", _nh(g("order_no")))   # Groww per-contract subtotal rows carry "Total" in the ORDER-NO cell (ISIN in the security cell)
         if ("brokerage" in instr_n or instr_alnum in ("net", "summary", "total", "netsummary", "subtotal")
-                or side_alnum in ("net", "summary", "total")):
-            continue            # Trap 2: 'Brokerage Charges' rows; Trap 3: *NET*/*SUMMARY*/*TOTAL*/'Sub Total' (Astha) subtotals - NOT fills
+                or side_alnum in ("net", "summary", "total")
+                or order_alnum in ("net", "summary", "total", "netsummary", "subtotal")):
+            continue            # Trap 2: 'Brokerage Charges' rows; Trap 3: *NET*/*SUMMARY*/*TOTAL* subtotals (Astha 'Sub Total', Groww per-contract 'Total') - NOT fills
         side_raw = (g("side") or "").upper()
         side = "BUY" if side_raw.startswith("B") else ("SELL" if side_raw.startswith("S") else side_raw)
         sym, isin = split_isin(g("instrument"), g("isin"))     # ISIN split out of the description
@@ -921,6 +928,12 @@ def build_ledger(path):
     with pdf:
         note_text = full_text(pdf)                  # captured once: broker + note-level metadata below
         broker = detect_broker(note_text)           # text-based; chosen BEFORE extraction (Upstox/old-Dhan need
+        # Groww notes carry NO broker string in the extractable text (the brand is a
+        # logo image only) — fall back to Groww's distinctive attachment name
+        # "CONTRACT NOTE <clientcode>.pdf" (space-separated, digit-suffixed; a gmail
+        # msg-id prefix is tolerated). Only when content detection came up 'unknown'.
+        if broker == "unknown" and re.search(r"contract note \d", os.path.basename(path).lower()):
+            broker = "groww"
         all_tables = extract_tables_for(pdf, broker, note_text)  # text-row strategy; line-based default otherwise)
     fills, tbl_counts = parse_trades_from_tables(all_tables, broker)
     source = "tables" if len(fills) >= 1 else "none"

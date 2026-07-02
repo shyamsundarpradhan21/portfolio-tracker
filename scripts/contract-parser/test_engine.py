@@ -845,5 +845,61 @@ af = P.map_table(subtotal_tbl)
 check("astha 'Sub Total' row trapped (1 fill, not 2)", len(af) == 1, len(af))
 check("astha fill is the real trade (not the subtotal)", af[0]["instrument"] == "NIFTY 18000 PE", af[0]["instrument"])
 
+# ===== d2: Groww adapter (SYNTHETIC — fake amounts, no PII from the real note) =====
+print("[groww] broker detection, Pradhan/\\bdhan\\b fix, per-contract 'Total' subtotal trap, signed charges, UTT:")
+# 1) broker identity + the ROOT fix: the client surname "Pradhan" must NOT match dhan
+check("detect_broker groww (if brand text present)", P.detect_broker("... Nextbillion Technology ...") == "groww", P.detect_broker("nextbillion"))
+check("client name 'Pradhan' does NOT match dhan (was the silent-miss root cause)",
+      P.detect_broker("Name: Shyam Sundar Pradhan, Koraput, Odisha") == "unknown", P.detect_broker("Pradhan"))
+check("real Dhan still detected via word-bounded \\bdhan\\b", P.detect_broker("Thank you for choosing Dhan") == "dhan", P.detect_broker("Dhan"))
+check("Dhan via Moneylicious/Raise Securities", P.detect_broker("Raise Securities (formerly Moneylicious)") == "dhan", None)
+
+# 2) per-contract 'Total' subtotal rows: Groww puts "Total" in the ORDER-NO cell and the
+# ISIN in the security cell — so the instrument/side traps miss it. Must be trapped anyway.
+groww_det = [
+    ["Order no.", "Order time", "Trade no.", "Trade time", "Security/Contract description",
+     "Exchange", "Buy(B)/Sell(S)", "Quantity", "Gross Rate", "Brokerage per Unit",
+     "Net Rate", "Closing Rate", "Net Total", "Remarks"],
+    ["1000000014440483", "12:35:19", "2202098", "12:35:19", "Aditya Birla Capital Ltd.", "NSE", "S", "-13", "178.20", "", "178.20", "", "2316.60", ""],
+    ["Total", "", "", "", "INE674K01013", "", "", "-13", "", "", "", "", "2316.60", ""],   # subtotal (ISIN in security cell) — trap
+    ["1000000014443127", "12:35:21", "2202739", "12:35:21", "Cholamandalam In & Fin Co", "NSE", "B", "3", "1121.30", "", "1121.30", "", "-3363.90", ""],
+    ["Total", "", "", "", "INE121A01024", "", "", "3", "", "", "", "", "-3363.90", ""],
+]
+gf = P.map_table(groww_det)
+check("groww: 2 real fills (the 2 'Total' subtotals trapped)", len(gf) == 2, len(gf))
+check("groww: sides read from B/S column", [f["side"] for f in gf] == ["SELL", "BUY"], [f["side"] for f in gf])
+check("groww: SELL net_total credit (+), BUY debit (-)", gf[0]["net_total"] == 2316.60 and gf[1]["net_total"] == -3363.90, [gf[0]["net_total"], gf[1]["net_total"]])
+check("groww: instruments (names, not the ISIN subtotal)", gf[0]["instrument"] == "Aditya Birla Capital Ltd." and "Cholamandalam" in gf[1]["instrument"], [gf[0]["instrument"], gf[1]["instrument"]])
+
+# 3) UTT (Union Territory Tax) maps to a recognised non-charge (other_tax) — not an unmapped-charge HOLD
+check("UTT label -> other_tax (not unmapped)", P.label_key("UTT") == "other_tax", P.label_key("UTT"))
+
+# 4) Groww charges block (Description | Equity | F&O | Net Total) — SIGNED (debits already negative,
+# unlike Astha's unsigned magnitudes), so NO negation; total + per-segment checksums must close.
+groww_ch = [
+    ["Description", "Equity", "Future & Options", "Net Total"],
+    ["Pay In / Pay Out Obligation", "-10000.00", "", "-10000.00"],
+    ["Taxable Value of Supply (Brokerage)", "-20.00", "", "-20.00"],
+    ["Exchange Transaction Charges", "-3.00", "", "-3.00"],
+    ["CGST (9% on Brokerage, Exchange transaction charges & SEBI turnover fees)", "", "", ""],
+    ["SGST (9% on Brokerage, Exchange transaction charges & SEBI turnover fees)", "", "", ""],
+    ["IGST (18% on Brokerage, Exchange transaction charges & SEBI turnover fees)", "-4.14", "", "-4.14"],
+    ["UTT", "", "", ""],
+    ["Securities Transaction Tax", "-10.00", "", "-10.00"],
+    ["SEBI Turnover Fees", "-0.02", "", "-0.02"],
+    ["Stamp Duty", "-1.00", "", "-1.00"],
+    ["Net Amount Receivable / Payable By Client", "-10038.16", "", "-10038.16"],
+]
+gch = P.parse_charges_from_tables([groww_ch])
+gnt = gch["net_total"]
+check("groww charges: signed brokerage kept negative (not re-negated)", gnt.get("brokerage") == -20.00, gnt.get("brokerage"))
+check("groww charges: igst negative, cgst/sgst 0", gnt.get("igst") == -4.14 and gnt.get("cgst") == 0.0 and gnt.get("sgst") == 0.0, (gnt.get("igst"), gnt.get("cgst"), gnt.get("sgst")))
+check("groww charges: UTT captured as other_tax (0)", gnt.get("other_tax") == 0.0, gnt.get("other_tax"))
+gpass, gresid = P.checksum(gnt)
+check("groww: total CHECKSUM PASS (net == pay_in + charges, signed)", gpass is True, (gpass, gresid))
+check("groww: residual ~0", abs(gresid) <= 0.01, gresid)
+gps = P.per_segment_checksum(gch, [])
+check("groww: per-segment Equity checksum closes", gps.get("Equity", {}).get("pass") is True, gps.get("Equity"))
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
