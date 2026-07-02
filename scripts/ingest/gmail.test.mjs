@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   pdfAttachments, newMessageIdsFromHistory, isHistoryGone, safeName,
-  readGmailState, writeGmailState,
+  readGmailState, writeGmailState, backfillQuery,
 } from './gmail.mjs';
 
 describe('pdfAttachments', () => {
@@ -76,6 +76,20 @@ describe('safeName', () => {
   });
   it('handles missing filename', () => {
     expect(safeName('', 'abcd1234')).toMatch(/attachment\.pdf$/);
+  });
+});
+
+describe('backfillQuery', () => {
+  it('builds an inclusive after/before window (before is exclusive → +1 day)', () => {
+    expect(backfillQuery('2024-01-01', '2026-06-30')).toBe('after:2024/01/01 before:2026/07/01');
+  });
+  it('open --to defaults to now', () => {
+    expect(backfillQuery('2024-01-01')).toMatch(/^after:2024\/01\/01 before:\d{4}\/\d{2}\/\d{2}$/);
+  });
+  it('fails loudly on malformed or reversed dates', () => {
+    expect(() => backfillQuery('2024-13-01', '2026-01-01')).toThrow(/not a real date|--from/);
+    expect(() => backfillQuery(undefined)).toThrow(/--from must be YYYY-MM-DD/);
+    expect(() => backfillQuery('2026-06-01', '2024-01-01')).toThrow(/after --to/);
   });
 });
 

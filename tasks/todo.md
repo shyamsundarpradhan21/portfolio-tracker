@@ -140,11 +140,16 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       Gitignore entries landed back in the prep commit (before any secret could exist).
       Daemon NOT started yet — its startup sweep would live-consume the user's pre-dropped
       inbox/ samples; phase (i) does the controlled first live run.
-- [ ] (h) Historical backfill (`--backfill --from <date> [--to <date>]`): date-ranged
+- [x] (h) Historical backfill (`--backfill --from <date> [--to <date>]`): date-ranged
       `messages.list` sweep over the same senders → downloads into the SAME `inbox/` → identical
       pipeline; resumable (state per message); polite rate-limit. NOT via QR codes ([Likely] doc
       QRs are verification links; [Certain] ~3KB QR capacity can't hold a multi-fill note or a
       multi-folio CAS). MF history: ONE since-inception detailed CAS through `cas-parser`.
+      DONE (code; live run needs GCP + token): backfillQuery pure+tested (inclusive window,
+      fail-loud dates); sweep pages messages.list under the label, skips state.backfill +
+      state.done + manifest gmail:/backfill: sources (live and backfill can never
+      double-ingest), records resume state only after a full download, 250ms/message
+      politeness, progress every 100. 3 tests; 419 total green.
 - [ ] (i) Verify end-to-end: vitest green on (b); `--dry` on a real sample of EACH doc type;
       live run proving — dedup (same payslip dropped twice → 1 PASS + 1 DUP), forced-FAIL
       quarantine, unknown-file park, clone deleted on PASS, original mail untouched, manifest

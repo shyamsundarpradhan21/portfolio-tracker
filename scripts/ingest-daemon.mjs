@@ -11,6 +11,9 @@
 //   node scripts/ingest-daemon.mjs --dry       # sweep inbox/ PARSE-ONLY: no KV/store writes,
 //                                              #   no deletes/moves, no manifest — zero GCP needed
 //   node scripts/ingest-daemon.mjs --auth      # one-time OAuth consent (gmail.readonly)
+//   node scripts/ingest-daemon.mjs --backfill --from 2024-01-01 [--to 2026-06-30]
+//                                              # historical sweep → same inbox/, same pipeline;
+//                                              #   resumable per message, polite rate-limit
 //
 // capture-daemon patterns carried over: strictly-serial in-flight guard (the
 // queue), quiet per-file log lines, scripts/ingest.log via the .cmd wrapper's
@@ -32,7 +35,7 @@ import { readManifest, seenSource } from './ingest/manifest.mjs';
 import {
   GMAIL_PATHS, GMAIL_LABEL, pdfAttachments, newMessageIdsFromHistory, isHistoryGone,
   safeName, readGmailState, writeGmailState, oauthClient, interactiveAuth, gmailClient,
-  pubsubSubscription,
+  pubsubSubscription, backfillQuery,
 } from './ingest/gmail.mjs';
 import { keepSystemAwake } from './lib/keepAwake.mjs';
 
@@ -239,6 +242,58 @@ async function startGmailIntake(ingest, timers) {
   return sub;
 }
 
+// ── historical backfill (plan v2 step h) ──────────────────────────────────────
+// One-shot date-ranged messages.list sweep over the SAME label → the SAME
+// inbox/ → the IDENTICAL pipeline. Resumable: each fully-downloaded message is
+// recorded in state.backfill, and both live (gmail:<id>) and backfill
+// (backfill:<id>) source rows in the manifest block a re-intake. Polite rate
+// limit between message fetches — this can sweep years of mail.
+async function runBackfill(ingest, fromIso, toIso) {
+  const q = backfillQuery(fromIso, toIso);            // fail-loud on bad dates
+  const auth = await oauthClient();
+  const gmail = await gmailClient(auth);
+  const lid = await labelId(gmail);
+  const state = readGmailState();
+  const manifest = readManifest(MANIFEST);
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  log(`backfill: sweeping "${q}" under ${GMAIL_LABEL}`);
+  let pageToken, listed = 0, fetched = 0, skipped = 0;
+  do {
+    const { data } = await gmail.users.messages.list({ userId: 'me', labelIds: [lid], q, maxResults: 50, pageToken });
+    for (const m of data.messages || []) {
+      listed++;
+      if (state.backfill[m.id] || state.done[m.id]
+          || seenSource(manifest, `gmail:${m.id}`) || seenSource(manifest, `backfill:${m.id}`)) {
+        skipped++;
+        continue;
+      }
+      try {
+        const { data: msg } = await gmail.users.messages.get({ userId: 'me', id: m.id, format: 'full' });
+        for (const a of pdfAttachments(msg)) {
+          const { data: att } = await gmail.users.messages.attachments.get({ userId: 'me', messageId: m.id, id: a.attachmentId });
+          mkdirSync(INBOX, { recursive: true });
+          const dest = join(INBOX, safeName(a.filename, m.id));
+          writeFileSync(dest, Buffer.from(att.data, 'base64url'));
+          ingest.claimed.add(dest);
+          ingest.enqueue(dest, `backfill:${m.id}`);
+          fetched++;
+        }
+        state.backfill[m.id] = new Date().toISOString();   // resumable: only after full download
+        writeGmailState(state);
+      } catch (e) {
+        log(`backfill: message ${m.id} failed (${e.message}) — will retry on the next run`);
+      }
+      await pause(250);                                    // polite: ~4 msg/s
+      if (listed % 100 === 0) log(`backfill: ${listed} listed · ${fetched} pdfs queued · ${skipped} already done`);
+    }
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  await ingest.queue.idle();
+  log(`backfill done: ${listed} mails listed · ${fetched} pdfs through the pipeline · ${skipped} already ingested`);
+}
+
 // ── fs-watch intake ───────────────────────────────────────────────────────────
 function startWatchIntake(ingest) {
   mkdirSync(DIRS.failed, { recursive: true });
@@ -272,6 +327,14 @@ async function main() {
   const parsers = await loadParsers();
   log(`ingest-daemon: ${parsers.length} parsers registered${dry ? ' · DRY (no writes, no moves)' : ''}`);
   const ingest = makeIngest({ parsers, dry });
+
+  if (args.has('--backfill')) {
+    const argv = process.argv.slice(2);
+    const val = (f) => { const i = argv.indexOf(f); return i > -1 ? argv[i + 1] : undefined; };
+    await runBackfill(ingest, val('--from'), val('--to'));
+    ingest.awake.stop();
+    return;
+  }
 
   if (once) {
     const rows = await sweepInbox(ingest);

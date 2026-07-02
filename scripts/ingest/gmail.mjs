@@ -95,6 +95,25 @@ export function writeGmailState(state, path = GMAIL_PATHS.state) {
   renameSync(tmp, path);
 }
 
+// ── pure: backfill query (plan v2 step h) ─────────────────────────────────────
+// Gmail search wants YYYY/MM/DD; `before:` is exclusive so we bump --to by a
+// day to make the CLI range inclusive. Throws on malformed dates (fail-loud —
+// a typo'd year must not silently sweep the wrong window).
+export function backfillQuery(fromIso, toIso) {
+  const parse = (s, name) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) throw new Error(`--${name} must be YYYY-MM-DD (got ${s ?? 'nothing'})`);
+    const d = new Date(`${s}T00:00:00Z`);
+    if (Number.isNaN(+d)) throw new Error(`--${name}: ${s} is not a real date`);
+    return d;
+  };
+  const from = parse(fromIso, 'from');
+  const to = toIso ? parse(toIso, 'to') : new Date();
+  if (from > to) throw new Error(`--from ${fromIso} is after --to ${toIso}`);
+  const g = (d) => d.toISOString().slice(0, 10).replace(/-/g, '/');
+  const toEx = new Date(+to + 86400000);
+  return `after:${g(from)} before:${g(toEx)}`;
+}
+
 // ── auth + clients (lazy googleapis; daemon-only paths) ───────────────────────
 export async function oauthClient({ clientSecretPath = GMAIL_PATHS.clientSecret, tokenPath = GMAIL_PATHS.token } = {}) {
   const { google } = await import('googleapis');
