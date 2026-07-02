@@ -538,6 +538,16 @@ first real failure is diagnosable from the manifest, not a truncated traceback.
   distinct gaps — broker mis-detected as "dhan" (loose substring), charges as FREE TEXT (no
   ruled table → checksum N/A), and a "Sub Total" row leaking as a phantom fill. "[Likely]
   the core carries over" is a hypothesis to TEST per-broker, never a claim to ship.
+- Reinforced (2026-07-03, d2 Groww): a broker whose PASS *looks* clean can still be silently
+  wrong. Groww notes PASSed as inert "carry" notes — every trade dropped — because the loose
+  "dhan" test matched the client SURNAME "Pra-dhan". A clean PASS with missing data is worse
+  than a FAIL; only running the real note (13 trades vs "0/carry") exposed it. Word-bound
+  substring broker tests; be suspicious of "carry/empty" verdicts on notes that should carry.
+- Library-API gotcha (2026-07-03, eCAS): the SAME casparser call returns DIFFERENT shapes by
+  output mode — `read_cas_pdf(f, pw, output='dict')` gives an MF-oriented dict (0 accounts on
+  a CDSL eCAS), while the default TYPED parse returns `NSDLCASData` with `.accounts` populated.
+  "0 folios / empty" from one output mode ≠ "the library can't parse it" — check the typed
+  object before concluding a coverage gap. (The eCAS turned out to be a clean casparser wrap.)
 
 ### A recognised-but-unsupported document is a CLEAR FAIL, not a silent park — and the probe is encryption-gated
 Two reusable principles from the d2 classifier work (2026-07-02):

@@ -68,14 +68,18 @@ def normalize_cas(cas):
     return cas
 
 
-def parse_with_passwords(path, passwords):
-    """Try each CAS_PW_* until one decrypts. -> (cas_dict, None) | (None, reason)."""
+def parse_with_passwords(path, passwords, typed=False):
+    """Try each CAS_PW_* until one decrypts. -> (cas_dict, None) | (None, reason).
+    typed=False → output='dict' (the proven MF-CAS path). typed=True → the default
+    typed object → model_dump, which is what populates NSDLCASData.accounts for a
+    CDSL/NSDL eCAS (output='dict' leaves accounts empty)."""
     from casparser import read_cas_pdf
     from casparser.exceptions import IncorrectPasswordError
     last = "no CAS_PW_* decrypts"
     for pw in passwords:
         try:
-            return normalize_cas(read_cas_pdf(path, pw, output="dict")), None
+            cas = read_cas_pdf(path, pw) if typed else read_cas_pdf(path, pw, output="dict")
+            return normalize_cas(cas), None
         except IncorrectPasswordError:
             continue
         except Exception as e:                       # noqa: BLE001 — casparser raises various parse errors
@@ -101,15 +105,29 @@ def evaluate(path, passwords, dry, kv_url, kv_tok):
         if cas is None:
             st["reason"] = err
             return st
-        v = engine.validate(cas)
-        key = engine.natural_key(cas)
+
+        # Two document families under one decrypt: CAMS/KFintech MF CAS (folios →
+        # ledger:mf:*) vs CDSL/NSDL DEPOSITORY eCAS (accounts → ledger:demat:*).
+        if engine.is_depository(cas):
+            ecas, err2 = parse_with_passwords(path, passwords, typed=True)   # accounts need the typed parse
+            if ecas is None:
+                st["reason"] = f"depository CAS but typed re-parse failed: {err2}"[:300]
+                return st
+            v = engine.ecas_validate(ecas)
+            key = engine.ecas_natural_key(ecas)
+            index, prefix, redact = "ledger:demat:index", "ledger:demat", engine.ecas_redact
+        else:
+            v = engine.validate(cas)
+            key = engine.natural_key(cas)
+            index, prefix, redact = "ledger:mf:index", "ledger:mf", engine.redact
+            ecas = cas
         st["key"] = key
         if not v["pass"]:
             st["reason"] = "; ".join(v["errors"])[:300]
             return st
-        payload = engine.redact(cas)
+        payload = redact(ecas)
         payload["validation"] = {"pass": True, "warnings": v["warnings"]}
-        st["target"] = f"ledger:mf:{key}"
+        st["target"] = f"{prefix}:{key}"
         if dry:
             st["status"] = "PASS"
             st["reason"] = "dry-run (not pushed)"
@@ -118,8 +136,8 @@ def evaluate(path, passwords, dry, kv_url, kv_tok):
             st["status"] = "PASS"
             st["reason"] = "no KV creds (parsed, not pushed)"
             return st
-        r1 = kv_cmd(kv_url, kv_tok, ["SET", f"ledger:mf:{key}", json.dumps(payload)])
-        kv_cmd(kv_url, kv_tok, ["SADD", "ledger:mf:index", key])
+        r1 = kv_cmd(kv_url, kv_tok, ["SET", f"{prefix}:{key}", json.dumps(payload)])
+        kv_cmd(kv_url, kv_tok, ["SADD", index, key])
         st["status"] = "PASS" if r1.get("result") == "OK" else "FAIL"
         if st["status"] == "FAIL":
             st["reason"] = f"KV: {str(r1)[:120]}"

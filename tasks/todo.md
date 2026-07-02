@@ -51,11 +51,17 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
        negating unsigned charge magnitudes to the debit convention; "Sub Total" added to the
        phantom-fill trap. 19 synthetic fixtures; 247 contract-parser tests green. Registry
        wrapper `contract-note.mjs` canHandle broadened to claim bare-"CONTRACT" filenames.
-     - **Groww — PROVISIONALLY COVERED (verify on first trade-bearing note).** The existing
-       engine already decrypted `CONTRACT NOTE 0258131546.pdf` and PASSed it as an inert
-       carry/MTM note (manifest row exists). Per the handoff, NO speculative adapter: the
-       first TRADE-bearing Groww note the Gmail backfill delivers either parses clean (close
-       as covered) or FAILs (then build the adapter). Refuse-on-fail protects until then.
+     - **Groww — DONE + VERIFIED (2026-07-03).** The "provisionally covered as a carry note"
+       state was a SILENT TRADE LOSS: detect_broker's loose "dhan" substring matched the
+       client name "Pra-dhan", mis-tagging Groww (and Astha) notes as dhan → 0 fills → looked
+       inert. Fixed: \bdhan\b word-boundary (also hardens Astha); Groww tagged by its
+       attachment name "CONTRACT NOTE <clientcode>.pdf" (no broker text — brand is a logo);
+       per-contract "Total" subtotal rows trapped (they carry "Total" in the ORDER-NO cell +
+       ISIN in the security cell); UTT→other_tax. Real note `CONTRACT NOTE 0258131546.pdf`:
+       broker groww, 13 trades, total+per-segment(Equity/F&O)+GST checksums PASS →
+       KV ledger:cn:CN-23-24-0023441090 corrected from 0-fill carry to 13 trades. 15
+       fixtures; 262 contract-parser tests. NOTE: the other ~10 Groww notes (2023) reprocess
+       once the backfill delivers them.
      User provides real samples via `inbox/`; passwords as new `CN_PW_*` entries in the
      existing gitignored `.env`.
    - `cas-mf` → NEW `scripts/cas-parser/` (naturalKey = statement period + folio-set hash → KV
@@ -73,6 +79,18 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
      redacted output, clone destroyed on PASS. [Likely] schema shifts per AY/form (ITR-2/3) —
      validate per-AY, fail loudly on unknown shapes.
    - `vested-statement` → backlog (currently manual curation → US_REALIZED/US_DIVIDENDS)
+   - `cdsl-demat-cas` (CDSL/NSDL eCAS) → **DONE + VERIFIED (2026-07-03).** Folded into
+     cas-parser (not a separate parser): run.py routes on casparser `file_type` — CAMS/
+     KFintech folios → `ledger:mf:*`; CDSL/NSDL `NSDLCASData.accounts` → `ledger:demat:*`.
+     casparser 1.2.1 parses it natively BUT only via the TYPED parse (`output='dict'` leaves
+     accounts empty — the gotcha). Refuse-on-fail = per-account balance == Σ holding values.
+     PII redacted (investor_info/owners/dp_id/client_id/folios). Real SEP2025 eCAS: 6
+     accounts, 9 MF holdings (₹1.75L), reconciles → KV `ledger:demat:2025-09-01_2025-09-30-
+     demat-1ae94325`; full pipeline PASS via the decrypt-probe (was the "out of scope" FAIL).
+     12 fixtures; 52 cas-parser python + 440 vitest green. The monthly auto-mailed THIRD
+     reconciliation source is now live. (Equities showed 0 in this sample — either NSDL-held
+     or genuinely none in CDSL; MF holdings are the value. `ecas_redact` keeps equities/bonds
+     for when they appear.) Reconcile wiring (ledger:demat vs INDIAN/SWING/MF) = separate task.
 4. **Dedup = TWO layers.** (i) sha256 content hash — same bytes dropped/mailed twice;
    (ii) parser naturalKey — same document as different bytes (re-downloaded CAS, re-sent note).
    Duplicate → skip, manifest row `DUP(of=…)`. Contract-parser's note-number keying already

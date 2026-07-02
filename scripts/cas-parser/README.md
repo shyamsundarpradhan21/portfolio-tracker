@@ -20,10 +20,18 @@ cp scripts/cas-parser/.env.example scripts/cas-parser/.env                # fill
 ```
 scripts/cas-parser/.venv/Scripts/python scripts/cas-parser/run.py <pdf-or-folder> [--dry-run]
 ```
-Tries each `CAS_PW_*` → casparser parse → validate → redact → on PASS pushes
-`ledger:mf:<naturalKey>` + `SADD ledger:mf:index` (mirrors `ledger:cn:*`).
-naturalKey = statement period + folio-set hash, so the same statement
-re-downloaded (different bytes) lands on the same key — idempotent.
+Tries each `CAS_PW_*` → casparser parse → validate → redact → on PASS pushes to KV.
+Handles TWO document families under one decrypt, routed by casparser `file_type`:
+- **CAMS/KFintech MF CAS** (folios) → `ledger:mf:<period+folio-set hash>`. Refuse-on-fail:
+  every scheme's printed close reconciles with casparser's recomputed close.
+- **CDSL/NSDL eCAS** — the monthly auto-mailed *depository* consolidated statement (demat
+  equities / MF units / bonds per account) → `ledger:demat:<period+account-set hash>`.
+  casparser returns `NSDLCASData` (accounts, not folios); read via the TYPED parse
+  (`output='dict'` leaves accounts empty). Refuse-on-fail: each account's printed balance
+  reconciles with Σ of its holding values. Holdings snapshot (units + NAV + value, no cost
+  basis). Redacts investor_info, owners (name/PAN), dp_id/client_id, folio numbers (→ hash).
+naturalKey = statement period + a set hash, so the same statement re-downloaded (different
+bytes) lands on the same key — idempotent. Mirrors `ledger:cn:*`.
 
 `--porcelain` emits one JSON status line per file — the ingest registry wrapper
 (`scripts/ingest/parsers/cas-mf.mjs`) consumes this; humans use the default output.

@@ -158,5 +158,66 @@ check("summary has no name", "FAKE" not in line.upper() or "FAKE AMC" not in lin
 check("folio_hash deterministic", E.folio_hash("X1") == E.folio_hash("X1"))
 check("folio_hash trims", E.folio_hash(" X1 ") == E.folio_hash("X1"))
 
+# ── CDSL/NSDL eCAS (depository holdings) — SYNTHETIC, fake amounts/PII ────────
+def synthetic_ecas(bal0=690.16, bal1=1000.0):
+    """NSDLCASData-shaped dict (casparser .model_dump), obviously-fake PII."""
+    return {
+        "file_type": "CDSL",
+        "statement_period": {"from_": "2025-09-01", "to": "2025-09-30"},
+        "investor_info": {"name": "FAKE NAME", "email": "fake@example.com",
+                          "address": "12 Fake Street", "mobile": "9999999999"},
+        "accounts": [
+            {"name": "FAKE NAME", "type": "CDSL Demat Account", "dp_id": "IN300FAKE",
+             "client_id": "12345678", "balance": bal0,
+             "owners": [{"name": "FAKE NAME", "PAN": "ABCDE1234F"}],
+             "equities": [], "bonds": [],
+             "mutual_funds": [{"name": "Fake Flexi Cap Fund", "isin": "INF000000000", "amfi": "100001",
+                               "type": "EQUITY", "balance": 50.0, "nav": 13.8032, "value": bal0,
+                               "avg_cost": None, "total_cost": None, "ucc": None, "folio": "X1/99",
+                               "pnl": None, "return_": None}]},
+            {"name": "FAKE NAME", "type": "Mutual Fund Folios", "dp_id": None, "client_id": None,
+             "balance": bal1, "owners": [],
+             "equities": [], "bonds": [],
+             "mutual_funds": [{"name": "Fake Nifty Index", "isin": "INF111111111", "amfi": "100002",
+                               "type": "EQUITY", "balance": 100.0, "nav": 10.0, "value": bal1,
+                               "avg_cost": None, "total_cost": None, "ucc": None, "folio": "Y2/1"}]},
+        ],
+        "parse_warnings": [],
+    }
+
+check("is_depository: CDSL/NSDL True, CAMS False",
+      E.is_depository({"file_type": "CDSL"}) and E.is_depository({"file_type": "NSDL"})
+      and not E.is_depository({"file_type": "CAMS"}), None)
+
+v = E.ecas_validate(synthetic_ecas())
+check("eCAS validates when balance == sum(values)", v["pass"] is True, v)
+
+v = E.ecas_validate(synthetic_ecas(bal0=690.16))     # break the reconciliation on account 0
+bad_ecas = synthetic_ecas(); bad_ecas["accounts"][0]["balance"] = 999.99
+check("eCAS FAILS when an account balance != sum(values)", E.ecas_validate(bad_ecas)["pass"] is False, E.ecas_validate(bad_ecas)["errors"])
+check("eCAS FAILS with no accounts", E.ecas_validate({**synthetic_ecas(), "accounts": []})["pass"] is False, None)
+no_hold = synthetic_ecas()
+for a in no_hold["accounts"]: a["mutual_funds"] = []
+check("eCAS FAILS with accounts but no holdings", E.ecas_validate(no_hold)["pass"] is False, None)
+
+k = E.ecas_natural_key(synthetic_ecas())
+check("eCAS key carries period + demat tag", k and k.startswith("2025-09-01_2025-09-30-demat-"), k)
+# account-set hash order-independent
+a = synthetic_ecas(); b = synthetic_ecas(); b["accounts"] = list(reversed(b["accounts"]))
+check("eCAS account-set hash order-independent", E.ecas_natural_key(a) == E.ecas_natural_key(b), None)
+
+red = E.ecas_redact(synthetic_ecas())
+blob = json.dumps(red)
+check("eCAS redact: investor name/email/mobile gone", not any(x in blob for x in ("FAKE NAME", "fake@example.com", "9999999999")), None)
+check("eCAS redact: PAN + raw dp_id/client_id/folio gone", not any(x in blob for x in ("ABCDE1234F", "IN300FAKE", "12345678", "X1/99")), blob[:200])
+check("eCAS redact: holdings kept (isin/value/nav/balance)",
+      red["accounts"][0]["mutual_funds"][0]["isin"] == "INF000000000"
+      and red["accounts"][0]["mutual_funds"][0]["value"] == 690.16
+      and red["accounts"][0]["balance"] == 690.16, None)
+check("eCAS redact: account identity replaced by stable hash",
+      red["accounts"][0]["id"] == E.folio_hash("IN300FAKE:12345678"), red["accounts"][0]["id"])
+check("eCAS summary is PII-free with counts", "9" not in "x" and "DEPOSITORY" in E.ecas_summary_line(red)
+      and "FAKE" not in E.ecas_summary_line(red), E.ecas_summary_line(red))
+
 print(f"\n{ok} ok, {bad} failed")
 raise SystemExit(1 if bad else 0)

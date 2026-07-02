@@ -174,3 +174,114 @@ def summary_line(redacted):
             f"{period.get('from')}..{period.get('to')} · "
             f"{len(redacted.get('folios') or [])} folios · {len(schemes)} schemes · "
             f"value {round(total)}")
+
+
+# ══ CDSL/NSDL eCAS (depository consolidated statement) ═══════════════════════════
+# The monthly auto-mailed eCAS is a DEPOSITORY holdings statement (equities, MF
+# units, bonds per demat account), NOT a CAMS/KFintech MF transaction CAS.
+# casparser returns an NSDLCASData object (model_dump → {accounts, ...}) rather
+# than folios. It is a VALUATION snapshot (units + NAV + value); no cost basis /
+# transactions. Target: KV ledger:demat:<key> — a THIRD reconciliation source
+# for INDIAN/SWING/MF holdings, distinct from ledger:mf:*.
+BALANCE_TOL = 1.0   # ₹ — account balance vs Σ holding values (rounding slack)
+
+
+def is_depository(cas):
+    """NSDL/CDSL eCAS? (file_type CDSL/NSDL — the MF CAS is CAMS/KFintech.)"""
+    return str(cas.get("file_type") or "").upper() in ("CDSL", "NSDL")
+
+
+def _holdings(acct):
+    return (acct.get("equities") or []) + (acct.get("mutual_funds") or []) + (acct.get("bonds") or [])
+
+
+def ecas_validate(cas):
+    """Refuse-on-fail for the eCAS: period parseable, ≥1 account carrying holdings,
+    and each account's printed balance reconciles with Σ of its holding values
+    (the depository analog of the MF CAS's close-vs-close_calculated check)."""
+    errors, warnings = [], []
+    sp = cas.get("statement_period") or {}
+    d_from, d_to = as_date(sp.get("from") or sp.get("from_")), as_date(sp.get("to"))
+    if not (d_from and d_to):
+        errors.append("statement_period missing/unparseable")
+    elif d_from > d_to:
+        errors.append(f"statement_period reversed ({d_from} > {d_to})")
+
+    accounts = cas.get("accounts") or []
+    if not accounts:
+        errors.append("no demat/folio accounts parsed")
+    total_holdings = sum(len(_holdings(a)) for a in accounts)
+    if accounts and total_holdings == 0:
+        errors.append("accounts carry no holdings (equities/MF/bonds)")
+
+    for i, a in enumerate(accounts):
+        bal = as_float(a.get("balance"))
+        hv = sum(as_float(h.get("value")) or 0 for h in _holdings(a))
+        if bal is None:
+            warnings.append(f"account {i}: no printed balance")
+            continue
+        if abs(bal - hv) > BALANCE_TOL:
+            errors.append(f"account {i}: balance {bal} != sum(values) {round(hv, 2)} (holdings don't reconcile)")
+    return {"pass": not errors, "errors": errors, "warnings": warnings}
+
+
+def ecas_natural_key(cas):
+    """Statement period + demat-account-set hash (dp_id/client_id, hashed)."""
+    sp = cas.get("statement_period") or {}
+    d_from, d_to = as_date(sp.get("from") or sp.get("from_")), as_date(sp.get("to"))
+    if not (d_from and d_to):
+        return None
+    acct_ids = sorted(folio_hash(f"{a.get('dp_id') or ''}:{a.get('client_id') or ''}")
+                      for a in cas.get("accounts") or [])
+    set_hash = hashlib.sha1("|".join(acct_ids).encode()).hexdigest()[:8]
+    return f"{d_from.isoformat()}_{d_to.isoformat()}-demat-{set_hash}"
+
+
+# DROPPED: investor_info (name/email/address/mobile), owners (name/PAN), raw
+# dp_id/client_id (→ stable hash), folio numbers (→ hash). KEPT: per-holding
+# isin/amfi/name/type/balance(units)/nav/value, account type + hashed id.
+def ecas_redact(cas):
+    sp = cas.get("statement_period") or {}
+    out = {
+        "file_type": cas.get("file_type"),
+        "cas_type": "DEPOSITORY",
+        "statement_period": {"from": (as_date(sp.get("from") or sp.get("from_")) or ""),
+                             "to": (as_date(sp.get("to")) or "")},
+        "accounts": [],
+        "warnings": [str(w) for w in cas.get("parse_warnings") or []],
+    }
+    out["statement_period"] = {k: (v.isoformat() if isinstance(v, dt.date) else "")
+                               for k, v in out["statement_period"].items()}
+
+    def keep_eq(e):
+        return {k: e.get(k) for k in ("name", "isin", "symbol", "exchange", "num_shares", "price", "value")}
+
+    def keep_mf(m):
+        return {k: m.get(k) for k in ("name", "isin", "amfi", "type", "balance", "nav", "value")}
+
+    def keep_bond(b):
+        return {k: b.get(k) for k in ("name", "isin", "num_bonds", "value", "face_value", "maturity_date")}
+
+    for a in cas.get("accounts") or []:
+        ra = {
+            "id": folio_hash(f"{a.get('dp_id') or ''}:{a.get('client_id') or ''}"),
+            "type": a.get("type"),
+            "balance": a.get("balance"),
+            "equities": [keep_eq(e) for e in a.get("equities") or []],
+            "mutual_funds": [keep_mf(m) for m in a.get("mutual_funds") or []],
+            "bonds": [keep_bond(b) for b in a.get("bonds") or []],
+        }
+        out["accounts"].append(ra)
+    return jsonable(out)
+
+
+def ecas_summary_line(redacted):
+    period = redacted.get("statement_period") or {}
+    accts = redacted.get("accounts") or []
+    eq = sum(len(a.get("equities") or []) for a in accts)
+    mf = sum(len(a.get("mutual_funds") or []) for a in accts)
+    bo = sum(len(a.get("bonds") or []) for a in accts)
+    total = sum(as_float(a.get("balance")) or 0 for a in accts)
+    return (f"{redacted.get('file_type') or '?'} DEPOSITORY eCAS "
+            f"{period.get('from')}..{period.get('to')} · {len(accts)} accounts · "
+            f"{eq} equities / {mf} MF / {bo} bonds · value {round(total)}")
