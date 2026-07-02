@@ -13,12 +13,13 @@ import { contractNoteParser } from './contract-note.mjs';
 import { casMfParser } from './cas-mf.mjs';
 import { payslipParser } from './payslip.mjs';
 import { brokerTaxParser } from './broker-tax.mjs';
+import { itrJsonParser } from './itr-json.mjs';
 
 export const PARSERS = [
   contractNoteParser,   // most frequent doc (per trading day) — checked first
   casMfParser,
   payslipParser,
   brokerTaxParser,
-  // itr-json  → phase e2
+  itrJsonParser,
   // vested-statement → backlog (registry-ready; manual curation until then)
 ];

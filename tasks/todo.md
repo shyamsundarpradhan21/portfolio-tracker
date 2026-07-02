@@ -114,8 +114,15 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       Probes verified on REAL files (Form slip → 2023-02; taxpnl → zerodha_mom FY22-23).
       Fixed en route: PATH python had lost pymupdf (payslip engine was dead) — reinstalled.
       Registry roster now 4 parsers, classification proven mutually exclusive. 393 green.
-- [ ] (e2) NEW `itr-json` parser (per-AY schema validation; FY-anchor extraction; derived
+- [x] (e2) NEW `itr-json` parser (per-AY schema validation; FY-anchor extraction; derived
       `fno-verified.json` candidate + verified-CG diff, sign-off gated; PII discipline as (3)).
+      DONE + VERIFIED ON THE REAL FILED ITR-3s the user pre-dropped in inbox/ (AY2024-25 +
+      AY2025-26): 10/10 anchors extract, fail-loud on unknown form/AY/shape, candidate is
+      PII-free by construction (PersonalInfo never read), NEVER writes fno-verified.json.
+      Schema paths corrected against the real shape (ScheduleBP signed net P&L first —
+      PartB-TI heads floor losses at 0). Real finding for reconcile: AY2025-26 CFL
+      speculative = 84,268 vs seed 84,307 (₹39 gap to sign off); CFL non-spec MATCHES
+      exactly (5,13,011). 12 tests; 405 total green.
 - [ ] (f) `scripts/ingest-report.mjs` + `expects` cadences; weekly scheduled run.
 - [ ] (g) Windows wrappers + registration; `.gitignore`: `inbox/`, `data/ingest-manifest.json`,
       `data/gmail-state.json`, `mcp/gmail/.token.json`, `.sa.json`, parser `.env`s.
