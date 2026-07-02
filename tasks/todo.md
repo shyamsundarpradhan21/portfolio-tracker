@@ -132,8 +132,14 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       Live smoke vs the real ledger flagged all 5 recent Dhan traded days as missing notes.
       The "deliberately-missing month/day is caught" phase-(i) proof is encoded as unit
       tests. 11 tests; 416 total green.
-- [ ] (g) Windows wrappers + registration; `.gitignore`: `inbox/`, `data/ingest-manifest.json`,
+- [x] (g) Windows wrappers + registration; `.gitignore`: `inbox/`, `data/ingest-manifest.json`,
       `data/gmail-state.json`, `mcp/gmail/.token.json`, `.sa.json`, parser `.env`s.
+      DONE: ingest.cmd (daemon / `report` arg, appends scripts/ingest.log) +
+      register-ingest-daemon.ps1 — IngestDaemon at-logon (no exec limit, IgnoreNew,
+      work-scoped keepAwake inside) + IngestWeeklyReport Sun 10:00. REGISTERED, both Ready.
+      Gitignore entries landed back in the prep commit (before any secret could exist).
+      Daemon NOT started yet — its startup sweep would live-consume the user's pre-dropped
+      inbox/ samples; phase (i) does the controlled first live run.
 - [ ] (h) Historical backfill (`--backfill --from <date> [--to <date>]`): date-ranged
       `messages.list` sweep over the same senders → downloads into the SAME `inbox/` → identical
       pipeline; resumable (state per message); polite rate-limit. NOT via QR codes ([Likely] doc
