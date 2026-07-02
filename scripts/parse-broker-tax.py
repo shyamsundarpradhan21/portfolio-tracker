@@ -20,7 +20,7 @@ P&L statement (.xlsx). Upstox (.xlsx) slots in once uploaded (TODO marker below)
 
 Indian FY = 1 Apr – 31 Mar.  Label form: FY25-26.
 """
-import os, re, csv, glob, json, datetime as dt
+import os, re, csv, sys, glob, json, datetime as dt
 import openpyxl
 
 REPORTS = os.path.join("data", "reports")
@@ -529,7 +529,52 @@ def realized_block(per_fy, asof, source, usd=False):
         block["ytd"] = latest["amt"] if latest else 0
     return block
 
+# ── single-file probe for the ingest registry wrapper ────────────────────────
+# scripts/ingest/parsers/broker-tax.mjs asks "which broker + FY(s) is this ONE
+# file?" so it can build the naturalKey BEFORE copying the file into
+# data/reports/ and re-running the full corpus parse. Additive — the corpus
+# flow in main() is untouched. Emits broker + fy list ONLY (no amounts).
+def probe_one(path):
+    base = os.path.basename(path)
+    ext = base.lower().rsplit(".", 1)[-1]
+    r, broker = None, None
+    try:
+        if base.startswith("taxpnl-") and ext == "xlsx":
+            r, broker = parse_zerodha(path), "zerodha"
+        elif base.startswith("FYERS_tax_pnl") and ext == "csv":
+            r, broker = parse_fyers(path), "fyers"
+        elif base == "TAX_PNL_REPORT.xls":
+            r, broker = parse_dhan(path), "dhan"
+        elif base.startswith("Profit-Loss Statement") and ext == "xlsx":
+            r, broker = parse_vested(path), "vested"
+        elif base.startswith("realizedPnL_") and ext == "zip":
+            r, broker = parse_upstox_zip(path), "upstox"
+        elif base.startswith("AG4907") and ext == "csv":
+            r, broker = parse_astha(path), "astha"
+        elif base.startswith("Stocks_PnL_Report") and ext == "xlsx":
+            r, broker = parse_groww(path), "groww"
+        else:
+            print(json.dumps({"broker": None, "fys": [], "error": "no filename convention matched"}))
+            return 1
+    except Exception as e:  # noqa: BLE001 — a broken report is a FAIL, not a crash
+        print(json.dumps({"broker": broker, "fys": [], "error": f"{type(e).__name__}: {e}"[:200]}))
+        return 1
+    if not r:
+        print(json.dumps({"broker": broker, "fys": [], "error": "file parsed empty"}))
+        return 1
+    broker = r.get("label") or broker
+    if r.get("fy"):
+        fys = [r["fy"]]
+    else:  # multi-FY reports (dhan all-time, vested, groww)
+        multi = r.get("by_fy") or r.get("allTime") or {}
+        fys = sorted(multi.keys()) if isinstance(multi, dict) else []
+    print(json.dumps({"broker": broker, "fys": fys}))
+    return 0 if fys else 1
+
+
 def main():
+    if "--one" in sys.argv:
+        sys.exit(probe_one(sys.argv[sys.argv.index("--one") + 1]))
     accounts, fno_corro = [], {}
     dhan = vested = groww = None
     upstox_by_fy = {}                 # dedupe the many duplicate per-FY zips

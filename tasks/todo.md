@@ -104,8 +104,16 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       37 python regression tests + 6 vitest; 384 total green.
       PENDING (user sample): verify casparser handles the real CAMS/KFintech CAS before
       trusting coverage — refuse-on-fail protects until then.
-- [ ] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
+- [x] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
       (payslip PASS auto-chains the guarded KV seed). No rewrite of proven engines.
+      DONE: additive-only python entry points (--one/--porcelain probes; contract-parser
+      run.py --porcelain) + wrappers payslip.mjs (probe month → copy as next Form (N).pdf
+      into data/reports/ corpus → --write BASIC_PAY → auto-chain guarded seed; seed refusal
+      = FAIL), broker-tax.mjs (probe broker+FY-set key → copy → full corpus re-run),
+      contract-note.mjs (PUSHED/OK/CARRY→PASS, REFUSED/HELD/SKIP→FAIL; key = CN number).
+      Probes verified on REAL files (Form slip → 2023-02; taxpnl → zerodha_mom FY22-23).
+      Fixed en route: PATH python had lost pymupdf (payslip engine was dead) — reinstalled.
+      Registry roster now 4 parsers, classification proven mutually exclusive. 393 green.
 - [ ] (e2) NEW `itr-json` parser (per-AY schema validation; FY-anchor extraction; derived
       `fno-verified.json` candidate + verified-CG diff, sign-off gated; PII discipline as (3)).
 - [ ] (f) `scripts/ingest-report.mjs` + `expects` cadences; weekly scheduled run.

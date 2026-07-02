@@ -85,6 +85,21 @@ def collect():
     return by_month, skipped
 
 def main():
+    # --one <file> --porcelain: single-slip probe for the ingest registry wrapper
+    # (scripts/ingest/parsers/payslip.mjs). Additive — the corpus flow below is
+    # untouched. Emits month + presence booleans ONLY (no figures → ingest.log
+    # stays free of salary amounts).
+    if "--one" in sys.argv:
+        path = sys.argv[sys.argv.index("--one") + 1]
+        try:
+            s = parse_form(path)
+        except Exception as e:  # noqa: BLE001 — a broken PDF is a FAIL, not a crash
+            print(json.dumps({"month": None, "error": f"{type(e).__name__}: {e}"[:200]}))
+            sys.exit(1)
+        print(json.dumps({"month": s["month"], "hasNet": s["net"] is not None,
+                          "hasBasic": bool(s["basic"])}))
+        sys.exit(0 if s["month"] else 1)
+
     by_month, skipped = collect()
     print(f"{len(by_month)} months parsed" + (f"; {len(skipped)} skipped (no month): {skipped}" if skipped else ""))
     print(f"{'month':9}{'net':>10}{'cmpf':>9}{'cmps':>8}{'basic':>9}  slips")

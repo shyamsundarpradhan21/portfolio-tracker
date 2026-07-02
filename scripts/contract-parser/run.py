@@ -149,16 +149,23 @@ def main():
         pdfs = [p for p in pdfs if "annexure" not in os.path.basename(p).lower()]   # annexures aren't contract notes
     else:
         pdfs = [target]
-    # one note -> verbose masked block; a batch (folder / --summary) -> one status line per note + tally
+    # one note -> verbose masked block; a batch (folder / --summary) -> one status line per note + tally.
+    # --porcelain: one machine-readable JSON line per note for the ingest registry
+    # wrapper (scripts/ingest/parsers/contract-note.mjs) — additive, PII-free (the
+    # st dict carries note-no/broker/date/status, never PAN/name).
+    porcelain = "porcelain" in flags
     summary = "summary" in flags or len(pdfs) > 1
     stats = []
     for p in pdfs:
         rel = os.path.relpath(p, target) if os.path.isdir(target) else os.path.basename(p)
-        if not summary:
+        if not summary and not porcelain:
             print(f"\n##### {rel} #####")
-        st = evaluate(p, dry, kv_url, kv_tok, verbose=not summary)
+        st = evaluate(p, dry, kv_url, kv_tok, verbose=not summary and not porcelain)
         st["rel"] = rel
         stats.append(st)
+        if porcelain:
+            print(json.dumps(st))
+            continue
         if summary:
             print(f"  [{st['status']:7}] {(st.get('broker') or '?'):8} {(st.get('date') or '----------'):10} "
                   f"{(st.get('tax') or '-'):4} cn={st.get('cn') or '-'}" + (f"  <- {st['reason']}" if st['reason'] else ""))
