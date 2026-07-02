@@ -31,7 +31,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { processFile, makeQueue } from './ingest/router.mjs';
 import { loadParsers } from './ingest/registry.mjs';
-import { readManifest, seenSource } from './ingest/manifest.mjs';
+import { readManifest, seenSource, assertManifestIntegrity } from './ingest/manifest.mjs';
 import {
   GMAIL_PATHS, GMAIL_LABEL, pdfAttachments, newMessageIdsFromHistory, isHistoryGone,
   safeName, readGmailState, writeGmailState, oauthClient, interactiveAuth, gmailClient,
@@ -324,6 +324,20 @@ async function main() {
   }
   const dry = args.has('--dry');
   const once = args.has('--once') || dry;
+
+  // Ledger integrity gate BEFORE any intake: a corrupt manifest must refuse
+  // loudly at startup, never wedge silently mid-queue (P1 2026-07-02).
+  if (!dry) {
+    try {
+      const rows = assertManifestIntegrity(MANIFEST);
+      log(`manifest integrity OK — ${rows} rows`);
+    } catch (e) {
+      log(`FATAL: ${e.message}`);
+      log(`FATAL: repair data/ingest-manifest.json (or restore a valid version) before restarting — refusing to run.`);
+      process.exit(1);
+    }
+  }
+
   const parsers = await loadParsers();
   log(`ingest-daemon: ${parsers.length} parsers registered${dry ? ' · DRY (no writes, no moves)' : ''}`);
   const ingest = makeIngest({ parsers, dry });

@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readManifest, writeManifest, appendRow, emptyManifest, seenSource } from './manifest.mjs';
+import { readManifest, writeManifest, appendRow, emptyManifest, seenSource, atomicWriteJSON, assertManifestIntegrity } from './manifest.mjs';
 import { sha256Buffer } from './dedup.mjs';
 import { processFile, makeQueue, sniffFile } from './router.mjs';
 
@@ -86,6 +86,44 @@ describe('manifest', () => {
     appendRow(m, { file: 'a', sha256: 's', source: 'gmail:abc', status: 'PASS' });
     expect(seenSource(m, 'gmail:abc')).toBe(true);
     expect(seenSource(m, 'gmail:zzz')).toBe(false);
+  });
+});
+
+describe('atomic writes (P1 regression: kill mid-append must leave a loadable manifest)', () => {
+  it('a partial tmp (death mid-write) never touches the target', () => {
+    const m = emptyManifest();
+    appendRow(m, { file: 'a.dum', sha256: 'x'.repeat(64), source: 'manual', status: 'PASS' });
+    writeManifest(manifestPath, m);
+    // simulate a writer killed mid-append: a dangling partial tmp next to the target
+    writeFileSync(`${manifestPath}.9999.zzzz.tmp`, '{\n "version": 1,\n "rows": [\n  {');
+    const back = readManifest(manifestPath, { strict: true });        // target untouched
+    expect(back.rows).toHaveLength(1);
+    expect(assertManifestIntegrity(manifestPath)).toBe(1);
+    // and the next append still lands cleanly
+    appendRow(back, { file: 'b.dum', sha256: 'y'.repeat(64), source: 'manual', status: 'UNRECOGNIZED' });
+    writeManifest(manifestPath, back);
+    expect(readManifest(manifestPath, { strict: true }).rows).toHaveLength(2);
+  });
+
+  it('tmp names are unique per write — concurrent writers cannot truncate each other', () => {
+    // two interleaved writes to the same target: both must survive as valid JSON
+    const a = emptyManifest();
+    appendRow(a, { file: 'a', sha256: 'a'.repeat(64), source: 'manual', status: 'PASS' });
+    const b = emptyManifest();
+    appendRow(b, { file: 'b', sha256: 'b'.repeat(64), source: 'manual', status: 'PASS' });
+    atomicWriteJSON(manifestPath, a);
+    atomicWriteJSON(manifestPath, b);
+    const back = readManifest(manifestPath, { strict: true });       // last writer wins, VALID
+    expect(back.rows[0].file).toBe('b');
+    // no fixed-name .tmp leftover that a second writer could have clobbered
+    expect(existsSync(`${manifestPath}.tmp`)).toBe(false);
+  });
+
+  it('assertManifestIntegrity refuses a truncated ledger loudly', () => {
+    mkdirSync(join(root, 'data'), { recursive: true });
+    // the exact reported shape: valid prefix, dangling `{` from a dead append
+    writeFileSync(manifestPath, '{\n "version": 1,\n "rows": [\n  {');
+    expect(() => assertManifestIntegrity(manifestPath)).toThrow(/refusing to overwrite history/);
   });
 });
 

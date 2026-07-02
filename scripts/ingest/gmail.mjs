@@ -8,9 +8,10 @@
 // Idempotency lives in data/gmail-state.json (lastHistoryId + seen message ids),
 // NOT in Gmail labels (readonly scope can't write labels anyway).
 
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { atomicWriteJSON } from './manifest.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const GMAIL_PATHS = {
@@ -89,10 +90,7 @@ export function writeGmailState(state, path = GMAIL_PATHS.state) {
     const keep = ids.sort((a, b) => (state.done[a] < state.done[b] ? 1 : -1)).slice(0, 2000);
     state.done = Object.fromEntries(keep.map((id) => [id, state.done[id]]));
   }
-  mkdirSync(dirname(path), { recursive: true });
-  const tmp = `${path}.tmp`;
-  writeFileSync(tmp, JSON.stringify(state, null, 1));
-  renameSync(tmp, path);
+  atomicWriteJSON(path, state);   // unique tmp + fsync + rename (same P1 class as the manifest)
 }
 
 // ── pure: backfill query (plan v2 step h) ─────────────────────────────────────

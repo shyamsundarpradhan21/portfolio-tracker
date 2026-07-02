@@ -511,6 +511,20 @@ a concrete implementation prompt (verified formulas, file targets, decisions loc
 is the one that makes the code changes.** So when a task arrives already-specced from a Cowork
 session, build to that spec (don't re-derive it), but still VERIFY the handed state first (below).
 
+### State files need ATOMIC writes: unique tmp + fsync + rename — bare writeFileSync is a truncation bug
+P1 (2026-07-02): `data/ingest-manifest.json` was reported truncated mid-append (dangling
+`{`, json.load dead). Two real defects in the same class even though the on-disk file
+turned out valid (the truncated view came through the shared mount's read window):
+(a) **no fsync before rename** — on a hard crash the rename can journal ahead of the data
+blocks, leaving a truncated target after reboot; (b) **fixed tmp filename** — two concurrent
+writers truncate each other's tmp mid-write. **Rule:** every ledger/state file written by a
+long-running process goes through atomic-write: UNIQUE tmp name (pid+ts+rand) → write →
+`fsyncSync` → `renameSync`; plus a STARTUP integrity gate that refuses loudly on an
+unreadable ledger (never run silently on corrupt history). Implemented:
+`atomicWriteJSON()` in `scripts/ingest/manifest.mjs` (manifest + gmail-state) +
+`assertManifestIntegrity()` in the daemon. Same failure class as the truncated-mount-write
+lesson below — treat any "file ends mid-token" symptom as this class first.
+
 ### Cowork mount writes can land TRUNCATED — `node --check` / re-read before running
 A Cowork-side write to a file (via the shared mount) can arrive **truncated** — a partial file that
 looks plausible. After ANY Cowork-side edit, before trusting or running it: `node --check <file>`

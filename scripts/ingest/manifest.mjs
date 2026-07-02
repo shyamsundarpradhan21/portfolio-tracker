@@ -10,10 +10,33 @@
 // File: data/ingest-manifest.json (gitignored — provenance may embed filenames).
 // Writes are atomic (tmp + rename) so a crash mid-write can't corrupt the ledger.
 
-import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { readFileSync, renameSync, mkdirSync, openSync, writeSync, fsyncSync, closeSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export const STATUSES = ['PASS', 'FAIL', 'DUP', 'UNRECOGNIZED'];
+
+// Atomic JSON write: UNIQUE tmp name (two concurrent writers can never
+// truncate each other's tmp) + fsync BEFORE rename (without it a hard crash
+// can journal the rename ahead of the data blocks and leave a truncated file
+// after reboot — the exact P1 failure class reported on this ledger). The
+// target is replaced only by a fully-durable file; readers never see partials.
+export function atomicWriteJSON(path, value) {
+  mkdirSync(dirname(path), { recursive: true });
+  const tmp = `${path}.${process.pid}.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.tmp`;
+  const fd = openSync(tmp, 'w');
+  try {
+    writeSync(fd, JSON.stringify(value, null, 1));
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  try {
+    renameSync(tmp, path);
+  } catch (e) {
+    try { unlinkSync(tmp); } catch { /* leave evidence if even unlink fails */ }
+    throw e;
+  }
+}
 
 export function emptyManifest() {
   return { version: 1, rows: [] };
@@ -37,10 +60,14 @@ export function readManifest(path, { strict = false } = {}) {
 }
 
 export function writeManifest(path, manifest) {
-  mkdirSync(dirname(path), { recursive: true });
-  const tmp = `${path}.tmp`;
-  writeFileSync(tmp, JSON.stringify(manifest, null, 1));
-  renameSync(tmp, path);
+  atomicWriteJSON(path, manifest);
+}
+
+// Startup integrity gate: an unreadable ledger must REFUSE loudly, never run
+// silently on top of corrupt history. Returns the row count when healthy.
+export function assertManifestIntegrity(path) {
+  const m = readManifest(path, { strict: true });
+  return m.rows.length;
 }
 
 // Validates + appends one intake row. Returns the row (frozen shape, not object).
