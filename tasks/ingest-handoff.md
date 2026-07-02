@@ -33,6 +33,12 @@ ALWAYS-READ layer before starting.
    user's real sample before hand-rolling anything). `CAS_PW_*` in gitignored `.env`;
    PII-redacted output; refuse-on-fail; KV `ledger:mf:<periodKey>` + index (mirror the
    `ledger:cn:*` pattern). Regression tests mirroring `test_engine.py` discipline.
+3b. **(d2) contract-parser: NEW Groww + Rupeezy adapters** — the engine covers only
+   Zerodha/Fyers/Upstox/Dhan today. Real samples are pre-dropped by the user in `inbox/`
+   (gitignored). Per adapter: parse → per-segment checksum PASS against the note's own
+   totals → derive PII-redacted SYNTHETIC fixtures for `test_engine.py` (the raw note is
+   never persisted as a fixture) → only then register the broker. Passwords = new `CN_PW_*`
+   entries the user adds to the existing gitignored `scripts/contract-parser/.env`.
 4. **(e) Wrap existing** `parse-payslip.py` (naturalKey = salary month; PASS auto-chains the
    guarded `seed-portfolio-kv.mjs`) and `parse-broker-tax.py` (FY+broker) as registry parsers.
    Do NOT rewrite the proven engines.
@@ -67,11 +73,4 @@ ALWAYS-READ layer before starting.
 - **Real samples needed from the user:** one contract-note mail, one CAS PDF (+ password
   convention), one payslip PDF, the annual ITR JSONs.
 - **[Unconfirmed → verify live at build]:** GCP "Testing"-mode OAuth refresh tokens expire ~7
-  days (publish the consent screen if so); casparser coverage of current CAS formats.
-
-## Non-negotiables (repo-wide, enforced in review)
-- Gmail scope `gmail.readonly` ONLY; zero mailbox mutation ever. Brokers untouched/read-only.
-- PANs / statement passwords / OAuth tokens: local gitignored files only — never logged,
-  echoed, committed, or pushed to KV. KV receives redacted DERIVED data only.
-- Raw documents never persisted: PASS → delete, FAIL → quarantine. Seed sanity guard never
-  bypassed. Manifest invariant holds at all times.
+  days (publis

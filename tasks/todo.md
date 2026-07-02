@@ -32,7 +32,13 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
 3. **Parser registry `scripts/ingest/registry.mjs`** — each parser declares
    `{id, canHandle(file) [filename pattern + content sniff], run(file) → {naturalKey, target,
    status}, expects (cadence spec)}`. Initial registry (existing scripts WRAPPED, not rewritten):
-   - `contract-note` → `scripts/contract-parser/run.py` (naturalKey = note number → KV `ledger:cn:*`)
+   - `contract-note` → `scripts/contract-parser/run.py` (naturalKey = note number → KV `ledger:cn:*`).
+     **EXTEND: Groww + Rupeezy adapters (NEW — existing engine covers only Zerodha/Fyers/
+     Upstox/Dhan).** [Likely] same SEBI-standardised note format so the core reconciling
+     carries over, but each broker ships only with its own adapter + synthetic regression
+     fixtures (test_engine.py discipline) + per-segment checksum PASS on a real sample.
+     User provides real samples via `inbox/`; passwords as new `CN_PW_*` entries in the
+     existing gitignored `.env`.
    - `cas-mf` → NEW `scripts/cas-parser/` (naturalKey = statement period + folio-set hash → KV
      `ledger:mf:*`; casparser-first, `CAS_PW_*` gitignored, PII-redacted, refuse-on-fail;
      [Likely] casparser covers CAMS/KFintech — verify on real samples)
@@ -445,8 +451,4 @@ B+C built behind the same adapter pattern (paste fallback intact). Discovery in 
 ### Review (verified on real data)
 - 148 algos: 140 with curve, **62 with ≥5-day backtest segment**, 41/148 correlation-joined (scoped Dhan).
 - Split verified: Wave-Return 78 backtest + 52 live (overfit case: clean backtest, live −50% mdd); held
-  IV-Imbalance/Damper fully-live (0 backtest); BTST split fine despite empty `liveSinceBacktested`.
-- KV push 1.43 MB OK. DATA ONLY — no scores computed (next step: the screen).
-- **GAP:** Dhan-full 79 download was blocked by Chrome's multi-download prompt → join used scoped 41.
-  Drop `data/dhan-full.raw.json` (79) in and re-run → coverage jumps to ~79 (importer already prefers it).
-- SKIPPED per instruction: per-algo `advisorMetrics` loop (per-range winRatio/avgProfit/booksizes).
+  IV-Imbala
