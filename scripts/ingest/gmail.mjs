@@ -206,7 +206,7 @@ export async function interactiveAuth({ clientSecretPath = GMAIL_PATHS.clientSec
   const { tokens } = await client.getToken(code);
   mkdirSync(dirname(tokenPath), { recursive: true });
   writeFileSync(tokenPath, JSON.stringify(tokens, null, 1));
-  log('Token stored in mcp/gmail/.token.json (gitignored). Gmail access is read-only.');
+  log(`Token stored in ${tokenPath} (gitignored). Gmail access is read-only.`);
   return true;
 }
 
