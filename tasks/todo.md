@@ -1,3 +1,129 @@
+# Plan — Unified ingestion: ONE inbox folder → dispatcher → parsers → tiered stores (v2)
+
+Status: **APPROVED — building** (locked 2026-07-02; Cowork-specced, handed to Claude Code
+via `tasks/ingest-handoff.md`). v2 ABSORBS the earlier Gmail-pipeline plan — one pipeline.
+Background: `tasks/value-lineage-audit.md` (capture families F1–F6, source registry).
+
+**Design answer to "why not a single file/folder":** ONE folder for source DOCUMENTS — yes,
+this plan (`inbox/`). ONE store for parsed DATA — no: the lineage audit shows the stores are
+split by privacy tier DELIBERATELY (PII/PANs local-only `.env` · private book KV
+`portfolio:v1` · committed generated JSON). Collapsing them leaks. What unifies: the ENTRY
+POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
+
+## Locked decisions (user, 2026-07-02)
+- Originals in Gmail untouched; only downloaded clones destroyed after checksum PASS.
+- Gmail push (Pub/Sub) → LOCAL streaming-pull daemon (no public webhook; PANs stay local).
+- Mail scope: broker contract notes + MF/CAS. Bank/card/UPI alerts OUT.
+- **NEW: `inbox/` (gitignored) is the SINGLE intake for ALL source docs** — auto-captured
+  (Gmail daemon downloads there) AND manually dropped (payslips, Vested statements, broker
+  tax reports). Same pipeline regardless of how a doc arrived.
+
+## Architecture decisions (flag for sign-off)
+1. **Layout:** `inbox/` (drop) · `inbox/failed/` (parse FAIL quarantine) ·
+   `inbox/unrecognized/` (no parser claimed it — parked, never silently dropped).
+   PASS → file DELETED (manifest keeps hash + provenance; raw docs never persisted —
+   contract-parser's discipline goes global).
+2. **ONE daemon `scripts/ingest-daemon.mjs`** (replaces the v1 gmail-tx-daemon; capture-daemon
+   patterns: in-flight guard, keepAwake, `scripts/ingest.log`). Two INTAKES, one QUEUE:
+   (a) Pub/Sub streaming pull → `history.list` since lastHistoryId (startup catch-up covers
+   sleep; gap → full label re-query) → download PDF attachments into `inbox/`;
+   (b) fs-watcher on `inbox/` (manual drops land in the same queue). Single processing path =
+   no task duplicacy by construction.
+3. **Parser registry `scripts/ingest/registry.mjs`** — each parser declares
+   `{id, canHandle(file) [filename pattern + content sniff], run(file) → {naturalKey, target,
+   status}, expects (cadence spec)}`. Initial registry (existing scripts WRAPPED, not rewritten):
+   - `contract-note` → `scripts/contract-parser/run.py` (naturalKey = note number → KV `ledger:cn:*`)
+   - `cas-mf` → NEW `scripts/cas-parser/` (naturalKey = statement period + folio-set hash → KV
+     `ledger:mf:*`; casparser-first, `CAS_PW_*` gitignored, PII-redacted, refuse-on-fail;
+     [Likely] casparser covers CAMS/KFintech — verify on real samples)
+   - `payslip` → existing `scripts/parse-payslip.py` (naturalKey = salary month → PAYSLIPS in
+     `data/portfolio.private.json`, then AUTO-CHAIN `seed-portfolio-kv.mjs` — existing guard stands)
+   - `broker-tax` → existing `scripts/parse-broker-tax.py` (naturalKey = FY+broker → `broker-tax.json`)
+   - `itr-json` → NEW (user uploads the filed ITR JSON per AY; naturalKey = AY + form type;
+     expects = annual). Extracts FY-level anchors: CG schedules (equity/MF/foreign STCG-LTCG),
+     F&O business income, Schedule CFL carry-forwards, Schedule S salary. Target: a DERIVED
+     CANDIDATE for `fno-verified.json` + verified-CG fields — diffed against the current
+     hand-curated seed, applied only on user sign-off (never auto-overwrite the anchor).
+     Most PII-dense doc in the pipeline (PAN/address/bank accounts) — local-only parse,
+     redacted output, clone destroyed on PASS. [Likely] schema shifts per AY/form (ITR-2/3) —
+     validate per-AY, fail loudly on unknown shapes.
+   - `vested-statement` → backlog (currently manual curation → US_REALIZED/US_DIVIDENDS)
+4. **Dedup = TWO layers.** (i) sha256 content hash — same bytes dropped/mailed twice;
+   (ii) parser naturalKey — same document as different bytes (re-downloaded CAS, re-sent note).
+   Duplicate → skip, manifest row `DUP(of=…)`. Contract-parser's note-number keying already
+   works this way; the registry generalizes it.
+5. **Manifest `data/ingest-manifest.json`** (gitignored; the lineage ledger): one row per doc —
+   `{sha256, naturalKey, parser, source: gmail:<msgId> | manual, status: PASS|FAIL|DUP|
+   UNRECOGNIZED, target, ts, parserVersion}`. INVARIANT: every file that ever touches `inbox/`
+   ends as exactly one manifest row — nothing vanishes unaccounted (the "to a T" guarantee).
+6. **Completeness report `scripts/ingest-report.mjs`**: expectation model from registry
+   `expects` (contract note per F&O trading day per active broker · payslip monthly · CAS
+   monthly) diffed against the manifest → gap list + staleness warnings. On-demand + weekly
+   scheduled run. Gaps are REPORTED, not discovered at ITR time.
+7. **Gmail specifics (unchanged from v1):** `gmail.readonly` ONLY (pipeline physically cannot
+   mutate the mailbox); filter → label `portfolio/tx`; `users.watch` re-armed startup + 6d;
+   idempotency via `data/gmail-state.json` not labels; secrets gitignored
+   (`mcp/gmail/.token.json`, `.sa.json` Subscriber-role SA). [Unconfirmed — verify at build:]
+   GCP OAuth app in "Testing" mode expires refresh tokens weekly → publish consent screen.
+8. **Hands-free:** `scripts/ingest.cmd` + `scripts/register-ingest-daemon.ps1` (at-logon,
+   repo-relative — no path rot).
+
+## Steps
+- [ ] (a) One-time GCP setup (user-assisted; documented `mcp/gmail/README.md`): project, Gmail
+      API + Pub/Sub, OAuth desktop client (`gmail.readonly`), topic `gmail-tx` (+ grant
+      `gmail-api-push@system.gserviceaccount.com` publisher), pull subscription, SA key.
+      Gmail filter → label `portfolio/tx` (broker + CAMS/KFintech senders).
+- [ ] (b) Pure libs `scripts/ingest/` (unit-tested): registry, manifest read/write, sha256 +
+      naturalKey dedup, router/queue; gmail lib (history-gap detection, PDF attachment selection).
+- [ ] (c) `scripts/ingest-daemon.mjs`: Pub/Sub pull + inbox fs-watcher → single queue → classify
+      → parse → PASS delete clone / FAIL quarantine / UNRECOGNIZED park → manifest + state.
+      `--dry` (parse, no KV/store writes, no deletes). Watch re-arm.
+- [ ] (d) `scripts/cas-parser/` (casparser-first; live-sample discovery for per-transaction
+      confirmation formats; regression tests mirroring `test_engine.py` discipline).
+- [ ] (e) Wrap existing `parse-payslip.py` + `parse-broker-tax.py` as registry parsers
+      (payslip PASS auto-chains the guarded KV seed). No rewrite of proven engines.
+- [ ] (e2) NEW `itr-json` parser (per-AY schema validation; FY-anchor extraction; derived
+      `fno-verified.json` candidate + verified-CG diff, sign-off gated; PII discipline as (3)).
+- [ ] (f) `scripts/ingest-report.mjs` + `expects` cadences; weekly scheduled run.
+- [ ] (g) Windows wrappers + registration; `.gitignore`: `inbox/`, `data/ingest-manifest.json`,
+      `data/gmail-state.json`, `mcp/gmail/.token.json`, `.sa.json`, parser `.env`s.
+- [ ] (h) Historical backfill (`--backfill --from <date> [--to <date>]`): date-ranged
+      `messages.list` sweep over the same senders → downloads into the SAME `inbox/` → identical
+      pipeline; resumable (state per message); polite rate-limit. NOT via QR codes ([Likely] doc
+      QRs are verification links; [Certain] ~3KB QR capacity can't hold a multi-fill note or a
+      multi-folio CAS). MF history: ONE since-inception detailed CAS through `cas-parser`.
+- [ ] (i) Verify end-to-end: vitest green on (b); `--dry` on a real sample of EACH doc type;
+      live run proving — dedup (same payslip dropped twice → 1 PASS + 1 DUP), forced-FAIL
+      quarantine, unknown-file park, clone deleted on PASS, original mail untouched, manifest
+      row for every intake, gap report flags a deliberately-missing month.
+- [ ] (j) **Old-figures reconciliation (one-time, after backfill h) — diff, don't re-enter.**
+      `scripts/ingest-reconcile.mjs`, REPORT-ONLY (no auto-overwrite; corrections go through
+      the normal edit-private-JSON → guarded-seed path after user sign-off).
+      Authority order (top wins): **parsed ITR JSON** (the filed return itself; supersedes the
+      hand-transcribed seed as anchor once uploaded — `fno-verified.json` becomes derived+
+      sign-off-verified from it) → checksum-PASS parsed docs → broker API state → hand-curated
+      entries. A contradiction with the ITR anchor = suspect parser/coverage first.
+      Cross-granularity invariant: trade-level (contract notes) must SUM to FY-level (ITR CG/
+      F&O schedules); Schedule S annually cross-checks parsed PAYSLIPS.
+      - F&O charges: automatic — backfilled notes extend KV `ledger:fno:overlay` via existing
+        `build-fno-overlay.mjs`, replacing estimated charges; report coverage % before/after.
+      - MF: diff since-inception CAS vs curated `MF_FUNDS`/`MF_CASHFLOWS` (units, cost,
+        folios, dates); tolerance-banded; apply corp-action/dividend-reinvest adjustments
+        BEFORE flagging drift (CUB lesson — a raw mismatch is not drift).
+      - US_REALIZED / INDIAN_REALIZED / US_DIVIDENDS: out of reconcile scope until the
+        Vested/tradebook parsers exist (registry-ready backlog) — mark as-of dates stale in
+        the report, don't touch the figures.
+      - §11.1 hardcoded-literal fixes (audit findings) stay a SEPARATE task — reconcile
+        feeds them data, doesn't fix JSX.
+
+## Out of scope
+- Bank/card/UPI alerts; Vested-statement parser (backlogged, registry-ready).
+- Dashboard wiring of `ledger:mf:*` / manifest surfaces (separate task — "ends at KV/manifest").
+- Any Gmail mutation — readonly by design.
+- Rewriting existing parsers (wrapped as-is; their tests remain the guard).
+
+---
+
 # Plan — Monthly algo decision-maker: regime/short-vol gate + capital allocator + self-learning review
 
 Status: **APPROVED — building.** Decisions locked (2026-07-02): allocation caps = proposed defaults;
