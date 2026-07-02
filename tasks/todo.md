@@ -150,10 +150,23 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
       state.done + manifest gmail:/backfill: sources (live and backfill can never
       double-ingest), records resume state only after a full download, 250ms/message
       politeness, progress every 100. 3 tests; 419 total green.
-- [ ] (i) Verify end-to-end: vitest green on (b); `--dry` on a real sample of EACH doc type;
+- [~] (i) Verify end-to-end: vitest green on (b); `--dry` on a real sample of EACH doc type;
       live run proving — dedup (same payslip dropped twice → 1 PASS + 1 DUP), forced-FAIL
       quarantine, unknown-file park, clone deleted on PASS, original mail untouched, manifest
       row for every intake, gap report flags a deliberately-missing month.
+      PROVEN LIVE (2026-07-02): clone-deleted-on-PASS + candidates (2 real ITRs), sha-DUP
+      (re-dropped bytes), naturalKey-DUP (same AY re-encoded), forced-FAIL → failed/,
+      unknown → unrecognized/ (2 real user files parked), manifest = exactly 1 row per
+      intake (10 rows), gap report catches missing months (unit-locked + live), payslip →
+      --write → guarded-seed → KV chain PASS (real slip copy; found+fixed cp1252
+      PYTHONIOENCODING crash en route). IngestDaemon task STARTED (fs-watch mode).
+      GATED on GCP/user: --auth, Pub/Sub push, original-mail-untouched, live backfill,
+      real-CAS parse (needs CAS_PW + sample; forced-FAIL path proven).
+      ⚠ INCIDENT during proofs: cleanup rm of an ASSUMED "Form (34).pdf" deleted the real
+      May-2023 slip PDF; BASIC_PAY restored from backup + KV re-seeded (correct again) —
+      the PDF itself needs a COALNET re-download; until re-dropped, do NOT run
+      parse-payslip --write (it would re-drop 2023-05). Lesson filed in feedback.md;
+      wrapper now records meta.savedAs so cleanup is never guesswork.
 - [ ] (j) **Old-figures reconciliation (one-time, after backfill h) — diff, don't re-enter.**
       `scripts/ingest-reconcile.mjs`, REPORT-ONLY (no auto-overwrite; corrections go through
       the normal edit-private-JSON → guarded-seed path after user sign-off).

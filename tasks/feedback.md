@@ -295,6 +295,18 @@ fixing the pre-existing `indian@768`/`fd@768` RSP-004 reds with the fluid-type r
 
 ## Working Style / Task Execution
 
+### Never delete by ASSUMED name — identify generated artifacts by content/mtime/recorded name
+Self-caught 2026-07-02 (ingest phase-i): a test slip was copied into `data/reports/` by
+`nextFormName()` (max+1 → slot 78/79), but cleanup ran `rm "Form (34).pdf"` on the ASSUMED
+slot — deleting the user's REAL May-2023 payslip (BASIC_PAY month lost; value restored from
+a pre-test backup, but the PDF is gone until re-downloaded from COALNET). **Why:** numbered
+corpora have gaps; "the next slot" cannot be inferred after the fact. **How to apply:**
+(a) before ANY rm in a data dir, verify the target is yours — byte-compare against the known
+source (`cmp`) or match mtime to the test window; (b) code that creates files must RECORD the
+created name (payslip wrapper now returns `meta.savedAs`); (c) take a backup of any file a
+test chain will rewrite BEFORE the test (the scratchpad `private-before.json` is what made
+recovery possible). Pairs with the harness rule "look at the target before deleting".
+
 ### Derive from the data the user pointed at — don't substitute a generic answer
 When the user says "go through X, run the numbers, build Y from it" (e.g. "go
 through the vests, run their return nos, come up with a portfolio"), the

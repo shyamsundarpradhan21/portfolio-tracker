@@ -56,17 +56,22 @@ export const payslipParser = {
     if (dry) return { status: 'PASS', naturalKey, target: 'data/portfolio.private.json BASIC_PAY (dry)', parserVersion: 'parse-payslip' };
 
     mkdirSync(REPORTS, { recursive: true });
-    const dest = join(REPORTS, nextFormName(readdirSync(REPORTS)));
+    const formName = nextFormName(readdirSync(REPORTS));
+    const dest = join(REPORTS, formName);
     copyFileSync(file.path, dest);                                 // corpus copy; router deletes the inbox clone
+    // the corpus filename rides in meta — cleanup/audit must never have to
+    // GUESS which Form (N).pdf an intake created (a guessed rm cost a real
+    // slip during phase-i verification)
+    const meta = { month: naturalKey, savedAs: formName };
 
     const wrote = await runPy('python', SCRIPT, ['--write']);
     if (wrote.code !== 0) {
-      return { status: 'FAIL', naturalKey, reason: `parse-payslip --write exit ${wrote.code} (slip already copied to data/reports/)` };
+      return { status: 'FAIL', naturalKey, meta, reason: `parse-payslip --write exit ${wrote.code} (slip already copied as ${formName})` };
     }
     const seed = await runSeed();                                  // guarded — refusal = FAIL
     if (seed.code !== 0) {
-      return { status: 'FAIL', naturalKey, reason: `seed-portfolio-kv refused/failed (exit ${seed.code}) — BASIC_PAY written, KV NOT updated` };
+      return { status: 'FAIL', naturalKey, meta, reason: `seed-portfolio-kv refused/failed (exit ${seed.code}) — BASIC_PAY written, KV NOT updated` };
     }
-    return { status: 'PASS', naturalKey, target: 'BASIC_PAY → KV portfolio:v1 (seeded)', parserVersion: 'parse-payslip' };
+    return { status: 'PASS', naturalKey, meta, target: `data/reports/${formName} · BASIC_PAY → KV portfolio:v1 (seeded)`, parserVersion: 'parse-payslip' };
   },
 };

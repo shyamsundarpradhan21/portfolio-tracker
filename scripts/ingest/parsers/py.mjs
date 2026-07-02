@@ -18,7 +18,12 @@ export function pythonFor(venvDir) {
 
 export function runPy(python, script, args = [], { timeoutMs = 180_000, cwd = ROOT } = {}) {
   return new Promise((resolve) => {
-    const child = spawn(python, [script, ...args], { cwd, windowsHide: true });
+    // PYTHONIOENCODING: piped stdout on Windows defaults to cp1252, and the
+    // engines print →/₹/× — without this a SUCCESSFUL run can die with
+    // UnicodeEncodeError on its last status line (caught live in phase i).
+    const child = spawn(python, [script, ...args], {
+      cwd, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+    });
     let stdout = '', stderr = '';
     const timer = setTimeout(() => { try { child.kill(); } catch {} }, timeoutMs);
     child.stdout.on('data', (d) => { stdout += d; });
