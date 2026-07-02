@@ -1,5 +1,6 @@
 # Registers the two intraday capture-daemon Task Scheduler jobs:
 #   CaptureIntradayIndia — weekdays 09:10 IST, F&O (10s) + India equity (60s)
+#                          + at-logon trigger (mid-session reboot resumes capture)
 #   CaptureIntradayUS    — weekdays 18:40 IST, US equity (60s) overnight to ~02:30
 #
 # Run ONCE in PowerShell:
@@ -22,11 +23,20 @@ function Register-CaptureTask {
     [string] $SessionArg,
     [DateTime] $TriggerAt,
     [int] $LimitHours,
-    [string] $Description
+    [string] $Description,
+    [switch] $ResumeAtLogon
   )
   $action  = New-ScheduledTaskAction -Execute $cmd -Argument $SessionArg -WorkingDirectory $repo
   $trigger = New-ScheduledTaskTrigger -Weekly `
     -DaysOfWeek Monday, Tuesday, Wednesday, Thursday, Friday -At $TriggerAt
+  # -ResumeAtLogon adds an at-logon trigger so a mid-session reboot resumes capture
+  # (the timed trigger already fired that day, so Task Scheduler alone never relaunches;
+  # -StartWhenAvailable only recovers a MISSED launch). Safe off-hours: the daemon's
+  # market gate exits immediately on post/weekend and idles briefly pre-open. India only —
+  # the US daemon would idle from a daytime logon until 18:45 holding its keep-awake
+  # request (blocking idle-sleep all day) and get killed by its execution limit mid-session.
+  $triggers = @($trigger)
+  if ($ResumeAtLogon) { $triggers += New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME }
   # Laptop-hardening so a session survives an unattended overnight window:
   #   -WakeToRun                 wake from sleep at the trigger to launch
   #   -AllowStartIfOnBatteries   a laptop is usually on battery — don't refuse
@@ -41,13 +51,15 @@ function Register-CaptureTask {
   $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
     -LogonType Interactive -RunLevel Limited
   Register-ScheduledTask -TaskName $TaskName `
-    -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
+    -Action $action -Trigger $triggers -Settings $settings -Principal $principal `
     -Description $Description -Force | Out-Null
 }
 
+# India limit is 16h (not window+slack): a logon-resumed instance can start as early as a
+# midnight logon and must survive to the 15:32 close; the limit is only a hung-zombie backstop.
 Register-CaptureTask -TaskName 'CaptureIntradayIndia' -SessionArg 'in' `
-  -TriggerAt 9:10AM -LimitHours 8 `
-  -Description 'Intraday capture daemon — India session (09:13-15:32 IST). F&O P&L (10s) + India equity day-change (60s). Publishes to KV intraday:<date> + intraday:eq:<date>; commits archives once at close.'
+  -TriggerAt 9:10AM -LimitHours 16 -ResumeAtLogon `
+  -Description 'Intraday capture daemon — India session (09:13-15:32 IST). F&O P&L (10s) + India equity day-change (60s). Publishes to KV intraday:<date> + intraday:eq:<date>; commits archives once at close. Also relaunches at logon so a mid-session reboot resumes capture.'
 
 Register-CaptureTask -TaskName 'CaptureIntradayUS' -SessionArg 'us' `
   -TriggerAt 6:40PM -LimitHours 10 `
