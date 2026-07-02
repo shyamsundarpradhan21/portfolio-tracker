@@ -141,6 +141,10 @@ def detect_broker(text):
     if "zerodha" in t: return "zerodha"
     if "fyers" in t: return "fyers"
     if "upstox" in t or "rksv" in t: return "upstox"
+    # Astha Trade (rebranded Rupeezy) — checked BEFORE dhan: an Astha note's body
+    # carries an unrelated "...dhan..." substring that the loose dhan test would
+    # otherwise claim. "astha"/"asthatrade" is unambiguous (member name + domain).
+    if "asthatrade" in t or "astha" in t or "rupeezy" in t: return "astha"
     if "dhan" in t or "moneylicious" in t: return "dhan"
     return "unknown"
 
@@ -180,7 +184,8 @@ def extract_tables_for(pdf, broker, text=""):
     # Upstox (always) and old-Dhan 2023-24 rule COLUMNS but not ROWS, so pdfplumber's default
     # line-based extraction merges every fill into one cell. Use text-position rows for those;
     # keep the proven line-based default for everything else (changing it would regress them).
-    if broker == "upstox" or (broker == "dhan" and _OLD_DHAN_RE.search(text or "")):
+    if (broker in ("upstox", "astha")                        # Astha rules columns but not rows (like Upstox)
+            or (broker == "dhan" and _OLD_DHAN_RE.search(text or ""))):
         settings = {"vertical_strategy": "lines", "horizontal_strategy": "text",
                     "snap_tolerance": 4, "join_tolerance": 4, "text_tolerance": 3}
         return [t for pg in pdf.pages for t in (pg.extract_tables(settings) or [])]
@@ -265,6 +270,47 @@ def parse_charges_rows(tbl):
                 seg = by_seg.setdefault(colnames[i], {})
                 seg[key] = round(seg.get(key, 0.0) + v, 4) if key in _ACCUM_KEYS else v
     return {"by_clearing_segment": by_seg, "net_total": net_total, "unmapped_labels": unmapped}
+
+# Astha/Rupeezy adapter: this broker lists the charges block as FREE-TEXT lines
+# ("Securities Transaction Tax  12.34"), not a ruled table — pdfplumber extracts
+# no charges table, so parse_charges_from_tables returns None. Read the same
+# obligation/charge/net labels off the text via the SHARED label_key() (so the
+# GST split, 'Taxable Value of Supply (Brokerage)' → brokerage, 'PAY IN/PAY OUT'
+# → pay_in, 'Net Amount Payable' → net_amount mappings are identical to the
+# table path — no new label logic). A line qualifies only when its label maps to
+# a known key AND it ends in a signed 2-decimal money token; every trade-detail
+# and boilerplate line fails one of those, so nothing spurious is summed.
+_TEXT_MONEY_TAIL = re.compile(r"(-?\(?\d[\d,]*\.\d{2}\)?)\s*(?:DR|CR)?\s*$", re.I)
+
+def parse_charges_from_text(text):
+    net_total, unmapped = {}, []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        m = _TEXT_MONEY_TAIL.search(line)
+        if not m:
+            continue
+        label = line[:m.start()].strip()
+        key = label_key(label)
+        if not key:
+            continue
+        v = pnum(m.group(0))
+        if v is None:
+            continue
+        # Astha prints CHARGE magnitudes UNSIGNED (all payable = debit), while the
+        # obligation/total rows (pay_in, net_amount) carry explicit signs. Match the
+        # table path's signed convention: charges are debits → negative; the checksum
+        # net_amount == pay_in + Σcharges then closes with signs.
+        if key in CHARGE_KEYS:
+            v = -abs(v)
+        if key in _ACCUM_KEYS:
+            net_total[key] = round(net_total.get(key, 0.0) + v, 4)
+        else:
+            net_total[key] = v                      # net_amount / pay_in / gst_base overwrite
+    if not net_total or "net_amount" not in net_total:
+        return None                                 # no reconcilable charges block found in text
+    return {"by_clearing_segment": {}, "net_total": net_total, "unmapped_labels": unmapped}
 
 def parse_charges_from_tables(tables):
     # A combined (equity+F&O) note splits charges across tables - notably a separate IGST-rate
@@ -534,9 +580,9 @@ def map_table(tbl, broker=""):
         instr_n = _nh(g("instrument"))
         instr_alnum = re.sub(r"[^a-z0-9]", "", instr_n)        # strip *,space so "* NET *"/"*NET*" both -> "net"
         side_alnum = re.sub(r"[^a-z0-9]", "", _nh(g("side")))
-        if ("brokerage" in instr_n or instr_alnum in ("net", "summary", "total", "netsummary")
+        if ("brokerage" in instr_n or instr_alnum in ("net", "summary", "total", "netsummary", "subtotal")
                 or side_alnum in ("net", "summary", "total")):
-            continue            # Trap 2: 'Brokerage Charges' rows; Trap 3: *NET*/*SUMMARY*/*TOTAL* subtotals - NOT fills
+            continue            # Trap 2: 'Brokerage Charges' rows; Trap 3: *NET*/*SUMMARY*/*TOTAL*/'Sub Total' (Astha) subtotals - NOT fills
         side_raw = (g("side") or "").upper()
         side = "BUY" if side_raw.startswith("B") else ("SELL" if side_raw.startswith("S") else side_raw)
         sym, isin = split_isin(g("instrument"), g("isin"))     # ISIN split out of the description
@@ -880,6 +926,8 @@ def build_ledger(path):
     source = "tables" if len(fills) >= 1 else "none"
     waps = wap_from_tables(all_tables)
     charges = parse_charges_from_tables(all_tables)
+    if charges is None and broker == "astha":       # Astha lists charges as free text, not a ruled table
+        charges = parse_charges_from_text(note_text)
     if broker == "upstox" and charges:              # Trap 4: Upstox charges table is CLIENT-perspective
         # ((+) payable / (-) receivable) - INVERTED vs our cashflow convention. Flip into ours so a
         # charge/payable is negative and a receivable is positive. Obligation still comes from SIGNED fills.

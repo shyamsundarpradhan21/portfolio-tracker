@@ -792,5 +792,58 @@ check("contract_note_no plain", P.contract_note_no("Contract Note No. : 18415573
 check("contract_note_no with slash -> sanitized", P.contract_note_no("Contract Note No : FON/123") == "FON-123", P.contract_note_no("Contract Note No : FON/123"))
 check("contract_note_no absent -> None", P.contract_note_no("nothing") is None, P.contract_note_no("nothing"))
 
+# ===== d2: Astha / Rupeezy adapter (SYNTHETIC — fake amounts, no PII from the real note) =====
+print("[astha] broker detection, free-text charges, sign convention, Sub-Total trap:")
+# 1) broker identity — 'astha' recognised, and it WINS over a stray 'dhan' substring in the body
+check("detect_broker astha (member name / domain)", P.detect_broker("... www.asthatrade.com ...") == "astha", P.detect_broker("asthatrade.com"))
+check("detect_broker rupeezy alias", P.detect_broker("FOR RUPEEZY BROKING") == "astha", P.detect_broker("rupeezy"))
+check("astha wins over an incidental 'dhan' substring", P.detect_broker("Authorised Signatory Madhan; asthatrade.com") == "astha", P.detect_broker("Madhan asthatrade"))
+check("plain dhan still detected (no regression)", P.detect_broker("Dhan / Moneylicious Securities") == "dhan", P.detect_broker("dhan"))
+
+# 2) free-text charges block (Astha lists charges as text lines, NOT a ruled table).
+# Fake, self-consistent numbers: net_amount == pay_in + sum of (charges). Charges printed
+# UNSIGNED (payable) while pay_in / net_amount carry explicit signs.
+astha_text = "\n".join([
+    "Order No. Trade No. Security/Contract Buy(B)/Sell(S) Quantity Net Total",
+    "111 222 NIFTY 18000 PE B 50 -1000.00",        # a trade-detail line — must NOT be read as a charge
+    "Sub Total 1 -1000.00",                          # subtotal line — no mappable label
+    "PAY IN / PAY OUT (Derivatives) -1000.00",
+    "Securities Transaction Tax 50.00",
+    "Taxable Value of Supply (Brokerage) 40.00",
+    "Exchange Transaction Charges 2.00",
+    "SEBI turnover Fees 1.00",
+    "IGST (@18.00%) 7.56",
+    "Stamp Duty 3.00",
+    "Net Amount Payable by Client -1103.56",
+])
+ach = P.parse_charges_from_text(astha_text)
+ant = ach["net_total"]
+check("astha text: pay_in signed (negative)", ant.get("pay_in") == -1000.00, ant.get("pay_in"))
+check("astha text: net_amount signed (negative)", ant.get("net_amount") == -1103.56, ant.get("net_amount"))
+check("astha text: STT charge negated (debit)", ant.get("stt") == -50.00, ant.get("stt"))
+check("astha text: brokerage via 'Taxable Value of Supply'", ant.get("brokerage") == -40.00, ant.get("brokerage"))
+check("astha text: exchange_txn negated", ant.get("exchange_txn") == -2.00, ant.get("exchange_txn"))
+check("astha text: sebi_turnover negated", ant.get("sebi_turnover") == -1.00, ant.get("sebi_turnover"))
+check("astha text: igst negated (single 18% line)", ant.get("igst") == -7.56, ant.get("igst"))
+check("astha text: stamp_duty negated", ant.get("stamp_duty") == -3.00, ant.get("stamp_duty"))
+check("astha text: trade-detail line NOT summed as a charge", "net_amount" in ant and len(ant) == 8, sorted(ant))
+apass, aresid = P.checksum(ant)
+check("astha text: CHECKSUM PASS (net == pay_in + sum of charges)", apass is True, (apass, aresid))
+check("astha text: residual ~0", abs(aresid) <= 0.01, aresid)
+agp, agd = P.gst_check(ant)
+check("astha text: GST attribution PASS (igst side)", agp is True and "igst" in agd, (agp, agd))
+# refuse-on-fail: a charges block with NO net-amount line is unreconcilable -> None
+check("astha text: no net_amount -> None (refuse)", P.parse_charges_from_text("Stamp Duty 3.00") is None, None)
+
+# 3) the 'Sub Total' subtotal row must not leak as a phantom fill (real note had one)
+subtotal_tbl = [
+    ["Order No.", "Trade No.", "Security / Contract Description", "Buy(B)/Sell(S)", "Quantity", "Net Total"],
+    ["111", "222", "NIFTY 18000 PE", "B", "50", "(1000.00)"],
+    ["", "", "Sub Total", "", "50", "(1000.00)"],
+]
+af = P.map_table(subtotal_tbl)
+check("astha 'Sub Total' row trapped (1 fill, not 2)", len(af) == 1, len(af))
+check("astha fill is the real trade (not the subtotal)", af[0]["instrument"] == "NIFTY 18000 PE", af[0]["instrument"])
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)

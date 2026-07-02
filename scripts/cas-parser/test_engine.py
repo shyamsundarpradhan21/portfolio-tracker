@@ -89,6 +89,17 @@ check("sub-tolerance rounding diff passes", v["pass"] is True, v)
 v = E.validate({**synthetic_cas(), "folios": []})
 check("no folios FAILS", v["pass"] is False, v)
 
+# CDSL/NSDL DEPOSITORY CAS (demat holdings) — recognised but out of scope for the MF ledger.
+# The decrypt-probe still claims it (casparser parsed a structure); validate refuses it with a
+# CLEAR out-of-scope reason, not the bug-sounding "no folios parsed" (real file: SEP2025 CDSL CAS).
+depo = {"statement_period": {"from": "2025-09-01", "to": "2025-09-30"}, "folios": [],
+        "cas_type": None, "file_type": "CDSL", "parse_warnings": []}
+v = E.validate(depo)
+check("CDSL depository CAS FAILS", v["pass"] is False, v)
+check("CDSL reason is explicit out-of-scope, not 'no folios parsed'",
+      any("depository CAS" in e and "out of scope" in e for e in v["errors"]), v["errors"])
+check("CDSL reason names the MF-CAS distinction", any("CAMS/KFintech MF CAS" in e for e in v["errors"]), v["errors"])
+
 cas_np = synthetic_cas()
 cas_np["statement_period"] = {"from": "garbage", "to": None}
 v = E.validate(cas_np)

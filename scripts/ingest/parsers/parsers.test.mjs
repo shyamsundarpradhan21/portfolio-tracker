@@ -57,9 +57,12 @@ describe('cas-mf canHandle', () => {
 
 describe('contract-note', () => {
   const claims = (name, head = PDF) => contractNoteParser.canHandle({ name, head });
-  it('claims contract-note PDFs', () => {
+  it('claims contract-note PDFs incl. bare-CONTRACT names (Astha)', () => {
     expect(claims('ContractNote_NSE_FO_2026-07-01.pdf')).toBe(true);
     expect(claims('99887766-contract_note_XY123.pdf')).toBe(true);
+    expect(claims('CONTRACT NOTE 0258131546.pdf')).toBe(true);                 // Groww
+    expect(claims('NSEFUTURES_CONTRACT_20230601_AG4907_0125557.pdf')).toBe(true); // Astha
+    expect(claims('cnote-2026.pdf')).toBe(true);
   });
   it('rejects CAS/payslip/non-pdf', () => {
     expect(claims('CAS_JUN2026.pdf')).toBe(false);
@@ -74,6 +77,17 @@ describe('contract-note', () => {
     expect(mapCnStatus({ status: 'HELD', cn: 'CN4' }).status).toBe('FAIL');
     expect(mapCnStatus({ status: 'SKIP' }).status).toBe('FAIL');
     expect(mapCnStatus(null).status).toBe('FAIL');
+  });
+  it('decrypt-probe claim: SKIP (no CN_PW decrypts) declines; every other status claims', () => {
+    expect(mapCnStatus({ status: 'SKIP' }).claimed).toBe(false);
+    expect(mapCnStatus({ status: 'PUSHED', cn: 'CN1' }).claimed).toBe(true);
+    expect(mapCnStatus({ status: 'CARRY', cn: 'CN2' }).claimed).toBe(true);
+    expect(mapCnStatus({ status: 'REFUSED', cn: 'CN3' }).claimed).toBe(true);   // decrypted but failed = still mine
+    expect(mapCnStatus(null).claimed).toBeFalsy();
+  });
+  it('has a probe priority after cas-mf', () => {
+    expect(contractNoteParser.probeEncrypted).toBe(2);
+    expect(casMfParser.probeEncrypted).toBe(1);
   });
 });
 

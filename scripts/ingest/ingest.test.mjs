@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readManifest, writeManifest, appendRow, emptyManifest, seenSource, atomicWriteJSON, assertManifestIntegrity } from './manifest.mjs';
 import { sha256Buffer } from './dedup.mjs';
-import { processFile, makeQueue, sniffFile } from './router.mjs';
+import { processFile, makeQueue, sniffFile, isEncryptedPdf, probeEncrypted } from './router.mjs';
 
 let root, dirs, manifestPath;
 
@@ -163,6 +163,77 @@ describe('router — the four dispositions', () => {
     expect(existsSync(p)).toBe(false);
     expect(readdirSync(dirs.unrecognized)).toHaveLength(1);
     expect(readManifest(manifestPath).rows).toHaveLength(1);
+  });
+});
+
+describe('decrypt-probe — encrypted PDF no name claimed (Item 1)', () => {
+  const ENC_PDF = '%PDF-1.4\n... /Encrypt 5 0 R ...\n%%EOF';    // has the /Encrypt trailer marker
+  const PLAIN_PDF = '%PDF-1.4\n... plain, no encryption ...\n%%EOF';
+  // password-holding probers (fake — no python). casP claims iff bytes carry MYCAS.
+  const casP = {
+    id: 'cas', probeEncrypted: 1,
+    canHandle: ({ name }) => name.endsWith('.cas'),           // name-claim path (won't fire on .pdf)
+    run: async ({ path }) => {
+      const claimed = readFileSync(path, 'utf8').includes('MYCAS');
+      return claimed ? { status: 'PASS', claimed: true, naturalKey: 'CASKEY', target: 'kv:mf' }
+                     : { status: 'FAIL', claimed: false, reason: 'no CAS_PW decrypts' };
+    },
+    expects: { cadence: 'monthly' },
+  };
+  const cnP = {
+    id: 'cn', probeEncrypted: 2,
+    canHandle: ({ name }) => /contract/i.test(name),
+    run: async ({ path }) => {
+      const claimed = readFileSync(path, 'utf8').includes('MYNOTE');
+      return claimed ? { status: 'PASS', claimed: true, naturalKey: 'CN9', target: 'ledger:cn:CN9' }
+                     : { status: 'FAIL', claimed: false, reason: 'SKIP: no CN_PW decrypts' };
+    },
+    expects: { cadence: 'per-trading-day' },
+  };
+  const PROBERS = [cnP, casP];   // registry order (cn first) — probe order must still be cas→cn
+
+  it('isEncryptedPdf: /Encrypt marker detected, plain PDF and non-PDF are not', () => {
+    const enc = drop('e.pdf', ENC_PDF), plain = drop('p.pdf', PLAIN_PDF), txt = drop('t.txt', 'hello');
+    expect(isEncryptedPdf(enc, Buffer.from(ENC_PDF))).toBe(true);
+    expect(isEncryptedPdf(plain, Buffer.from(PLAIN_PDF))).toBe(false);
+    expect(isEncryptedPdf(txt, Buffer.from('hello'))).toBe(false);
+  });
+
+  it('probe tries cas BEFORE cn regardless of registry order', async () => {
+    const order = [];
+    const spy = PROBERS.map((p) => ({ ...p, run: async (f, o) => { order.push(p.id); return p.run(f, o); } }));
+    await probeEncrypted({ path: drop('x.pdf', ENC_PDF), name: 'x.pdf' }, spy, { log: () => {} });
+    expect(order[0]).toBe('cas');   // cas-mf is probeEncrypted:1
+  });
+
+  it('encrypted CAS with a non-CAS name → probe claims it → PASS (the SEP2025 case)', async () => {
+    const p = drop('SEP2025_AA_TXN.pdf', ENC_PDF + '\nMYCAS');   // no cas/contract in the name
+    const row = await processFile(p, ctx({ parsers: PROBERS }));
+    expect(row.status).toBe('PASS');
+    expect(row.parser).toBe('cas');
+    expect(row.naturalKey).toBe('CASKEY');
+    expect(existsSync(p)).toBe(false);                          // clone deleted on PASS
+  });
+
+  it('encrypted note that cas declines → falls through to cn → PASS', async () => {
+    const p = drop('mystery.pdf', ENC_PDF + '\nMYNOTE');        // cas declines, cn claims
+    const row = await processFile(p, ctx({ parsers: PROBERS }));
+    expect(row.status).toBe('PASS');
+    expect(row.parser).toBe('cn');
+  });
+
+  it('encrypted PDF NO prober claims → UNRECOGNIZED (never mis-claimed)', async () => {
+    const p = drop('junk.pdf', ENC_PDF);                        // neither MYCAS nor MYNOTE
+    const row = await processFile(p, ctx({ parsers: PROBERS }));
+    expect(row.status).toBe('UNRECOGNIZED');
+    expect(readdirSync(dirs.unrecognized)).toHaveLength(1);
+  });
+
+  it('PLAIN (unencrypted) unclaimed PDF is NOT probed → UNRECOGNIZED (probe is encryption-gated)', async () => {
+    const p = drop('plain.pdf', PLAIN_PDF + '\nMYCAS');         // would claim IF probed, but it is not encrypted
+    const row = await processFile(p, ctx({ parsers: PROBERS }));
+    expect(row.status).toBe('UNRECOGNIZED');
+    expect(existsSync(join(dirs.unrecognized, 'plain.pdf'))).toBe(true);
   });
 });
 

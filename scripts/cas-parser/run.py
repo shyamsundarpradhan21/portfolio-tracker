@@ -90,9 +90,14 @@ def evaluate(path, passwords, dry, kv_url, kv_tok):
     traceback (a traceback exits 1 and the daemon can only report the useless
     'no porcelain status' — the exact P1 shape hit live on the real CAS)."""
     base = os.path.basename(path)
-    st = {"note": base, "status": "FAIL", "key": None, "target": None, "reason": ""}
+    # `parsed` = did casparser STRUCTURALLY parse this file (a CAS_PW opened it AND
+    # it was a real CAS)? It is the CLAIM signal the ingest decrypt-probe reads:
+    # a wrong password OR a decrypted-but-not-a-CAS file leaves parsed=False, so
+    # the probe declines and tries the next password-holding parser.
+    st = {"note": base, "status": "FAIL", "key": None, "target": None, "reason": "", "parsed": False}
     try:
         cas, err = parse_with_passwords(path, passwords)
+        st["parsed"] = cas is not None
         if cas is None:
             st["reason"] = err
             return st

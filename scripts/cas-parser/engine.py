@@ -86,7 +86,17 @@ def validate(cas):
 
     folios = cas.get("folios") or []
     if not folios:
-        errors.append("no folios parsed")
+        # A CDSL/NSDL DEPOSITORY CAS (demat holdings/transaction statement) is a
+        # different document from a CAMS/KFintech MUTUAL-FUND CAS — casparser
+        # recognises it (file_type CDSL/NSDL, cas_type None) but it carries no MF
+        # scheme folios. Out of scope for ledger:mf — say so explicitly instead of
+        # the bug-sounding "no folios parsed" (the decrypt-probe still CLAIMED it,
+        # so the classifier gap is closed; this is a clean, honest refusal).
+        ft = str(cas.get("file_type") or "").upper()
+        if ft in ("CDSL", "NSDL") and not cas.get("cas_type"):
+            errors.append(f"{ft} depository CAS (demat holdings) — not a CAMS/KFintech MF CAS; out of scope for ledger:mf")
+        else:
+            errors.append("no folios parsed")
     schemes = [s for f in folios for s in (f.get("schemes") or [])]
     if folios and not schemes:
         errors.append("folios carry no schemes")

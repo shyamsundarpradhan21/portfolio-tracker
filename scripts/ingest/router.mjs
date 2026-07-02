@@ -25,6 +25,7 @@ import { classify } from './registry.mjs';
 import { readManifest, writeManifest, appendRow } from './manifest.mjs';
 
 const HEAD_BYTES = 8192;
+const TAIL_BYTES = 8192;
 
 // First bytes + best-effort text, for canHandle sniffing. One open, one read.
 export function sniffFile(path) {
@@ -37,6 +38,56 @@ export function sniffFile(path) {
   } finally {
     closeSync(fd);
   }
+}
+
+const isPdfHead = (head) => head?.slice(0, 5).toString('latin1') === '%PDF-';
+
+// Is this an encrypted PDF? The /Encrypt trailer entry lives near EOF, so scan
+// the head AND the last TAIL_BYTES. Standard (non-object-stream) encrypted PDFs
+// — every broker/CAS statement seen — carry a plaintext "/Encrypt" reference
+// there. A missed detection (compressed-xref trailer) just means the file parks
+// as before; a false positive only spends one decrypt-probe that then declines.
+export function isEncryptedPdf(path, head) {
+  if (!isPdfHead(head)) return false;
+  if (/\/Encrypt\b/.test(head.toString('latin1'))) return true;
+  const fd = openSync(path, 'r');
+  try {
+    const size = fstatSync(fd).size;
+    const len = Math.min(TAIL_BYTES, size);
+    if (!len) return false;
+    const buf = Buffer.alloc(len);
+    readSync(fd, buf, 0, len, size - len);
+    return /\/Encrypt\b/.test(buf.toString('latin1'));
+  } finally {
+    closeSync(fd);
+  }
+}
+
+// Decrypt-probe: an ENCRYPTED PDF that no canHandle claimed by NAME is offered to
+// the password-holding parsers in probe-priority order (cas-mf, then
+// contract-note). A parser "claims" the file only when its OWN password decrypts
+// AND it structurally parses (result.claimed) — a wrong-password / not-my-format
+// file declines and falls through to the next, ultimately parking UNRECOGNIZED.
+// The probe run IS the real run (no double-parse); a declining parser writes
+// nothing (run.py returns SKIP / no-parse without a KV push). Returns the
+// claiming parser + its PASS|FAIL result, or null if none claimed.
+export async function probeEncrypted(fileInfo, parsers, { dry = false, log = console.log } = {}) {
+  const probers = parsers
+    .filter((p) => p.probeEncrypted)
+    .sort((a, b) => a.probeEncrypted - b.probeEncrypted);
+  for (const p of probers) {
+    let res;
+    try {
+      res = await p.run(fileInfo, { dry });
+    } catch (e) {
+      res = { status: 'FAIL', reason: e?.message || String(e), claimed: false };
+    }
+    if (res?.claimed) {
+      log(`ingest: decrypt-probe — ${fileInfo.name} claimed by ${p.id}${dry ? ' (dry)' : ''}`);
+      return { parser: p, result: res };
+    }
+  }
+  return null;
 }
 
 // Move into a quarantine/park dir; a name collision gets a sha prefix so a
@@ -78,31 +129,40 @@ export async function processFile(path, { parsers, manifestPath, dirs, source, d
   };
   const base = { file, sha256, size: sniff.size, source };
 
-  // 1. classify — no parser claims it → park, never drop
-  const parser = classify({ name: file, head: sniff.head, headText: sniff.headText }, parsers);
+  // 1. layer-(i) dedup FIRST — same bytes already PASSed. Byte-based and
+  //    parser-independent, so it runs before the (possibly expensive) classify/
+  //    decrypt-probe: a re-dropped file never re-spawns a parser to learn it's a dup.
+  const shaDup = dupBySha(manifest, sha256);
+  if (shaDup) {
+    if (!dry) unlinkSync(path);
+    log(`ingest: [DUP] ${file} — same bytes as ${shaDup.file} (${shaDup.ts})${dry ? ' (dry)' : ''}`);
+    return commit({ ...base, parser: shaDup.parser, status: 'DUP', of: shaDup.sha256, reason: 'sha256 match' });
+  }
+
+  // 2. classify by NAME; if unclaimed AND an encrypted PDF, decrypt-probe the
+  //    password-holding parsers before parking (the probe run yields `result`).
+  let parser = classify({ name: file, head: sniff.head, headText: sniff.headText }, parsers);
+  let result = null;
+  if (!parser && isEncryptedPdf(path, sniff.head)) {
+    const probed = await probeEncrypted({ path, name: file, sha256, size: sniff.size }, parsers, { dry, log });
+    if (probed) { parser = probed.parser; result = probed.result; }
+  }
   if (!parser) {
     if (!dry) moveInto(dirs.unrecognized, path, sha256);
     log(`ingest: [UNRECOGNIZED] ${file} — parked${dry ? ' (dry)' : ''}`);
     return commit({ ...base, status: 'UNRECOGNIZED', reason: 'no parser claimed the file' });
   }
 
-  // 2. layer-(i) dedup — same bytes already PASSed
-  const shaDup = dupBySha(manifest, sha256);
-  if (shaDup) {
-    if (!dry) unlinkSync(path);
-    log(`ingest: [DUP] ${file} — same bytes as ${shaDup.file} (${shaDup.ts})${dry ? ' (dry)' : ''}`);
-    return commit({ ...base, parser: parser.id, status: 'DUP', of: shaDup.sha256, reason: 'sha256 match' });
-  }
-
-  // 3. parse (throw ⇒ FAIL)
-  let result;
-  try {
-    result = await parser.run({ path, name: file, sha256, size: sniff.size }, { dry });
-    if (!result || (result.status !== 'PASS' && result.status !== 'FAIL')) {
-      result = { status: 'FAIL', reason: `parser ${parser.id} returned no PASS/FAIL status` };
+  // 3. parse (throw ⇒ FAIL) — unless the decrypt-probe already produced the result
+  if (!result) {
+    try {
+      result = await parser.run({ path, name: file, sha256, size: sniff.size }, { dry });
+      if (!result || (result.status !== 'PASS' && result.status !== 'FAIL')) {
+        result = { status: 'FAIL', reason: `parser ${parser.id} returned no PASS/FAIL status` };
+      }
+    } catch (e) {
+      result = { status: 'FAIL', reason: e?.message || String(e) };
     }
-  } catch (e) {
-    result = { status: 'FAIL', reason: e?.message || String(e) };
   }
 
   // 4. layer-(ii) dedup — same document, different bytes (needs the parsed key)
