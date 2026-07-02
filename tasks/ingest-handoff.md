@@ -73,4 +73,11 @@ ALWAYS-READ layer before starting.
 - **Real samples needed from the user:** one contract-note mail, one CAS PDF (+ password
   convention), one payslip PDF, the annual ITR JSONs.
 - **[Unconfirmed → verify live at build]:** GCP "Testing"-mode OAuth refresh tokens expire ~7
-  days (publis
+  days (publish the consent screen if so); casparser coverage of current CAS formats.
+
+## Non-negotiables (repo-wide, enforced in review)
+- Gmail scope `gmail.readonly` ONLY; zero mailbox mutation ever. Brokers untouched/read-only.
+- PANs / statement passwords / OAuth tokens: local gitignored files only — never logged,
+  echoed, committed, or pushed to KV. KV receives redacted DERIVED data only.
+- Raw documents never persisted: PASS → delete, FAIL → quarantine. Seed sanity guard never
+  bypassed. Manifest invariant holds at all times.
