@@ -533,6 +533,27 @@ verification. **How to apply:** every parser/integration phase ends with one REA
 execution (dry mode is fine) before it's marked done; until then the phase log says
 PENDING-REAL-SAMPLE, and wrappers must convert engine crashes to porcelain FAIL rows so the
 first real failure is diagnosable from the manifest, not a truncated traceback.
+- Reinforced (2026-07-02, d2 Astha): the GENERIC contract-note engine LOOKED like it might
+  handle Astha (SEBI-standardised), but only running it on the real note exposed three
+  distinct gaps — broker mis-detected as "dhan" (loose substring), charges as FREE TEXT (no
+  ruled table → checksum N/A), and a "Sub Total" row leaking as a phantom fill. "[Likely]
+  the core carries over" is a hypothesis to TEST per-broker, never a claim to ship.
+
+### A recognised-but-unsupported document is a CLEAR FAIL, not a silent park — and the probe is encryption-gated
+Two reusable principles from the d2 classifier work (2026-07-02):
+- **Decrypt-probe, encryption-gated.** An encrypted PDF whose NAME no parser claims is offered
+  to the password-holding parsers in priority order (cas-mf → contract-note); a parser "claims"
+  it only when its OWN password decrypts AND it structurally parses (`result.claimed`), so a
+  wrong-password/not-mine file declines and falls through, ultimately parking UNRECOGNIZED. Gate
+  the probe on `isEncryptedPdf` (scan head + tail for `/Encrypt`) so a plain unclaimed PDF isn't
+  needlessly spawned through every password parser. The probe run IS the real run (no
+  double-parse); a declining parser writes nothing.
+- **Out-of-scope ≠ parser bug.** The real SEP2025 "CAS" was a CDSL DEPOSITORY statement (demat
+  holdings), not a CAMS/KFintech MF CAS — casparser reads `file_type=CDSL, cas_type=None, 0
+  folios`. The honest verdict is a FAIL whose REASON names the out-of-scope doc type ("CDSL
+  depository CAS … out of scope for ledger:mf"), NOT the bug-sounding "no folios parsed". When
+  refuse-on-fail fires, make the reason distinguish "wrong document type for this ledger" from
+  "right type, couldn't parse" — the manifest reason is the only thing the user reads.
 
 ### State files need ATOMIC writes: unique tmp + fsync + rename — bare writeFileSync is a truncation bug
 P1 (2026-07-02): `data/ingest-manifest.json` was reported truncated mid-append (dangling
@@ -566,6 +587,13 @@ count. (2) Pairs with the truncated-WRITES lesson above: the shared mount is unr
 directions on hot files — treat bash-mount reads of actively-written JSON as advisory only.
 (Cost: a P1 "manifest corruption" filed for a completed write behind a pinned stale cache —
 though the report still surfaced real defects: missing fsync, fixed tmp name, orphaned-writer wedge.)
+EXTENDS BEYOND THE MOUNT: the Cowork sandbox pip resolves against a FROZEN index (~early-2025),
+plain `ls` hides dotfiles (`.venv`, `.env.example` invisible), and even `web_fetch` can serve a
+CDN-stale PyPI page missing recent releases — the releases RSS/JSON API (with pubDates) is the
+fresh source. Caught 2026-07-02: declared `casparser==1.2.1` "fabricated" off two independently
+stale views (frozen pip + stale project page); the live RSS showed it released 24-Jun-2026.
+Rule: before asserting "X doesn't exist" against the Windows side, verify via a dated fresh
+source or have the other environment run the check — stale layers CORROBORATE each other.
 
 ### Re-harvest Stratzy BEFORE giving any algo recommendation — the data is manual + stale
 `data/stratzy-daily.json` is gitignored and BROWSER-harvested from the logged-in stratzy.in

@@ -37,13 +37,27 @@ ALWAYS-READ layer before starting.
    Zerodha/Fyers/Upstox/Dhan today. Real samples are pre-dropped by the user in `inbox/`
    (gitignored). **Sample inventory (probed 2026-07-02, metadata only):**
    - `206403980300724.json` / `926639580260825.json` — ITR-3, AY 2024-25 / AY 2025-26 ✓
-   - `NSEFUTURES_CONTRACT_20230601_AG4907_0125557.pdf` — UNencrypted, "Astha" markers →
-     [Likely] Rupeezy (ex-Astha Trade); page-1 text extraction didn't match "Contract Note"
-     (cover page or extraction quirk — inspect at build).
-   - `CONTRACT NOTE 0258131546.pdf` — ENCRYPTED; [Likely] Groww by elimination — confirm on
-     first decrypt (user adds `CN_PW_*` to the existing `.env`).
-   - `SEP2025_AA47186032_TXN.pdf` — ENCRYPTED, identity unconfirmed (payslip vs transaction
-     statement) — user confirming; route to the right parser once known.
+   - `NSEFUTURES_CONTRACT_20230601_AG4907_0125557.pdf` — USER-CONFIRMED: Astha/Rupeezy
+     contract note. UNencrypted, iTextSharp. **RESOLVED 2026-07-02:** the Astha adapter +
+     the broadened contract-note canHandle (claims bare-"CONTRACT" names) now PASS it →
+     KV `ledger:cn:0125557` (4 F&O fills, total checksum PASS, GST PASS).
+   - `CONTRACT NOTE 0258131546.pdf` — USER-CONFIRMED: Groww. Already CONSUMED: an existing
+     `CN_PW_*` decrypted it and the engine PASSed it as an inert carry/MTM note (manifest
+     row exists). Implication: Groww is PROVISIONALLY covered by the existing engine — no
+     new adapter until a TRADE-BEARING Groww note (backfill will supply) either parses
+     clean (close as covered) or fails (then build the adapter). **Kept provisional — no
+     speculative adapter built.**
+   - `SEP2025_AA47186032_TXN.pdf` — USER-CONFIRMED: a CAS statement sample (encrypted).
+     It parked UNRECOGNIZED because cas-mf's canHandle never claimed it → CLASSIFIER GAP:
+     an ENCRYPTED PDF no parser claims should be ATTEMPTED by the password-holding parsers
+     (cas-mf, then contract-note) before parking — decrypt-probe as a last-resort claim
+     pass. **RESOLVED 2026-07-02:** the decrypt-probe (encryption-gated; cas-mf then
+     contract-note) now CLAIMS it — closing the gap. The file itself turned out to be a
+     **CDSL depository CAS (demat holdings), NOT a CAMS/KFintech MF CAS** — casparser reads
+     `file_type=CDSL, cas_type=None, 0 folios`. So the honest verdict is a clean FAIL:
+     "CDSL depository CAS … out of scope for ledger:mf" (quarantined in inbox/failed/), not a
+     silent UNRECOGNIZED park. If a depository-holdings ledger is ever wanted, that's a new
+     parser; today it's correctly refused.
    Single note per broker + a 2023-dated Rupeezy sample = enough to BUILD adapters; the
    Gmail backfill (h) supplies volume for confidence. Per adapter: parse → per-segment checksum PASS against the note's own
    totals → derive PII-redacted SYNTHETIC fixtures for `test_engine.py` (the raw note is
@@ -71,4 +85,23 @@ ALWAYS-READ layer before starting.
 10. **(j) `scripts/ingest-reconcile.mjs`** — REPORT-ONLY, per the plan's authority order
     (parsed ITR anchor → checksum-PASS docs → broker API → hand-curated) and the
     cross-granularity invariant (notes SUM to ITR FY schedules; Schedule S vs PAYSLIPS).
-    Apply corp-action adjustment
+    Apply corp-action adjustments BEFORE flagging any MF drift (CUB lesson).
+
+## User-side prerequisites (generate docs first, then STOP and wait)
+- **GCP setup (plan step a):** write `mcp/gmail/README.md` as a click-by-click walkthrough
+  (project → Gmail API + Pub/Sub → OAuth desktop client `gmail.readonly` → topic `gmail-tx` +
+  grant `gmail-api-push@system.gserviceaccount.com` publisher → pull subscription → SA key →
+  Gmail filter → label `portfolio/tx`), then wait for the user to complete it and provide the
+  client-secret file. Everything through phase (b)–(e2) builds and tests WITHOUT GCP (fixtures
+  + `--dry`).
+- **Real samples needed from the user:** one contract-note mail, one CAS PDF (+ password
+  convention), one payslip PDF, the annual ITR JSONs.
+- **[Unconfirmed → verify live at build]:** GCP "Testing"-mode OAuth refresh tokens expire ~7
+  days (publish the consent screen if so); casparser coverage of current CAS formats.
+
+## Non-negotiables (repo-wide, enforced in review)
+- Gmail scope `gmail.readonly` ONLY; zero mailbox mutation ever. Brokers untouched/read-only.
+- PANs / statement passwords / OAuth tokens: local gitignored files only — never logged,
+  echoed, committed, or pushed to KV. KV receives redacted DERIVED data only.
+- Raw documents never persisted: PASS → delete, FAIL → quarantine. Seed sanity guard never
+  bypassed. Manifest invariant holds at all times.

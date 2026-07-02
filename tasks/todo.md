@@ -39,10 +39,23 @@ POINT (`inbox/`) + the LEDGER of ingestion (`ingest-manifest`), not the storage.
    `{id, canHandle(file) [filename pattern + content sniff], run(file) → {naturalKey, target,
    status}, expects (cadence spec)}`. Initial registry (existing scripts WRAPPED, not rewritten):
    - `contract-note` → `scripts/contract-parser/run.py` (naturalKey = note number → KV `ledger:cn:*`).
-     **EXTEND: Groww + Rupeezy adapters (NEW — existing engine covers only Zerodha/Fyers/
-     Upstox/Dhan).** [Likely] same SEBI-standardised note format so the core reconciling
-     carries over, but each broker ships only with its own adapter + synthetic regression
-     fixtures (test_engine.py discipline) + per-segment checksum PASS on a real sample.
+     **EXTEND: Groww + Rupeezy adapters (NEW — existing engine covered only Zerodha/Fyers/
+     Upstox/Dhan).**
+     - **Rupeezy/Astha — DONE + VERIFIED (2026-07-02).** Real note
+       `NSEFUTURES_CONTRACT_20230601_AG4907_0125557.pdf` (unencrypted) now PASSes → KV
+       `ledger:cn:0125557` (broker astha, 4 F&O fills, total checksum PASS residual 0.0, GST
+       PASS). Engine adapter: `detect_broker` recognises astha/asthatrade/rupeezy (BEFORE the
+       loose "dhan" substring); `extract_tables_for` uses the text-position row strategy
+       (Astha rules columns, not rows, like Upstox); `parse_charges_from_text` reads the
+       FREE-TEXT charges block (Astha has no ruled charges table) via the SHARED `label_key`,
+       negating unsigned charge magnitudes to the debit convention; "Sub Total" added to the
+       phantom-fill trap. 19 synthetic fixtures; 247 contract-parser tests green. Registry
+       wrapper `contract-note.mjs` canHandle broadened to claim bare-"CONTRACT" filenames.
+     - **Groww — PROVISIONALLY COVERED (verify on first trade-bearing note).** The existing
+       engine already decrypted `CONTRACT NOTE 0258131546.pdf` and PASSed it as an inert
+       carry/MTM note (manifest row exists). Per the handoff, NO speculative adapter: the
+       first TRADE-bearing Groww note the Gmail backfill delivers either parses clean (close
+       as covered) or FAILs (then build the adapter). Refuse-on-fail protects until then.
      User provides real samples via `inbox/`; passwords as new `CN_PW_*` entries in the
      existing gitignored `.env`.
    - `cas-mf` → NEW `scripts/cas-parser/` (naturalKey = statement period + folio-set hash → KV
