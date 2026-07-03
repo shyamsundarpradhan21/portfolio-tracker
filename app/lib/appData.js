@@ -21,6 +21,7 @@ export const APP = {
   snapSleeves: {},
   snapMd: '',
   fnoRealized: null,   // per-FY × broker F&O realized + all-time (data/broker-tax.json)
+  eodBook: null,       // latest EOD close snapshot for the net-worth close-fallback (data/eod-book.json → KV eod-book:latest); DORMANT — no consumer yet (Sub-step B hero switch held)
 };
 
 export function hydrateAppData(d) {

@@ -46,6 +46,34 @@ export async function loadPortfolio() {
   return (await fromKV()) || (await fromFile());
 }
 
+// EOD book — the durable per-holding close snapshot (built by scripts/build-eod-book.mjs).
+// Returns the LATEST day record { date, asOf, sleeveValues, sleeves, reconcile, dataQuality }
+// or null. Prod source = KV `eod-book:latest` (serving copy); local dev falls back to the
+// gitignored data/eod-book.json (all days → latest). Graceful: null → the client keeps its
+// live-quote behaviour unchanged (the close-fallback consumer treats null as "no book").
+export async function loadEodBook() {
+  const creds = kvCreds();
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', 'eod-book:latest']),
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (j?.result) return JSON.parse(j.result);
+    } catch { /* fall through to the local file */ }
+  }
+  try {
+    const b = JSON.parse(await readFile(join(process.cwd(), 'data', 'eod-book.json'), 'utf8'));
+    const d = Object.keys(b.days || {}).sort().pop();
+    return d ? { date: d, ...b.days[d] } : null;
+  } catch {
+    return null;
+  }
+}
+
 // Phase 2c: the dormant F&O charge overlay (real NCLFO charges, by Broker|date), applied onto the
 // committed fno-ledger at request time. Returns null if KV/the key is unreachable -> caller falls
 // back to the committed file unchanged (graceful; never breaks /api/portfolio).

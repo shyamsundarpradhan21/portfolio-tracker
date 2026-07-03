@@ -547,14 +547,14 @@ function Dashboard() {
 
   // ─── derived: US ────────────────────────────────────────────────────────────
   const usData = useMemo(() => {
-    let inv = 0, val = 0;
+    let inv = 0, val = 0, valued = true;
     const rows = US.map((s) => {
       const q = prices[s.sym]; const lp = q && !q.error ? q.price : null;
       const v = lp != null ? s.qty * lp : null; const pl = v != null ? v - s.inv : null;
-      inv += s.inv; if (v != null) val += v;
+      inv += s.inv; if (v != null) val += v; else valued = false;   // valued guard (was missing — audit flag): a US quote failure must drop the hero to the book close, not silently undercount
       return { ...s, livePrice: lp, liveVal: v, livePl: pl, livePct: pl != null && s.inv ? (pl / s.inv) * 100 : null, dayPct: q && !q.error ? q.pct : null };
     });
-    return { rows, inv, val, pl: val - inv, pct: inv ? ((val - inv) / inv) * 100 : 0 };
+    return { rows, inv, val, valued, pl: val - inv, pct: inv ? ((val - inv) / inv) * 100 : 0 };
   }, [prices]);
 
   const usSorted = useMemo(() => {
@@ -717,6 +717,17 @@ function Dashboard() {
     const cmpsVestYear = CMPS_VEST_DATE.getFullYear();
     return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService, cmpsVested, cmpsVestYear };
   }, [indianEq.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
+
+  // Sub-step B — EOD-book close fallback for the hero net worth. When live quotes aren't
+  // fully resolved (Yahoo failed / pre-load / laptop-off) we mark net worth from the
+  // durable EOD close (APP.eodBook, served) instead of a skeleton, and LABEL it "at close".
+  // SAME F&O-EXCLUDED NW definition as the live path (the book's netWorth is built from the
+  // same sleeves). Graceful: no book → skeleton exactly as before. (F&O-in-NW is a separate
+  // decision — see tasks/resilience-benchmark.md; this does NOT change what's counted.)
+  const nwBook     = APP.eodBook?.sleeveValues?.netWorth ?? null;
+  const liveMarked = indianEq.valued && usData.valued && !!usdInr;
+  const bookMark   = !liveMarked && nwBook != null;
+  const bookDate   = APP.eodBook?.date || (APP.eodBook?.asOf || '').slice(0, 10);
 
   const projInvested0 = useMemo(() => {
     const gains = (indianEq.pl || 0) + (usData.pl || 0) * fxRate + (mf.totVal - mf.totCost) + (fds.accrued || 0);
@@ -1173,7 +1184,7 @@ function Dashboard() {
             <div className="topbar-left">
               {/* Net worth — live LABEL only (the figure stays in the hero). Opens Overview. */}
               <button className={'topbar-nw' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview — net worth (excl. trading)">
-                <span className="topbar-nw-lbl">Net worth — live <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
+                <span className="topbar-nw-lbl">Net worth — {bookMark ? 'at close' : 'live'} <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
               </button>
             </div>
             <div className="topbar-center">
@@ -1196,13 +1207,21 @@ function Dashboard() {
             {/* Live net worth — clicking it opens Overview. Assets/Liabilities are figures only. */}
             <button ref={heroBtnRef} className={'hdr-hero' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview">
               <div key={heroKey} ref={heroValRef} className={'hdr-val' + (heroKey > 0 ? ' hdr-val-enter' : '') + (ath ? ' ath-moment' : '')}>
-                {indian.valued && usdInr ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} /> : <Skel w={150} h={36} />}
+                {liveMarked
+                  ? <AnimatedNumber value={ov.nw} render={(n) => <InrC n={n} />} />
+                  : bookMark
+                    ? <InrC n={nwBook} />
+                    : <Skel w={150} h={36} />}
               </div>
               <div className="page-header-sub" ref={heroSubRef}>
+                {bookMark ? (
+                  /* live quotes unavailable → net worth marked from the durable EOD close */
+                  <div><span style={{ opacity: 0.7 }}>at close · {bookDate}</span>{' · live prices unavailable'}</div>
+                ) : (<>
                 {/* line 1 — assets (with the CMPF flag, since it has no own card) */}
                 <div>
-                  Assets <strong>{indian.valued && usdInr ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
-                  {indian.valued && usdInr && (
+                  Assets <strong>{liveMarked ? <AnimatedNumber value={ov.totalAssets} render={(n) => <InrC n={n} />} /> : '—'}</strong>
+                  {liveMarked && (
                     <span style={{ whiteSpace: 'nowrap' }}
                       title={`Indian ${inrFull(Math.round(indianEq.val))} (incl. swing) + US ${inrFull(Math.round(ov.usInr))} + FD ${inrFull(Math.round(ov.fdValue))} + MF ${inrFull(Math.round(mf.totVal))} + CMPF ${inrFull(Math.round(ov.pfValue))}`}>
                       {' '}(incl. <InrC n={ov.pfValue} /> CMPF)
@@ -1213,7 +1232,7 @@ function Dashboard() {
                     trail DIMMED as a passing note, so the dim/bright contrast keeps the
                     two from reading alike */}
                 <div>
-                  {indian.valued && usdInr ? (
+                  {liveMarked ? (
                     <span style={{ whiteSpace: 'nowrap' }}
                       title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; F&O realised)`}>
                       incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
@@ -1222,6 +1241,7 @@ function Dashboard() {
                   {' · '}
                   <span style={{ whiteSpace: 'nowrap', opacity: 0.5 }}>Liabilities <strong style={{ color: 'var(--red)' }}><InrC n={ov.loan} /></strong></span>
                 </div>
+                </>)}
               </div>
             </button>
 

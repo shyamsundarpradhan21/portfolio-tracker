@@ -103,8 +103,11 @@ export function reconcileSleeve(curated, key) {
     else if (Math.abs((c.cost || 0) - cost) > Math.max(0.01, 0.001 * cost)) {
       drift.push({ sym: c.sym, kind: 'avg', app: c.cost, broker: cost });
     }
-    return { ...c, qty, cost, inv: +(qty * cost).toFixed(2),
-             live: { ltp: b.ltp ?? null, pnl: b.pnl ?? null, dayPct: b.dayPct ?? null } };
+    // broker drives qty + avg (drift + cost basis); the per-holding snapshot price
+    // (ltp/pnl/dayPct) is intentionally NOT surfaced — the app re-prices every holding
+    // live off /api/quotes (Yahoo), so it was a dead field read by no valuation/display
+    // path (equity.mjs discards it as stale too). Retired.
+    return { ...c, qty, cost, inv: +(qty * cost).toFixed(2) };
   });
   // Anything the broker holds that the curated sleeve doesn't know about — a buy
   // never added. Surface it as drift (it has no metadata, so we don't inject it).
