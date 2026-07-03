@@ -72,3 +72,18 @@ for (const s of report.staleness) {
   const state = s.stale ? 'STALE' : 'ok   ';
   console.log(`  ${state} ${s.parser.padEnd(14)} ${s.cadence.padEnd(16)} last PASS ${s.lastPass ? `${s.lastPass.slice(0, 10)} (${s.ageDays}d ago)` : 'never'}`);
 }
+
+const u = report.unresolved;
+console.log(`\nunresolved intake (didn't reach the clean ledger — quarantined/parked as files):`);
+console.log(`  FAILED: ${u.failed.total} row(s)`);
+for (const g of u.failed.groups) {
+  const eg = g.examples.slice(0, 2).join(', ') + (g.examples.length > 2 || g.count > g.examples.length ? ' …' : '');
+  console.log(`    ${g.parser.padEnd(14)} ${g.reasonClass.padEnd(16)} ×${g.count}  e.g. ${eg}`);
+}
+if (!u.failed.total) console.log('    none');
+console.log(`  UNRECOGNIZED: ${u.unrecognized.total} row(s) across ${u.unrecognized.distinct} file(s)`);
+for (const f of u.unrecognized.files.slice(0, 10)) {
+  console.log(`    ${f.file}${f.attempts > 1 ? ` (×${f.attempts})` : ''}`);
+}
+if (u.unrecognized.files.length > 10) console.log(`    … +${u.unrecognized.files.length - 10} more`);
+if (!u.unrecognized.total) console.log('    none');

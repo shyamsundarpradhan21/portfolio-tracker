@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { emptyManifest, appendRow } from './manifest.mjs';
 import {
   monthRange, expectedNoteDays, noteGaps, monthlyGaps, payslipMonth, casMonth,
-  itrGaps, staleness, buildReport,
+  itrGaps, staleness, buildReport, reasonClass, unresolvedTally,
 } from './report.mjs';
 
 const sha = (s) => s.padEnd(64, '0');
@@ -110,6 +110,86 @@ describe('staleness', () => {
   });
 });
 
+describe('unresolved intake (FAIL + UNRECOGNIZED accumulation)', () => {
+  const fail = (m, parser, file, reason, ts) =>
+    appendRow(m, { file, sha256: sha(file), source: 'manual', status: 'FAIL', parser, reason, ...(ts ? { ts } : {}) });
+  const fail2 = (m, parser, file, key, reason, ts) =>   // FAIL carrying a naturalKey (real CN rows do)
+    appendRow(m, { file, sha256: sha(file), source: 'manual', status: 'FAIL', parser, naturalKey: key, reason, ...(ts ? { ts } : {}) });
+  const unrec = (m, file, ts) =>
+    appendRow(m, { file, sha256: sha(file), source: 'manual', status: 'UNRECOGNIZED', reason: 'no parser claimed the file', ...(ts ? { ts } : {}) });
+
+  it('classifies fail reasons into coarse buckets (real manifest reasons)', () => {
+    expect(reasonClass('REFUSED: checksum FAIL')).toBe('checksum-fail');
+    expect(reasonClass("account 1: balance 874.5 != sum(values) 0 (holdings don't reconcile)")).toBe('reconcile-fail');
+    expect(reasonClass('no CAS_PW_* decrypts')).toBe('password/decrypt');
+    expect(reasonClass('no CAS_PW_* in scripts/cas-parser/.env')).toBe('password/decrypt');
+    expect(reasonClass('CDSL depository CAS (demat holdings) — not a CAMS/KFintech MF CAS; out of scope for ledger:mf')).toBe('out-of-scope');
+    expect(reasonClass('cas-parser gave no porcelain status (exit 1): Traceback (most recent call last):')).toBe('engine-error');
+    expect(reasonClass('no folios parsed')).toBe('empty-parse');
+    expect(reasonClass('parse-payslip --write exit 1 (slip already copied to data/reports/)')).toBe('wrapper-error');
+    expect(reasonClass('something unforeseen')).toBe('other');
+    expect(reasonClass(null)).toBe('unspecified');
+  });
+
+  it('groups FAIL by (parser, reason-class); UNRECOGNIZED collapse to logical files', () => {
+    const m = emptyManifest();
+    fail(m, 'contract-note', 'CN_A.pdf', 'REFUSED: checksum FAIL', '2026-06-01T00:00:00Z');
+    fail(m, 'contract-note', 'CN_B.pdf', 'REFUSED: checksum FAIL', '2026-06-02T00:00:00Z');
+    fail(m, 'cas-mf', 'MAY2023_TXN.pdf', "account 1: balance 859.5 != sum(values) 0 (holdings don't reconcile)", '2026-06-03T00:00:00Z');
+    unrec(m, 'NSEFUTURES.pdf', '2026-06-04T00:00:00Z');
+    unrec(m, 'deadbeef-NSEFUTURES.pdf', '2026-06-05T00:00:00Z');   // re-drop of the SAME logical file
+    unrec(m, 'QR.png', '2026-06-06T00:00:00Z');
+
+    const u = unresolvedTally(m);
+    expect(u.failed.total).toBe(3);
+    expect(u.failed.groups[0]).toMatchObject({ parser: 'contract-note', reasonClass: 'checksum-fail', count: 2 }); // biggest first
+    expect(u.failed.groups[0].examples).toEqual(['CN_A.pdf', 'CN_B.pdf']);
+    expect(u.failed.groups.find((g) => g.parser === 'cas-mf').reasonClass).toBe('reconcile-fail');
+
+    expect(u.unrecognized.total).toBe(2);       // distinct logical files (current-state, not events)
+    expect(u.unrecognized.distinct).toBe(2);    // 2 logical files (NSEFUTURES collapsed across the sha-prefix re-drop)
+    const nse = u.unrecognized.files.find((f) => f.file === 'NSEFUTURES.pdf');
+    expect(nse.attempts).toBe(2);               // both re-drop events still tracked as attempts
+    expect(u.unrecognized.files[0].file).toBe('QR.png');  // latest-first
+  });
+
+  it('supersede: a FAIL resolved by a LATER PASS of the same naturalKey is excluded (current-state)', () => {
+    const m = emptyManifest();
+    // CN-1: FAILed, then re-ingested & PASSed later (different bytes) -> resolved, must NOT count
+    fail2(m, 'contract-note', 'CN_A.pdf', 'CN-1', 'REFUSED: checksum FAIL', '2026-07-01T00:00:00Z');
+    appendRow(m, { file: 'CN_A.pdf', sha256: sha('CN_A_v2'), source: 'reingest:fix', status: 'PASS', parser: 'contract-note', naturalKey: 'CN-1', ts: '2026-07-03T00:00:00Z' });
+    // CN-2: still failing (no PASS) -> the only survivor
+    fail2(m, 'contract-note', 'CN_B.pdf', 'CN-2', 'REFUSED: checksum FAIL', '2026-07-02T00:00:00Z');
+    const u = unresolvedTally(m);
+    expect(u.failed.total).toBe(1);   // CN-1 superseded by its later PASS; only CN-2 remains
+    expect(u.failed.groups).toHaveLength(1);
+    expect(u.failed.groups[0]).toMatchObject({ parser: 'contract-note', reasonClass: 'checksum-fail', count: 1 });
+    expect(u.failed.groups[0].examples).toEqual(['CN_B.pdf']);
+  });
+
+  it('supersede is document-scoped: a PASS of a DIFFERENT key does not clear a failing doc', () => {
+    const m = emptyManifest();
+    fail2(m, 'contract-note', 'X.pdf', 'CN-9', 'REFUSED: checksum FAIL', '2026-07-01T00:00:00Z');
+    appendRow(m, { file: 'Y.pdf', sha256: sha('Y'), source: 'reingest', status: 'PASS', parser: 'contract-note', naturalKey: 'CN-OTHER', ts: '2026-07-03T00:00:00Z' });
+    expect(unresolvedTally(m).failed.total).toBe(1);   // CN-9 still failing; CN-OTHER's PASS is unrelated
+  });
+
+  it('re-drops of the same failing document count once (logical, not events)', () => {
+    const m = emptyManifest();
+    fail2(m, 'contract-note', 'CN.pdf', 'CN-1', 'REFUSED: checksum FAIL', '2026-07-01T00:00:00Z');
+    fail2(m, 'contract-note', 'deadbeef-CN.pdf', 'CN-1', 'REFUSED: checksum FAIL', '2026-07-02T00:00:00Z');  // re-drop, same key
+    expect(unresolvedTally(m).failed.total).toBe(1);   // 2 FAIL events, 1 logical document
+  });
+
+  it('PASS and DUP rows never enter the unresolved tally', () => {
+    const m = emptyManifest();
+    pass(m, 'payslip', '2026-06');
+    appendRow(m, { file: 'dup.pdf', sha256: sha('d'), source: 'manual', status: 'DUP', parser: 'payslip', of: sha('x') });
+    const u = unresolvedTally(m);
+    expect(u).toEqual({ failed: { total: 0, groups: [] }, unrecognized: { total: 0, distinct: 0, files: [] } });
+  });
+});
+
 describe('buildReport', () => {
   it('assembles all sections', () => {
     const m = emptyManifest();
@@ -125,5 +205,6 @@ describe('buildReport', () => {
     expect(r.payslips.gaps).toEqual(['2026-07']);
     expect(r.itr.gaps.length).toBeGreaterThan(0);
     expect(r.staleness).toHaveLength(1);
+    expect(r.unresolved).toEqual({ failed: { total: 0, groups: [] }, unrecognized: { total: 0, distinct: 0, files: [] } });
   });
 });
