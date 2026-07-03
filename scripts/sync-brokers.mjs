@@ -213,7 +213,8 @@ async function pullUpstox() {
   if (hold.json?.status === 'error') throw new Error(hold.json.errors?.[0]?.message || 'holdings error');
   const rows = (hold.json?.data || []).map((d) => ({
     sym: d.tradingsymbol, qty: d.quantity, avg: d.average_price,
-    ltp: d.last_price, pnl: d.pnl, dayPct: d.day_change_percentage,
+    // ltp/pnl/dayPct dropped — the app re-prices SWING live off /api/quotes (Yahoo)
+    // and never read the snapshot price (equity.mjs discards it too). Dead field retired.
   }));
   const pos = await getJSON('https://api.upstox.com/v2/portfolio/short-term-positions', H);
   const fnoRows = (Array.isArray(pos.json?.data) ? pos.json.data : []).map(normFnoUpstox).filter(Boolean);
