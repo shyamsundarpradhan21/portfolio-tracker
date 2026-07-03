@@ -46,8 +46,8 @@ deliberately drops `STATIC.algo`, and the EOD book has no F&O sleeve. **Stalenes
 F&O isn't in** — so the beach number holds, but the reason is **exclusion, not immateriality.** Two
 consequences: (a) the headline **permanently understates true wealth by ~36%** (~₹7L invisible);
 (b) the instant F&O is counted in NW, resilience splits by **HOW** it's counted — a *live-marked*
-sleeve flips this section, a *book-valued business-equity* line preserves it (the intended
-resolution). See the two-branch revisit trigger.
+sleeve flips this section, a *book-valued business-equity* line preserves it — the **ADOPTED
+resolution** (2026-07-04). See the two-branch revisit trigger.
 
 ### Composition — **STATIC, one drift source**
 KV `portfolio:v1` is frozen at the last seed. If not trading manually, composition holds.
@@ -135,12 +135,13 @@ gates it. But **"counting F&O breaks resilience" is only HALF the truth** — it
   and **labeled "at close · DATE"** like the rest of the book. During absence it's stale *but honestly
   marked as a close, not live*; on return the notes reconstruct the realised → the account value → the
   EOD-book rebuild corrects the line — **the same return-reconcile as the personal sleeves.**
-  → **return-reconcile HOLDS.** ← **the intended resolution.**
+  → **return-reconcile HOLDS.** ← **the ADOPTED resolution — the chosen path (2026-07-04).**
 
-**So the tripwire is not "F&O is counted" — it is "F&O is counted AS A LIVE SLEEVE."** Counting it as
-a book-valued business-equity rollup keeps the whole benchmark intact (no cloud-ingest forced). The
-earlier (a)/(b) live-mark follow-on is **superseded** by that single book-valued line — to be
-specified in `tasks/business-entity-model.md` once the business-entity model is adopted.
+**So the tripwire is not "F&O is counted" — it is "F&O is counted AS A LIVE SLEEVE."** The **chosen
+path** counts F&O as a book-valued business-equity rollup, which keeps the whole benchmark intact:
+**"accept return-reconcile" HOLDS and no cloud-ingest is forced.** The earlier (a)/(b) live-mark
+follow-on is **superseded** by that single book-valued line — specified in
+`tasks/business-entity-model.md` (adopted 2026-07-04).
 
 ## Cross-link
 This is the resilience benchmark for the same live-overlay / durable-anchor architecture in

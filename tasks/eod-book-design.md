@@ -92,10 +92,20 @@ cosmetic, not a fix.)
 - **Rollback:** delete the artifact + script (dormant → nothing depends on it) or revert the cron. Trivial.
 - **Untouched:** `/api/quotes`, composition inputs, MF/FD sources.
 
+## Future sleeve — `TRADING_EQUITY` (business-entity model, ADOPTED 2026-07-04)
+A future book line will carry the owner's stake in the trading business as a SINGLE **book-valued**
+value: `own account value + open MTM − client capital − business liabilities` (from `broker-state.funds`
++ positions + `ALGO.split`). The book's `netWorth` then becomes `personal sleeves − loan + TRADING_EQUITY`.
+This is the F&O-into-NW resolution — a book-valued rollup, **NOT** a live-marked sleeve (which would
+break long-absence resilience). It **supersedes** the earlier a/b live-mark follow-on. Full spec +
+bookkeeping (contributions/drawings ledger, client-liability tracking): `tasks/business-entity-model.md`.
+**DESIGN ONLY — not in the builder or `page.js` yet; a separate gated build.**
+
 ## Resilience benchmark
 The long-absence (6-month-vacation) stress test lives in `tasks/resilience-benchmark.md`: value
 survives on cloud pricing, composition is static except corp-action drift (caught here on return),
 and the broker-reconcile step below **is** the return-reconcile that heals the note/realised backlog.
+The `TRADING_EQUITY` line above is book-valued precisely so it return-reconciles the same way.
 
 ## Open follow-up (not part of this design)
 Close the 3 equity gaps at source — chase the missing delivery notes (ZYDUSLIFE/PRICOLLTD on
