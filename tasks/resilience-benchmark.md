@@ -37,13 +37,15 @@ Net worth renders live off cloud pricing × the last-seeded composition. **The h
 trustworthy on the beach.** (Caveat: intraday/Day-curve views go stale — KV tapes are TTL-3d so
 they expire, and the committed archives are frozen at the last laptop commit. Value ≠ intraday.)
 
-**Why the F&O staleness doesn't matter — the LOAD-BEARING reason.** Value survives not merely
-because pricing is cloud, but because **deployed algo (F&O) capital is <1% of net worth.** The
-99%+ that moves the headline — equity, US, MF, FD — is priced cloud-side off static composition;
-the one sleeve that *does* go stale during absence (F&O positions + realised) is a **rounding error**
-on net worth. Cloud pricing carries the 99%; the <1% F&O staleness is immaterial. **This — not the
-resilience of the ingest pipeline — is the real reason the beach number holds.** The pipeline being
-laptop-side would matter if F&O were a material fraction; it isn't (see the revisit trigger below).
+**Why the F&O staleness doesn't matter TODAY — the LOAD-BEARING reason (CORRECTED 2026-07-04).**
+The earlier "<1% → rounding error" claim was **wrong**: **own F&O is ~36% of net worth** (own algo
+capital ≈ ₹6.9–7.4L — `STATIC.algo` 730k = `ALGO.s01.own` 390k + `ALGO.s02.own` 340k, of which
+~₹6.9L is F&O excluding the ₹40k s02 swing — against the ₹19.4L NW). Value survives not because F&O
+is small, but because **F&O is EXCLUDED from the headline net-worth definition**: `page.js:704-708`
+deliberately drops `STATIC.algo`, and the EOD book has no F&O sleeve. **Staleness can't move a number
+F&O isn't in** — so the beach number holds, but the reason is **exclusion, not immateriality.** Two
+consequences: (a) the headline **permanently understates true wealth by ~36%** (~₹7L invisible);
+(b) the instant F&O is ever counted in NW, this whole section flips — see the revisit trigger.
 
 ### Composition — **STATIC, one drift source**
 KV `portfolio:v1` is frozen at the last seed. If not trading manually, composition holds.
@@ -117,19 +119,20 @@ so you can see trading is happening remotely) while the **PAN-parsing stays lapt
 still return-reconciles. That's a fraction of the full-cloud lift with no posture change.
 
 ## REVISIT TRIGGER
-This recommendation is load-bearing on **deployed algo (F&O) capital being <1% of net worth** — the
-reason F&O staleness is a rounding error today. **When that fraction becomes material** (the algo
-book is scaled up, or net worth otherwise concentrates in F&O), the stale-F&O sleeve **stops being
-a rounding error**: a multi-month blind spot on live realised/positions turns into a real mismark on
-the headline. **At that point, revisit the ingest location:**
+Earlier framed as "when algo capital *becomes* a material fraction of NW." **Correction: it already
+IS material — own F&O is ~36% of NW.** The trigger's magnitude condition is **already met**; it is
+gated ONLY by the current **exclusion** of F&O from the headline. So the tripwire is not "when F&O
+grows" but **"the moment F&O is counted in net worth."** At that point a multi-month blind spot on
+~36% of NW becomes a real mismark — a plausible ±15–20% algo swing over 6 months ≈ **±₹1.0–1.4L ≈
+5–7% of NW**, far beyond any tolerable error band — and "accept return-reconcile" no longer holds.
+**Then revisit the ingest location:**
 - First step up to **cloud archive-only** (remote visibility that the algos are trading; PANs still
   parsed on return) — the privacy-preserving minimum.
 - Escalate to **full cloud-ingest** only if live realised *during* absence becomes a hard
   requirement, accepting the Python-parser-on-Vercel lift + the PANs-in-cloud posture change.
 
-**Tripwire:** when the F&O sleeve's plausible absence-drift could move headline net worth beyond
-your acceptable error band (today: immaterial at <1%). Re-run this benchmark whenever the algo
-capital allocation is increased.
+**Tripwire:** F&O being wired into the net-worth definition (the held (a)/(b) F&O-in-NW decision).
+Until then "accept return-reconcile" holds — but **via exclusion, not immateriality.**
 
 ## Cross-link
 This is the resilience benchmark for the same live-overlay / durable-anchor architecture in
