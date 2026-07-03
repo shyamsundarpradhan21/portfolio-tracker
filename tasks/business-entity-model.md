@@ -76,15 +76,24 @@ confirmed live**, exact fields from the API doc (live-VALUE pull pending its fun
 | **Upstox** (s02) | `GET https://api.upstox.com/v2/user/payments/payin` and `…/payout` — last 20 txns; **funds-service window 5:30 AM–12:00 AM IST** | `amount, mode, status, currency, bank_name, transaction_id, created_at` |
 | **Fyers** (s02) | funds/statement API — only if it ever holds capital (₹0 today) | — |
 
-**Dhan classification — LIVE narration values (the doc's `"PAYBNK"` was WRONG):**
-| `narration` | `voucherdesc` | → ledger type |
-|---|---|---|
-| `Funds Deposited` | Money added to your Trading Account | **contribution** (credit) |
-| `Funds Withdrawal` | Money withdrawn to your Bank Account | **drawing** (debit) |
-| `Monthly Settlement` | Money transferred to your Bank Account due to Monthly Settlement | **drawing** (SEBI auto-sweep to bank) |
-| `Trades Executed` | Trades Executed for the Day in F&O | trade P&L → **skip** (already in the realised ledger) |
-| `Intraday Square Off Charges` / `SLB Fees` | … | business **expense** |
-| `OPENING BALANCE` / `CLOSING BALANCE` | — | **skip** (markers) |
+**Dhan classification — verified against the FULL 2024→ history (the 3a build, not just one month):**
+| `narration` | → ledger type |
+|---|---|
+| `Funds Deposited` | **contribution** (credit) |
+| `Funds Withdrawal` | **drawing** (debit) |
+| `Monthly Settlement` · `Quarterly Settlement` | **drawing** (SEBI running-account auto-sweep to bank) |
+| `Trades Executed` | **realised** — daily net F&O settlement cash; Σ = the full-history realised the reconciliation uses (the fno-ledger is windowed) |
+| `DP Transaction Charges` · `Delayed Payment Charges` · `Margin Interest` · `Auto square off/Call & Trade Charges` · `Bank Update Charges` · `Intraday Square Off Charges` · `SLB Fees` | business **expense** (account-level, distinct from trading charges) |
+| `Other Debit` / `Other Credit` | **surfaced for manual review** (rare; adjustment or a fund event) |
+| `OPENING BALANCE` / `CLOSING BALANCE` | opening captured for the tie-out; closing skipped |
+
+The recent-month verify only saw `Monthly Settlement` + two charge types; the full-history pull surfaced
+`Quarterly Settlement`, five more charge narrations, and `Other Debit/Credit` — **why the classifier must
+be verified over the whole history, not one month, and why unrecognised narrations are surfaced, not dropped.**
+
+**Reconciliation (cash tie-out → drift flag):** `dhanFunds` vs `opening + netCapital + tradeNet − expenses`,
+where `tradeNet` = Σ `Trades Executed`. Residual drift = client-profit-paid + `Other Debit/Credit` + any
+missing event → flag if large (current data: ~₹51k residual, i.e. the client-profit + Other tail).
 
 Dedup by `vouchernumber` (Dhan) / `transaction_id` (Upstox). **Manual overlay:** tag each Dhan fund-in
 owner-vs-client (Upstox s02 = all owner). Upstox payin/payout are already fund-only (no narration filter).
