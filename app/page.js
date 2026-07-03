@@ -1184,7 +1184,7 @@ function Dashboard() {
             <div className="topbar-left">
               {/* Net worth — live LABEL only (the figure stays in the hero). Opens Overview. */}
               <button className={'topbar-nw' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview — net worth (excl. trading)">
-                <span className="topbar-nw-lbl">Net worth — live <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
+                <span className="topbar-nw-lbl">Net worth — {bookMark ? 'at close' : 'live'} <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
               </button>
             </div>
             <div className="topbar-center">
