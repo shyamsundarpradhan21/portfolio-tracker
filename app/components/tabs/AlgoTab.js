@@ -60,10 +60,10 @@ export default function AlgoTab({
   // Headline capital: the LIVE trading-account total (deployed + free) from the broker funds
   // reads when present — dynamic, moves with the account — else the static own-capital config.
   const ownStatic = ALGO.s01.split.own + ALGO.s02.split.own;
-  // Deployed (own+client) base per strategy → per broker (sleeve map), for the Overview
+  // Deployed own-capital base per strategy → per broker (sleeve map), for the Overview
   // Returns% card. Dhan/Zerodha → S01, Upstox/Fyers → S02; 'all' = combined.
-  const s01Base = ALGO.s01.split.own + ALGO.s01.split.client;
-  const s02Base = ALGO.s02.split.own + ALGO.s02.split.client;
+  const s01Base = ALGO.s01.split.own;
+  const s02Base = ALGO.s02.split.own;
   const deployed = { all: s01Base + s02Base, Dhan: s01Base, Zerodha: s01Base, Upstox: s02Base, Fyers: s02Base };
   // Review cadence → scoped insights (the feed is flat today: only the default cadence
   // carries data; other cadences show a placeholder until the AI run covers them).
@@ -96,22 +96,21 @@ export default function AlgoTab({
       )}
 
       {sub === 'summary' && (<>
-        {/* Capital composition — own vs client + the profit-share, so it's always clear
-            what is yours vs the client's and what your cut is at settlement. */}
+        {/* Capital composition — own capital per strategy (100% owner-owned). */}
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>own + client · profit-share</span>
+            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>own capital</span>
           </div>
           <div className="g2">
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s01.title} · {ALGO.s01.broker}</div>
-              <div className="sub" style={{ margin: 0 }}><RsText>{`Total ${cap(ALGO.s01.split.own + ALGO.s01.split.client)} · Own ${cap(ALGO.s01.split.own)} · Client ${cap(ALGO.s01.split.client)}`}</RsText></div>
-              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of own + {Math.round(ALGO.s01.split.clientProfitShare * 100)}% of client profit at settlement</div>
+              <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s01.split.own)}`}</RsText></div>
+              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of the P&L</div>
             </div>
             <div className="mini">
               <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s02.title} · {ALGO.s02.broker}</div>
               <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s02.split.own)} · F&O ${cap(ALGO.s02.book.fno)} + Swing ${cap(ALGO.s02.book.swing)}`}</RsText></div>
-              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep {Math.round(ALGO.s02.userKeep * 100)}% of profit</div>
+              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of the P&L</div>
             </div>
           </div>
         </div>

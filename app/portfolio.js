@@ -61,13 +61,6 @@ export const CAT_COLORS = {
 
 // ── Logic (reads the containers at call time, so it works after hydration) ────
 
-// User's share of a pooled strategy's P&L (pro-rata by capital, then the
-// profit-share cut on the client slice).
-export const algoOwnFactor = (s) => {
-  const total = s.split.own + s.split.client;
-  return total ? (s.split.own + s.split.client * s.split.clientProfitShare) / total : 1;
-};
-
 // FD cashflows: deployments (newMoney, never pipeline; closed rows kept so history
 // survives redemption).
 export const fdFlows = () =>

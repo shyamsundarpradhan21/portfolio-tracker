@@ -95,5 +95,4 @@ Set `FYERS_ACCESS_TOKEN` instead if you already minted today's token elsewhere.
 ## Arming trading
 
 Only when you mean it: set `FYERS_READONLY=0` (env or the `.mcp.json` block),
-relaunch the client. For an account with client capital, leave it at `1` and
-keep order placement off.
+relaunch the client. Otherwise keep it at `1` (read-only) and keep order placement off.

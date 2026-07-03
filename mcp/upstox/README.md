@@ -76,4 +76,4 @@ D (delivery) | I (intraday) | MTF · instrument_token e.g. `NSE_EQ|INE848E01016`
 ## Arming trading
 
 Only when you mean it: set `UPSTOX_READONLY=0` (env or the `.mcp.json` block) and
-relaunch the client. For an account with client capital, leave it at `1`.
+relaunch the client. Otherwise keep it at `1` (read-only).

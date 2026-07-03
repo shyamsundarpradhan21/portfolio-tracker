@@ -131,7 +131,7 @@ gates it. But **"counting F&O breaks resilience" is only HALF the truth** — it
   beyond any tolerable band → **return-reconcile FAILS.** Needs cloud archive-only (min) or full
   cloud-ingest (Python-parser-on-Vercel + PANs-in-cloud cost).
 - **Business-equity F&O** — a single **book-valued** "trading business equity" line, valued at the EOD
-  close from the durable book (own account value + open MTM − client capital − business liabilities),
+  close from the durable book (account value + open MTM; 100% owner),
   and **labeled "at close · DATE"** like the rest of the book. During absence it's stale *but honestly
   marked as a close, not live*; on return the notes reconstruct the realised → the account value → the
   EOD-book rebuild corrects the line — **the same return-reconcile as the personal sleeves.**

@@ -94,11 +94,11 @@ cosmetic, not a fix.)
 
 ## Future sleeve — `TRADING_EQUITY` (business-entity model, ADOPTED 2026-07-04)
 A future book line will carry the owner's stake in the trading business as a SINGLE **book-valued**
-value: `own account value + open MTM − client capital − business liabilities` (from `broker-state.funds`
-+ positions + `ALGO.split`). The book's `netWorth` then becomes `personal sleeves − loan + TRADING_EQUITY`.
-This is the F&O-into-NW resolution — a book-valued rollup, **NOT** a live-marked sleeve (which would
-break long-absence resilience). It **supersedes** the earlier a/b live-mark follow-on. Full spec +
-bookkeeping (contributions/drawings ledger, client-liability tracking): `tasks/business-entity-model.md`.
+value: `account value + open MTM` (from `broker-state.funds` + positions; 100% owner — no client). The
+book's `netWorth` then becomes `personal sleeves − loan + TRADING_EQUITY`. This is the F&O-into-NW
+resolution — a book-valued rollup, **NOT** a live-marked sleeve (which would break long-absence
+resilience). It **supersedes** the earlier a/b live-mark follow-on. Full spec + bookkeeping
+(contributions/drawings ledger): `tasks/business-entity-model.md`.
 **DESIGN ONLY — not in the builder or `page.js` yet; a separate gated build.**
 
 ## Resilience benchmark

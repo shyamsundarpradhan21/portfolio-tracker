@@ -102,7 +102,7 @@ Shared chains: **[P]** = `/api/portfolio` → KV `portfolio:v1` + `_app` committ
 |---|---|
 | **Hero net worth** | `ov.nw = indianEq.val + usData.val×fxRate + fdValue + mf.totVal + cmpfCorpus(now) − loanOutstanding(now)` (page.js:700-719). indianEq = `applyCorpActions(INDIAN)` [P]×[Q] + SWING broker-reconciled [F2]×[Q]; US [P]×[Q]×fx; FD = quarterly `compound()` from open+rate+clock; MF = units × AMFI NAV (fallback casNav); CMPF = contributions×2 + FY-rate sim (`cmpf.js`); loan = EMI simulation. `AnimatedNumber → InrC`; `.ath-moment` on all-time-high vs snapshot history; gated on live pricing |
 | Assets figure + tooltip + "(incl. ₹ CMPF)" | `ov.totalAssets`, per-sleeve `inrFull` breakdown, `ov.pfValue` |
-| "incl. trading ₹Y" + tooltip | `ov.nw + STATIC.algo + ytdTotal`; ytd = `round(FY.s01.current.net × algoOwnFactor(ALGO.s01)) + FY.s02.current.net` ← `deriveFY(fno-verified seed + fno-ledger + charge overlay)` |
+| "incl. trading ₹Y" + tooltip | `ov.nw + STATIC.algo + ytdTotal`; ytd = `FY.s01.current.net + FY.s02.current.net` (100% owner) ← `deriveFY(fno-verified seed + fno-ledger + charge overlay)` |
 | Liabilities | `ov.loan`; red-by-color |
 | Header cards (Indian/MF/FD/US/Trading) | Sleeve memos above; value `LiveInrC` (Trading: static `InrC` by design), sub `SInrC · pctS` via `cl()` |
 | Topbar NSE/NYSE pills | `marketStateFromQuotes(prices)` — Yahoo per-quote `state` (holiday-aware), wall-clock fallback (`market.js:16`) |
