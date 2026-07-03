@@ -114,15 +114,22 @@ const INDIAN = valueSleeve(heldIndian, 'ns');
 const SWING = valueSleeve(swingRows, 'ns');
 const US = valueSleeve(us.map((u) => ({ ...u, cost: u.cost })), 'sym', fx);
 
-// MF: units × latest AMFI NAV, split by cat (ELSS vs rest)
-const mfRows = { mf: [], elss: [] }; let mfVal = 0, elssVal = 0; let mfResolved = 0, mfFallback = 0, mfNavDate = null;
+// MF: units × latest AMFI NAV, split by cat (ELSS vs rest). RETRY until live —
+// a transient AMFI miss must NOT silently fall back to casNav as if fresh (that
+// caused a 3.43% silent skew). If it still fails after retries, TAG it stale/degraded.
+const mfRows = { mf: [], elss: [] }; let mfVal = 0, elssVal = 0; let mfResolved = 0, mfNavDate = null; const mfDegraded = [];
+async function fetchNavLive(f, tries = 4) {
+  for (let i = 0; i < tries; i++) {
+    try { const code = await resolveCode(f); if (code) { const h = await navHistory(code); const last = Object.keys(h).sort().pop(); if (last) return { nav: h[last], date: last, live: true }; } } catch {}
+  }
+  return { nav: f.casNav, date: null, live: false };   // exhausted retries → casNav, but TAGGED (below)
+}
 await Promise.all((priv.MF_FUNDS || []).map(async (f) => {
   if (!f.units) return;
-  let nav = f.casNav, live = false;
-  try { const code = await resolveCode(f); if (code) { const h = await navHistory(code); const last = Object.keys(h).sort().pop(); if (last) { nav = h[last]; live = true; mfNavDate = mfNavDate && mfNavDate > last ? mfNavDate : last; } } } catch {}
-  if (live) mfResolved++; else mfFallback++;
+  const { nav, date, live } = await fetchNavLive(f);
+  if (live) { mfResolved++; mfNavDate = mfNavDate && mfNavDate > date ? mfNavDate : date; } else mfDegraded.push(f.id);
   const v = f.units * nav; const bucket = /elss/i.test(f.cat || '') ? 'elss' : 'mf';
-  mfRows[bucket].push({ id: f.id, units: f.units, cost: f.cost, nav: r2(nav), value: r2(v), src: 'amfi' });
+  mfRows[bucket].push({ id: f.id, units: f.units, cost: f.cost, nav: r2(nav), value: r2(v), src: live ? 'amfi' : 'casNav', ...(live ? {} : { stale: true, degraded: true }) });
   if (bucket === 'elss') elssVal += v; else mfVal += v;
 }));
 
@@ -167,8 +174,10 @@ book.days[today] = {
     notes: todays.map((n) => ({ cn: n.contract_note_no, broker: n.broker, trades: (n.fills || []).length, hasFno: !!n.has_fno })),
     chargesReal, tradesCount: todays.reduce((a, n) => a + (n.fills || []).length, 0),
     unreconciled: [],   // day-specific deferred: tracked in the ingest report; none folded for a manual back-build
-    drift,
+    // drift is note-matched (symbol-fuzz) → PROVISIONAL, not authoritative. ISIN follow-up hardens it.
+    drift, driftProvisional: true,
   },
+  dataQuality: { mfDegraded, equityMissing: INDIAN.missing + SWING.missing + US.missing },
 };
 writeFileSync(join(ROOT, 'data', 'eod-book.json'), JSON.stringify(book, null, 2));
 
@@ -178,7 +187,8 @@ const snap = Array.isArray(snapArr) ? snapArr.find((s) => s.d === today) || snap
 console.log(`\n=== eod-book ${today} written (asOf ${asOf}, fx ${r2(fx)}) ===`);
 console.log(`sleeves: INDIAN+SWING=${r2(INDIAN.value + SWING.value)} (deliv ${INDIAN.value} + swing ${SWING.value}) · US=${US.value} · MF=${r2(mfVal)} · ELSS=${r2(elssVal)} · FD=${fdVal} · CMPF=${pfVal} · loan=${loan}`);
 console.log(`assets=${assets} · netWorth=${netWorth}`);
-console.log(`MF NAV: ${mfResolved} funds resolved to live AMFI NAV (asOf ${mfNavDate}), ${mfFallback} on casNav fallback`);
+const mfTotal = (priv.MF_FUNDS || []).filter((f) => f.units).length;
+console.log(`MF NAV: ${mfResolved}/${mfTotal} funds live AMFI NAV (asOf ${mfNavDate})${mfDegraded.length ? ` — ${mfDegraded.length} DEGRADED→casNav, TAGGED stale: ${mfDegraded.join(',')}` : ''}`);
 console.log(`reconcile: ${todays.length} notes today · ${drift.length} drift holdings (the un-noted gaps)`);
 for (const d of drift) console.log(`  drift ${d.sleeve} ${d.sym}: broker ${d.brokerQty} vs note-recon ${d.noteReconQty} → ${d.delta}`);
 if (snap) {
