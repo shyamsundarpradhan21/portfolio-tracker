@@ -72,4 +72,4 @@ Read endpoints use the DhanHQ v2 paths (`/profile`, `/fundlimit`, `/holdings`,
 ## Arming trading
 
 Only when you mean it: set `DHAN_READONLY=0` and register a static IP at DhanHQ,
-then relaunch the client. For an account with client capital, leave it at `1`.
+then relaunch the client. Otherwise keep it at `1` (read-only).

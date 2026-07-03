@@ -4,23 +4,23 @@ Status: **DESIGN LOCKED 2026-07-04 · ADOPTED · NO WIRING.** The equity-LINE bu
 page.js) is a separate gated pass. Siblings: `tasks/eod-book-design.md` (the durable book),
 `tasks/realised-design.md` (the P&L flow), `tasks/resilience-benchmark.md` (why book-valued holds).
 
+**100% OWNER CAPITAL** — the trading account is wholly owned; owner equity = the full account value.
+
 ## The model — two clean separations
 Treat the F&O / algo trading operation as a **separate business entity**, not an investment sleeve.
 
 **1. Balance sheet — personal net worth** = personal sleeves + ONE book-valued line for the owner's
 stake in the business:
 ```
-Personal NW = (equity + US + MF + FD + PF − loan)                 ← personal sleeves, LIVE-marked
-            + Trading business equity                              ← ONE book-valued line, "at close · DATE"
+Personal NW = (equity + US + MF + FD + PF − loan)          ← personal sleeves, LIVE-marked
+            + Trading business equity                       ← ONE book-valued line, "at close · DATE"
 
-Trading business equity = own account value + open MTM
-                          − client capital − business liabilities  (as-of-last-sync)
+Trading business equity = account value + open MTM          (as-of-last-sync; 100% owner)
 ```
 
 **2. Income statement — business P&L** = realised − charges − expenses = **the Trading tab.** This is
 **NOT** mixed into personal investment returns: the personal sleeves' XIRR / CAGR / benchmarks measure
-*investing*; the business P&L measures the *trading operation*. Blending them (e.g. adding F&O realised
-into the Indian-equity return) corrupts both.
+*investing*; the business P&L measures the *trading operation*. Blending them corrupts both.
 
 ### Why ONE book-valued line, not a live sleeve
 The business's account value is broker-sourced (laptop sync), so **live-marking it makes it silently
@@ -31,122 +31,93 @@ return-reconciles like the personal sleeves. **This is the adopted resolution.**
 ## The figures (2026-07-04)
 | Component | ₹ | Source | Auto / Manual |
 |---|---|---|---|
-| Own account value (trading-account cash) | 9.70L | `broker-state.funds` (available + utilized) | **AUTO** (broker sync, laptop) |
+| Account value (trading-account cash) | 9.70L | `broker-state.funds` (available + utilized) | **AUTO** (broker sync, laptop) |
 | + Open MTM | 0.02L | `broker-state` positions unrealized | **AUTO** |
-| − Client capital (liability) | 2.50L | `ALGO.s01.split.client` | **MANUAL** (hand-set) |
-| − Business liabilities (accrued client profit-share owed + any borrowing) | ~0 (TBD) | derived / manual | **SEMI / MANUAL** |
-| **= Trading business equity** | **≈ 7.22L** | | the book-valued line |
+| **= Trading business equity** | **≈ 9.72L** | | the book-valued line |
 
-Trading business equity ≈ **₹7.22L ≈ ~27% of true personal NW** (₹19.4L personal + ₹7.22L = ₹26.6L;
-or ~37% of the current F&O-excluded ₹19.4L). Cross-check: `STATIC.algo` ₹7.3L = the *allocated* own
-capital (s01.own 390k + s02.own 340k) — close to the account-derived equity, so the two reconcile.
-
-**Client capital (₹2.5L) is a LIABILITY** — the business owes it back to clients. It is NOT owner
-equity and NOT in personal NW. Neither is the notional (~₹40.6L exposure) or the margin (collateral
-inside the cash balance) — only `balance + MTM − liabilities` is owner wealth.
+Trading business equity ≈ **₹9.72L ≈ ~33% of true personal NW** (₹19.4L personal + ₹9.72L = ₹29.1L;
+or ~50% of the current F&O-excluded ₹19.4L). The Mar-2026 ₹2.5L deposit is **owner capital** (was
+mislabelled "client"), so it sits inside this equity, not as a deduction. The notional (~₹40.6L
+exposure) and the margin (collateral inside the cash balance) are **not** wealth — only `balance + MTM` is.
 
 ## Bookkeeping the equity line depends on
 | Item | What it is | Recorded / sourced | Auto / Manual |
 |---|---|---|---|
-| **Account value** | cash in the trading accounts | `broker-state.funds` → the EOD book | **AUTO** (laptop, as-of-last-sync) |
+| **Account value** | cash in the trading account | `broker-state.funds` → the EOD book | **AUTO** (laptop, as-of-last-sync) |
 | **Open MTM** | unrealized on open positions | `broker-state` positions → the book | **AUTO** |
-| **Client capital** | clients' principal (liability) | `ALGO.split.client` (`portfolio:v1`) | **MANUAL** — update when a client adds/withdraws |
-| **Capital contributions** | owner money INTO the business (personal→trading transfer) | broker fund-ledger — Dhan `/v2/ledger` credits + Upstox **Get Payins** → contributions ledger | **SEMI-AUTO** — broker-fed; only the Dhan owner-vs-client tag is manual |
-| **Drawings** | owner money OUT (trading→personal withdrawal) | broker fund-ledger — Dhan `/v2/ledger` debits + Upstox **Get Payouts** | **SEMI-AUTO** — broker-fed; lowers equity + cash |
-| **Business liabilities** | accrued client profit-share owed (client's % of client-attributable profit) + any business borrowing | profit-share derived from business P&L × `clientProfitShare`; borrowings manual | **SEMI** — the app's `algoOwnFactor` already splits own vs client |
-| **Business expenses** | brokerage/charges + data/software/other | charges **AUTO** (notes → `ledger:fno:overlay`); other **MANUAL** | **SEMI** |
+| **Capital contributions** | owner money INTO the business (personal→trading transfer) | broker fund-ledger — Dhan `/v2/ledger` credits + Upstox **Get Payins** | **SEMI-AUTO** — broker-fed |
+| **Drawings** | owner money OUT (trading→personal withdrawal) | broker fund-ledger — Dhan `/v2/ledger` debits + Upstox **Get Payouts** | **SEMI-AUTO** — broker-fed |
+| **Business expenses** | account-level charges (DP/margin-interest/…) + brokerage + data/software | Dhan ledger charge narrations **AUTO** + fno-ledger charges; other **MANUAL** | **SEMI** |
 
-**The one NEW artifact the model requires — a contributions/drawings ledger (SEMI-AUTO).** Today the
-account value drifts with BOTH business P&L *and* owner capital moves, indistinguishably: a ₹X transfer
-INTO the account looks like a ₹X "gain." A contributions/drawings ledger separates capital moves from
-earned P&L (else both the business P&L and the equity growth are wrong). **Both brokers expose the
-fund-transfer events via API** (§ below), so this ledger is **SEMI-AUTO, not manual**: broker fund-ins
-auto-populate contributions, fund-outs auto-populate drawings; the only manual bit is tagging Dhan
-fund-ins **owner-vs-client** (Dhan s01 holds ₹2.5L client capital; Upstox s02 has none → fully auto).
-Everything else is already sourced (account value + MTM auto; client capital + own/client split in `ALGO`).
+**The one NEW artifact the model requires — a contributions/drawings ledger (SEMI-AUTO).** The account
+value drifts with BOTH business P&L *and* owner capital moves, indistinguishably: a ₹X transfer INTO the
+account looks like a ₹X "gain." A contributions/drawings ledger separates capital moves from earned P&L
+(else both the business P&L and the equity growth are wrong). The broker exposes the fund-transfer events
+via API, so this ledger is **SEMI-AUTO**: fund-ins → contributions, fund-outs → drawings; no owner/client
+ambiguity (100% owner). Built by `scripts/build-trading-ledger.mjs`.
 
 ### Broker fund-ledger sources — LIVE-VERIFIED 2026-07-04
-Both active brokers expose fund transfers **distinct from trade P&L** → contributions/drawings are SEMI-AUTO.
-**Dhan verified against a live `/v2/ledger` pull** (156 entries, Jan–Jul 2026); **Upstox endpoint + token
-confirmed live**, exact fields from the API doc (live-VALUE pull pending its funds-service window — note below).
-
 | Broker | Endpoint (verified) | Response fields (verified) |
 |---|---|---|
-| **Dhan** (s01) | `GET https://api.dhan.co/v2/ledger?from-date=&to-date=` — **YYYY-MM-DD, ≤1-month chunks** (wider ranges → HTTP 500) | `dhanClientId, narration, voucherdate, exchange, voucherdesc, vouchernumber, debit, credit, runbal` |
+| **Dhan** (s01) | `GET https://api.dhan.co/v2/ledger?from-date=&to-date=` — **YYYY-MM-DD, ≤1-month chunks** (wider → HTTP 500), retry per month | `dhanClientId, narration, voucherdate, exchange, voucherdesc, vouchernumber, debit, credit, runbal` |
 | **Upstox** (s02) | `GET https://api.upstox.com/v2/user/payments/payin` and `…/payout` — last 20 txns; **funds-service window 5:30 AM–12:00 AM IST** | `amount, mode, status, currency, bank_name, transaction_id, created_at` |
 | **Fyers** (s02) | funds/statement API — only if it ever holds capital (₹0 today) | — |
 
-**Dhan classification — verified against the FULL 2024→ history (the 3a build, not just one month):**
+**Dhan classification — verified against the FULL 2024→ history (the 3a build):**
 | `narration` | → ledger type |
 |---|---|
 | `Funds Deposited` | **contribution** (credit) |
 | `Funds Withdrawal` | **drawing** (debit) |
 | `Monthly Settlement` · `Quarterly Settlement` | **drawing** (SEBI running-account auto-sweep to bank) |
-| `Trades Executed` | **realised** — daily net F&O settlement cash; Σ = the full-history realised the reconciliation uses (the fno-ledger is windowed) |
-| `DP Transaction Charges` · `Delayed Payment Charges` · `Margin Interest` · `Auto square off/Call & Trade Charges` · `Bank Update Charges` · `Intraday Square Off Charges` · `SLB Fees` | business **expense** (account-level, distinct from trading charges) |
-| `Other Debit` / `Other Credit` | **surfaced for manual review** (rare; adjustment or a fund event) |
-| `OPENING BALANCE` / `CLOSING BALANCE` | opening captured for the tie-out; closing skipped |
+| `Trades Executed` | **realised** — *not summed* (F&O-margin-polluted); realised is DERIVED from the balance identity |
+| `DP Transaction Charges` · `Delayed Payment Charges` · `Margin Interest` · `Auto square off/Call & Trade Charges` · `Bank Update Charges` · `Intraday Square Off Charges` · `SLB Fees` | business **expense** (account-level) |
+| `Other Debit` / `Other Credit` | tiny broker adjustments (net +₹88 over the whole history); surfaced |
+| `OPENING BALANCE` / `CLOSING BALANCE` | **the `credit` field = the cash balance** — opening + latest closing are the reconciliation ground-truth |
 
 The recent-month verify only saw `Monthly Settlement` + two charge types; the full-history pull surfaced
-`Quarterly Settlement`, five more charge narrations, and `Other Debit/Credit` — **why the classifier must
-be verified over the whole history, not one month, and why unrecognised narrations are surfaced, not dropped.**
+`Quarterly Settlement`, five more charge narrations, and `Other Debit/Credit` — **why the classifier is
+verified over the whole history, and why unrecognised narrations are surfaced, not dropped.**
 
-**Reconciliation (cash tie-out → drift flag):** `dhanFunds` vs `opening + netCapital + tradeNet − expenses`,
-where `tradeNet` = Σ `Trades Executed`. Residual drift = client-profit-paid + `Other Debit/Credit` + any
-missing event → flag if large (current data: ~₹51k residual, i.e. the client-profit + Other tail).
-
-Dedup by `vouchernumber` (Dhan) / `transaction_id` (Upstox). **Manual overlay:** tag each Dhan fund-in
-owner-vs-client (Upstox s02 = all owner). Upstox payin/payout are already fund-only (no narration filter).
-
-⚠ **Upstox live-VALUE pull is pending its 5:30 AM–12:00 AM IST funds window** (endpoint + token confirmed
-live — `423` time-lock outside the window, not an auth error). Re-pull in-window to confirm the actual
-`mode`/`status` value set before the classifier trusts them. **Dhan is fully live-verified.**
-
-### Reconciliation check (makes the book-valued equity trustworthy)
-The book-valued line (`account value + MTM − client − liabilities`) must tie to the ledger-implied base:
+### Reconciliation (cash tie-out → drift flag)
+The Dhan `CLOSING BALANCE` credit is the **authoritative cash balance** (verified = live `fundlimit`
+within ₹1,730). Realised can't be summed from `Trades Executed` (daily F&O-margin block/release pollutes
+the credit/debit); instead it is **DERIVED**:
 ```
-owner equity  ==  Σ own contributions − Σ own drawings + Σ retained own P&L
-                  (retained own P&L = realised − charges − expenses − client-profit-share, cumulative)
+realised            = ledgerCash − opening − netCapital + expenses          (complete, full-history)
+owner equity        = account value (dhanFunds) + open MTM                  (100% owner, no client)
+cash tie-out drift  = dhanFunds − ledgerCash  →  snapshot-timing only (~₹1,730)
 ```
-Run at each EOD-book build. A delta beyond a small tolerance flags a **missed fund event** (a
-contribution/drawing not captured) or a **P&L discrepancy** — surface it like the composition drift,
-never silently absorb it. This is what lets a single broker-sourced account-value number be trusted as
-owner equity.
+A drift beyond a few ₹k flags a broker-state/ledger inconsistency (a missed event) — surfaced, never
+absorbed. (Earlier a naïve `Σ Trades Executed` undercounted realised by ~₹49k → a false ₹51k "drift";
+anchoring on the CLOSING BALANCE collapses it to the ~₹1,730 timing residual.)
 
 ## Income statement (the Trading tab = business P&L)
 Business P&L = **realised − charges − expenses**, per FY / month / day — already the Trading tab:
-- **Realised** = `fno-ledger` `grossRealised` (broker) — see `realised-design.md`.
+- **Realised** = `fno-ledger` `grossRealised` (broker) — see `realised-design.md`. 100% owner.
 - **Charges** = est → real via `ledger:fno:overlay` (notes) — the ~6% EOD refinement.
-- **Expenses** = brokerage (in charges) + other business expenses (data/software — MANUAL, not yet tracked).
-- **Own vs client** = `algoOwnFactor` (`ALGO.split`) — the owner keeps own-P&L + the client-profit-share cut.
+- **Expenses** = brokerage (in charges) + account-level Dhan-ledger charges + data/software (MANUAL).
 
 Stays separate from personal investment returns by construction.
 
 ## Tax note — confirm with CA, do NOT rely on this
-F&O in India is *generally* treated as **non-speculative business income** (not capital gains): taxed
-at slab rates, filed under **ITR-3** as business income, with business expenses (brokerage, data,
-etc.) deductible and losses carried forward 8 years / set off against non-speculative income. This
-aligns with the business-entity treatment (income statement + business equity + expense tracking).
-**⚠ Unverified flag — confirm the exact treatment (turnover computation, tax-audit u/s 44AB
-thresholds, presumptive 44AD options, client-money/PMS implications) with a CA before relying on it.**
-The bookkeeping above (P&L, expenses, contributions/drawings, client liability) is the prerequisite
-for whatever the CA confirms — the model produces the records; it does not decide the tax.
+F&O in India is *generally* treated as **non-speculative business income** (not capital gains): slab
+rates, **ITR-3**, business expenses deductible, losses carried forward 8 years. Aligns with the
+business-entity treatment. **⚠ Unverified — confirm the exact treatment (turnover computation, tax-audit
+u/s 44AB thresholds, presumptive 44AD options) with a CA before relying on it.** The bookkeeping above
+is the prerequisite for whatever the CA confirms — the model produces the records; it does not decide the tax.
 
 ## How F&O enters NW — ONE book-valued rollup line (SUPERSEDES the old a/b)
-The earlier a/b (live-mark F&O sleeve) is **superseded**. F&O enters personal NW as a SINGLE
-book-valued line:
-- The EOD-book build (`scripts/build-eod-book.mjs`) computes a `TRADING_EQUITY` value
-  = own account value + MTM − client capital − business liabilities → stored as a book line.
-- The book's `netWorth` = personal sleeves − loan **+ TRADING_EQUITY** (the one line).
-- `page.js` renders it as a labeled **"Trading business equity · at close DATE"** line in the NW
-  breakdown — **book-valued, NOT live-marked** — sitting beside the Sub-step B personal-sleeves
-  fallback (forward-compatible foundation).
+F&O enters personal NW as a SINGLE book-valued line:
+- The EOD-book build (`scripts/build-eod-book.mjs`) computes `TRADING_EQUITY = account value + open MTM`
+  → stored as a book line.
+- The book's `netWorth` = personal sleeves − loan **+ TRADING_EQUITY**.
+- `page.js` renders it as a labeled **"Trading business equity · at close DATE"** line — **book-valued,
+  NOT live-marked** — beside the Sub-step B personal-sleeves fallback.
 
-**DESIGN ONLY this pass.** The builder change (add `TRADING_EQUITY`) + the page.js NW change (add the
-line) is a **separate gated build** — value-check (equity vs broker) + `certify.mjs` normal+stress +
-screenshots, held for read before main, exactly like Sub-step B.
+**DESIGN ONLY this pass.** The builder change (add `TRADING_EQUITY`) + the page.js NW change is a
+**separate gated build** — value-check (equity vs hand-computed account value + MTM) + `certify.mjs`
+normal+stress + screenshots, held for read before main, exactly like Sub-step B.
 
 ## Status
-Design locked + adopted. Builder + `page.js` untouched. The equity-LINE build is a separate
-design→build→gate pass. Sub-step B (personal-sleeves close-fallback) ships independently as the
-foundation this line sits beside.
+Design locked + adopted. Builder + `page.js` untouched for the equity line. The 3a contributions/drawings
+ledger is built (dormant). The equity-LINE build (3c) is a separate design→build→gate pass.

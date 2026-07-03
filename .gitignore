@@ -52,10 +52,9 @@
 # Private (per-holding values); dormant (nothing reads it yet). Design: tasks/eod-book-design.md.
 /data/eod-book.json
 
-# Trading-business contributions/drawings ledger (scripts/build-trading-ledger.mjs) +
-# its manual owner/client tag overlay. Private (real fund amounts); dormant. Design: tasks/business-entity-model.md.
+# Trading-business contributions/drawings ledger (scripts/build-trading-ledger.mjs).
+# Private (real fund amounts); dormant. 100% owner capital. Design: tasks/business-entity-model.md.
 /data/trading-ledger.json
-/data/trading-ledger-tags.json
 
 # Track B Dhan-Algos catalog research feed — reproducible (browser-harvest → importer)
 # and published to KV `algo-catalog:v1`. Large (per-algo correlation matrices) and

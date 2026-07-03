@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   INDIAN, US, FDS, MF_FUNDS, MF_CASHFLOWS, MF_SIP, UNITS_AS_OF,
-  ALGO, algoOwnFactor, SWING, STATIC, PROJECTION, ALLOC_COLORS,
+  ALGO, SWING, STATIC, PROJECTION, ALLOC_COLORS,
   TRANSACTIONS, CORPORATE_ACTIONS, INDIAN_REALIZED, INDIAN_BENCHMARKS,
   US_CASHFLOWS, US_BENCHMARKS, US_DIVIDENDS, US_REALIZED, loanOutstanding,
   PAYSLIPS, hydratePortfolio, isPortfolioHydrated,
@@ -658,11 +658,11 @@ function Dashboard() {
   // Two views of trading P&L:
   //   ytdRealised — FULL account P&L (tax/CF view: the whole pooled account
   //                 is taxed in the user's hands, so CF absorption uses it)
-  //   ytdOwn      — the USER'S share only (S01 is pooled with client capital;
-  //                 algoOwnFactor strips the client's profit share). This is
-  //                 the only figure allowed near net worth.
+  //   ytdOwn      — same as ytdRealised now: the account is 100% owner-capital, so the
+  //                 owner keeps the full F&O P&L. Kept as a distinct name for the
+  //                 net-worth-adjacent figure.
   const ytdRealised = FY.s01.current.net + FY.s02.current.net;
-  const ytdOwn      = Math.round(FY.s01.current.net * algoOwnFactor(ALGO.s01)) + FY.s02.current.net;
+  const ytdOwn      = ytdRealised;
   // Swing P&L is no longer trading — it lives in the Indian-equity sleeve (net
   // worth) now, so the Trading figures are pure F&O.
   const ytdTotal    = ytdOwn;       // own F&O share — the only trading figure shown near NW
@@ -923,7 +923,7 @@ function Dashboard() {
         `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
-        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.current.net} (own share ₹${Math.round(FY.s01.current.net * algoOwnFactor(ALGO.s01))}; S01 pools client capital) S02 +₹${FY.s02.current.net}` +
+        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.current.net} S02 +₹${FY.s02.current.net}` +
         `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEntering / 1e5).toFixed(2)}L (tax asset)`,
       macroClock: macroClockStr, // live FRED+Yahoo backdrop for the pulse read
     };
@@ -1234,7 +1234,7 @@ function Dashboard() {
                 <div>
                   {liveMarked ? (
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (your share only — client profit share excluded; F&O realised)`}>
+                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (F&O realised, 100% owner)`}>
                       incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
                     </span>
                   ) : 'excl. trading'}
