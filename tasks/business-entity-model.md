@@ -65,24 +65,33 @@ auto-populate contributions, fund-outs auto-populate drawings; the only manual b
 fund-ins **owner-vs-client** (Dhan s01 holds ₹2.5L client capital; Upstox s02 has none → fully auto).
 Everything else is already sourced (account value + MTM auto; client capital + own/client split in `ALGO`).
 
-### Broker fund-ledger sources (confirmed via API docs, 2026-07-04)
-Both active brokers expose fund transfers **distinct from trade P&L** → contributions/drawings are SEMI-AUTO:
+### Broker fund-ledger sources — LIVE-VERIFIED 2026-07-04
+Both active brokers expose fund transfers **distinct from trade P&L** → contributions/drawings are SEMI-AUTO.
+**Dhan verified against a live `/v2/ledger` pull** (156 entries, Jan–Jul 2026); **Upstox endpoint + token
+confirmed live**, exact fields from the API doc (live-VALUE pull pending its funds-service window — note below).
 
-| Broker | Endpoint | Deposit (contribution) | Withdrawal (drawing) | Event shape (field names) |
-|---|---|---|---|---|
-| **Dhan** (s01) | `GET /v2/ledger?from-date=&to-date=` | `credit` entry with a fund-transfer `narration` | `debit` entry, e.g. `narration:"FUNDS WITHDRAWAL"`, `voucherdesc:"PAYBNK"` | `dhanClientId, narration, voucherdate, exchange, voucherdesc, vouchernumber, debit, credit, runbal` |
-| **Upstox** (s02) | Payments API — **Get Payins** / **Get Payouts** (dedicated, fund-only) | Get Payins | Get Payouts | `amount, payment mode, status, bank name, transaction ID, charges` |
-| **Fyers** (s02) | funds/statement API — check only if it ever holds capital (₹0 today) | — | — | — |
+| Broker | Endpoint (verified) | Response fields (verified) |
+|---|---|---|
+| **Dhan** (s01) | `GET https://api.dhan.co/v2/ledger?from-date=&to-date=` — **YYYY-MM-DD, ≤1-month chunks** (wider ranges → HTTP 500) | `dhanClientId, narration, voucherdate, exchange, voucherdesc, vouchernumber, debit, credit, runbal` |
+| **Upstox** (s02) | `GET https://api.upstox.com/v2/user/payments/payin` and `…/payout` — last 20 txns; **funds-service window 5:30 AM–12:00 AM IST** | `amount, mode, status, currency, bank_name, transaction_id, created_at` |
+| **Fyers** (s02) | funds/statement API — only if it ever holds capital (₹0 today) | — |
 
-Auto-classification: Dhan's is a *unified* ledger, so a `narration`/`voucherdesc` filter must separate
-FUND transfers (e.g. `PAYBNK`, "FUNDS ADDED/WITHDRAWAL") from trade settlements — **enumerate the exact
-fund-transfer narration values against live data** (the one thing the docs don't fully specify). Upstox's
-Payins/Payouts are already fund-only (no filter). Dedup by `vouchernumber` (Dhan) / transaction ID (Upstox).
-**Manual overlay:** tag each Dhan fund-in owner-vs-client (Upstox = all owner).
+**Dhan classification — LIVE narration values (the doc's `"PAYBNK"` was WRONG):**
+| `narration` | `voucherdesc` | → ledger type |
+|---|---|---|
+| `Funds Deposited` | Money added to your Trading Account | **contribution** (credit) |
+| `Funds Withdrawal` | Money withdrawn to your Bank Account | **drawing** (debit) |
+| `Monthly Settlement` | Money transferred to your Bank Account due to Monthly Settlement | **drawing** (SEBI auto-sweep to bank) |
+| `Trades Executed` | Trades Executed for the Day in F&O | trade P&L → **skip** (already in the realised ledger) |
+| `Intraday Square Off Charges` / `SLB Fees` | … | business **expense** |
+| `OPENING BALANCE` / `CLOSING BALANCE` | — | **skip** (markers) |
 
-⚠ The broker token was expired at diagnosis time — endpoints + shapes above are from the **API docs, not a
-live pull**. Live-verify the Dhan fund-transfer narration values + the exact Upstox Payins/Payouts field
-names on the next fresh-token sync, before building the auto-classifier.
+Dedup by `vouchernumber` (Dhan) / `transaction_id` (Upstox). **Manual overlay:** tag each Dhan fund-in
+owner-vs-client (Upstox s02 = all owner). Upstox payin/payout are already fund-only (no narration filter).
+
+⚠ **Upstox live-VALUE pull is pending its 5:30 AM–12:00 AM IST funds window** (endpoint + token confirmed
+live — `423` time-lock outside the window, not an auth error). Re-pull in-window to confirm the actual
+`mode`/`status` value set before the classifier trusts them. **Dhan is fully live-verified.**
 
 ### Reconciliation check (makes the book-valued equity trustworthy)
 The book-valued line (`account value + MTM − client − liabilities`) must tie to the ledger-implied base:
