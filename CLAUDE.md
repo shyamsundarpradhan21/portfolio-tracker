@@ -40,6 +40,30 @@ without being told — treat them as binding.
 - Source of truth for private data: KV `portfolio:v1`, seeded from gitignored `data/portfolio.private.json` via `scripts/seed-portfolio-kv.mjs`. To change holdings/salary/loans: edit the JSON, run the seed. Never hand-edit KV. `data/portfolio.private.example.json` is the empty template.
 - Committed JSONs (`broker-state`, `fno-ledger`, `trades-log`, …) are written by the sync pipeline — don't hand-edit; re-run the script. The seed has a sanity guard that refuses near-empty data; don't bypass it. `data/SNAPSHOT.md` is generated.
 
+### Source of truth per datum (resolved data model — locked 2026-07-03)
+Settled after the composition-reconstruction analysis: contract notes + `applyCorpActions`
+reconstruct **17/20 equity holdings**; F&O and the 3 delivery-buy gaps are broker-only.
+**Book of record = durable private JSON + `data/eod-book.json`; KV = a serving copy
+(`portfolio:v1`, seeded from the private JSON) + intraday tapes (TTL) — never the durable truth.**
+
+| Datum | Primary source of truth (continuous) | Broker sync's role |
+|---|---|---|
+| Equity composition (INDIAN/SWING qty) | **Contract notes (`ledger:cn:*`) + `applyCorpActions`** | **periodic checkpoint** — not daily truth |
+| F&O open positions | **Broker sync** (`broker-state.json` positions) | **sole source** |
+| US composition | **Private JSON / vests** (outside the note pipeline) | none |
+| Equity/US prices | **Yahoo `/api/quotes`** (unauthenticated) — the ONLY live pricer | **never prices** |
+| MF NAV | **AMFI `/api/mf-nav`** (24h) | never |
+| FD value | **`compound()` formula** — no fetch | never |
+| F&O real charges | Contract notes → `ledger:fno:overlay` (else modeled `estCharges`) | — |
+
+The broker sync is **demoted to a periodic checkpoint folded into the 03:00 EOD-book build**,
+with three jobs: (a) sole source of F&O open positions; (b) catch un-noted equity delivery
+buys; (c) reconcile the note-covered ~85% and FLAG drift. It is no longer the continuous /
+daily-truth source for equity composition. **Already live:** Yahoo is the sole equity pricer
+and the broker **never** prices (the dead `broker-state.ltp` was retired). **Pending (wiring
+HELD):** the EOD-book build itself — design in `tasks/eod-book-design.md`. Full per-value
+lineage: `tasks/value-lineage-audit.md`.
+
 ### API routes (`app/api/*/route.js`)
 - Private-data routes use `loadPortfolio()` and must set `export const dynamic = 'force-dynamic'` (build-time data is null) so private figures never ship in the client bundle.
 - External APIs: always `AbortSignal.timeout(...)`, validate the shape, fall back to last-known so the UI never breaks; optional-chain everything off the response.

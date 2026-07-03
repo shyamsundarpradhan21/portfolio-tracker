@@ -578,3 +578,23 @@ B+C built behind the same adapter pattern (paste fallback intact). Discovery in 
 - **GAP:** Dhan-full 79 download was blocked by Chrome's multi-download prompt → join used scoped 41.
   Drop `data/dhan-full.raw.json` (79) in and re-run → coverage jumps to ~79 (importer already prefers it).
 - SKIPPED per instruction: per-algo `advisorMetrics` loop (per-range winRatio/avgProfit/booksizes).
+
+---
+
+## Follow-up — close the 3 equity-composition gaps at source (deferred, do NOT fix now)
+
+Opened 2026-07-03 from the composition-reconstruction analysis (see the CLAUDE.md source-of-truth
+table + `tasks/eod-book-design.md`). Contract notes + `applyCorpActions` reconstruct **17/20**
+equity holdings; **3 delivery buys have no captured note**, so the broker sync stays required to
+cover them (they surface as `reconcile.drift[]` "un-noted (broker)" in the EOD book):
+
+- [ ] **ZYDUSLIFE** (Zerodha/INDIAN) — broker 33, notes ~1 (residual ~32). Chase the missing
+      delivery contract note(s) into `inbox/`.
+- [ ] **PRICOLLTD** (Zerodha/INDIAN) — broker 56, notes ~6 (residual ~50). Same.
+- [ ] **BANKBARODA** (Upstox/SWING) — broker 28, notes 0 (only Fyers F&O options on the name,
+      no delivery note). Chase the Upstox delivery note into `inbox/`.
+
+Root cause: these buys pre-date the note-capture window OR their delivery notes were never
+fetched/parsed (Upstox emails F&O notes but delivery/holdings notes are barely in the corpus).
+Goal: land the notes so the pipeline reconstructs them at source and the EOD-book drift clears —
+NOT to hand-edit composition. Verify after backfill by re-running the reconstruction (residual → 0).
