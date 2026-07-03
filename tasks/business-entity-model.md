@@ -51,18 +51,49 @@ inside the cash balance) — only `balance + MTM − liabilities` is owner wealt
 | **Account value** | cash in the trading accounts | `broker-state.funds` → the EOD book | **AUTO** (laptop, as-of-last-sync) |
 | **Open MTM** | unrealized on open positions | `broker-state` positions → the book | **AUTO** |
 | **Client capital** | clients' principal (liability) | `ALGO.split.client` (`portfolio:v1`) | **MANUAL** — update when a client adds/withdraws |
-| **Capital contributions** | owner money INTO the business (personal→trading transfer) | a NEW manual contributions/drawings ledger (or broker deposit records) | **MANUAL (new artifact)** — raises equity + cash |
-| **Drawings** | owner money OUT (trading→personal withdrawal) | same ledger (or broker withdrawal records) | **MANUAL** — lowers equity + cash |
+| **Capital contributions** | owner money INTO the business (personal→trading transfer) | broker fund-ledger — Dhan `/v2/ledger` credits + Upstox **Get Payins** → contributions ledger | **SEMI-AUTO** — broker-fed; only the Dhan owner-vs-client tag is manual |
+| **Drawings** | owner money OUT (trading→personal withdrawal) | broker fund-ledger — Dhan `/v2/ledger` debits + Upstox **Get Payouts** | **SEMI-AUTO** — broker-fed; lowers equity + cash |
 | **Business liabilities** | accrued client profit-share owed (client's % of client-attributable profit) + any business borrowing | profit-share derived from business P&L × `clientProfitShare`; borrowings manual | **SEMI** — the app's `algoOwnFactor` already splits own vs client |
 | **Business expenses** | brokerage/charges + data/software/other | charges **AUTO** (notes → `ledger:fno:overlay`); other **MANUAL** | **SEMI** |
 
-**The one NEW artifact the model requires — a contributions/drawings ledger.** Today the account
-value drifts with BOTH business P&L *and* owner capital moves, and they're indistinguishable: a ₹X
-transfer INTO the account looks like a ₹X "gain." The equity line needs a contributions/drawings
-ledger to separate capital moves from earned P&L (else the business P&L and the equity growth are both
-wrong). This is manual (or derived from broker deposit/withdrawal records if the broker exposes them).
-Everything else is already sourced (account value + MTM auto; client capital + the own/client split
-already in `ALGO`).
+**The one NEW artifact the model requires — a contributions/drawings ledger (SEMI-AUTO).** Today the
+account value drifts with BOTH business P&L *and* owner capital moves, indistinguishably: a ₹X transfer
+INTO the account looks like a ₹X "gain." A contributions/drawings ledger separates capital moves from
+earned P&L (else both the business P&L and the equity growth are wrong). **Both brokers expose the
+fund-transfer events via API** (§ below), so this ledger is **SEMI-AUTO, not manual**: broker fund-ins
+auto-populate contributions, fund-outs auto-populate drawings; the only manual bit is tagging Dhan
+fund-ins **owner-vs-client** (Dhan s01 holds ₹2.5L client capital; Upstox s02 has none → fully auto).
+Everything else is already sourced (account value + MTM auto; client capital + own/client split in `ALGO`).
+
+### Broker fund-ledger sources (confirmed via API docs, 2026-07-04)
+Both active brokers expose fund transfers **distinct from trade P&L** → contributions/drawings are SEMI-AUTO:
+
+| Broker | Endpoint | Deposit (contribution) | Withdrawal (drawing) | Event shape (field names) |
+|---|---|---|---|---|
+| **Dhan** (s01) | `GET /v2/ledger?from-date=&to-date=` | `credit` entry with a fund-transfer `narration` | `debit` entry, e.g. `narration:"FUNDS WITHDRAWAL"`, `voucherdesc:"PAYBNK"` | `dhanClientId, narration, voucherdate, exchange, voucherdesc, vouchernumber, debit, credit, runbal` |
+| **Upstox** (s02) | Payments API — **Get Payins** / **Get Payouts** (dedicated, fund-only) | Get Payins | Get Payouts | `amount, payment mode, status, bank name, transaction ID, charges` |
+| **Fyers** (s02) | funds/statement API — check only if it ever holds capital (₹0 today) | — | — | — |
+
+Auto-classification: Dhan's is a *unified* ledger, so a `narration`/`voucherdesc` filter must separate
+FUND transfers (e.g. `PAYBNK`, "FUNDS ADDED/WITHDRAWAL") from trade settlements — **enumerate the exact
+fund-transfer narration values against live data** (the one thing the docs don't fully specify). Upstox's
+Payins/Payouts are already fund-only (no filter). Dedup by `vouchernumber` (Dhan) / transaction ID (Upstox).
+**Manual overlay:** tag each Dhan fund-in owner-vs-client (Upstox = all owner).
+
+⚠ The broker token was expired at diagnosis time — endpoints + shapes above are from the **API docs, not a
+live pull**. Live-verify the Dhan fund-transfer narration values + the exact Upstox Payins/Payouts field
+names on the next fresh-token sync, before building the auto-classifier.
+
+### Reconciliation check (makes the book-valued equity trustworthy)
+The book-valued line (`account value + MTM − client − liabilities`) must tie to the ledger-implied base:
+```
+owner equity  ==  Σ own contributions − Σ own drawings + Σ retained own P&L
+                  (retained own P&L = realised − charges − expenses − client-profit-share, cumulative)
+```
+Run at each EOD-book build. A delta beyond a small tolerance flags a **missed fund event** (a
+contribution/drawing not captured) or a **P&L discrepancy** — surface it like the composition drift,
+never silently absorb it. This is what lets a single broker-sourced account-value number be trusted as
+owner equity.
 
 ## Income statement (the Trading tab = business P&L)
 Business P&L = **realised − charges − expenses**, per FY / month / day — already the Trading tab:
