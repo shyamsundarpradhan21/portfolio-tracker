@@ -948,5 +948,38 @@ check("old-Dhan: residual ~0", abs(rr) <= 0.01, rr)
 check("other_levy IS a summed CHARGE_KEY", "other_levy" in P.CHARGE_KEYS, "other_levy" in P.CHARGE_KEYS)
 check("other_tax is NOT summed (stays recognised non-charge for UTT)", "other_tax" not in P.CHARGE_KEYS, "other_tax" not in P.CHARGE_KEYS)
 
+# ===== #2 fix: Fyers split net-amount (SYNTHETIC — fake self-consistent amounts) =====
+# Some Fyers notes print "Net Amount Receivable/Payable" in a SEPARATE table from the
+# charges summary, so the charges table parses every levy but no net_amount -> checksum
+# can't run -> refused. Recover net_amount from the orphaned table's Total (last signed
+# money cell, CR credit / DR debit). GATED: only fires when net_amount is missing.
+print("[#2 fyers] split net-amount: orphaned 'Net Amount' table merged so the checksum can run:")
+fyers_charges = [                                   # net == pay_in + Σcharges = -10000 + (-39.33) = -10039.33
+    ["Description", "NCLCM", "NCLFO", "Total"],
+    ["Pay In / Pay Out Obligation", "", "-10000.00", "-10000.00"],
+    ["Taxable Value of Supply (Brokerage)", "", "-20.00", "-20.00"],
+    ["Exchange Transaction Charges", "", "-3.00", "-3.00"],
+    ["Securities Transaction Tax", "", "-10.00", "-10.00"],
+    ["SEBI turnover Fees", "", "-0.50", "-0.50"],
+    ["Stamp Duty", "", "-1.00", "-1.00"],
+    ["IGST (@18%)", "", "-4.23", "-4.23"],
+    ["Cmcharges", "", "-0.50", "-0.50"],            # Fyers clearing-member charge
+    ["IPFT", "", "-0.10", "-0.10"],
+]
+fyers_netamt = [["Net Amount Receivable/Payable", "", "0.00 CR", "10039.33 DR", "", "10039.33 DR"]]   # orphaned
+fc = P.parse_charges_from_tables([fyers_charges])
+check("fyers split: charges parse has levies but NO net_amount", fc["net_total"].get("net_amount") is None and "stt" in fc["net_total"], sorted(fc["net_total"]))
+check("fyers split: orphaned net-amount table is NOT a charges table (won't double-count)", P.is_charges_table(fyers_netamt) is False, None)
+na = P.orphan_net_amount([fyers_charges, fyers_netamt])
+check("fyers split: orphan_net_amount recovers Total (DR/payable -> negative)", na == -10039.33, na)
+fc["net_total"]["net_amount"] = na                  # the build_ledger merge step
+okf, rf = P.checksum(fc["net_total"])
+check("fyers split: CHECKSUM PASS after merge (net == pay_in + charges)", okf is True, (okf, rf))
+check("fyers split: residual ~0", abs(rf) <= 0.01, rf)
+# GATE guard: a normal fyers note carries net_amount IN the charges table -> merge condition false -> inert
+fyers_full = [fyers_charges[0]] + fyers_charges[1:] + [["Net Amount Receivable/Payable", "", "-10039.33", "-10039.33"]]
+ff = P.parse_charges_from_tables([fyers_full])
+check("fyers normal: net_amount already in charges table -> #2 merge never fires (passers inert)", ff["net_total"].get("net_amount") == -10039.33, ff["net_total"].get("net_amount"))
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)

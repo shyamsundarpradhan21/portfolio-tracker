@@ -361,6 +361,22 @@ def parse_charges_from_tables(tables):
                 merged["unmapped_labels"].append(u)
     return merged
 
+# #2: some Fyers notes print the "Net Amount Receivable/Payable" obligation in a
+# SEPARATE small table from the charges summary, so the charges table parses every
+# levy but carries NO net_amount row -> checksum can't run -> the note refuses.
+# Recover net_amount from that orphaned table: the first NON-charges table with a
+# "Net Amount" row -> its Total column = the last populated, CR/DR-signed money cell.
+def orphan_net_amount(tables):
+    for tbl in tables or []:
+        if not tbl or is_charges_table(tbl):
+            continue
+        for row in tbl:
+            if row and re.search(r"net\s*amount", (row[0] or ""), re.I):
+                nz = [v for v in (pnum(c) for c in row[1:]) if v is not None]
+                if nz:
+                    return nz[-1]           # Total (across-segment) column = last value cell
+    return None
+
 def checksum(net_total, fills=None):
     """net_amount == obligation + sum(charge components), within a paisa. Obligation is the
     explicit 'pay-in' line (Zerodha) or, when there is none, the sum of fill net-totals (Fyers/
@@ -967,6 +983,15 @@ def build_ledger(path):
     # new-Dhan notes are untouched by construction).
     if charges is None and broker == "dhan" and _OLD_DHAN_RE.search(note_text or ""):
         charges = parse_charges_from_text(note_text, old_dhan=True)   # TVS->gst_base, Other Tax->other_levy (both handled in the text parser)
+    # #2: Fyers split-net-amount — the charges table parsed but net_amount lives in a
+    # separate orphaned table; recover it so the checksum can run. GATED: only when a
+    # charges table exists AND net_amount is missing, so the 207 passing fyers notes
+    # (net_amount already present) are inert by construction. This only POPULATES the
+    # field — the checksum still gates, so a note that doesn't reconcile still refuses.
+    if broker == "fyers" and charges and charges["net_total"].get("net_amount") is None:
+        na = orphan_net_amount(all_tables)
+        if na is not None:
+            charges["net_total"]["net_amount"] = na
     if broker == "upstox" and charges:              # Trap 4: Upstox charges table is CLIENT-perspective
         # ((+) payable / (-) receivable) - INVERTED vs our cashflow convention. Flip into ours so a
         # charge/payable is negative and a receivable is positive. Obligation still comes from SIGNED fills.
