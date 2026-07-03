@@ -398,6 +398,36 @@ def checksum(net_total, fills=None):
     residual = round(net_amt - (obligation + csum + margin), 4)   # NOT a charge - balances the checksum, excluded from cost
     return (abs(residual) <= 0.01, residual)
 
+# #4a: some Upstox notes carry BROKERAGE only as "Brokerage Charges" pseudo-rows in
+# the trade table (skipped as fills by map_table's Trap 2, value dropped) plus a
+# SEPARATE "[IGST 18% On Brokerage]" line — neither lands in the charges table, so
+# net_total omits brokerage AND its GST and the note refuses by exactly that amount.
+# Authoritative brokerage source = the single "GST Taxable Value of Supply: Brokerage:
+# Rs. X" line (reliable on the whole affected set); the IGST-on-brokerage line supplies
+# the split GST the charges table only caught "On Charges" for.
+_UP_TVS_BROK = re.compile(r"taxable value of supply\s*:?-?\s*brokerage\s*:?\s*rs\.?\s*(-?[\d,]+\.\d+)", re.I)
+_UP_IGST_BROK = re.compile(r"igst[^\]\n]*on\s*brokerage[^\d\n]*(-?[\d,]+\.\d+)", re.I)
+
+def upstox_brokerage_merge(net_total, note_text, fills):
+    """Recover Upstox brokerage (+ its split IGST) from the note text when the charges
+    table omitted it, and ADOPT the merge ONLY if it makes the checksum fully reconcile.
+    Otherwise return net_total UNCHANGED — a note whose gap isn't exactly brokerage+its
+    GST has a further issue and is deferred byte-identical, never force-passed. Populate-
+    only + gated on brokerage-absent, so notes that already carry brokerage are inert."""
+    if net_total.get("brokerage"):
+        return net_total                                 # already captured -> inert (the passers)
+    m = _UP_TVS_BROK.search(note_text or "")
+    brok = pnum(m.group(1)) if m else None
+    if not brok:
+        return net_total                                 # no authoritative source -> defer unchanged
+    trial = dict(net_total)
+    trial["brokerage"] = -abs(brok)                      # brokerage is a debit
+    g = _UP_IGST_BROK.search(note_text or "")
+    igb = pnum(g.group(1)) if g else None
+    if igb:
+        trial["igst"] = round(trial.get("igst", 0.0) - abs(igb), 4)   # accumulate IGST-on-brokerage
+    return trial if checksum(trial, fills)[0] else net_total          # the checksum is the arbiter
+
 # Map a clearing-segment LABEL to a fill segment. Handles every broker's naming: NCLCM/NCLCD->cash,
 # NCLFO->fno, Upstox EQ-CASH->cash, FO-EQ->fno. Order matters - check fno (fo/deriv) before cash so
 # "fo-eq" -> fno (it contains neither 'cash' nor 'cm'); "eq-cash" -> cash (no 'fo'/'deriv').
@@ -1018,6 +1048,18 @@ def build_ledger(path):
                                                     # its fills when per-fill brokerage isn't in the summary
     nt = charges["net_total"] if charges else None
     ok, resid = checksum(nt, fills)                 # obligation = pay-in (Zerodha) or sum-of-fills (Fyers)
+    ps = per_segment_checksum(charges, fills)        # combined notes: each segment closes
+    # #4a: an Upstox note that fails ONLY on the total by an uncaptured brokerage (+ its
+    # split IGST), with NO per-segment failure, is rescued by recovering brokerage from
+    # text. ADOPT ONLY if the note then FULLY reconciles (the merge closes the total; the
+    # per-segment check is untouched by it, so it must already be clean). Keeps adopted
+    # <=> cleared: a note the merge can't fully reconcile is left byte-identical (deferred).
+    if (broker == "upstox" and charges and not nt.get("brokerage")
+            and ok is False and not any(v.get("pass") is False for v in ps.values())):
+        trial = upstox_brokerage_merge(nt, note_text, fills)
+        if trial is not nt:                          # the merge closed the total checksum
+            charges["net_total"] = nt = trial
+            ok, resid = checksum(nt, fills)
     gst_ok, gst_detail = gst_check(nt)
     ledger = {
         "broker": broker, "account": entity, "tax_entity": entity,
@@ -1029,7 +1071,7 @@ def build_ledger(path):
         "charges": charges,                         # by_clearing_segment + net_total
         "unmapped_charge_labels": (charges or {}).get("unmapped_labels", []),
         "checksum": {"pass": ok, "residual": resid},
-        "per_segment_checksum": per_segment_checksum(charges, fills),   # combined notes: each segment closes
+        "per_segment_checksum": ps,                 # combined notes: each segment closes
         "gst_attribution": {"pass": gst_ok, "detail": gst_detail},
         "fills": fills,
     }

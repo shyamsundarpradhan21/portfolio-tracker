@@ -981,5 +981,31 @@ fyers_full = [fyers_charges[0]] + fyers_charges[1:] + [["Net Amount Receivable/P
 ff = P.parse_charges_from_tables([fyers_full])
 check("fyers normal: net_amount already in charges table -> #2 merge never fires (passers inert)", ff["net_total"].get("net_amount") == -10039.33, ff["net_total"].get("net_amount"))
 
+# ===== #4a fix: Upstox brokerage + IGST-on-brokerage recovery (SYNTHETIC) =====
+# Brokerage lives only as "Brokerage Charges" pseudo-rows in the trade table + a split
+# "[IGST 18% On Brokerage]" line; neither reaches the charges table, so net_total omits
+# both and the note refuses by exactly that amount. Recover brokerage from the single
+# authoritative "GST Taxable Value of Supply: Brokerage: Rs. X" line; ADOPT ONLY if it
+# makes the checksum fully reconcile (the arbiter), else leave net_total byte-identical.
+print("[#4a upstox] brokerage + IGST-on-brokerage recovery from text (adopt-only-if-reconciles):")
+up_nt = {"net_amount": -10064.23, "stt": -10.0, "exchange_txn": -3.0, "sebi_turnover": -0.5,
+         "stamp_duty": -1.0, "ipft": -0.1, "igst": -2.43}          # NO brokerage; igst is On-Charges only
+up_fills = [{"net_total": -10000.0}]                                # obligation = sum fills (no pay_in)
+up_text = "GST Taxable Value of Supply:- Brokerage: Rs. 40.00 ,[SEBI FEES*] :Rs. 3.00\n[IGST 18% On Brokerage] 7.20"
+b0 = P.checksum(up_nt, up_fills)
+check("upstox #4a: pre-merge checksum FAILS by brokerage+its IGST (resid -47.2)", b0[0] is False and abs(b0[1]+47.2) < 1e-6, b0)
+merged = P.upstox_brokerage_merge(up_nt, up_text, up_fills)
+check("upstox #4a: brokerage recovered from TVS line (negated debit)", merged.get("brokerage") == -40.0, merged.get("brokerage"))
+check("upstox #4a: IGST-on-brokerage accumulated into igst (-2.43 + -7.20)", abs(merged.get("igst") - (-9.63)) < 1e-6, merged.get("igst"))
+check("upstox #4a: checksum PASSES after merge", P.checksum(merged, up_fills)[0] is True, P.checksum(merged, up_fills))
+# passer-inert: brokerage already present -> merge condition false -> net_total returned UNCHANGED (same object)
+up_pass = dict(up_nt); up_pass["brokerage"] = -40.0; up_pass["igst"] = -9.63
+check("upstox #4a: passer-inert — brokerage present -> unchanged", P.upstox_brokerage_merge(up_pass, up_text, up_fills) is up_pass, None)
+# defer: an EXTRA unexplained gap -> merge doesn't reconcile -> net_total UNCHANGED (byte-identical)
+up_gap = dict(up_nt); up_gap["net_amount"] = -10100.00
+check("upstox #4a: defer — not adopted when brokerage+IGST doesn't fully reconcile", P.upstox_brokerage_merge(up_gap, up_text, up_fills) is up_gap, None)
+# no source: no TVS brokerage line -> unchanged (defer, never force-passed)
+check("upstox #4a: no TVS brokerage line -> unchanged (defer)", P.upstox_brokerage_merge(up_nt, "no source here", up_fills) is up_nt, None)
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
