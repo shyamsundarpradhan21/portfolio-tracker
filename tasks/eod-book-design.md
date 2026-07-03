@@ -92,6 +92,11 @@ cosmetic, not a fix.)
 - **Rollback:** delete the artifact + script (dormant → nothing depends on it) or revert the cron. Trivial.
 - **Untouched:** `/api/quotes`, composition inputs, MF/FD sources.
 
+## Resilience benchmark
+The long-absence (6-month-vacation) stress test lives in `tasks/resilience-benchmark.md`: value
+survives on cloud pricing, composition is static except corp-action drift (caught here on return),
+and the broker-reconcile step below **is** the return-reconcile that heals the note/realised backlog.
+
 ## Open follow-up (not part of this design)
 Close the 3 equity gaps at source — chase the missing delivery notes (ZYDUSLIFE/PRICOLLTD on
 Zerodha, BANKBARODA on Upstox) into `inbox/` so the note pipeline reconstructs them and the

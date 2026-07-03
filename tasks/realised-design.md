@@ -86,5 +86,9 @@ Same **live-overlay / durable-anchor** architecture as `tasks/eod-book-design.md
 - The EOD-book **reconcile step** is exactly where provisional equity realised settles against the
   broker checkpoint — one reconcile, both concerns.
 
+See `tasks/resilience-benchmark.md` for the long-absence (6-month-vacation) stress test: because
+ingest is laptop-side, realised recovers as a **return-reconcile** (the notes are the durable spine
+in Gmail; nothing is lost, only deferred).
+
 ## Status
 Design only. **All wiring HELD** for review. No code changed.
