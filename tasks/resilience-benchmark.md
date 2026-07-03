@@ -37,6 +37,14 @@ Net worth renders live off cloud pricing × the last-seeded composition. **The h
 trustworthy on the beach.** (Caveat: intraday/Day-curve views go stale — KV tapes are TTL-3d so
 they expire, and the committed archives are frozen at the last laptop commit. Value ≠ intraday.)
 
+**Why the F&O staleness doesn't matter — the LOAD-BEARING reason.** Value survives not merely
+because pricing is cloud, but because **deployed algo (F&O) capital is <1% of net worth.** The
+99%+ that moves the headline — equity, US, MF, FD — is priced cloud-side off static composition;
+the one sleeve that *does* go stale during absence (F&O positions + realised) is a **rounding error**
+on net worth. Cloud pricing carries the 99%; the <1% F&O staleness is immaterial. **This — not the
+resilience of the ingest pipeline — is the real reason the beach number holds.** The pipeline being
+laptop-side would matter if F&O were a material fraction; it isn't (see the revisit trigger below).
+
 ### Composition — **STATIC, one drift source**
 KV `portfolio:v1` is frozen at the last seed. If not trading manually, composition holds.
 **The one drift source during absence = corporate actions** (a bonus/split changes the broker qty;
@@ -60,6 +68,16 @@ last pre-departure value.
 
 **So, per the question:** realised recovery is a **return-reconcile** (laptop ingest), not
 continuous — because the ingest is laptop-side.
+
+**Return-reconcile, quantified.** It is a **single automated batch run**, not a manual slog: the
+laptop boots → `IngestDaemon` fetches the accumulated Gmail backlog → the parser reconciles it into
+`ledger:cn` + the charge overlay in one pass (the same engine that cleared 821 notes; no per-note
+hand-holding). At the current algo cadence (**~19.6 notes/month** over the 45.7-month history,
+**8.2% checksum-deferred**), a **6-month gap accumulates ~117 notes → ~108 auto-reconcile, ~10 land
+in deferral-triage** (the F&O-margin / small-delta cluster — carried visible, not blocking). The
+batch parse itself is minutes; the only human cost is reviewing the deferrals, which **scales
+~linearly with absence** (~1.6 deferred/month → ~10 for six months, ~20 for a year). **A 6-month
+absence costs one automated run + a ~10-note triage** — trivial against zero data loss.
 
 ## 3. Recommendation — ingest location
 
@@ -97,6 +115,21 @@ minimum is **archive-only in the cloud** (a Vercel Gmail poll that just *counts/
 so you can see trading is happening remotely) while the **PAN-parsing stays laptop-side** on return
 — you learn "algos traded N times" remotely without decrypting PANs in the cloud. Full realised
 still return-reconciles. That's a fraction of the full-cloud lift with no posture change.
+
+## REVISIT TRIGGER
+This recommendation is load-bearing on **deployed algo (F&O) capital being <1% of net worth** — the
+reason F&O staleness is a rounding error today. **When that fraction becomes material** (the algo
+book is scaled up, or net worth otherwise concentrates in F&O), the stale-F&O sleeve **stops being
+a rounding error**: a multi-month blind spot on live realised/positions turns into a real mismark on
+the headline. **At that point, revisit the ingest location:**
+- First step up to **cloud archive-only** (remote visibility that the algos are trading; PANs still
+  parsed on return) — the privacy-preserving minimum.
+- Escalate to **full cloud-ingest** only if live realised *during* absence becomes a hard
+  requirement, accepting the Python-parser-on-Vercel lift + the PANs-in-cloud posture change.
+
+**Tripwire:** when the F&O sleeve's plausible absence-drift could move headline net worth beyond
+your acceptable error band (today: immaterial at <1%). Re-run this benchmark whenever the algo
+capital allocation is increased.
 
 ## Cross-link
 This is the resilience benchmark for the same live-overlay / durable-anchor architecture in
