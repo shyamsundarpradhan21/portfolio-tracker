@@ -45,7 +45,9 @@ is small, but because **F&O is EXCLUDED from the headline net-worth definition**
 deliberately drops `STATIC.algo`, and the EOD book has no F&O sleeve. **Staleness can't move a number
 F&O isn't in** — so the beach number holds, but the reason is **exclusion, not immateriality.** Two
 consequences: (a) the headline **permanently understates true wealth by ~36%** (~₹7L invisible);
-(b) the instant F&O is ever counted in NW, this whole section flips — see the revisit trigger.
+(b) the instant F&O is counted in NW, resilience splits by **HOW** it's counted — a *live-marked*
+sleeve flips this section, a *book-valued business-equity* line preserves it (the intended
+resolution). See the two-branch revisit trigger.
 
 ### Composition — **STATIC, one drift source**
 KV `portfolio:v1` is frozen at the last seed. If not trading manually, composition holds.
@@ -118,21 +120,27 @@ so you can see trading is happening remotely) while the **PAN-parsing stays lapt
 — you learn "algos traded N times" remotely without decrypting PANs in the cloud. Full realised
 still return-reconciles. That's a fraction of the full-cloud lift with no posture change.
 
-## REVISIT TRIGGER
-Earlier framed as "when algo capital *becomes* a material fraction of NW." **Correction: it already
-IS material — own F&O is ~36% of NW.** The trigger's magnitude condition is **already met**; it is
-gated ONLY by the current **exclusion** of F&O from the headline. So the tripwire is not "when F&O
-grows" but **"the moment F&O is counted in net worth."** At that point a multi-month blind spot on
-~36% of NW becomes a real mismark — a plausible ±15–20% algo swing over 6 months ≈ **±₹1.0–1.4L ≈
-5–7% of NW**, far beyond any tolerable error band — and "accept return-reconcile" no longer holds.
-**Then revisit the ingest location:**
-- First step up to **cloud archive-only** (remote visibility that the algos are trading; PANs still
-  parsed on return) — the privacy-preserving minimum.
-- Escalate to **full cloud-ingest** only if live realised *during* absence becomes a hard
-  requirement, accepting the Python-parser-on-Vercel lift + the PANs-in-cloud posture change.
+## REVISIT TRIGGER — two branches (depends on HOW F&O enters NW)
+Own F&O is ~36% of NW, so the magnitude condition is **already met**; only the current **exclusion**
+gates it. But **"counting F&O breaks resilience" is only HALF the truth** — it depends entirely on
+*how* F&O is counted:
 
-**Tripwire:** F&O being wired into the net-worth definition (the held (a)/(b) F&O-in-NW decision).
-Until then "accept return-reconcile" holds — but **via exclusion, not immateriality.**
+- **Live-sleeve F&O** — marked-to-market intraday, like the equity sleeves. During a long absence the
+  account value/MTM goes **silently stale** (broker sync is laptop-side) while *presenting as live*:
+  a 6-month blind spot on ~36% of NW ≈ a plausible ±15–20% algo swing ≈ **±₹1.0–1.4L ≈ 5–7% of NW**,
+  beyond any tolerable band → **return-reconcile FAILS.** Needs cloud archive-only (min) or full
+  cloud-ingest (Python-parser-on-Vercel + PANs-in-cloud cost).
+- **Business-equity F&O** — a single **book-valued** "trading business equity" line, valued at the EOD
+  close from the durable book (own account value + open MTM − client capital − business liabilities),
+  and **labeled "at close · DATE"** like the rest of the book. During absence it's stale *but honestly
+  marked as a close, not live*; on return the notes reconstruct the realised → the account value → the
+  EOD-book rebuild corrects the line — **the same return-reconcile as the personal sleeves.**
+  → **return-reconcile HOLDS.** ← **the intended resolution.**
+
+**So the tripwire is not "F&O is counted" — it is "F&O is counted AS A LIVE SLEEVE."** Counting it as
+a book-valued business-equity rollup keeps the whole benchmark intact (no cloud-ingest forced). The
+earlier (a)/(b) live-mark follow-on is **superseded** by that single book-valued line — to be
+specified in `tasks/business-entity-model.md` once the business-entity model is adopted.
 
 ## Cross-link
 This is the resilience benchmark for the same live-overlay / durable-anchor architecture in
