@@ -3,7 +3,7 @@
 // scripts/seed-portfolio-kv.mjs); local dev falls back to the gitignored
 // data/portfolio.private.json. Never cached (private).
 
-import { loadPortfolio, loadFnoOverlay } from '../../lib/serverPortfolio';
+import { loadPortfolio, loadFnoOverlay, loadEodBook } from '../../lib/serverPortfolio';
 import { applyFnoOverlay } from '../../lib/fnoOverlay';
 // Committed app JSONs are server-imported here (server bundle only) and served to
 // the client, so they no longer ship in the client JS bundle. They stay committed
@@ -33,9 +33,12 @@ export async function GET() {
   // Phase 2c: overlay real NCLFO charges (KV ledger:fno:overlay) onto the committed fno-ledger base.
   // Graceful: if the overlay key is missing/unreachable, applyFnoOverlay returns the committed ledger as-is.
   const fnoLedgerReal = applyFnoOverlay(fnoLedger, await loadFnoOverlay());
+  // eodBook: the durable per-holding close (serving copy). DORMANT — served but not yet
+  // consumed by the client (Sub-step B hero close-fallback is held). Graceful null.
+  const eodBook = await loadEodBook();
   const payload = {
     ...data,
-    _app: { fySeed, fnoLedger: fnoLedgerReal, fnoIntraday, eqIntraday, usIntraday, niftyOhlc, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd, fnoRealized: brokerTax.fno_realized },
+    _app: { fySeed, fnoLedger: fnoLedgerReal, fnoIntraday, eqIntraday, usIntraday, niftyOhlc, volPnl, brokerState, usTrades, indianExits, snapSleeves, snapMd, fnoRealized: brokerTax.fno_realized, eodBook },
   };
   return new Response(JSON.stringify(payload), {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

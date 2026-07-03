@@ -181,6 +181,17 @@ book.days[today] = {
 };
 writeFileSync(join(ROOT, 'data', 'eod-book.json'), JSON.stringify(book, null, 2));
 
+// Serving copy → KV: the deployed app reads KV, not the gitignored file. The BOOK OF
+// RECORD stays the local JSON; KV is only a serving copy (same split as portfolio:v1).
+// eod-book:latest = the latest day, self-contained, for the app's close-fallback loader.
+// Best-effort; the durable file is already written above regardless.
+if (env.KV_REST_API_URL) {
+  const latest = { date: today, ...book.days[today] };
+  const ok1 = await kv(['SET', 'eod-book:latest', JSON.stringify(latest)]);
+  const ok2 = await kv(['SET', `eod-book:${today}`, JSON.stringify(book.days[today])]);
+  console.log(`KV serving copy: eod-book:latest ${ok1 ? 'written' : 'FAILED'}, eod-book:${today} ${ok2 ? 'written' : 'FAILED'}`);
+}
+
 // ── GATE: per-sleeve reconciliation vs the app's recorded snapshot ─────────────
 const snapArr = await kv(['GET', 'snapshots:nw:primary']).then((r) => r ? JSON.parse(r) : null);
 const snap = Array.isArray(snapArr) ? snapArr.find((s) => s.d === today) || snapArr[snapArr.length - 1] : null;
