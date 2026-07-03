@@ -48,7 +48,11 @@ TABLE_LABELS = [
     (r"span\s*mg|exp\.?\s*mg|del\.?\s*mg|exposure margin|span margin", "margin"),   # F&O COLLATERAL (SPAN/EXP/DEL)
 ]                                  # other_tax/margin -> recognised, NOT in CHARGE_KEYS. margin balances the NET (checksum), is not a cost.
 CHARGE_KEYS = ["brokerage", "exchange_txn", "clearing", "cgst", "sgst", "igst",
-               "stt", "ctt", "sebi_turnover", "ipft", "stamp_duty"]
+               "stt", "ctt", "sebi_turnover", "ipft", "stamp_duty",
+               "other_levy"]   # old-Dhan itemises a real "Other Tax" levy (part of Net Amount);
+# it gets its OWN summed key so stamp_duty stays pure. Emitted ONLY by the old-Dhan text path
+# (parse_charges_from_text old_dhan=True), so adding it here is inert for every other broker/path —
+# Groww's 'UTT'/other_tax (0 outside UTs) stays a recognised NON-charge, unchanged.
 # keys that ACCUMULATE across rows/tables (vs overwrite). 'margin' (SPAN/EXP/DEL collateral) sums like
 # a charge but is NOT a CHARGE_KEY - it balances the NET checksum, never counts as a cost or GST base.
 _ACCUM_KEYS = set(CHARGE_KEYS) | {"margin"}
@@ -287,7 +291,7 @@ def parse_charges_rows(tbl):
 # and boilerplate line fails one of those, so nothing spurious is summed.
 _TEXT_MONEY_TAIL = re.compile(r"(-?\(?\d[\d,]*\.\d{2}\)?)\s*(?:DR|CR)?\s*$", re.I)
 
-def parse_charges_from_text(text):
+def parse_charges_from_text(text, old_dhan=False):
     net_total, unmapped = {}, []
     for raw in (text or "").splitlines():
         line = raw.strip()
@@ -300,6 +304,19 @@ def parse_charges_from_text(text):
         key = label_key(label)
         if not key:
             continue
+        # Old-Dhan's "Taxable Value of Supply" is the GST BASE subtotal (= Brokerage
+        # + Exchange + SEBI, per the note's own footnote), NOT a brokerage charge.
+        # label_key maps bare TVS -> brokerage (right for new-Dhan/Fyers), so pin it
+        # to the informational gst_base here, else it double-counts into the checksum
+        # (brokerage is already folded into PAY IN/PAY OUT OBLIGATION on old-Dhan).
+        if old_dhan and "taxable value of supply" in label.lower():
+            key = "gst_base"
+        # Old-Dhan's "Other Tax" is a real levy that IS part of Net Amount Payable
+        # (label_key maps it to 'other_tax', a NON-summed key kept for Groww's UTT=0).
+        # Re-key it to the dedicated summed 'other_levy' so it reconciles into the
+        # charge TOTAL on its OWN line — stamp_duty is left carrying only stamp duty.
+        if old_dhan and "other tax" in label.lower():
+            key = "other_levy"
         v = pnum(m.group(0))
         if v is None:
             continue
@@ -941,6 +958,15 @@ def build_ledger(path):
     charges = parse_charges_from_tables(all_tables)
     if charges is None and broker == "astha":       # Astha lists charges as free text, not a ruled table
         charges = parse_charges_from_text(note_text)
+    # Old-Dhan (2023-24 Moneylicious): the charges/obligation block is a NCL
+    # CAPITAL/FUTURES/TOTAL(NET) grid pdfplumber mangles into an unusable table
+    # (0 charge rows recognised -> parse_charges_from_tables None). Read it from
+    # TEXT instead, same label_key vocabulary as every other adapter. GATED on
+    # broker==dhan AND the old-Dhan signature AND charges-still-None, so it can
+    # NEVER run on a note that already parsed a charges table (the 383 passing
+    # new-Dhan notes are untouched by construction).
+    if charges is None and broker == "dhan" and _OLD_DHAN_RE.search(note_text or ""):
+        charges = parse_charges_from_text(note_text, old_dhan=True)   # TVS->gst_base, Other Tax->other_levy (both handled in the text parser)
     if broker == "upstox" and charges:              # Trap 4: Upstox charges table is CLIENT-perspective
         # ((+) payable / (-) receivable) - INVERTED vs our cashflow convention. Flip into ours so a
         # charge/payable is negative and a receivable is positive. Obligation still comes from SIGNED fills.

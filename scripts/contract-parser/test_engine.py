@@ -901,5 +901,52 @@ check("groww: residual ~0", abs(gresid) <= 0.01, gresid)
 gps = P.per_segment_checksum(gch, [])
 check("groww: per-segment Equity checksum closes", gps.get("Equity", {}).get("pass") is True, gps.get("Equity"))
 
+# ===== #1 fix: old-Dhan (Moneylicious 2023-24) charges/obligation from TEXT =====
+# The charges/obligation block is a NCL CAPITAL/FUTURES/TOTAL(NET) grid pdfplumber
+# mangles into an unusable table (0 charge rows recognised), so read it from text
+# like Astha. Two old-Dhan quirks the synthesis handles:
+#  (a) bare "Taxable Value of Supply" is the GST BASE subtotal (Brokerage+Exch+SEBI)
+#      — NOT a brokerage charge (PAY IN/PAY OUT already includes brokerage);
+#  (b) an "Other Tax" levy that IS part of Net Amount — it gets its OWN summed key
+#      'other_levy' (label_key's 'other_tax' stays unsummed for Groww's UTT=0), so
+#      stamp_duty carries ONLY stamp duty and the checksum closes with no fold.
+print("[#1 old-Dhan] TEXT charge synthesis: TVS->gst_base, Other-Tax->other_levy, checksum closes:")
+olddhan_text = "\n".join([
+    "Order No. Trade No. Security/Contract Buy(B)/Sell(S) Quantity Net Total",
+    "111 222 SBIN B 10 -9999.99",                        # a trade-detail line — must NOT be read as a charge
+    "PAY IN / PAY OUT OBLIGATION -10000.00 0.00 -10000.00",
+    "Securities Transaction Tax 50.00 0.00 50.00",
+    "Taxable Value of Supply 40.00 0.00 40.00",          # GST BASE (Brokerage+Exch+SEBI) — NOT a brokerage charge
+    "IGST (@18.00%) 7.56 0.00 7.56",
+    "Exchange Transaction Charges *** 2.00 0.00 2.00",
+    "SEBI turnover Fees 1.00 0.00 1.00",
+    "Stamp Duty 3.00 0.00 3.00",
+    "Other Tax 0.50 0.00 0.50",
+    "Net Amount Payable by Client -10064.06 0.00 -10064.06",
+])
+# GUARD: without the flag, bare "Taxable Value of Supply" -> brokerage; "Other Tax" -> other_tax (unsummed)
+base_nt = P.parse_charges_from_text(olddhan_text)["net_total"]
+check("old-Dhan guard: TVS -> brokerage without the old_dhan flag", base_nt.get("brokerage") == -40.00, base_nt.get("brokerage"))
+check("old-Dhan guard: 'Other Tax' -> other_tax (unsummed), no other_levy without the flag",
+      base_nt.get("other_tax") == 0.50 and "other_levy" not in base_nt, sorted(base_nt))
+odt = P.parse_charges_from_text(olddhan_text, old_dhan=True)["net_total"]
+check("old-Dhan: TVS re-keyed to gst_base (informational), brokerage absent", odt.get("gst_base") == 40.00 and "brokerage" not in odt, sorted(odt))
+check("old-Dhan: pay_in / net_amount signed", odt.get("pay_in") == -10000.00 and odt.get("net_amount") == -10064.06, (odt.get("pay_in"), odt.get("net_amount")))
+check("old-Dhan: STT/exchange/SEBI/stamp/IGST negated (debits)",
+      [odt.get(k) for k in ("stt","exchange_txn","sebi_turnover","stamp_duty","igst")] == [-50.0,-2.0,-1.0,-3.0,-7.56],
+      [odt.get(k) for k in ("stt","exchange_txn","sebi_turnover","stamp_duty","igst")])
+check("old-Dhan: trade-detail line NOT summed as a charge", odt.get("brokerage") is None, sorted(odt))
+# THE CORRECTNESS FIX: Other Tax -> its OWN summed key; stamp_duty carries ONLY stamp duty
+check("old-Dhan: Other Tax -> dedicated summed key other_levy (negated debit)", odt.get("other_levy") == -0.50, odt.get("other_levy"))
+check("old-Dhan: stamp_duty carries ONLY stamp duty (NOT inflated by Other Tax)", odt.get("stamp_duty") == -3.00, odt.get("stamp_duty"))
+check("old-Dhan: no fold — 'other_tax' key not used for old-Dhan (re-keyed)", "other_tax" not in odt, sorted(odt))
+# checksum closes DIRECTLY (no fold) — other_levy is summed via CHARGE_KEYS
+pp, rr = P.checksum(odt)
+check("old-Dhan: CHECKSUM PASS (net == pay_in + charge TOTAL incl other_levy)", pp is True, (pp, rr))
+check("old-Dhan: residual ~0", abs(rr) <= 0.01, rr)
+# key-set guards: other_levy is summed; other_tax stays a recognised NON-charge (Groww UTT)
+check("other_levy IS a summed CHARGE_KEY", "other_levy" in P.CHARGE_KEYS, "other_levy" in P.CHARGE_KEYS)
+check("other_tax is NOT summed (stays recognised non-charge for UTT)", "other_tax" not in P.CHARGE_KEYS, "other_tax" not in P.CHARGE_KEYS)
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
