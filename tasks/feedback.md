@@ -15,6 +15,7 @@ Captured from live sessions. Read before starting any task.
 - **Build to the provided mockup/spec**, not the house style. "Mirror layout X" = build THAT layout; if exact `grid-template-areas` given, apply verbatim.
 - **Render-mock BEFORE editing** any visual/layout redesign — they can't see my screenshots.
 - **Render-verify any data-ledger edit** in the live app (raw API returns pre-corp-action qty).
+- **Payslip upload → add ALL of net/CMPF/CMPS**, not just the auto `BASIC_PAY`: append the month to `PAYSLIPS` (`net`), `CMPF_CONTRIBUTIONS` (`emp`), `CMPS_CONTRIBUTIONS` (`emp`) from the `parse-payslip.py` table, reconciling arrears (a spike like May-26 CMPS ₹132,947 → regular ₹9,427), then reseed KV. The ingest/daemon auto-writes ONLY `BASIC_PAY`; the Capital-Deployment savings-rate card divides by net (`PAYSLIPS`), so a basic-only month leaves it `null` and the card hidden. (Also: a byte-identical re-upload is correctly `[DUP]`-skipped — check the manifest before assuming an intake failed.)
 - **Verify external facts (broker pricing/auth/limits) live** before asserting — or mark "unconfirmed".
 - **Check for an official/hosted path before a big custom build**; confirm scope first. (But don't questionnaire analysis drafts — do the work, then iterate.)
 - **"Fix all" = exhaustive grep sweep**, not just the flagged instances.
