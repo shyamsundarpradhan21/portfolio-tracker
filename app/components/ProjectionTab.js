@@ -16,6 +16,7 @@ import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
 import GrowthView from './shared/GrowthView';
+import GrowthWaffle from './shared/GrowthWaffle';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
 // the pre-history fallback rate and the Cons/Opt bracket all read from here.
@@ -1013,6 +1014,11 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           })}
         </div>
       </div>
+
+      {/* Per-sleeve contribution waffle — folded in from the old standalone "Wealth growth"
+          card (the growth curve + cumulative headline were dropped: this card already
+          carries its own net-worth curve). Self-fetches /api/growth; the mix is what moves. */}
+      <GrowthWaffle />
 
       {/* CMPS defined-benefit pension — a one-line note just above the footnote.
           The figure is the FULL-CAREER projection (pension = salary × service ÷ 70

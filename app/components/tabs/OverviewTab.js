@@ -7,7 +7,6 @@ import ProjectionTab from '../ProjectionTab';
 import AllocBar from '../shared/AllocBar';
 import SipCard from '../shared/SipCard';
 import PortfolioLiveCurve from '../shared/PortfolioLiveCurve';
-import GrowthDashboard from '../shared/GrowthDashboard';
 
 export default function OverviewTab({
   ov, fx, insights, insightsOn, insightsFirstLoad, FY, snapshots, histSeries,
@@ -41,11 +40,6 @@ export default function OverviewTab({
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />
-
-      {/* Wealth-growth dashboard — cumulative daily accrual across asset sleeves (fed by the
-          resilient growth:<date> snapshots). Placed below the capital-deployment calendar so
-          its area curve doesn't stack directly under the net-worth growth scrubber's curve. */}
-      <div className="sec"><GrowthDashboard /></div>
 
       <CFMemo
         title="Loss Carryforward — Tax Asset"
