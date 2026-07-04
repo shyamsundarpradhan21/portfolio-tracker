@@ -29,7 +29,7 @@ import {
   applyCorpActions, compound, clampN, DAY_MS, YEAR_MS,
 } from './lib/calc';
 import {
-  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, InrF, SInrC, SInrF, sFull, Rs, pctS,
+  cl, isoOf, inrC, inrCd, inrFull, fmtNavDate, InrC, InrF, SInrC, SInrF, sFull, Rs, pctS, CurrencyProvider,
 } from './lib/fmt';
 import { ETF_LOOKTHROUGH, ETF_CAP, US_CAP, usSectorOf } from './lib/constants';
 import { reconcileSleeve } from './lib/brokerState';
@@ -310,6 +310,18 @@ function Dashboard() {
   const cycleTheme = () => setThemeMode((m) => {
     const next = m === 'auto' ? 'day' : m === 'day' ? 'night' : 'auto';
     try { localStorage.setItem('nwTracker.theme', next); } catch {}
+    return next;
+  });
+
+  // Global display currency for the US sleeve: 'usd' (native) or 'inr' (converted
+  // at the live USD/INR so the US cards read in ₹, consistent with the Indian
+  // cards). Persisted; defaults to native $ so nothing changes until toggled.
+  const [currency, setCurrency] = useState(() => {
+    try { return localStorage.getItem('nwTracker.currency') || 'inr'; } catch { return 'inr'; }
+  });
+  const toggleCurrency = () => setCurrency((c) => {
+    const next = c === 'usd' ? 'inr' : 'usd';
+    try { localStorage.setItem('nwTracker.currency', next); } catch {}
     return next;
   });
 
@@ -1194,6 +1206,7 @@ function Dashboard() {
 
   // ─── render ─────────────────────────────────────────────────────────────────
   return (
+    <CurrencyProvider mode={currency} fx={fxRate}>
     <div className="layout">
       {/* MAIN CONTENT */}
       <main className="main">
@@ -1218,6 +1231,8 @@ function Dashboard() {
               <span className="topbar-status"><span className={pulseCls} /><span className="status-txt">{status.msg}</span></span>
               <button className={'hdr-toggle ai-toggle' + (insightsOn ? ' on' : '')} onClick={toggleInsights} aria-pressed={insightsOn}
                 title={insightsOn ? 'AI analysis ON — click to hide the cards' : 'AI analysis OFF — click to show the cards'}>AI</button>
+              <button className={'hdr-toggle' + (currency === 'inr' ? ' on' : '')} onClick={toggleCurrency} aria-pressed={currency === 'inr'}
+                title={currency === 'inr' ? 'US figures in ₹ (converted at live USD/INR) — click for $' : 'US figures in $ (native) — click for ₹'}>{currency === 'inr' ? '₹' : '$'}</button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
             </div>
           </div>
@@ -1334,5 +1349,6 @@ function Dashboard() {
         </AiContext.Provider>
       </main>
     </div>
+    </CurrencyProvider>
   );
 }

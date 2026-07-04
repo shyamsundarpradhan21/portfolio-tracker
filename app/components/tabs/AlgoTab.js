@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { SInrF, RsText } from '../../lib/fmt';
+import { SInrF, RsText, displayCurrency, displayFx } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import AlgoScreenReview from '../shared/AlgoScreenReview';
 import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
@@ -13,8 +13,12 @@ import { fnoLive } from '../../lib/brokerState';
 const SUBTABS = [['overview', 'Overview'], ['summary', 'Summary'], ['review', 'Review'], ['analytics', 'Analytics']];
 const CADENCES = ['Weekly', 'Monthly', 'Quarterly', 'Semi-Annual', 'Annual'];
 
-// Compact ₹ for capital figures: ₹3.9L / ₹40K — derived from ALGO splits.
-const cap = (n) => n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
+// Compact capital figure — ₹3.9L / ₹40K, or the $-equivalent when the app-wide toggle
+// is in $-mode (₹ base ÷ live fx). RsText styles the ₹ glyph; a $ figure renders plain.
+const cap = (n) => {
+  if (displayCurrency() === 'usd') { const u = n / displayFx(); return u >= 1e3 ? '$' + (u / 1e3).toFixed(1) + 'K' : '$' + Math.round(u); }
+  return n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
+};
 
 export default function AlgoTab({
   insights, insightsOn, insightsFirstLoad,

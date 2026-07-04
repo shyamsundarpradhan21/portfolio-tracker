@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, inrCd, sFull, fmtNavDate } from '../../lib/fmt';
+import { cl, pctS, pct1, InrC, InrF, SInrC, SInrF, Rs, sFull, fmtNavDate, useDisplayCurrency } from '../../lib/fmt';
 import { LiveInrC, LiveSInrC } from '../shared/Live';
 import { SECTOR_PALETTE } from '../../lib/constants';
 import AnalysisCard from '../shared/AnalysisCard';
@@ -32,6 +32,7 @@ export default function IndianTab({
   INDIAN, INDIAN_REALIZED, CORPORATE_ACTIONS, FY, indianRec,
   swing, swingSorted, swSort, sortSw, swingRec,
 }) {
+  const { mode: curMode } = useDisplayCurrency(); // app-wide ₹/$ — only drives prose wording here
   // Combined Indian-equity book = Zerodha holdings (mom) + Upstox swing (me),
   // tracked together for accounting. The value/P&L summary cards and the merged
   // Holdings table run off this; the performance analytics (CAGR / benchmarks /
@@ -103,7 +104,7 @@ export default function IndianTab({
       <div className="g2 sec">
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
-          <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your <Rs />{inrCd(inStats.totalInvested)} deployed into each instead.</div>
+          <div className="sub" style={{ marginBottom: 14 }}>Same dated {curMode === 'usd' ? 'dollars' : 'rupees'} — your <InrC n={inStats.totalInvested} /> deployed into each instead.</div>
           <BenchmarkBars you={inStats.portXirr} rows={inStats.benchmarks.filter((b) => !['niftybank', 'next50'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
             Annualised over a {inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} average holding — a short window; indicative, not proven edge.

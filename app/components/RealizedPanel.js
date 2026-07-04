@@ -9,6 +9,7 @@
 // (Zerodha tradebook for India, Vested lot-level P&L for US).
 
 import { useState } from 'react';
+import { useDisplayCurrency } from '../lib/fmt';
 
 const compactInr = (n) => {
   const a = Math.abs(n);
@@ -16,11 +17,25 @@ const compactInr = (n) => {
   if (a >= 1e5) return (a / 1e5).toFixed(2) + ' L';
   return Math.round(a).toLocaleString('en-IN');
 };
+const compactUsd = (n) => {
+  const a = Math.abs(n);
+  if (a >= 1e6) return (a / 1e6).toFixed(2) + ' M';
+  if (a >= 1e3) return (a / 1e3).toFixed(1) + ' K';
+  return a.toFixed(2);
+};
 const cl = (n) => (n >= 0 ? 'grn' : 'red');
 const PALETTE = ['var(--blu)', 'var(--pur)', 'var(--cyn)', 'var(--grn)', 'var(--pnk)', 'var(--acc)'];
 
+// `currency` is the DATA's native currency ('inr' for the Indian panel, 'usd' for US);
+// the app-wide toggle (display) decides how it's shown — the panel converts native→display
+// via the live fx. (Superseded the old fixed inline "≈₹" companion — the toggle does it now.)
 export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, className = '', note }) {
   const [sel, setSel] = useState(null); // null = overall, else FY index
+  const { mode: display, fx } = useDisplayCurrency();
+  const rate = fxRate || fx || 88;
+  const native = currency === 'usd' ? 'usd' : 'inr';
+  const conv = (n) => (native === display ? n : native === 'usd' ? n * rate : n / rate); // → display currency
+  const moneyStr = (n) => { const v = conv(n); return display === 'usd' ? '$' + compactUsd(v) : '₹' + compactInr(v); };
 
   const fy = data.fy || [];
   const vals = fy.map((b) => b.amt);
@@ -28,11 +43,11 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
   const winYears = vals.filter((v) => v > 0).length;
   const bestIdx = vals.length ? vals.reduce((bi, v, i, a) => (v > a[bi] ? i : bi), 0) : -1;
   const worstIdx = vals.length ? vals.reduce((wi, v, i, a) => (v < a[wi] ? i : wi), 0) : -1;
-  const ytd = currency === 'usd' ? data.ytdUsd : data.ytd;
+  const ytd = native === 'usd' ? data.ytdUsd : data.ytd;
 
-  const Money = ({ n }) => currency === 'usd'
-    ? <><span className="rs">$</span>{Math.abs(n).toFixed(2)}</>
-    : <><span className="rs">₹</span>{compactInr(n)}</>;
+  const Money = ({ n }) => { const v = conv(n); return display === 'usd'
+    ? <><span className="rs">$</span>{compactUsd(v)}</>
+    : <><span className="rs">₹</span>{compactInr(v)}</>; };
 
   // active scope
   const total = sel == null ? data.total : fy[sel].amt;
@@ -50,9 +65,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           <div className="sub" style={{ margin: 0 }}>{data.source || 'avg-cost'} · as on {data.asOf}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vt2 ' + cl(total)}><Money n={total} />
-            {currency === 'usd' && fxRate ? <span className="sub" style={{ fontWeight: 400 }}> ≈<span className="rs">₹</span>{compactInr(Math.abs(total) * fxRate)}</span> : null}
-          </div>
+          <div className={'vt2 ' + cl(total)}><Money n={total} /></div>
           <div className="sub" style={{ margin: 0 }}>
             {sel == null
               ? (ytd != null ? <>overall, all years<br /><span className={cl(ytd)}><Money n={ytd} /></span> {data.ytdLabel} YTD</> : 'overall, all years')
@@ -75,7 +88,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
           const cls = 'rz-col' + (sel === i ? ' sel' : '') + (sel != null && sel !== i ? ' dim' : '');
           return (
             <div key={b.label} className={cls}
-              title={`${b.label}  ${currency === 'usd' ? '$' + Math.abs(b.amt).toFixed(2) : '₹' + compactInr(b.amt)}`}
+              title={`${b.label}  ${moneyStr(b.amt)}`}
               onClick={() => setSel(sel === i ? null : i)}>
               <div className="rz-half t"><div className="rz-up" style={{ height: up ? h : 0 }} /></div>
               <div className="rz-zero" />

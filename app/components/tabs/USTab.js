@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, pct1, InrC, SInrF, Rs, UsdF } from '../../lib/fmt';
+import { cl, pctS, pct1, Rs, UsdF, useDisplayCurrency } from '../../lib/fmt';
 import { LiveUsdF } from '../shared/Live';
 import BenchmarkBars from '../shared/BenchmarkBars';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
@@ -17,6 +17,11 @@ export default function USTab({
   insights, insightsOn, insightsFirstLoad,
   US, US_REALIZED, US_DIVIDENDS, FY,
 }) {
+  // Every $ figure here flows through UsdF, which reads the app-wide currency (topbar
+  // ₹/$ toggle) — so ₹-mode converts the whole tab at the live fx. The old inline "≈₹"
+  // companions were removed (the toggle does the conversion now). `mode` only drives the
+  // "dated dollars/rupees" wording so it matches whichever currency is on screen.
+  const { mode } = useDisplayCurrency();
   return (
     <div>
       <AnalysisCard data={insights?.us} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--cyn)" />
@@ -32,22 +37,22 @@ export default function USTab({
         <div className="csm">
           <div className="lbl">Invested (cost)</div>
           <div className="vmd"><UsdF n={usData.inv} /></div>
-          <div className="sub">≈<span className="mut"><InrC n={usData.inv * fxRate} /></span> · {US.length} holdings</div>
+          <div className="sub">{US.length} holdings</div>
         </div>
         <div className="csm">
           <div className="lbl">Current value</div>
           <div className="vmd">{usData.val ? <LiveUsdF n={usData.val} /> : <Skel w={90} h={20} />}</div>
-          <div className="sub">{usData.val && fxRate ? <>≈<span className="mut"><InrC n={ov.usInr} /></span> @ <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
+          <div className="sub">{usData.val && fxRate ? <>live · USD/INR <Rs />{fxRate.toFixed(2)}</> : 'live NYSE'}</div>
         </div>
         <div className="csm">
           <div className="lbl">Unrealized P&amp;L</div>
           <div className={'vmd ' + (usData.val ? cl(usData.pl) : '')}>{usData.val ? <LiveUsdF n={usData.pl} /> : <Skel w={80} h={20} />}</div>
-          <div className="sub">{usData.val ? <>{pctS(usData.pct)} on cost · ≈<span className="mut"><InrC n={Math.abs(usData.pl) * fxRate} /></span></> : 'value − cost'}</div>
+          <div className="sub">{usData.val ? <>{pctS(usData.pct)} on cost</> : 'value − cost'}</div>
         </div>
         <div className="csm">
           <div className="lbl">Day change</div>
           <div className={'vmd ' + (usData.val ? cl(usStats.dayPl) : '')}>{usData.val ? <LiveUsdF n={usStats.dayPl} /> : <Skel w={80} h={20} />}</div>
-          <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} vs prev close · ≈<span className="mut"><InrC n={Math.abs(usStats.dayPl) * fxRate} /></span></> : 'vs prev close'}</div>
+          <div className="sub">{usData.val ? <>{pctS(usStats.dayPct)} vs prev close</> : 'vs prev close'}</div>
         </div>
         <div className="csm">
           <div className="lbl">CAGR (annualised)</div>
@@ -57,14 +62,14 @@ export default function USTab({
         <div className="csm">
           <div className="lbl">Realized P&amp;L (YTD)</div>
           <div className={'vmd ' + cl(US_REALIZED.ytdUsd)}><UsdF n={US_REALIZED.ytdUsd} /></div>
-          <div className="sub">{US_REALIZED.ytdLabel} · ≈<span className="mut"><InrC n={Math.abs(US_REALIZED.ytdUsd) * fxRate} /></span></div>
+          <div className="sub">{US_REALIZED.ytdLabel}</div>
         </div>
       </div>
 
       <div className="g2 sec">
         <div className="card">
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
-          <div className="sub" style={{ marginBottom: 14 }}>Same dated dollars — your <UsdF n={usStats.netInvested} d={0} /> <span className="mut">(≈<InrC n={usStats.netInvested * fxRate} />)</span> deployed into each instead.</div>
+          <div className="sub" style={{ marginBottom: 14 }}>Same dated {mode === 'usd' ? 'dollars' : 'rupees'} — your <UsdF n={usStats.netInvested} d={0} /> deployed into each instead.</div>
           <BenchmarkBars you={usStats.xirr} rows={usStats.benchmarks.filter((b) => ['sp500', 'nasdaq', 'china', 'gold', 'bitcoin'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
             Counterfactual: your exact deposit dates replayed into each index — same rupees, same timing; indicative, not proven edge.
@@ -96,8 +101,6 @@ export default function USTab({
               currency="usd" othersColor={OTHERS_COLOR}
             />
           </div>
-          <div style={{ height: 1, background: 'var(--brd)', margin: '18px 0 12px' }} />
-          <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', textAlign: 'center', lineHeight: 1.5 }}>ETF look-through aligns with Vested (equity only); direct stocks by GICS.</div>
         </div>
       </div>
 
@@ -167,7 +170,7 @@ export default function USTab({
             </div>
             <div style={{ textAlign: 'right' }}>
               <div className="vt2 grn"><UsdF n={US_DIVIDENDS.netAllTime} /></div>
-              <div className="sub" style={{ margin: 0 }}>net all-time (≈<InrC n={US_DIVIDENDS.netAllTime * fxRate} />)</div>
+              <div className="sub" style={{ margin: 0 }}>net all-time</div>
             </div>
           </div>
           <div className="g2" style={{ flex: 1, margin: '0 0 14px', alignItems: 'stretch' }}>
