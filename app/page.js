@@ -697,17 +697,30 @@ function Dashboard() {
   }, [mf, mfSort]);
   const sortMf = (key) => setMfSort((s) => s.key === key ? { key, dir: -s.dir } : { key, dir: key === 'name' || key === 'platform' ? 1 : -1 });
 
+  // TRADING_EQUITY (business-entity model) — the F&O trading business's owner equity =
+  // account value + open MTM, book-valued "at close" (broker-state = last sync). Dhan is
+  // ledger-reconciled; Upstox is sync-trusted (its Payments API last-20 can't reconstruct
+  // the 2.5yr history). Funds are cash (no pledged INDIAN/SWING collateral) + F&O MTM →
+  // disjoint from every live-priced sleeve, so adding it to NW does NOT double-count.
+  const tradingEquity = useMemo(() => {
+    const b = APP.brokerState || {};
+    const f = (k) => (b.funds?.[k]?.available || 0) + (b.funds?.[k]?.utilized || 0);
+    const m = (k) => (b.positions?.[k]?.rows || []).filter((r) => (+r.netQty || 0) !== 0).reduce((a, r) => a + (r.unrealized || 0), 0);
+    return Math.round(f('dhan') + m('DHAN_FNO') + f('upstox') + m('UPSTOX_FNO') + f('fyers') + m('FYERS_FNO'));
+  }, []);
+
   const ov = useMemo(() => {
     // maturedCash: auto-matured FDs awaiting redeployment — still wealth
     // (cash in bank), just no longer earning in the FD sleeve.
     const usInr = usData.val * fxRate; const fdValue = fds.principal + fds.accrued + fds.maturedCash;
-    // Algo capital (STATIC.algo) is deliberately EXCLUDED from net worth: its
-    // account equity isn't marked to market daily (profits sit in the pool,
-    // get distributed to clients, or compound on no fixed schedule), so it
-    // can't honestly sit next to the live-priced sleeves. It stays fully
-    // tracked on the Algo tab and the header card.
+    // Trading business equity (account value + open MTM, 100% owner) IS in net worth,
+    // but as a BOOK-VALUED line ("at close"), not a live sleeve: broker-sourced, so
+    // live-marking it would silently stale during absence. It sits beside the live-priced
+    // personal sleeves, honestly stale + return-reconciling (business-entity-model.md).
+    // (STATIC.algo — the allocated-capital config — stays a separate Algo-tab display.)
     const pfValue = cmpfCorpus(new Date());
-    const totalAssets = indianEq.val + usInr + fdValue + mf.totVal + pfValue;
+    const personalAssets = indianEq.val + usInr + fdValue + mf.totVal + pfValue;   // live-priced sleeves
+    const totalAssets = personalAssets + tradingEquity;                             // + trading business equity (book-valued, at close)
     const loan = loanOutstanding(new Date());
     const cmpsPaid = cmpsTotalPaid(new Date());
     const cmpsPension = cmpsMonthlyPension(new Date());
@@ -715,8 +728,8 @@ function Dashboard() {
     // pension only vests at the minimum qualifying service; before that, leaving = refund
     const cmpsVested = cmpsService >= CMPS_MIN_QUALIFYING_YEARS;
     const cmpsVestYear = CMPS_VEST_DATE.getFullYear();
-    return { usInr, fdValue, pfValue, totalAssets, loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService, cmpsVested, cmpsVestYear };
-  }, [indianEq.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash]);
+    return { usInr, fdValue, pfValue, personalAssets, tradingEquity, totalAssets, loan, personalNw: personalAssets - loan, nw: totalAssets - loan, cmpsPaid, cmpsPension, cmpsService, cmpsVested, cmpsVestYear };
+  }, [indianEq.val, usData.val, fxRate, mf.totVal, fds.principal, fds.accrued, fds.maturedCash, tradingEquity]);
 
   // Sub-step B — EOD-book close fallback for the hero net worth. When live quotes aren't
   // fully resolved (Yahoo failed / pre-load / laptop-off) we mark net worth from the
@@ -923,7 +936,7 @@ function Dashboard() {
         `₹${L(fds.principal)} across ${fds.rows.length} FDs · blended ${fds.blendedRate.toFixed(2)}% · accrued ₹${Math.round(fds.accrued)} · ` +
         `quarterly ladder, per-bank interest kept under the ₹40K TDS threshold`,
       algo:
-        `own trading capital ₹${(STATIC.algo / 1e5).toFixed(1)}L (off-NW) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.current.net} S02 +₹${FY.s02.current.net}` +
+        `trading business equity ₹${(ov.tradingEquity / 1e5).toFixed(2)}L IN net worth (account value + open MTM, book-valued at close; Dhan reconciled + Upstox sync-trusted) · ${FY.labels.currentShort} realised S01 +₹${FY.s01.current.net} S02 +₹${FY.s02.current.net}` +
         `${swing.valued ? ` · swing MTM ₹${Math.round(swing.pl)}` : ''} · F&O loss carryforward pool ₹${(FY.cf.poolEntering / 1e5).toFixed(2)}L (tax asset)`,
       macroClock: macroClockStr, // live FRED+Yahoo backdrop for the pulse read
     };
@@ -1168,9 +1181,9 @@ function Dashboard() {
     { label: 'US equity', cls: 'hc-us', tab: 4, live: markets.nyse,
       val: usData.val ? <LiveInrC n={ov.usInr} /> : <Skel w={58} h={18} />,
       sub: usData.val ? <span className={cl(usData.pl)}><SInrC n={usData.pl * fxRate} /> · {pctS(usData.pct)}</span> : `${US.length} holdings` },
-    { label: 'Trading', cls: 'hc-algo', tab: 5, live: markets.nse, tip: 'Tracked separately — excluded from net worth (not marked to market daily); P&L shown is your share only',
-      val: <InrC n={STATIC.algo} />,
-      sub: ytdTotal != null ? <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /> · {pctS(STATIC.algo ? (ytdTotal / STATIC.algo) * 100 : 0)}</span> : 'own capital · off-NW' },
+    { label: 'Trading', cls: 'hc-algo', tab: 5, live: markets.nse, tip: 'Trading business equity — account value + open MTM, IN net worth as a book-valued line (at close; Dhan reconciled + Upstox sync-trusted). 100% owner.',
+      val: <InrC n={ov.tradingEquity} />,
+      sub: ytdTotal != null ? <span className={cl(ytdTotal)}><SInrC n={ytdTotal} /> · {pctS(ov.tradingEquity ? (ytdTotal / ov.tradingEquity) * 100 : 0)}</span> : 'at close · in NW' },
   ];
 
   // ─── render ─────────────────────────────────────────────────────────────────
@@ -1183,7 +1196,7 @@ function Dashboard() {
           <div className="topbar">
             <div className="topbar-left">
               {/* Net worth — live LABEL only (the figure stays in the hero). Opens Overview. */}
-              <button className={'topbar-nw' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview — net worth (excl. trading)">
+              <button className={'topbar-nw' + (tab === 0 ? ' active' : '')} onClick={() => selectTab(0)} title="Open Overview — net worth (incl. trading business equity, at close)">
                 <span className="topbar-nw-lbl">Net worth — {bookMark ? 'at close' : 'live'} <span className={'spark' + (ath ? ' ath-spark' : '')}>✦</span></span>
               </button>
             </div>
@@ -1232,10 +1245,10 @@ function Dashboard() {
                     trail DIMMED as a passing note, so the dim/bright contrast keeps the
                     two from reading alike */}
                 <div>
-                  {liveMarked ? (
+                  {ov.tradingEquity ? (
                     <span style={{ whiteSpace: 'nowrap' }}
-                      title={`Net worth ${inrFull(Math.round(ov.nw))} + own trading capital ${inrFull(STATIC.algo)} + trading FY P&L ${inrFull(Math.round(ytdTotal || 0))} (F&O realised, 100% owner)`}>
-                      incl. trading <strong style={{ color: 'var(--acc)' }}><AnimatedNumber value={ov.nw + STATIC.algo + (ytdTotal || 0)} render={(n) => <InrC n={n} />} /></strong>
+                      title={`Trading business equity ${inrFull(ov.tradingEquity)} = account value + open MTM (Dhan ledger-reconciled + Upstox sync-trusted; 100% owner). Book-valued at close — ${inrFull(Math.round(ov.personalNw))} personal sleeves + this = net worth ${inrFull(Math.round(ov.nw))}.`}>
+                      Trading business equity <strong style={{ color: 'var(--acc)' }}><InrC n={ov.tradingEquity} /></strong> · at close
                     </span>
                   ) : 'excl. trading'}
                   {' · '}
