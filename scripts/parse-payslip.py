@@ -17,7 +17,7 @@ from collections import defaultdict
 import fitz  # pymupdf
 
 REPORTS = os.path.join("data", "reports")
-PRIVATE = os.path.join("data", "portfolio.private.json")
+PRIVATE = os.environ.get("PAYSLIP_PRIVATE") or os.path.join("data", "portfolio.private.json")
 MONTHS = {m: i + 1 for i, m in enumerate(
     ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
      'september', 'october', 'november', 'december'])}
@@ -108,15 +108,48 @@ def main():
         print(f"{mo:9}{round(d['net']):>10}{round(d['cmpf']):>9}{round(d['cmps']):>8}{round(d['basic']):>9}  {d['slips']}")
 
     # NOTE: net / CMPF / CMPS in the private seed are arrear-reconciled (regular +
-    # supplementary slips, signed CMPS adjustments) and are MORE correct than a
-    # naive per-slip sum — we do NOT overwrite them. The slips here only supply the
-    # one figure the seed lacks: Basic Pay (the pensionable-salary input for cmps.js).
+    # supplementary slips, signed CMPS adjustments) and are MORE correct than a naive
+    # per-slip sum. BASIC_PAY is always rebuilt (auto-derivable). For net/CMPF/CMPS we
+    # APPEND-ONLY (full automation for the common case) — never overwriting an existing
+    # reconciled month — and SKIP+FLAG any NEW month whose figure deviates sharply from
+    # the trailing median (a likely arrear, where the naive sum is wrong → hand-reconcile).
     if "--write" in sys.argv:
         data = json.load(open(PRIVATE, encoding="utf-8"))
         data["BASIC_PAY"] = [{"month": mo, "basic": round(by_month[mo]["basic"])}
                              for mo in sorted(by_month) if by_month[mo]["basic"]]
+
+        def _median(xs):
+            s = sorted(x for x in xs if x); n = len(s)
+            return (s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2) if n else None
+
+        flags = []
+        for key, field, pick in (("PAYSLIPS", "net", "net"),
+                                  ("CMPF_CONTRIBUTIONS", "emp", "cmpf"),
+                                  ("CMPS_CONTRIBUTIONS", "emp", "cmps")):
+            arr = data.get(key, [])
+            have = {e["month"] for e in arr}
+            med = _median([e.get(field) for e in arr[-6:]])   # trailing reconciled band
+            added = 0
+            for mo in sorted(by_month):
+                if mo in have:
+                    continue                                  # never overwrite a reconciled month
+                v = round(by_month[mo][pick])
+                if not v:
+                    continue
+                if med and (v > 2 * med or v < 0.5 * med):
+                    flags.append(f"{key} {mo}: {v} (median {round(med)})")
+                    continue                                  # likely arrear — leave for hand-reconcile
+                arr.append({"month": mo, field: v}); added += 1
+            arr.sort(key=lambda e: e["month"])
+            data[key] = arr
+            if added:
+                print(f"appended {key} +{added}")
+
         json.dump(data, open(PRIVATE, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-        print(f"\nwrote BASIC_PAY ({len(data['BASIC_PAY'])} months) → {PRIVATE} (re-seed KV to publish)")
+        for f in flags:
+            print(f"  [!] arrear-like, NOT auto-written (hand-reconcile): {f}")
+        print(f"\nwrote BASIC_PAY ({len(data['BASIC_PAY'])} months) + net/CMPF/CMPS appends "
+              f"-> {PRIVATE} (re-seed KV to publish)")
 
 if __name__ == "__main__":
     main()
