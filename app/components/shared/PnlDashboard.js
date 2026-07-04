@@ -459,8 +459,20 @@ function WinRateStat({ stats }) {
 }
 
 // Most & Least profitable day shown together — exact ₹ on hover (title), foot = the two dates.
+// With a single P&L day (or most == least, i.e. one date is both best and worst) there's
+// nothing to contrast, so it collapses to ONE "profitable day" stat (value still colour-coded).
 function MostLeastStat({ stats }) {
   const m = stats.mostProfit, l = stats.leastProfit;
+  const single = m && l && m.date === l.date;
+  if (single) {
+    return (
+      <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="lbl" style={{ margin: 0 }}>Profitable day</div>
+        <div className={'vmd ' + cl(m.net)} title={sFull(m.net)} style={{ marginTop: 5 }}><SInrC n={m.net} /></div>
+        <div className="fxc sub" style={{ marginTop: 8, gap: 8 }}><span>{prettyDate(m.date)}</span></div>
+      </div>
+    );
+  }
   return (
     <div className="pnl-stat" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="lbl" style={{ margin: 0 }}>Most / Least profitable day</div>

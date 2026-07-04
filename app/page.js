@@ -1254,7 +1254,7 @@ function Dashboard() {
                   {ov.tradingEquity ? (
                     <span style={{ whiteSpace: 'nowrap' }}
                       title={`Trading business equity ${inrFull(ov.tradingEquity)} = account value + open MTM (Dhan ledger-reconciled + Upstox sync-trusted; 100% owner). Book-valued at close — ${inrFull(Math.round(ov.personalNw))} personal sleeves + this = net worth ${inrFull(Math.round(ov.nw))}.`}>
-                      Trading business equity <strong style={{ color: 'var(--acc)' }}><InrC n={ov.tradingEquity} /></strong> · at close
+                      Trading business <strong style={{ color: 'var(--acc)' }}><InrC n={ov.tradingEquity} /></strong> · at close
                     </span>
                   ) : 'excl. trading'}
                   {' · '}
