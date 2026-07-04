@@ -69,6 +69,18 @@ export default function AlgoTab({
   const s01Base = ALGO.s01.split.own;
   const s02Base = ALGO.s02.split.own;
   const deployed = { all: s01Base + s02Base, Dhan: s01Base, Zerodha: s01Base, Upstox: s02Base, Fyers: s02Base };
+  // Per-strategy LIVE capital (broker-state funds): total = utilised + available, i.e. the
+  // account capital sitting in that strategy — utilised (deployed) vs available. Brokers are
+  // the live ones actually mapped to the strategy (S01→Dhan, S02→Upstox·Fyers). Falls back to
+  // the static own-capital config when no funds are captured yet. (Swing is EQUITY, not shown.)
+  const stratCap = (key, fallback) => {
+    const s = fno.byStrategy[key] || {};
+    const used = s.fundsUsed || 0, avail = s.fundsAvail || 0, total = used + avail;
+    const brokers = fno.brokers.filter((b) => b.sleeve === key).map((b) => b.name).join(' · ');
+    return total > 0 ? { total, used, avail, live: true, brokers } : { total: fallback, used: 0, avail: 0, live: false, brokers };
+  };
+  const s01c = stratCap('S01', s01Base);
+  const s02c = stratCap('S02', s02Base);
   // Review cadence → scoped insights (the feed is flat today: only the default cadence
   // carries data; other cadences show a placeholder until the AI run covers them).
   const cadenceData = insights?.trading?.[cadence.toLowerCase()] || (cadence === 'Monthly' ? insights?.trading : null);
@@ -104,22 +116,21 @@ export default function AlgoTab({
       )}
 
       {sub === 'summary' && (<>
-        {/* Capital composition — own capital per strategy (100% owner-owned). */}
+        {/* Capital composition — LIVE per-strategy account capital (utilised vs available). */}
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>own capital</span>
+            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>{s01c.live || s02c.live ? 'Deployed / Utilised' : 'own capital'}</span>
           </div>
           <div className="g2">
-            <div className="mini">
-              <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s01.title} · {ALGO.s01.broker}</div>
-              <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s01.split.own)}`}</RsText></div>
-              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of the P&L</div>
-            </div>
-            <div className="mini">
-              <div className="lbl" style={{ marginBottom: 4 }}>{ALGO.s02.title} · {ALGO.s02.broker}</div>
-              <div className="sub" style={{ margin: 0 }}><RsText>{`Own ${cap(ALGO.s02.split.own)} · F&O ${cap(ALGO.s02.book.fno)} + Swing ${cap(ALGO.s02.book.swing)}`}</RsText></div>
-              <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>You keep 100% of the P&L</div>
-            </div>
+            {[[ALGO.s01.title, s01c], [ALGO.s02.title.replace(' + Swing', ''), s02c]].map(([title, c]) => (
+              <div className="mini" key={title}>
+                <div className="lbl" style={{ marginBottom: 4 }}>{title}{c.brokers ? ` · ${c.brokers}` : ''}</div>
+                <div className="sub" style={{ margin: 0 }}><RsText>{`Capital ${cap(c.total)}`}</RsText></div>
+                <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>
+                  {c.live ? <RsText>{`${cap(c.used)} utilised · ${cap(c.avail)} available`}</RsText> : 'live funds n/a · own-capital config'}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
         <FnoSummary fno={fno} />
