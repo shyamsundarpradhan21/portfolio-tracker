@@ -177,8 +177,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         </div>
       )}
 
-      {/* ── stat panel — the spec's SIX on the .statgrid (3×2). Each foot is a 2-corner
-            footer (value left/right, colour-coded). All recompute per period × broker. ── */}
+      {/* ── stat panel — the SIX cards (3×2), recomputed per period × broker. HIDDEN on the
+            Day view: the day panel below carries its own Gross/Charges/Net trio for that day,
+            so the six would just duplicate it. Kept for Month/Year/All (no trio there). ── */}
+      {view !== 'day' && (
       <div className="pnl-stats">
         <Stat k="Net realised" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
           foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
@@ -193,6 +195,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         <Stat k="Trading days" v={stats.tradingDays}
           foot={<><span>streak 🔥 {stats.bestStreak}</span><span>now {stats.currentStreak}{stats.currentStreakWin ? '' : ' (loss)'}</span></>} />
       </div>
+      )}
 
       {/* ── period bar ── */}
       <div className="fxc pnl-periodbar">
