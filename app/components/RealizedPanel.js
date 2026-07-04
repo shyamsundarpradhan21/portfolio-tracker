@@ -43,7 +43,6 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
   const winYears = vals.filter((v) => v > 0).length;
   const bestIdx = vals.length ? vals.reduce((bi, v, i, a) => (v > a[bi] ? i : bi), 0) : -1;
   const worstIdx = vals.length ? vals.reduce((wi, v, i, a) => (v < a[wi] ? i : wi), 0) : -1;
-  const ytd = native === 'usd' ? data.ytdUsd : data.ytd;
 
   const Money = ({ n }) => { const v = conv(n); return display === 'usd'
     ? <><span className="rs">$</span>{compactUsd(v)}</>
@@ -62,14 +61,12 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
       <div className="fxc" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         <div>
           <div className="ctitle">Realized P&amp;L</div>
-          <div className="sub" style={{ margin: 0 }}>{data.source || 'avg-cost'} · as on {data.asOf}</div>
+          <div className="sub" style={{ margin: 0 }}>{data.source || 'avg-cost'} · as of {data.asOf}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className={'vt2 ' + cl(total)}><Money n={total} /></div>
           <div className="sub" style={{ margin: 0 }}>
-            {sel == null
-              ? (ytd != null ? <>overall, all years<br /><span className={cl(ytd)}><Money n={ytd} /></span> {data.ytdLabel} YTD</> : 'overall, all years')
-              : <>{fy[sel].label} realised</>}
+            {sel == null ? 'overall, all years' : <>{fy[sel].label} realised</>}
           </div>
         </div>
       </div>
@@ -77,7 +74,7 @@ export default function RealizedPanel({ data, currency = 'inr', fxRate = 0, clas
       {/* scope reset */}
       <div className="rz-scope">
         <button className={'rz-tab' + (sel == null ? ' on' : '')} onClick={() => setSel(null)}>Overall</button>
-        <span className="sub" style={{ margin: 0 }}>{sel == null ? '· click a bar to drill into a year' : `· showing ${fy[sel].label}`}</span>
+        <span className="sub" style={{ margin: 0 }}>{sel == null ? '· click a bar to drill into a year' : ''}</span>
       </div>
 
       {/* per-FY bar chart */}
