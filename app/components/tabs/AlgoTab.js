@@ -150,7 +150,7 @@ export default function AlgoTab({
         {/* Capital composition — LIVE per-strategy account capital (utilised vs available). */}
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>{s01c.live || s02c.live ? 'Deployed / Utilised' : 'own capital'}</span>
+            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>{s01c.live || s02c.live ? 'Deployed / Available' : 'own capital'}</span>
           </div>
           <div className="g2">
             {[[ALGO.s01.title, s01c], [ALGO.s02.title.replace(' + Swing', ''), s02c]].map(([title, c]) => (
@@ -158,7 +158,8 @@ export default function AlgoTab({
                 <div className="lbl" style={{ marginBottom: 4 }}>{title}{c.brokers ? ` · ${c.brokers}` : ''}</div>
                 <div className="sub" style={{ margin: 0 }}><RsText>{`Capital ${cap(c.total)}`}</RsText></div>
                 <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>
-                  {c.live ? <RsText>{`${cap(c.used)} utilised · ${cap(c.avail)} available`}</RsText> : 'live funds n/a · own-capital config'}
+                  {/* #37 — lead with AVAILABLE (free funds) to match the "Deployed / Available" badge */}
+                  {c.live ? <RsText>{`${cap(c.avail)} available · ${cap(c.used)} deployed`}</RsText> : 'live funds n/a · own-capital config'}
                 </div>
               </div>
             ))}
