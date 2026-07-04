@@ -67,31 +67,32 @@ function FnoRealisedPanel({ rows }) {
   const maxAbs = Math.max(1, ...fys.map((f) => Math.abs(f.net)));
   const scope = sel == null ? total : fys[sel];
   const brokers = scope.brokers;
-  // charge provenance — what share of the charge ₹ is real contract-note vs modeled est.
-  const provTot = total.real + total.est;
-  const realPct = provTot > 0 ? Math.round((total.real / provTot) * 100) : null;
+  // #36 — the headline (net + gross→charges→net triplet) AND the charge provenance re-scope
+  // to the selected FY when a bar is drilled; the all-time figure shows only when overall.
+  const provTot = scope.real + scope.est;
+  const realPct = provTot > 0 ? Math.round((scope.real / provTot) * 100) : null;
   const provBadge = provTot <= 0 ? 'charges n/a'
-    : total.real === 0 ? 'charges · est. (modeled)'
-    : total.est === 0 ? 'charges · contract-note'
+    : scope.real === 0 ? 'charges · est. (modeled)'
+    : scope.est === 0 ? 'charges · contract-note'
     : `charges ${realPct}% contract-note`;
   const M = (n) => <SInrC n={n} />; // compact, magnitude, ₹/$-aware; colour via wrapper class
 
   return (
     <div className="card sec">
-      {/* header: title + provenance badge · all-time net + the gross→charges→net triplet */}
+      {/* header: title + provenance badge · scope net + the gross→charges→net triplet */}
       <div className="fxc" style={{ marginBottom: 8, flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         <div>
           <div className="ctitle" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             F&amp;O Realised <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>{provBadge}</span>
           </div>
-          <div className="sub" style={{ margin: 0 }}>all years · {fys.length} FY{fys.length > 1 ? 's' : ''} · click a bar to drill</div>
+          <div className="sub" style={{ margin: 0 }}>{sel == null ? `all years · ${fys.length} FY${fys.length > 1 ? 's' : ''} · click a bar to drill` : `${fys[sel].fy} · click Overall to reset`}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className={'vt2 ' + cl(total.net)}>{M(total.net)}</div>
+          <div className={'vt2 ' + cl(scope.net)}>{M(scope.net)}</div>
           <div className="sub" style={{ margin: 0 }}>
-            <span className={cl(total.gross)}>Gross {M(total.gross)}</span>
-            <span style={{ color: 'var(--txt2)' }}> · Charges {M(total.charge)}</span>
-            <span className={cl(total.net)}> · Net {M(total.net)}</span>
+            <span className={cl(scope.gross)}>Gross {M(scope.gross)}</span>
+            <span style={{ color: 'var(--txt2)' }}> · Charges {M(scope.charge)}</span>
+            <span className={cl(scope.net)}> · Net {M(scope.net)}</span>
           </div>
         </div>
       </div>
