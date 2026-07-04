@@ -215,7 +215,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       {/* right-edge value labels, riding each line's last point */}
       {labels.map((l, i) => (
         <text key={i} x={W - 3} textAnchor="end" y={Math.max(9, Math.min(H - 2, l.y + 3))} fill={l.c}
-          opacity={l.dim ? 0.6 : 1} style={{ fontSize: l.bold ? 13 : 11, fontWeight: l.bold ? 700 : 600 }}>{f(l.v)}</text>
+          opacity={l.dim ? 0.6 : 1} className={'iq-vlabel' + (l.bold ? ' b' : '')}>{f(l.v)}</text>
       ))}
 
       {/* hover cursor — the value card itself is the frosted HTML overlay below the svg */}
@@ -230,8 +230,9 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
       <text x={PLOT_W / 2} y={H + 16} className="pnl-axt" textAnchor="middle">{net[Math.floor(n / 2)].t}</text>
       <text x={PLOT_W} y={H + 16} className="pnl-axt" textAnchor="end">{lastNet.t}{pending ? ' · pending order' : ''}</text>
 
-      {/* legend (when overlaying, watermark, or fills present) */}
-      {(drawLegs || nifty || marks.length > 0) && (
+      {/* legend — broker legs + NIFTY watermark only (the buy/sell fill-marker key was
+          dropped: the on-chart triangles read on their own and the key was clutter) */}
+      {(drawLegs || nifty) && (
         <g transform={`translate(2 ${H + 30})`} className="pnl-axt">
           {drawLegs && present.map((o, i) => (
             <g key={o.key} transform={`translate(${i * 70} 0)`}>
@@ -243,14 +244,6 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
             <g transform={`translate(${drawLegs ? present.length * 70 : 0} 0)`}>
               <rect x="0" y="-7" width="9" height="3" rx="1" fill="var(--txt2)" opacity=".4" />
               <text x="13" y="0">NIFTY 50</text>
-            </g>
-          )}
-          {marks.length > 0 && (
-            <g transform={`translate(${(drawLegs ? present.length * 70 : 0) + (nifty ? 70 : 0)} 0)`}>
-              <polygon points="2,-2 -1,3 5,3" fill="var(--blu)" />
-              <text x="9" y="0">buy</text>
-              <polygon points="25,3 22,-2 28,-2" fill="var(--acc)" />
-              <text x="32" y="0">sell</text>
             </g>
           )}
         </g>
