@@ -6,7 +6,7 @@ import AlgoScreenReview from '../shared/AlgoScreenReview';
 import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
 import FreshnessTag from '../shared/FreshnessTag';
 import FnoSummary, { FnoPositionsLive } from '../shared/FnoSummary';
-import PnlDashboard, { AlgoPnlSummary } from '../shared/PnlDashboard';
+import PnlDashboard from '../shared/PnlDashboard';
 import AnalyticsTab from '../shared/AnalyticsTab';
 import { fnoLive } from '../../lib/brokerState';
 
@@ -120,9 +120,8 @@ export default function AlgoTab({
           capital-in-use is the standing context for all the P&L below it. */}
       <FnoPositionsLive fno={fno} />
 
-      {/* Persistent P&L summary — pills + live intraday curve; sits ABOVE the sub-tab
-          switch so it shows on every sub-tab (Overview/Summary/Review/Analytics). */}
-      <AlgoPnlSummary liveMtm={fno.netOpenMtm} />
+      {/* #45 — the standalone "Trading P&L" glance card was MERGED into the Trading Journal
+          (below, Overview sub-tab), so there's one P&L card, not two. */}
 
       {/* Trading Journal sub-tabs */}
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -138,6 +137,7 @@ export default function AlgoTab({
       {sub === 'overview' && (
         <div className="sec">
           <PnlDashboard
+            liveMtm={fno.netOpenMtm}
             deployed={deployed}
             capital={dep.any
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }

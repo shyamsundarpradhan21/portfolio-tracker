@@ -32,7 +32,7 @@ const sPctG = (n) => Math.abs(n).toFixed(1) + '%';
 // Profit factor display: the number, ∞ when there are wins but no losses, else —.
 const pfDisplay = (s) => (s.profitFactor != null ? s.profitFactor.toFixed(2) : (s.winDays && !s.lossDays ? '∞' : '—'));
 
-export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null, deployed = null } = {}) {
+export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null, deployed = null, liveMtm = null } = {}) {
   const allRows = rowsProp || APP.fnoLedger?.rows || [];
   // Brokers present, busiest first — drives the broker toggle (All + each broker).
   const brokers = useMemo(() => {
@@ -111,8 +111,9 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
     return (
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px 12px' }}>
-          <div className="ctitle" style={{ margin: 0 }}>Trading Journal</div>
+          <div className="ctitle" style={{ margin: 0 }}>Trading Journal <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O</span></div>
         </div>
+        <LivePnlGlance liveMtm={liveMtm} />
         {summary ? <div className="pnl-summary">{summary}</div> : null}
         <div className="sub" style={{ padding: '12px 20px 16px' }}>No captured F&amp;O days yet — the realised ledger fills as the daily broker sync runs.</div>
       </div>
@@ -153,6 +154,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
           ))}
         </div>
       </div>
+
+      {/* LIVE P&L glance — net realised · charges · live MTM + today's intraday P&L curve.
+          Merged in from the standalone "Trading P&L" card (#45), so it's one card now. */}
+      <LivePnlGlance liveMtm={liveMtm} />
 
       {/* capital line + verified/YTD summary — the journal's top context row */}
       {capital ? (
@@ -225,12 +230,11 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   );
 }
 
-// Persistent trading-P&L glance card — rendered ABOVE the Algo sub-tabs so the headline
-// P&L shows on EVERY sub-tab (Overview/Summary/Review/Analytics). Pills: all-time net
-// realised + charges from the F&O ledger, live open MTM from broker-state. Below, the
-// intraday P&L curve fills the FULL card width (today's live session; out of hours it
-// falls back to the most recent captured session so the card is never a bare pill row).
-export function AlgoPnlSummary({ liveMtm = null }) {
+// LIVE P&L glance — the pills (all-time net realised + charges from the F&O ledger, live
+// open MTM from broker-state) + the intraday P&L curve (today's live session; out of hours
+// it falls back to the most recent captured session). Rendered INSIDE the Trading Journal
+// card (#45 merge — the standalone "Trading P&L" card was removed), so no card / title.
+function LivePnlGlance({ liveMtm = null }) {
   const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
   const today = todayIstIso();
   const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[today] || []);
@@ -264,10 +268,7 @@ export function AlgoPnlSummary({ liveMtm = null }) {
   }
 
   return (
-    <div className="card sec" style={{ padding: 0, overflow: 'hidden' }}>
-      <div className="fxc" style={{ padding: '16px 20px 6px', flexWrap: 'wrap', gap: 10 }}>
-        <div className="ctitle" style={{ margin: 0 }}>Trading P&amp;L <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O</span></div>
-      </div>
+    <>
       {/* pills — colour-coded net/MTM (direction=colour), charges neutral (a cost, not a P&L) */}
       <div className="pnl-psum" style={{ padding: '0 20px 14px' }}>
         <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(ledger.net)}><SInrF n={ledger.net} /></span></span>
@@ -284,7 +285,7 @@ export function AlgoPnlSummary({ liveMtm = null }) {
           The live P&amp;L curve draws through the session once the capture logs a few points.
         </div>
       )}
-    </div>
+    </>
   );
 }
 
