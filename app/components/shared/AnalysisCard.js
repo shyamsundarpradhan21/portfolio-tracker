@@ -8,7 +8,7 @@ import { AiContext } from './AiContext';
 // not here). Renders nothing when AI is off, or when the model returned nothing
 // for this sleeve (so tabs stay clean with insights disabled). Carries its own
 // AI tag + last-update countdown + refresh control in the top corner (from AiContext).
-export default function AnalysisCard({ data, on, loading, title = 'AI analysis', accent, emptyHint }) {
+export default function AnalysisCard({ data, on, loading, title = 'AI analysis', accent, emptyHint, controls = null }) {
   const { ts, refresh } = useContext(AiContext);
   if (!on) return null;
   const hasContent = data && (data.performance || data.outlook);
@@ -24,6 +24,8 @@ export default function AnalysisCard({ data, on, loading, title = 'AI analysis',
           <button className="ins-ai" style={accent ? { '--ai-tag': accent } : undefined} onClick={refresh || undefined} disabled={loading || !refresh} title="Click to regenerate this analysis" aria-label="Regenerate AI analysis">AI</button>
         </span>
       </div>
+      {/* optional control row (e.g. the Trading Review's cadence toggle, moved inside this card) */}
+      {controls ? <div style={{ margin: '2px 0 10px' }}>{controls}</div> : null}
       {loading ? (
         <div className="ai-body"><div className="ins-skel" /><div className="ins-skel" /></div>
       ) : hasContent ? (

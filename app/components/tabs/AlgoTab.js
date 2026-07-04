@@ -137,16 +137,18 @@ export default function AlgoTab({
       </>)}
 
       {sub === 'review' && (<>
-        <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-          <div className="seg" role="tablist" aria-label="Review cadence">
-            {CADENCES.map((c) => (
-              <button key={c} type="button" role="tab" aria-selected={cadence === c} className={cadence === c ? 'on' : ''} onClick={() => setCadence(c)}>{c}</button>
-            ))}
-          </div>
-        </div>
+        {/* #13 — the cadence toggle now lives INSIDE the AI-review card (passed as its
+            `controls`), instead of standing alone above it. */}
         {insightsOn && (
           <AnalysisCard data={cadenceData} on={insightsOn} loading={insightsFirstLoad} accent="var(--pnk)"
             title={`AI review · ${cadence}`}
+            controls={(
+              <div className="seg" role="tablist" aria-label="Review cadence">
+                {CADENCES.map((c) => (
+                  <button key={c} type="button" role="tab" aria-selected={cadence === c} className={cadence === c ? 'on' : ''} onClick={() => setCadence(c)}>{c}</button>
+                ))}
+              </div>
+            )}
             emptyHint={`No ${cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.`} />
         )}
 
