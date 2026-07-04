@@ -222,6 +222,69 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   );
 }
 
+// Persistent trading-P&L glance card — rendered ABOVE the Algo sub-tabs so the headline
+// P&L shows on EVERY sub-tab (Overview/Summary/Review/Analytics). Pills: all-time net
+// realised + charges from the F&O ledger, live open MTM from broker-state. Below, the
+// intraday P&L curve fills the FULL card width (today's live session; out of hours it
+// falls back to the most recent captured session so the card is never a bare pill row).
+export function AlgoPnlSummary({ liveMtm = null }) {
+  const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
+  const today = todayIstIso();
+  const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[today] || []);
+  const [liveCandles, setLiveCandles] = useState(() => APP.niftyOhlc?.days?.[today] || null);
+  const [liveFills, setLiveFills] = useState(() => APP.fnoIntraday?.fills?.[today] || []);
+  useEffect(() => {
+    let on = true;
+    const poll = async () => {
+      try {
+        const [res, niftyRes] = await Promise.all([
+          fetch(`/api/intraday?date=${today}`, { cache: 'no-store' }),
+          fetch(`/api/intraday?kind=nifty&date=${today}`, { cache: 'no-store' }),
+        ]);
+        if (on && res.ok) { const j = await res.json(); if (Array.isArray(j.tape)) setLiveTape(j.tape); if (Array.isArray(j.fills)) setLiveFills(j.fills); }
+        if (on && niftyRes.ok) { const j = await niftyRes.json(); if (Array.isArray(j.tape)) setLiveCandles(j.tape); }
+      } catch {}
+    };
+    poll();
+    const id = setInterval(poll, 12_000);
+    return () => { on = false; clearInterval(id); };
+  }, [today]);
+
+  // Curve source: today's live session when it has a curve; else the latest committed
+  // session so the card always shows the most recent P&L shape.
+  const liveMtmTape = toLiveMtmTape(liveTape);
+  let curveDate = today, tape = liveMtmTape, candles = liveCandles, fills = liveFills, isLive = true;
+  if (liveMtmTape.length < 2) {
+    const days = APP.fnoIntraday?.days || {};
+    const last = Object.keys(days).filter((d) => (days[d]?.length || 0) >= 2).sort().pop();
+    if (last) { curveDate = last; tape = toLiveMtmTape(days[last]); candles = APP.niftyOhlc?.days?.[last] || null; fills = APP.fnoIntraday?.fills?.[last] || []; isLive = false; }
+  }
+
+  return (
+    <div className="card sec" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="fxc" style={{ padding: '16px 20px 6px', flexWrap: 'wrap', gap: 10 }}>
+        <div className="ctitle" style={{ margin: 0 }}>Trading P&amp;L <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O</span></div>
+      </div>
+      {/* pills — colour-coded net/MTM (direction=colour), charges neutral (a cost, not a P&L) */}
+      <div className="pnl-psum" style={{ padding: '0 20px 14px' }}>
+        <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(ledger.net)}><SInrF n={ledger.net} /></span></span>
+        <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}><SInrF n={ledger.charges} /></span></span>
+        <span><span className="lbl">Live MTM</span> <span className={'mono ' + (liveMtm != null ? cl(liveMtm) : '')}>{liveMtm != null ? <SInrF n={liveMtm} /> : '—'}</span></span>
+      </div>
+      {tape.length >= 2 ? (
+        <div style={{ padding: '0 20px 16px' }}>
+          {!isLive && <div className="lbl" style={{ margin: '0 0 2px' }}>last session · {prettyDate(curveDate)}</div>}
+          <IntradayChart tape={tape} candles={candles} fills={fills} ariaLabel="Intraday P&L" primaryLabel={isLive ? 'Live MTM' : 'MTM'} />
+        </div>
+      ) : (
+        <div className="sub" style={{ padding: '0 20px 16px', color: 'var(--txt3)', lineHeight: 1.6 }}>
+          The live P&amp;L curve draws through the session once the capture logs a few points.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── view bodies ──
 function YearHeat({ fy, byDate, buckets }) {
   const baseY = 2000 + +fy.slice(3, 5); // FY 26-27 → 2026

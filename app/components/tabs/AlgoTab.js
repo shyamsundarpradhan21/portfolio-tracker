@@ -6,7 +6,7 @@ import AlgoScreenReview from '../shared/AlgoScreenReview';
 import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
 import FreshnessTag from '../shared/FreshnessTag';
 import FnoSummary from '../shared/FnoSummary';
-import PnlDashboard from '../shared/PnlDashboard';
+import PnlDashboard, { AlgoPnlSummary } from '../shared/PnlDashboard';
 import AnalyticsTab from '../shared/AnalyticsTab';
 import { fnoLive } from '../../lib/brokerState';
 
@@ -73,6 +73,10 @@ export default function AlgoTab({
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
         <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'}${FY._chargesReal ? '' : ' · est. charges'} · ${FY.labels.verified} ITR-verified`} />
       </div>
+
+      {/* Persistent P&L summary — pills + live intraday curve; sits ABOVE the sub-tab
+          switch so it shows on every sub-tab (Overview/Summary/Review/Analytics). */}
+      <AlgoPnlSummary liveMtm={fno.netOpenMtm} />
 
       {/* Trading Journal sub-tabs */}
       <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
