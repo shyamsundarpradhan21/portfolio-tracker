@@ -27,9 +27,10 @@ export default function AllocBar({ sleeves, mfAlloc, drift = null }) {
   const arbShare = liveMf > 0 ? Math.min(1, (mfAlloc?.arbitrage || 0) / liveMf) : 0;
   const hedged = (byKey.mf || 0) * arbShare;
   const debt = (byKey.fd || 0) + (byKey.pf || 0);
-  const equity = Math.max(0, total - debt - hedged);
+  const trading = byKey.trading || 0;   // F&O business equity — its OWN class; personal Equity/Debt stay pure
+  const equity = Math.max(0, total - debt - hedged - trading);
   const cls = [
-    { label: 'Equity', val: equity }, { label: 'Hedged', val: hedged }, { label: 'Debt', val: debt },
+    { label: 'Equity', val: equity }, { label: 'Hedged', val: hedged }, { label: 'Debt', val: debt }, { label: 'Trading', val: trading },
   ].filter((c) => c.val > 0).map((c) => `${c.label} ${total ? Math.round((c.val / total) * 100) : 0}%`);
 
   return (

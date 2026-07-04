@@ -974,13 +974,16 @@ function Dashboard() {
     { key: 'us',     label: 'US Stocks',      value: ov.usInr   || 0, color: ALLOC_COLORS.us     },
     { key: 'mf',     label: 'Mutual Funds',   value: mf.jio.value,    color: ALLOC_COLORS.mf     },
     { key: 'elss',   label: 'ELSS',           value: mf.elss.value,   color: ALLOC_COLORS.elss   },
+    // Trading business equity (book-valued, at close) — a slice so the donut total ties
+    // to the headline. Own class in AllocBar (personal Equity/Debt stay pure). CMPF still last.
+    { key: 'trading', label: 'Trading business', value: ov.tradingEquity || 0, color: ALLOC_COLORS.algo },
     { key: 'pf',     label: 'CMPF',           value: ov.pfValue || 0, color: ALLOC_COLORS.pf     },
   ];
 
   const projSleeves = useMemo(
     () => donutSegs.map((s) => ({ ...s, value: Math.round(s.value || 0) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [Math.round(ov.fdValue || 0), Math.round(indianEq.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.pfValue || 0)],
+    [Math.round(ov.fdValue || 0), Math.round(indianEq.val || 0), Math.round(ov.usInr || 0), Math.round(mf.jio.value || 0), Math.round(mf.elss.value || 0), Math.round(ov.tradingEquity || 0), Math.round(ov.pfValue || 0)],
   );
 
   // Per-sleeve value + invested basis (keys match projSleeves) — feeds the daily
@@ -992,9 +995,12 @@ function Dashboard() {
     us:     { v: Math.round(ov.usInr || 0),      i: Math.round((usData.inv || 0) * fxRate) },
     mf:     { v: Math.round(mf.jio.value || 0),  i: Math.round(mf.jio.cost || 0) },
     elss:   { v: Math.round(mf.elss.value || 0), i: Math.round(mf.elss.cost || 0) },
+    // Trading: basis = value → gain 0 here (the business P&L is the Trading tab, kept OUT
+    // of the personal money-made / gain-attribution curve, per the business-entity model).
+    trading:{ v: Math.round(ov.tradingEquity || 0), i: Math.round(ov.tradingEquity || 0) },
     pf:     { v: Math.round(ov.pfValue || 0),    i: cmpfPaid(new Date()) },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [ov.fdValue, ov.usInr, ov.pfValue, indianEq.val, indianEq.inv, usData.inv, fxRate, mf.jio.value, mf.jio.cost, mf.elss.value, mf.elss.cost, fds.principal, fds.maturedCash]);
+  }), [ov.fdValue, ov.usInr, ov.pfValue, ov.tradingEquity, indianEq.val, indianEq.inv, usData.inv, fxRate, mf.jio.value, mf.jio.cost, mf.elss.value, mf.elss.cost, fds.principal, fds.maturedCash]);
 
   // Live single-day P&L per sleeve (INR). Only the equity sleeves move intraday
   // (live quotes carry day-change); FD/MF/CMPF accrue smoothly, so ~0 for today.
