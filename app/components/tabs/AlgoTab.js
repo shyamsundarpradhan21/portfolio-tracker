@@ -116,6 +116,10 @@ export default function AlgoTab({
         <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'}${FY._chargesReal ? '' : ' · est. charges'} · ${FY.labels.verified} ITR-verified`} />
       </div>
 
+      {/* #38 — F&O Positions at the TOP, persistent across every sub-tab: live open MTM /
+          capital-in-use is the standing context for all the P&L below it. */}
+      <FnoPositionsLive fno={fno} />
+
       {/* Persistent P&L summary — pills + live intraday curve; sits ABOVE the sub-tab
           switch so it shows on every sub-tab (Overview/Summary/Review/Analytics). */}
       <AlgoPnlSummary liveMtm={fno.netOpenMtm} />
@@ -129,9 +133,8 @@ export default function AlgoTab({
         </div>
       </div>
 
-      {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve),
-          with the LIVE F&O Positions card (#35 — moved here from the Summary sub-tab, since
-          live open MTM / capital-in-use belongs beside the daily journal). */}
+      {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve).
+          (F&O Positions is now persistent at the top of the tab — #38, no longer here.) */}
       {sub === 'overview' && (
         <div className="sec">
           <PnlDashboard
@@ -140,7 +143,6 @@ export default function AlgoTab({
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
               : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
           />
-          <FnoPositionsLive fno={fno} />
         </div>
       )}
 
