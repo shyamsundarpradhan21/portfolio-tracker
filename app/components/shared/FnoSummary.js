@@ -159,52 +159,53 @@ function FnoRealisedPanel({ rows }) {
   );
 }
 
-export default function FnoSummary({ fno }) {
+// ① F&O Positions — live broker split (open MTM · utilised · available). Exported so it can
+// live on the Overview (daily) sub-tab rather than beside the realised history (#35).
+export function FnoPositionsLive({ fno }) {
   const inr = (n) => <SInrF n={n} />;
-
-  // ① Positions — one row per live broker that has captured funds or an open position.
   const posBrokers = (fno?.brokers || []).filter((b) => b.funds || b.active);
   const usedTot = (fno?.byStrategy?.S01.fundsUsed || 0) + (fno?.byStrategy?.S02.fundsUsed || 0);
   const availTot = (fno?.byStrategy?.S01.fundsAvail || 0) + (fno?.byStrategy?.S02.fundsAvail || 0);
-
   return (
-    <>
-      <div className="card sec">
-        <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-          F&amp;O Positions <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>live · broker split</span>
-        </div>
-        {posBrokers.length ? (
-          <div className="ovx">
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Broker</th><th>Strategy</th>
-                  <th className="ra">Open MTM</th><th className="ra">Capital utilised</th><th className="ra">Available</th>
-                </tr>
-              </thead>
-              <tbody>
-                {posBrokers.map((b) => (
-                  <tr key={b.key}>
-                    <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{b.name}</td>
-                    <td className="mut">{b.sleeve}</td>
-                    <td className={'ra mono ' + (b.open.length ? cl(b.openMtm) : '')}>{b.open.length ? inr(b.openMtm) : '—'}</td>
-                    <td className="ra mono">{b.funds ? numC(Number(b.funds.utilized) || 0) : '—'}</td>
-                    <td className="ra mono">{b.funds ? numC(Number(b.funds.available) || 0) : '—'}</td>
-                  </tr>
-                ))}
-                <tr className="tot">
-                  <td>Total</td><td></td>
-                  <td className={'ra ' + cl(fno.netOpenMtm)}>{inr(fno.netOpenMtm)}</td>
-                  <td className="ra mono">{numC(usedTot)}</td>
-                  <td className="ra mono">{numC(availTot)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        ) : <div className="sub" style={{ lineHeight: 1.6 }}>No live broker funds captured yet — positions appear here once the brokers sync.</div>}
+    <div className="card sec">
+      <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+        F&amp;O Positions <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>live · broker split</span>
       </div>
-
-      <FnoRealisedPanel rows={APP.fnoLedger?.rows || []} />
-    </>
+      {posBrokers.length ? (
+        <div className="ovx">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Broker</th><th>Strategy</th>
+                <th className="ra">Open MTM</th><th className="ra">Capital utilised</th><th className="ra">Available</th>
+              </tr>
+            </thead>
+            <tbody>
+              {posBrokers.map((b) => (
+                <tr key={b.key}>
+                  <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{b.name}</td>
+                  <td className="mut">{b.sleeve}</td>
+                  <td className={'ra mono ' + (b.open.length ? cl(b.openMtm) : '')}>{b.open.length ? inr(b.openMtm) : '—'}</td>
+                  <td className="ra mono">{b.funds ? numC(Number(b.funds.utilized) || 0) : '—'}</td>
+                  <td className="ra mono">{b.funds ? numC(Number(b.funds.available) || 0) : '—'}</td>
+                </tr>
+              ))}
+              <tr className="tot">
+                <td>Total</td><td></td>
+                <td className={'ra ' + cl(fno.netOpenMtm)}>{inr(fno.netOpenMtm)}</td>
+                <td className="ra mono">{numC(usedTot)}</td>
+                <td className="ra mono">{numC(availTot)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ) : <div className="sub" style={{ lineHeight: 1.6 }}>No live broker funds captured yet — positions appear here once the brokers sync.</div>}
+    </div>
   );
+}
+
+// ② the Summary sub-tab now carries only the F&O Realised year-drill panel — the live
+// Positions card (① above) moved to the Overview (daily) sub-tab.
+export default function FnoSummary() {
+  return <FnoRealisedPanel rows={APP.fnoLedger?.rows || []} />;
 }

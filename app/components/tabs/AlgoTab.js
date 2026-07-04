@@ -5,7 +5,7 @@ import AnalysisCard from '../shared/AnalysisCard';
 import AlgoScreenReview from '../shared/AlgoScreenReview';
 import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
 import FreshnessTag from '../shared/FreshnessTag';
-import FnoSummary from '../shared/FnoSummary';
+import FnoSummary, { FnoPositionsLive } from '../shared/FnoSummary';
 import PnlDashboard, { AlgoPnlSummary } from '../shared/PnlDashboard';
 import AnalyticsTab from '../shared/AnalyticsTab';
 import { fnoLive } from '../../lib/brokerState';
@@ -103,7 +103,9 @@ export default function AlgoTab({
         </div>
       </div>
 
-      {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve) */}
+      {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve),
+          with the LIVE F&O Positions card (#35 — moved here from the Summary sub-tab, since
+          live open MTM / capital-in-use belongs beside the daily journal). */}
       {sub === 'overview' && (
         <div className="sec">
           <PnlDashboard
@@ -112,6 +114,7 @@ export default function AlgoTab({
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
               : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
           />
+          <FnoPositionsLive fno={fno} />
         </div>
       )}
 
@@ -133,7 +136,7 @@ export default function AlgoTab({
             ))}
           </div>
         </div>
-        <FnoSummary fno={fno} />
+        <FnoSummary />
       </>)}
 
       {sub === 'review' && (<>
