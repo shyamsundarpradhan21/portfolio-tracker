@@ -157,18 +157,31 @@ for (const [rows, broker, sleeve] of [[bs?.holdings?.INDIAN?.rows || [], 'zerodh
 }
 const chargesReal = r2(todays.reduce((a, n) => a + Object.values(n.charges || {}).reduce((x, v) => x + (typeof v === 'number' ? v : 0), 0), 0));
 
+// ── TRADING_EQUITY (business-entity model) — account value + open MTM per broker, 100% owner.
+// WIRED into netWorth (3c). Provenance: Dhan ledger-reconciled (₹1,730 timing); Upstox sync-trusted
+// point-in-time (Payments API last-20 can't reconstruct its 2.5yr history — impossible by construction).
+// Double-count checked: funds are cash (Dhan collateral=0, Upstox notional_cash=0 → no pledged INDIAN/
+// SWING); MTM is F&O positions; no NW sleeve reads funds/MTM → disjoint from every sleeve.
+const teFunds = (b) => r2((bs?.funds?.[b]?.available || 0) + (bs?.funds?.[b]?.utilized || 0));
+const teMtm = (k) => r2((bs?.positions?.[k]?.rows || []).filter((r) => (+r.netQty || 0) !== 0).reduce((a, r) => a + (r.unrealized || 0), 0));
+const tradingEquity = { dhan: r2(teFunds('dhan') + teMtm('DHAN_FNO')), upstox: r2(teFunds('upstox') + teMtm('UPSTOX_FNO')), fyers: r2(teFunds('fyers') + teMtm('FYERS_FNO')), src: 'broker-state funds + open MTM (owner-only)',
+  provenance: { dhan: 'ledger-reconciled (₹1,730 timing)', upstox: 'sync-trusted point-in-time (Payments API last-20 cannot reconstruct 2.5yr history)' } };
+tradingEquity.total = r2(tradingEquity.dhan + tradingEquity.upstox + tradingEquity.fyers);
+
 // ── assemble + write ───────────────────────────────────────────────────────────
 const sleeves = {
   INDIAN: INDIAN.rows, SWING: SWING.rows, US: US.rows,
   MF: mfRows.mf, ELSS: mfRows.elss,
   FD: fdRows, CMPF: [{ value: pfVal, src: 'accrual' }],
 };
-const assets = r2(INDIAN.value + SWING.value + US.value + mfVal + elssVal + fdVal + pfVal);
-const netWorth = r2(assets - loan);
+const personalAssets = r2(INDIAN.value + SWING.value + US.value + mfVal + elssVal + fdVal + pfVal);
+const personalNetWorth = r2(personalAssets - loan);          // excl F&O — for the GATE vs the app snapshot
+const assets = r2(personalAssets + tradingEquity.total);     // incl trading business equity
+const netWorth = r2(assets - loan);                          // = personalNetWorth + tradingEquity.total
 const book = J('data/eod-book.json') || { version: 1, days: {} };
 book.days[today] = {
   asOf, fx: r2(fx),
-  sleeveValues: { indian: r2(INDIAN.value + SWING.value), swing: SWING.value, indianDelivery: INDIAN.value, us: US.value, mf: r2(mfVal), elss: r2(elssVal), fd: fdVal, pf: pfVal, loan, assets, netWorth },
+  sleeveValues: { indian: r2(INDIAN.value + SWING.value), swing: SWING.value, indianDelivery: INDIAN.value, us: US.value, mf: r2(mfVal), elss: r2(elssVal), fd: fdVal, pf: pfVal, tradingEquity: tradingEquity.total, loan, personalNetWorth, assets, netWorth },
   sleeves,
   reconcile: {
     notes: todays.map((n) => ({ cn: n.contract_note_no, broker: n.broker, trades: (n.fills || []).length, hasFno: !!n.has_fno })),
@@ -178,6 +191,7 @@ book.days[today] = {
     drift, driftProvisional: true,
   },
   dataQuality: { mfDegraded, equityMissing: INDIAN.missing + SWING.missing + US.missing },
+  tradingEquity,   // WIRED into netWorth (3c); provenance recorded inside
 };
 writeFileSync(join(ROOT, 'data', 'eod-book.json'), JSON.stringify(book, null, 2));
 
@@ -210,6 +224,8 @@ if (snap) {
   line('mf+elss', mfVal + elssVal, (s.mf?.v ?? 0) + (s.elss?.v ?? 0));
   line('fd', fdVal, s.fd?.v ?? 0);
   line('pf', pfVal, s.pf?.v ?? 0);
-  line('assets', assets, snap.assets ?? 0);
-  line('netWorth', netWorth, snap.nw ?? 0);
+  line('pers.assets', personalAssets, snap.assets ?? 0);
+  line('pers.NW', personalNetWorth, snap.nw ?? 0);   // personal-only ties to the snapshot; F&O is added below
+  console.log(`  + trading equity ₹${tradingEquity.total} (dhan ${tradingEquity.dhan} reconciled + upstox ${tradingEquity.upstox} sync-trusted + fyers ${tradingEquity.fyers})`);
+  console.log(`  → FULL NW (incl trading business equity) = ${personalNetWorth} + ${tradingEquity.total} = ${netWorth}`);
 } else console.log('no snapshot to reconcile against');

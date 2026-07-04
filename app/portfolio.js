@@ -51,7 +51,7 @@ export const ALLOC_COLORS = {
   // keeps its magenta; CMPF (pension) stays the diagonal hatch.
   indian: 'var(--tab-indian)', us: 'var(--tab-us)', fd: 'var(--tab-fd)',
   mf: 'var(--tab-mf)', elss: 'var(--pnk)', pf: CMPF_HATCH,
-  algo: 'var(--tab-algo)', // no NW sleeve — kept for completeness
+  algo: 'var(--tab-algo)', // the Trading-business slice (now IN net worth, book-valued)
 };
 export const CAT_COLORS = {
   ETF: '#4F8FE8', Crypto: '#F59E0B', Bond: '#9090A8', Tech: '#8F7FE8',
