@@ -20,6 +20,32 @@ const cap = (n) => {
   return n >= 1e5 ? '₹' + +(n / 1e5).toFixed(2) + 'L' : '₹' + Math.round(n / 1e3) + 'K';
 };
 
+// #34 — F&O Loss Carryforward, lifted ABOVE the sub-tab switch so it shows on every Algo
+// sub-tab (the persistent tax-asset context, same treatment as the P&L summary card #11).
+function LossCarryforward({ FY }) {
+  return (
+    <div className="card sec">
+      <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+        F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>{`ITR-verified · entering ${FY.labels.current}`}</span>
+      </div>
+      <div className="g4">
+        {FY.carryforward.map((c) => (
+          <div className="csm" key={c.label} style={c.accent ? { borderColor: 'var(--warn-brd)' } : {}}>
+            <div className="sub" style={{ margin: 0 }}>{c.label}</div>
+            <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
+              {c.consumed ? <><span className="rs">₹</span>0</> : <SInrF n={c.val} />}
+            </div>
+            <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
+        Non-speculative losses (Sec 72) carry 8 years and offset only non-speculative business income. Speculative / intraday losses (Sec 73) carry 4 years and offset only speculative income. Both reduce tax payable in the year they are absorbed — they are a real tax asset.
+      </div>
+    </div>
+  );
+}
+
 export default function AlgoTab({
   insights, insightsOn, insightsFirstLoad,
   ALGO, FY,
@@ -160,29 +186,13 @@ export default function AlgoTab({
 
         {/* Computed data-review — figures from the screen calc (KV algo-screen:v1), beside the AI prose */}
         <AlgoScreenReview data={typeof screen === 'object' ? screen : null} loading={screen === 'loading'} error={screen === 'error'} />
-
-        <div className="card">
-          <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-            F&amp;O Loss Carryforward <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>{`ITR-verified · entering ${FY.labels.current}`}</span>
-          </div>
-          <div className="g4">
-            {FY.carryforward.map((c) => (
-              <div className="csm" key={c.label} style={c.accent ? { borderColor: 'var(--warn-brd)' } : {}}>
-                <div className="sub" style={{ margin: 0 }}>{c.label}</div>
-                <div className="vsm" style={{ marginTop: 4, color: c.consumed ? 'var(--grn)' : 'var(--red)' }}>
-                  {c.consumed ? <><span className="rs">₹</span>0</> : <SInrF n={c.val} />}
-                </div>
-                <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', marginTop: 4, lineHeight: 1.5 }}>{c.sub}</div>
-              </div>
-            ))}
-          </div>
-          <div className="sub" style={{ marginTop: 12, lineHeight: 1.6 }}>
-            Non-speculative losses (Sec 72) carry 8 years and offset only non-speculative business income. Speculative / intraday losses (Sec 73) carry 4 years and offset only speculative income. Both reduce tax payable in the year they are absorbed — they are a real tax asset.
-          </div>
-        </div>
       </>)}
 
       {sub === 'analytics' && <AnalyticsTab ALGO={ALGO} />}
+
+      {/* #34 — F&O Loss Carryforward: persistent across every sub-tab, anchored at the BOTTOM
+          of the tab (the tax-asset context that frames all the P&L above it). */}
+      <LossCarryforward FY={FY} />
     </div>
   );
 }
