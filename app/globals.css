@@ -422,7 +422,7 @@ body::before {
    too (no 2-col collapse). A lone item keeps its single column. Phone (≤560) = 1-col above. */
 @media (min-width: 561px) {
   :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):has(> :nth-child(1):last-child) { grid-template-columns: 1fr; }
-  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(5):last-child), :has(> :nth-child(6):last-child)) { grid-template-columns: repeat(3, 1fr); }
+  :is(.statgrid, .g3, .g4, .g5, .fdstats, .ins-stats, .pnl-stats):is(:has(> :nth-child(3):last-child), :has(> :nth-child(5):last-child), :has(> :nth-child(6):last-child)) { grid-template-columns: repeat(3, 1fr); }
 }
 .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap); align-items: stretch; }
 .g2 > *, .statgrid > *, .g3 > *, .g4 > *, .g5 > *, .fdstats > *, .ins-stats > *, .pnl-stats > *, .mf-g3 > * { min-width: 0; }

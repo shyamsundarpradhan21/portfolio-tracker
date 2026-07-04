@@ -310,21 +310,28 @@ async function run() {
       if (n > 0) { roll[k].maxClipped = Math.max(roll[k].maxClipped, n); if (roll[k].cells != null) roll[k].cells++; }
     }
   }
-  // ── SYMMETRY rollup (ROW-COUNT invariant): each converged .statgrid row must render in ≤2
-  // ROWS at DESKTOP widths (≥1280) — the :has() column rules give columns = ceil(itemCount/2),
-  // i.e. a balanced 2×2 / 3×2 / single-row layout. Tablet/phone collapse to 2/1 col and may show
-  // extra rows — NOT gated. >2 rows at any desktop width = the row-balance broke → FAIL + exit 1.
+  // ── SYMMETRY rollup (ROW-COUNT invariant): each converged .statgrid row must obey the pill→row
+  // rule at DESKTOP widths (≥1280) — the :has() column rules keep ≤3 pills in ONE row (1/2/3 col)
+  // and 4-6 pills in exactly 2 rows (4→2×2 · 5→3+2 · 6→3×2). Tablet/phone collapse to 2/1 col and
+  // may show extra rows — NOT gated. A ≤3-pill grid forced to 2 rows, or >2 rows at any desktop
+  // width, = the row-balance broke → FAIL + exit 1.
   let symMaxRows = 0; const symDetail = {}; const symWorst = [];
   for (const w of WIDTHS) {
     let mr = 0;
     for (const c of cells) if (c.w === w) for (const g of (c.statRows || [])) {
       mr = Math.max(mr, g.rows);
-      if (w >= 1280 && g.rows > 2) symWorst.push(`@${w} ${c.theme}/${c.surface}/.${g.cls}(${g.items}it→${g.rows}rows)`);
+      // Row-count invariant (≥1280): ≤3 pills MUST be a single row (1/2/3 col), 4-6 pills MUST be
+      // exactly 2 rows. So a 3-pill grid forced to 2 rows is a violation even though rows ≤ 2.
+      // EXCEPT .fdstats — a captioned grid-template-areas macro grid (e.g. .only-d "cr cr"/"idx stk":
+      // a caption row over 2 stats). certify counts the caption div as an item, inflating it to
+      // "3 items", but the 2 real stats already sit in one row; the extra row is the intentional
+      // caption, not a pill wrap. Keep the rows>2 catch for it; skip the strict ≤3⟹1-row clause.
+      if (w >= 1280 && (g.rows > 2 || (g.items <= 3 && g.rows > 1 && g.cls !== 'fdstats'))) symWorst.push(`@${w} ${c.theme}/${c.surface}/.${g.cls}(${g.items}it→${g.rows}rows)`);
     }
     symDetail[w] = mr;
     if (w >= 1280) symMaxRows = Math.max(symMaxRows, mr);
   }
-  const symPass = symMaxRows <= 2;
+  const symPass = symWorst.length === 0;   // no desktop violation: ≤3 pills⟹1 row, 4-6⟹2 rows, none >2
 
   // ── CHECK 1 rollup (DIRECTION colour) — same spirit as symmetry: any non-zero directional
   // stat figure (.dirv) rendering the neutral text colour instead of gain/loss = FAIL.
@@ -356,10 +363,10 @@ async function run() {
   const summary = { label: LABEL, stress: STRESS, maskoff: MASKOFF, widths: WIDTHS, surfaces: SURFACES.map((s) => s.id), docOverflowCells: docHits, maxDocOverflow: maxDoc, ellipsisCells, maxEllipsis, symmetryPass: symPass, symmetryMaxRowsDesktop: symMaxRows, maxRowsByWidth: symDetail, symmetryViolations: symWorst, directionPass: colourPass, colourViolations, valueSizePass: sizePass, valueSizeBuckets: sizeBuckets, valueSizeViolations: sizeWorst, perRsp: roll };
   fs.writeFileSync(path.join(DIR, `cert-${LABEL}.json`), JSON.stringify({ summary, cells }, null, 2));
   process.stdout.write(`\n[${LABEL}] docOverflow cells=${docHits} maxDoc=${maxDoc}  clippedMax 001=${roll['RSP-001'].maxClipped} 002=${roll['RSP-002'].maxClipped} 004=${roll['RSP-004'].maxClipped} other=${roll.other.maxClipped}  ellipsis cells=${ellipsisCells} max=${maxEllipsis}\n`);
-  process.stdout.write(`[${LABEL}] SYMMETRY ${symPass ? 'PASS' : '*** FAIL ***'} (≤2 rows @desktop) — max stat-grid rows/width: ${WIDTHS.map((w) => `@${w}:${symDetail[w]}r${w >= 1280 ? '' : '(tablet)'}`).join('  ')}\n`);
+  process.stdout.write(`[${LABEL}] SYMMETRY ${symPass ? 'PASS' : '*** FAIL ***'} (≤3 pills⟹1 row, 4-6⟹2 rows @desktop) — max stat-grid rows/width: ${WIDTHS.map((w) => `@${w}:${symDetail[w]}r${w >= 1280 ? '' : '(tablet)'}`).join('  ')}\n`);
   process.stdout.write(`[${LABEL}] DIRECTION ${colourPass ? 'PASS' : '*** FAIL ***'} (non-zero stat figures must render gain/loss colour, never neutral)${colourPass ? '' : ' — ' + colourViolations.slice(0, 6).join('; ')}\n`);
   process.stdout.write(`[${LABEL}] VALUE-SIZE ${sizePass ? 'PASS' : '*** FAIL ***'} (one size per tier per width, ±2px) — ${WIDTHS.map((w) => `@${w}:${['T1', 'T2', 'T3'].map((t) => sizeBuckets[w][t] ? `${t}=${sizeBuckets[w][t]}` : '').filter(Boolean).join(',')}`).join('  ')}\n`);
-  if (!symPass) console.error(`[${LABEL}] symmetry gate FAILED — converged .statgrid rows exceed 2 rows at desktop:\n  ${symWorst.slice(0, 8).join('\n  ')}`);
+  if (!symPass) console.error(`[${LABEL}] symmetry gate FAILED — a ≤3-pill grid rendered >1 row, or a grid exceeded 2 rows, at desktop:\n  ${symWorst.slice(0, 8).join('\n  ')}`);
   if (!colourPass) console.error(`[${LABEL}] DIRECTION gate FAILED — non-zero figures rendering neutral:\n  ${colourViolations.slice(0, 10).join('\n  ')}`);
   if (!sizePass) console.error(`[${LABEL}] VALUE-SIZE gate FAILED — a tier spans >1 size bucket at a width:\n  ${sizeWorst.slice(0, 10).join('\n  ')}`);
   if (!symPass || !colourPass || !sizePass) process.exit(1);
