@@ -157,6 +157,14 @@ for (const [rows, broker, sleeve] of [[bs?.holdings?.INDIAN?.rows || [], 'zerodh
 }
 const chargesReal = r2(todays.reduce((a, n) => a + Object.values(n.charges || {}).reduce((x, v) => x + (typeof v === 'number' ? v : 0), 0), 0));
 
+// ── TRADING_EQUITY (business-entity model) — account value + open MTM per broker, 100% owner.
+// DORMANT: stored as a separate field, NOT added to netWorth (F&O-into-NW wiring is HELD — 3c).
+// Value-checked 2026-07-04: dhan reproduces ₹777,438.30 (the ₹2.5L owner deposit counted once).
+const teFunds = (b) => r2((bs?.funds?.[b]?.available || 0) + (bs?.funds?.[b]?.utilized || 0));
+const teMtm = (k) => r2((bs?.positions?.[k]?.rows || []).filter((r) => (+r.netQty || 0) !== 0).reduce((a, r) => a + (r.unrealized || 0), 0));
+const tradingEquity = { dhan: r2(teFunds('dhan') + teMtm('DHAN_FNO')), upstox: r2(teFunds('upstox') + teMtm('UPSTOX_FNO')), fyers: r2(teFunds('fyers') + teMtm('FYERS_FNO')), src: 'broker-state funds + open MTM (owner-only)' };
+tradingEquity.total = r2(tradingEquity.dhan + tradingEquity.upstox + tradingEquity.fyers);
+
 // ── assemble + write ───────────────────────────────────────────────────────────
 const sleeves = {
   INDIAN: INDIAN.rows, SWING: SWING.rows, US: US.rows,
@@ -178,6 +186,7 @@ book.days[today] = {
     drift, driftProvisional: true,
   },
   dataQuality: { mfDegraded, equityMissing: INDIAN.missing + SWING.missing + US.missing },
+  tradingEquity,   // DORMANT — NOT in netWorth yet (3c wiring held for read)
 };
 writeFileSync(join(ROOT, 'data', 'eod-book.json'), JSON.stringify(book, null, 2));
 
