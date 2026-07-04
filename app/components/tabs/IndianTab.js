@@ -105,11 +105,7 @@ export default function IndianTab({
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
           <div className="sub" style={{ marginBottom: 14 }}>Same dated rupees — your <Rs />{inrCd(inStats.totalInvested)} deployed into each instead.</div>
           <BenchmarkBars you={inStats.portXirr} rows={inStats.benchmarks.filter((b) => !['niftybank', 'next50'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
-          <div className="sub" style={{ marginTop: 12 }}>
-            CAGR {pct1(inStats.cagr)}
-            {inStats.years != null ? ` over a ${inStats.years.toFixed(1)}-yr weighted holding` : ''} · price-only (ex-dividend) index returns.
-          </div>
-          <div className="sub" style={{ marginTop: 8, color: 'var(--txt3)', lineHeight: 1.6 }}>
+          <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
             Annualised over a {inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} average holding — a short window; indicative, not proven edge.
           </div>
           <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
