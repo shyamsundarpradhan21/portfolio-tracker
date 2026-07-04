@@ -7,19 +7,20 @@
 //   payslip        → wraps scripts/parse-payslip.py              (phase e)
 //   broker-tax     → wraps scripts/parse-broker-tax.py           (phase e)
 //   itr-json       → NEW per-AY schema validator + anchor diff   (phase e2)
-//   vested-statement → backlog (registry-ready; manual curation until then)
+//   vested         → wraps scripts/parse-vested.py -> data/us_trades.json
 
 import { contractNoteParser } from './contract-note.mjs';
 import { casMfParser } from './cas-mf.mjs';
 import { payslipParser } from './payslip.mjs';
 import { brokerTaxParser } from './broker-tax.mjs';
 import { itrJsonParser } from './itr-json.mjs';
+import { vestedParser } from './vested.mjs';
 
 export const PARSERS = [
   contractNoteParser,   // most frequent doc (per trading day) — checked first
   casMfParser,
   payslipParser,
   brokerTaxParser,
+  vestedParser,         // Vested_Transactions*.xlsx -> data/us_trades.json
   itrJsonParser,
-  // vested-statement → backlog (registry-ready; manual curation until then)
 ];

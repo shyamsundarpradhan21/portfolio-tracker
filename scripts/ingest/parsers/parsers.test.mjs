@@ -9,6 +9,7 @@ import { casMfParser } from './cas-mf.mjs';
 import { contractNoteParser, mapCnStatus } from './contract-note.mjs';
 import { payslipParser, nextFormName } from './payslip.mjs';
 import { brokerTaxParser } from './broker-tax.mjs';
+import { vestedParser } from './vested.mjs';
 import { classify } from '../registry.mjs';
 import { loadParsers } from '../registry.mjs';
 
@@ -126,6 +127,20 @@ describe('broker-tax', () => {
   });
 });
 
+describe('vested canHandle', () => {
+  const claims = (name) => vestedParser.canHandle({ name, head: TXT });
+  it('claims Vested_Transactions*.xlsx incl. gmail-prefixed', () => {
+    expect(claims('Vested_Transactions.xlsx')).toBe(true);
+    expect(claims('Vested_Transactions (3).xlsx')).toBe(true);
+    expect(claims('a1b2c3d4-Vested_Transactions (3).xlsx')).toBe(true);
+  });
+  it('rejects the Vested TAX report (broker-tax owns it) and near-misses', () => {
+    expect(claims('Profit-Loss Statement 2026.xlsx')).toBe(false);   // broker-tax
+    expect(claims('Vested_Transactions.csv')).toBe(false);           // wrong ext
+    expect(claims('Transactions.xlsx')).toBe(false);
+  });
+});
+
 describe('classification is mutually exclusive across the roster', () => {
   it('each fixture lands on exactly one parser', async () => {
     const parsers = await loadParsers();
@@ -134,6 +149,8 @@ describe('classification is mutually exclusive across the roster', () => {
       ['CAS_JUN2026.pdf', PDF, 'cas-mf'],
       ['Form (3).pdf', PDF, 'payslip'],
       ['taxpnl-YXA918-2025.xlsx', TXT, 'broker-tax'],
+      ['Vested_Transactions (3).xlsx', TXT, 'vested'],
+      ['Profit-Loss Statement 2026.xlsx', TXT, 'broker-tax'],
       ['random.docx', TXT, null],
     ];
     for (const [name, head, want] of cases) {
