@@ -155,11 +155,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         </div>
       </div>
 
-      {/* LIVE P&L glance — net realised · charges · live MTM + the intraday P&L curve.
-          Merged in from the standalone "Trading P&L" card (#45), so it's one card now.
-          Its curve is suppressed in Day view (the DayPanel below IS the day curve + picker —
-          scroll it for past sessions); it renders in Month/Year/All. Pills always stay. */}
-      <LivePnlGlance liveMtm={liveMtm} suppressCurve={view === 'day'} />
+      {/* LIVE P&L glance — the net realised · charges · live MTM pills (no curve; the only
+          intraday curve is the Day view's DayPanel, day-picker driven). Merged in from the
+          standalone "Trading P&L" card (#45), so it's one card now. */}
+      <LivePnlGlance liveMtm={liveMtm} />
 
       {/* capital line + verified/YTD summary — the journal's top context row */}
       {capital ? (
@@ -232,67 +231,20 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   );
 }
 
-// LIVE P&L glance — the pills (all-time net realised + charges from the F&O ledger, live
-// open MTM from broker-state) + the intraday P&L curve (today's live session; out of hours
-// it falls back to the most recent captured session). Rendered INSIDE the Trading Journal
-// card (#45 merge — the standalone "Trading P&L" card was removed), so no card / title.
-function LivePnlGlance({ liveMtm = null, suppressCurve = false }) {
+// LIVE P&L glance — just the pills now (all-time net realised + charges from the F&O ledger,
+// live open MTM from broker-state). The intraday P&L CURVE was removed from EVERY view
+// (2026-07-05: "there should not be a glance view curve, not daily, not monthly, not annually")
+// — the sole intraday curve now lives in the Day view's DayPanel (day-picker driven). Rendered
+// INSIDE the Trading Journal card (#45 merge — the standalone "Trading P&L" card was removed).
+function LivePnlGlance({ liveMtm = null }) {
   const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
-  const today = todayIstIso();
-  const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[today] || []);
-  const [liveCandles, setLiveCandles] = useState(() => APP.niftyOhlc?.days?.[today] || null);
-  const [liveFills, setLiveFills] = useState(() => APP.fnoIntraday?.fills?.[today] || []);
-  useEffect(() => {
-    let on = true;
-    const poll = async () => {
-      try {
-        const [res, niftyRes] = await Promise.all([
-          fetch(`/api/intraday?date=${today}`, { cache: 'no-store' }),
-          fetch(`/api/intraday?kind=nifty&date=${today}`, { cache: 'no-store' }),
-        ]);
-        if (on && res.ok) { const j = await res.json(); if (Array.isArray(j.tape)) setLiveTape(j.tape); if (Array.isArray(j.fills)) setLiveFills(j.fills); }
-        if (on && niftyRes.ok) { const j = await niftyRes.json(); if (Array.isArray(j.tape)) setLiveCandles(j.tape); }
-      } catch {}
-    };
-    poll();
-    const id = setInterval(poll, 12_000);
-    return () => { on = false; clearInterval(id); };
-  }, [today]);
-
-  // Curve source: today's live session when it has a curve; else the latest committed
-  // session so the card always shows the most recent P&L shape.
-  const liveMtmTape = toLiveMtmTape(liveTape);
-  let curveDate = today, tape = liveMtmTape, candles = liveCandles, fills = liveFills, isLive = true;
-  if (liveMtmTape.length < 2) {
-    const days = APP.fnoIntraday?.days || {};
-    const last = Object.keys(days).filter((d) => (days[d]?.length || 0) >= 2).sort().pop();
-    if (last) { curveDate = last; tape = toLiveMtmTape(days[last]); candles = APP.niftyOhlc?.days?.[last] || null; fills = APP.fnoIntraday?.fills?.[last] || []; isLive = false; }
-  }
-  // Day view carries its own day-picker + per-day curve (DayPanel below), so the glance curve
-  // is redundant there — suppress it entirely in Day view (pills always stay; scroll the day
-  // picker to reach any past session). The glance curve still renders in Month/Year/All, where
-  // there's no per-day picker.
-  const suppressChart = suppressCurve;
-
   return (
-    <>
-      {/* pills — colour-coded net/MTM (direction=colour), charges neutral (a cost, not a P&L) */}
-      <div className="pnl-psum" style={{ padding: '0 20px 14px' }}>
-        <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(ledger.net)}><SInrF n={ledger.net} /></span></span>
-        <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}><SInrF n={ledger.charges} /></span></span>
-        <span><span className="lbl">Live MTM</span> <span className={'mono ' + (liveMtm != null ? cl(liveMtm) : '')}>{liveMtm != null ? <SInrF n={liveMtm} /> : '—'}</span></span>
-      </div>
-      {suppressChart ? null : tape.length >= 2 ? (
-        <div style={{ padding: '0 20px 16px' }}>
-          {!isLive && <div className="lbl" style={{ margin: '0 0 2px' }}>last session · {prettyDate(curveDate)}</div>}
-          <IntradayChart tape={tape} candles={candles} fills={fills} ariaLabel="Intraday P&L" primaryLabel={isLive ? 'Live MTM' : 'MTM'} />
-        </div>
-      ) : (
-        <div className="sub" style={{ padding: '0 20px 16px', color: 'var(--txt3)', lineHeight: 1.6 }}>
-          The live P&amp;L curve draws through the session once the capture logs a few points.
-        </div>
-      )}
-    </>
+    // pills — colour-coded net/MTM (direction=colour), charges neutral (a cost, not a P&L)
+    <div className="pnl-psum" style={{ padding: '0 20px 14px' }}>
+      <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(ledger.net)}><SInrF n={ledger.net} /></span></span>
+      <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}><SInrF n={ledger.charges} /></span></span>
+      <span><span className="lbl">Live MTM</span> <span className={'mono ' + (liveMtm != null ? cl(liveMtm) : '')}>{liveMtm != null ? <SInrF n={liveMtm} /> : '—'}</span></span>
+    </div>
   );
 }
 
