@@ -18,7 +18,7 @@ Every chain in this document terminates in one of these:
 | **F3** | **Capture daemon** — KV `intraday:<date>` (F&O), `intraday:eq:<date>`, `intraday:us:<date>`, `intraday:nifty:<date>` (all TTL 3d) + committed archives `fno/eq/us-intraday.json`, `nifty-ohlc.json` | `scripts/capture-daemon.mjs`: F&O MTM every 10s, IN equity day-change every 60s (Σ qty×(price−prevClose), Yahoo), US session (18:45→02:30 IST) 60s, NIFTY 1-min OHLC ~1/min; archives committed once at session close. Task Scheduler: CaptureIntradayIndia 09:10 + at-logon resume; CaptureIntradayUS 18:40 | Live during sessions |
 | **F4** | **Nightly records** — KV `growth:<date>` (per-sleeve day-change, TTL 35d) + `data/growth.json`; KV `snapshots:nw:<owner>` (daily NW, cap 800) + committed `data/SNAPSHOT.md` / `snapshot-sleeves.json` | Growth: Vercel cron `/api/snapshot` 03:00 IST + host `snapshot-growth.mjs` (`upsertGrowth` skip-not-zero). Snapshots: recorded by the app itself on any fully-valued load (`page.js:1051` → POST `/api/snapshots`; ±30% day-move plausibility guard client AND server) and harvested headless nightly by `record-snapshot.mjs` into the committed files | Nightly |
 | **F5** | **Live public APIs** (server routes; all `AbortSignal.timeout` + fall back to last-known) | Yahoo v8 chart (`/api/quotes` — 15-min client poll, `/api/history` 5y weekly, `/api/fx-history` INR=X, `/api/nifty-daily` ^NSEI); AMFI `api.mfapi.in` (`/api/mf-nav`, 24h cache, fallback casNav); FRED; NSE (allIndices, fiidiiTradeReact, participant-OI CSV); CNN Fear&Greed; MoSPI e-Sankhyiki; ForexFactory; RSS/Google News | Per request, CDN `s-maxage` |
-| **F6** | **Hand-curated seeds & harvests** | `data/fno-verified.json` (ITR-verified FY seed — annual ritual); Vested statements → US_REALIZED / US_DIVIDENDS (asOf 08 Jun 2026, reseed to refresh); `vol_pnl.json`; `held-algos.json`; Stratzy browser harvest → `stratzy-daily.json` → `build-algo-screen.mjs`/`build-monthly-reco.mjs` → KV `algo-screen:v1` / `algo-monthly:latest` | Manual / monthly |
+| **F6** | **Hand-curated seeds & harvests** | `data/fno-verified.json` (ITR-verified FY seed — annual ritual); Vested statements → US_REALIZED / US_DIVIDENDS (asOf 08 Jun 2026, reseed to refresh); `vol_pnl.json`; `held-algos.json`; Stratzy browser harvest → `stratzy-daily.json` → `build-monthly-reco.mjs` → KV `algo-monthly:latest` | Manual / monthly |
 | **AI** | `/api/insights` → Claude `claude-haiku-4-5` | Fired ONLY by the ✨ toggle; cached `localStorage nwTracker.insights`. ₹-figure guard lives in the system prompt (`insights/route.js:95-111`) — prompt-level only, no post-response scrub | User-triggered |
 
 Client-side last-known behavior: every Wrap/quote feed hydrates from
@@ -44,8 +44,7 @@ failed refreshes silently keep last-known data.
 | `ledger:cn:<note>` + index | Checksum-verified contract notes | `contract-parser/run.py` (manual) | `build-fno-overlay.mjs` |
 | `ledger:fno:overlay` | Real NCLFO charges by Broker\|date | `build-fno-overlay.mjs --write` (manual) | `/api/portfolio` (`applyFnoOverlay`) |
 | `fyers:refreshToken` | Fyers token handoff | `sync-brokers.mjs` | `sync-brokers.mjs` (cloud) |
-| `algo-screen:v1` | Unbiased algo screen payload | `build-algo-screen.mjs` (monthly/manual) | `/api/algo-screen` |
-| `algo-monthly:latest` | Monthly conviction decision | `build-monthly-reco.mjs` (monthly) | `/api/algo-monthly` |
+| `algo-monthly:latest` | Monthly conviction decision (carries the per-pick regime breakdown since the Algo-Performance screen was retired) | `build-monthly-reco.mjs` (monthly) | `/api/algo-monthly` |
 | `stratzy-daily:v1` | Per-algo live/backtest series | `import-stratzy-daily.mjs` (manual harvest) | **no app reader** (scripts read local file) |
 | `algo-catalog:v1` | Dhan Algos catalog | `import-dhan-catalog.mjs` (manual) | **no app reader** (research feed) |
 
@@ -67,7 +66,7 @@ Monthly reviews are deliberately NOT in KV — `loadAlgoReview` reads only local
 | `vol_pnl.json`, `us_trades.json`, `indian_exits.json` | hand-curated / report imports | `/api/portfolio`; `/api/growth` (deposits) |
 | `snapshot-sleeves.json` + `SNAPSHOT.md` | `record-snapshot.mjs` nightly (headless harvest, commits) | `/api/portfolio` → `historicalSnapshots()` |
 | `nifty50.js` | hand-updated constituents (asOf 2026-06) | `/api/nifty50` |
-| gitignored: `portfolio.private.json` (SOURCE OF TRUTH), `stratzy-*.json`, `dhan-full.raw.json`, `algo-catalog*.json`, `algo-screen.json`, `held-algos.json`, `regime-inputs.json`, `algo-monthly/**`, `reports/`, `.kite-*.json` | see §0 F1/F6 | seed + screen/reco scripts |
+| gitignored: `portfolio.private.json` (SOURCE OF TRUTH), `stratzy-*.json`, `dhan-full.raw.json`, `algo-catalog*.json`, `held-algos.json`, `regime-inputs.json`, `algo-monthly/**`, `reports/`, `.kite-*.json` | see §0 F1/F6 | seed + screen/reco scripts |
 
 ### 1.3 API route policies (cache / fallback)
 
@@ -78,7 +77,7 @@ Monthly reviews are deliberately NOT in KV — `loadAlgoReview` reads only local
 | `/api/growth` | no-store | KV MGET → `growth.json`; Nifty tape KV→archive; sources called DIRECTLY (no sibling self-fetch — Vercel-protection rule verified) |
 | `/api/snapshot` (cron) | no-store | CRON_SECRET; per-sleeve allSettled, skip-not-zero |
 | `/api/snapshots` | no-store | `stale:true` empty; POST rejects >30% day moves |
-| `/api/algo-screen`, `/api/algo-monthly` | no-store | KV → gitignored local JSON → null |
+| `/api/algo-monthly` | no-store | KV → gitignored local JSON → null |
 | `/api/quotes` | s-maxage=60, swr=300 | Yahoo 2-host failover; failed symbols dropped |
 | `/api/history`, `/api/fx-history`, `/api/nifty-daily` | s-maxage=3600, swr=86400 | per-symbol null / empty closes |
 | `/api/mf-nav` | s-maxage=86400, swr=43200 | last-known casNav |
@@ -205,8 +204,7 @@ reco / review (F6 pipeline).
 | Year/Month heatmaps | quantile buckets (breakeven band ±5% of median \|net\|) over C1 daily nets |
 | Day view | live MTM tape (C5, 12s poll, per-broker dashed legs — broker hexes hardcoded, flag), NIFTY 1-min candles + auto S/R (`niftyLevels`), buy/sell fill triangles (broker tradebooks ~1/min), realised row after evening sync; "3-day live cache" copy duplicates KV_TTL (flag) |
 | Summary | capital composition from `ALGO.s01/s02` splits (F1); `brokerRealisedMatrix` per FY×broker over C1 |
-| Review — AlgoMonthlyReco | KV `algo-monthly:latest` (C7): month, capital (client re-runs `allocateConviction` on edit; tier badge stays artifact-time), book summary, picks (KEEP/ADD/EXIT, vol-side chips, rank/sortino/DD rationale), warnings; last-month review from local reviews file (C8, null until first run) |
-| Review — AlgoScreenReview | KV `algo-screen:v1` (C6): asOf = Stratzy harvest date (**days-stale by nature**), counts, held metrics (live-segment Sortino/CAGR/MaxDD/worstDay), structure outliers (median−2·MAD), flags, regime table (3y Nifty×VIX calendar), confront/dominance, capital tier + thresholds (surfaced from payload ✓) |
+| Review — AlgoMonthlyReco | KV `algo-monthly:latest` (C7): month, capital (client re-runs `allocateConviction` on edit; tier badge stays artifact-time), book summary, picks (KEEP/ADD/EXIT, vol-side chips, rank/sortino/DD rationale), warnings; last-month review from local reviews file (C8, null until first run); **per-pick regime breakdown + worst-day / structure-outlier (median−2·MAD) / held park-reason** — folded in from the retired Algo-Performance screen, now carried on this artifact (regime table = 3y Nifty×VIX calendar) |
 | Review — CF card | `FY.carryforward[]` ← `fno-verified.json` ✓ |
 | Analytics (`AnalyticsTab`) | TWR paths (`cumPath` on C1/C4), CAGR, best/worst windows, summary stats, Sharpe/Sortino/Calmar/α/β vs `/api/nifty-daily` ^NSEI, drawdown episodes + underwater — pure `pnlDaily.js`; footer overclaims "real contract-note charges" (actual: real-where-overlaid, flag); literal `−` glyph on Avg Loss + always-green Success Ratio (flag) |
 
@@ -269,7 +267,7 @@ from ledgers × Yahoo weekly + fx-history + NAV — `synth:true`, dashed) + comm
 9. `USTab.js:68` — benchmark subset in JSX (6 of 10); `page.js:588` — cap default 'Large'; `constants.js:18-42` — undated ETF look-through weights.
 10. `FDTab.js:143-144` — "4 banks" + "₹40,000 Sec 194A"; `:81` — raw hex `#5FE3B0`; `:34` — "recalculated daily" vs hourly tick; SipCard `emp×2` employer-match assumption ×3 sites.
 11. `calc.js:133` `RF_ANNUAL=0.065` vs `InsightsCard.js:17` `rfPct=6.5` — hand-synced pair; `page.js:730` US risk-free `0.043`; `page.js:913` — "₹40K TDS" prose inside the AI payload (can echo into AI text).
-12. Trading: `AlgoTab.js:74` `' · from Mon'`; `:109` "100% of own"; `AnalyticsTab.js:227` literal `−` glyph; `:224` always-green Success Ratio; `:275` "after real contract-note charges" overclaim; `IntradayChart.js:17-21` broker raw hexes; `PnlDashboard.js:340` "3-day live cache"; `AlgoScreenReview.js:220` "3y" regime window; `AlgoMonthlyReco.js:125` input bounds.
+12. Trading: `AlgoTab.js:74` `' · from Mon'`; `:109` "100% of own"; `AnalyticsTab.js:227` literal `−` glyph; `:224` always-green Success Ratio; `:275` "after real contract-note charges" overclaim; `IntradayChart.js:17-21` broker raw hexes; `PnlDashboard.js:340` "3-day live cache"; "3y" regime window now in `algoScreen.mjs`/`regime.mjs`; `AlgoMonthlyReco.js:125` input bounds.
 13. `CFMemo.js:8` — "ITR-verified" badge unconditional for every caller; `MacroTab.js:390` — 'Yahoo' news-source fallback (feed is Google News).
 14. Deliberate/maintained heuristic constants (keep, but know): treemap sector weights, fearGreed weights/bands, RBI repo table, MPC dates, regime thresholds, sentiment normalization bounds, InsightsCard badge tiers, news lexicons, Nifty-50 list, wall-clock session minutes, snapshot guards (CAP=800, MAX_DAY_MOVE=0.3 — duplicated client+server).
 
