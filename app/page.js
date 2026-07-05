@@ -1314,7 +1314,11 @@ function Dashboard() {
 
         {/* TAB CONTENT — key forces a remount on tab switch so tabEnter plays */}
         <AiContext.Provider value={{ ts: insightsTs, refresh: refreshAll }}>
-        <div className="tab-content" key={tab}>
+        {tab === 2 ? (
+          /* FD is region-wired (shell-6region Phase 4): it emits shell-main/widget/stats. */
+          <FDTab key={2} fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
+        ) : (
+        <div className="tab-content shell-span" key={tab}>
           {tab === 0 && (
             <OverviewTab ov={ov} fx={fxRate}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
@@ -1332,9 +1336,6 @@ function Dashboard() {
               INDIAN={INDIAN} INDIAN_REALIZED={INDIAN_REALIZED} CORPORATE_ACTIONS={CORPORATE_ACTIONS} FY={FY}
               indianRec={indianRec}
               swing={swing} swingSorted={swingSorted} swSort={swSort} sortSw={sortSw} swingRec={SWING_R} />
-          )}
-          {tab === 2 && (
-            <FDTab fds={fds} now={now} insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad} />
           )}
           {tab === 3 && (
             <MFTab mf={mf} mfx={mfx} mfBench={mfBench} mfSorted={mfSorted} mfSort={mfSort} sortMf={sortMf}
@@ -1361,6 +1362,7 @@ function Dashboard() {
               onRefresh={refreshInsights} aiReady={!!(indian.valued && usData.val && usdInr)} />
           )}
         </div>
+        )}
         </AiContext.Provider>
 
         {/* GLOBAL FOOTER (shell-6region Phase 3) — per-tab freshness/sync provenance,

@@ -832,9 +832,22 @@ enter implementation until this section is greenlit.
 - [ ] OPEN (design): the persistent memo panel is ~300px tall on Overview/Indian/US/MF (≈⅓ viewport)
       — decide keep-as-is vs condense/collapsible per user annotation feedback.
 
-## Phase 4 — Per-tab region wiring (7 tabs)
-- [ ] Overview · Indian · FD (build maturity widget) · MF · US · Trading · Wrap slotted per map.
-- [ ] `AnalysisCard` → statistics slot everywhere.
+## Phase 4 — Per-tab region wiring (7 tabs)  🚧 IN PROGRESS
+- [x] Grid infra: `.shell` now carries the full 4-tier `grid-template-areas` (main/widget/stats;
+      footer excluded — it's the fixed `.foot-statusbar`). Regioned tabs return a `.tab-regions`
+      (`display:contents`) wrapper whose `.shell-main`/`.shell-widget`/`.shell-stats` children drop
+      straight into the grid — DOM order irrelevant, grid-area places them. Un-regioned tabs render
+      one `.tab-content.shell-span` block (grid-column 2/-1 · row 2/-1) so they stay full-width while
+      the rollout proceeds tab-by-tab. Verified: FD regioned + US/Overview span both cert-green.
+- [x] **FD** regioned + NEW `app/components/shared/FdMaturity.js` widget — a maturity-ladder Gantt
+      on a shared time axis (earliest open → latest maturity), bars positioned by open→maturity,
+      gold elapsed-fill, "today" rule; all dates/values derived from `fds.rows` (no hardcodes),
+      theme tokens. main = FD ladder table + pipeline/history; widget = ladder; stats = 4 summary
+      cards + AI. Render-verified 768/1024/1440; certify GREEN normal + STRESSHARD.
+- [ ] Region the remaining 6: Overview · Indian · MF · US · Trading · Wrap (each = wrap existing
+      blocks into shell-main/widget/stats per the map; `AnalysisCard` → stats slot; disentangle the
+      bundled `.g2` widget+stats grids in US/Overview). Pull each out of the `.shell-span` branch in
+      page.js as it's done.
 
 ## Phase 5 — Verify (blocking)
 - [ ] `audit/responsive/certify.mjs` green: 001/002/004 = 0 + docOverflow = 0 across all 6 widths ×
