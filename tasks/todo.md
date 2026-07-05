@@ -1,3 +1,55 @@
+# Plan — Analytics revamp: Stratzy-style 4-card build (mock approved 2026-07-05)
+
+Spec: `tasks/analytics-revamp-prompt.md`. Mock: `public/mock-analytics-revamp.html` (delete in final commit).
+Render-layer only, inside `app/components/shared/AnalyticsTab.js`. No `globals.css` edit (swatch/legend
+variants inline; SVG gradient stops resolved at runtime, `ProjectionTab.useScHex` pattern). Key Metrics +
+Efficiency Ratios tables stay UNTOUCHED.
+
+## Shared helpers
+- [x] `axes()` JSX helper — month labels derived from the date range (not hardcoded) + 3 %-ticks left.
+- [x] `monthTicks(t0,t1)`, `plotScales()`, `NoData`, `useGrnHex()` (resolve `--grn` for the gradient stops).
+- [x] Extend `MultiLine` with optional `axes` prop + per-line `sw` (existing Cumulative-Perf call unchanged).
+
+## Cards
+- [x] Card 1 — Best Vs Worst Duration: selected-strat cum TWR curve `var(--txt)` 2.4 + worst `--red-bg`/best
+      `--grn-bg` bands from `bestWorstWindows`, dashed `--txt3` edges, dashed legend chips, axes.
+- [x] Card 2 — Underwater Plot: `cur.dd.curve` gold fill .22 + stroke 2, red avg rule at `cur.dd.avgDD`, axes.
+- [x] Card 3 — Worst 5 Drawdown Periods (replaces the Worst-5 TABLE): green curve 2.2 + runtime-resolved green
+      gradient under-fill, `--red-bg` bands per `episodes.slice(0,5)` (peak→recovery/last), hover tooltip
+      (labels = `--acc`, depth = red) + `<title>` fallback.
+- [x] Card 4 — Returns Comparison (NEW, after Efficiency Ratios): 4-line chart (S01/S02/Overall/NIFTY) + table
+      rows Overall/S01/S02/NIFTY × 1M/3M/6M/1Y/Max DD, fixed-horizon anchored on latest ledger day REGARDLESS
+      of the period pill, direction=colour only, Max DD unsigned red, '—' when a horizon is uncovered.
+
+## Finish
+- [x] Real-data verify (dev server: committed fno-ledger + /api/nifty-daily) — cards show real numbers, day + night.
+- [x] `node audit/responsive/certify.mjs` green — full 8 surfaces normal + algo stress (6 widths × both themes):
+      docOverflow=0, RSP-001/002/004=0, SYMMETRY/DIRECTION/VALUE-SIZE PASS. (The 28 "other" clips are the
+      `agentation` dev-toolbar overlay, a devDependency absent in prod — none of the new elements clip.)
+- [x] `command -v graphify >/dev/null && graphify hook-rebuild` — not on PATH locally, skipped.
+- [x] Delete `public/mock-analytics-revamp.html`.
+- [ ] Commit to current branch `main` (no push).
+
+## Review
+- All four cards built inside `app/components/shared/AnalyticsTab.js` only — **no `globals.css` change** (swatch/
+  legend-band variants inline; the frosted hover tip reuses the app's `.iq-tip` class from IntradayChart).
+- **Axis decision reversed mid-build (re-plan on surprise):** started with UNSIGNED y-ticks per the binding
+  "no +/- glyph" constraint, but real Overall/S02 return curves cross zero, so an unsigned scale read
+  non-monotonic garbage (12% / 5% / 22%). Reverted to SIGNED ticks (matches the mock): a chart SCALE marker is
+  not a value/direction figure, so the no-glyph rule (which governs card values + table cells) is unaffected.
+  The Returns Comparison TABLE and all card values stay strictly glyph-free (colour = direction), as specced.
+- **Gradient theme-follow:** `--card` in the mock isn't an app token (resolved to "" → black box); the green
+  gradient stops resolve `--grn` at runtime via `useGrnHex()` (ProjectionTab.useScHex pattern, MutationObserver
+  on `data-time`/`data-tab`) so the fill re-tints on theme flip — verified live in both themes.
+- **Tooltip:** converted from in-SVG to the app's frosted `.iq-tip` HTML overlay; compact 3-line layout
+  (Depth / Recovery + muted peak→trough caption) capped at 240px + flip-at-0.5 so it never overflows; `<title>`
+  kept as the always-safe fallback.
+- **Flagged, NOT fixed (out of scope — Key Metrics stays untouched):** the untouched Key Metrics "Net P&L" row
+  renders a DOUBLE `₹₹` (JSX `.rs` ₹ + `inrC()` which also prepends ₹). Pre-existing; needs a one-line fix but
+  the spec locked that table as untouched.
+
+---
+
 # Plan — Unified ingestion: ONE inbox folder → dispatcher → parsers → tiered stores (v2)
 
 Status: **BUILT — all code phases + all parsers landed (b→j + d2 Astha/Groww + cas-mf +
