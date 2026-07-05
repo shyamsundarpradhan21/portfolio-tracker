@@ -139,6 +139,9 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   const capBase = (deployed && activeBroker === 'all') ? deployed.all : null;
   const ret = returnsPct(statScope, capBase);
   const nav = (dir) => setCur((c) => ({ ...c, [view]: Math.min(lists[view].length - 1, Math.max(0, c[view] + dir)) }));
+  // Calendar drill-down: click a day cell → open that day's Day view; click a month header → its Month view.
+  const openDay = (iso) => { const i = lists.day.indexOf(iso); if (i >= 0) { setCur((c) => ({ ...c, day: i })); pick('day'); } };
+  const openMonth = (ym) => { const i = lists.month.indexOf(ym); if (i >= 0) { setCur((c) => ({ ...c, month: i })); pick('month'); } };
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -209,13 +212,13 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
 
       {/* ── view body ── */}
       <div style={{ padding: '4px 20px 18px' }}>
-        {view === 'year' && <YearHeat fy={scopeFy} byDate={byDate} buckets={buckets} />}
-        {view === 'month' && <MonthCal ym={periodKey} byDate={byDate} buckets={buckets} />}
+        {view === 'year' && <YearHeat fy={scopeFy} byDate={byDate} buckets={buckets} openDay={openDay} openMonth={openMonth} />}
+        {view === 'month' && <MonthCal ym={periodKey} byDate={byDate} buckets={buckets} openDay={openDay} />}
         {view === 'day' && <DayPanel key={periodKey} date={periodKey} byDate={byDate} />}
         {view === 'all' && [...lists.year].reverse().map((fy) => (
           <div key={fy} style={{ marginBottom: 18 }}>
             <div className="lbl" style={{ margin: '0 0 6px' }}>{fy}</div>
-            <YearHeat fy={fy} byDate={byDate} buckets={buckets} />
+            <YearHeat fy={fy} byDate={byDate} buckets={buckets} openDay={openDay} openMonth={openMonth} />
           </div>
         ))}
       </div>
@@ -231,27 +234,36 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
 // capital line + stat panel + calendar.
 
 // ── view bodies ──
-function YearHeat({ fy, byDate, buckets }) {
+function YearHeat({ fy, byDate, buckets, openDay, openMonth }) {
   const baseY = 2000 + +fy.slice(3, 5); // FY 26-27 → 2026
   return (
     <div className="pnl-year">
       {FY_MONTHS.map((m0) => {
         const y = m0 >= 3 ? baseY : baseY + 1;
+        const ym = `${y}-${String(m0 + 1).padStart(2, '0')}`;
         const weeks = monthMatrix(y, m0);
         let net = 0, has = false;
         weeks.flat().forEach((iso) => { const d = iso && byDate.get(iso); if (d) { net += d.net; has = true; } });
         return (
           <div key={m0} className="pnl-month">
-            <div className="fxc" style={{ marginBottom: 6 }}>
+            {/* month header → open that Month view (when the month has data) */}
+            <div className="fxc" style={{ marginBottom: 6, cursor: has && openMonth ? 'pointer' : 'default' }}
+              onClick={has && openMonth ? () => openMonth(ym) : undefined} title={has && openMonth ? `Open ${MON[m0]} ${y}` : ''}>
               <span className="sub" style={{ margin: 0, fontWeight: 600 }}>{MON[m0]}{m0 < 3 ? `'${String((baseY + 1) % 100)}` : ''}</span>
               <span className={'mono ' + (has ? cl(net) : '')} style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: has ? undefined : 'var(--txt3)' }}>
                 {has ? <SInrF n={net} /> : '—'}
               </span>
             </div>
             <div className="pnl-grid">
-              {weeks.flat().map((iso, i) => (
-                <span key={i} className="pnl-cell" style={iso && byDate.has(iso) ? bucketStyle(buckets.get(iso)) : { background: iso ? 'var(--pnl-empty)' : 'transparent' }} title={iso || ''} />
-              ))}
+              {weeks.flat().map((iso, i) => {
+                const d = iso && byDate.get(iso);
+                return (
+                  <span key={i} className="pnl-cell"
+                    style={{ ...(iso && byDate.has(iso) ? bucketStyle(buckets.get(iso)) : { background: iso ? 'var(--pnl-empty)' : 'transparent' }), cursor: d && openDay ? 'pointer' : 'default' }}
+                    title={d ? `${prettyDate(iso)} · ${sFull(d.net)}` : (iso || '')}
+                    onClick={d && openDay ? () => openDay(iso) : undefined} />
+                );
+              })}
             </div>
           </div>
         );
@@ -260,7 +272,7 @@ function YearHeat({ fy, byDate, buckets }) {
   );
 }
 
-function MonthCal({ ym, byDate, buckets }) {
+function MonthCal({ ym, byDate, buckets, openDay }) {
   const y = +ym.slice(0, 4), m0 = +ym.slice(5, 7) - 1;
   const weeks = monthMatrix(y, m0);
   return (
@@ -268,12 +280,12 @@ function MonthCal({ ym, byDate, buckets }) {
       {DOW.map((d) => <div key={d} className="pnl-dow">{d}</div>)}
       <div className="pnl-dow" style={{ textAlign: 'left', paddingLeft: 6 }}>Week</div>
       {weeks.map((w, wi) => (
-        <Week key={wi} idx={wi} w={w} byDate={byDate} buckets={buckets} />
+        <Week key={wi} idx={wi} w={w} byDate={byDate} buckets={buckets} openDay={openDay} />
       ))}
     </div>
   );
 }
-function Week({ idx, w, byDate, buckets }) {
+function Week({ idx, w, byDate, buckets, openDay }) {
   let ws = 0, has = false;
   w.forEach((iso) => { const d = iso && byDate.get(iso); if (d) { ws += d.net; has = true; } });
   return (
@@ -281,7 +293,10 @@ function Week({ idx, w, byDate, buckets }) {
       {w.map((iso, i) => {
         const d = iso && byDate.get(iso);
         return (
-          <div key={i} className="pnl-daycell" style={iso ? (d ? bucketStyle(buckets.get(iso)) : { background: 'var(--pnl-empty)' }) : { background: 'transparent', border: 'none' }}>
+          <div key={i} className="pnl-daycell"
+            style={{ ...(iso ? (d ? bucketStyle(buckets.get(iso)) : { background: 'var(--pnl-empty)' }) : { background: 'transparent', border: 'none' }), cursor: d && openDay ? 'pointer' : 'default' }}
+            title={d ? `${prettyDate(iso)} · ${sFull(d.net)}` : (iso ? prettyDate(iso) : '')}
+            onClick={d && openDay ? () => openDay(iso) : undefined}>
             {iso ? <span className="pnl-dn">{+iso.slice(8)}</span> : null}
             {d ? <span className={'pnl-dp ' + cl(d.net)}><SInrF n={d.net} /></span> : null}
           </div>

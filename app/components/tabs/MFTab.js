@@ -146,7 +146,7 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         </div>
 
         <XirrChart port={mfx.port} bench={mfx.bench} delta={delta}
-          extra={mfBench.filter((b) => !['nifty50', 'niftybank', 'next50'].includes(b.key))} minis={minis} />
+          extra={mfBench.filter((b) => !['nifty50', 'next50'].includes(b.key))} minis={minis} />
       </div>
 
 
