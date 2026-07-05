@@ -1,7 +1,7 @@
 // Tests for the capital allocation gate. A wrong cap here would size a real book, so the
 // constraints are checked against a constructed candidate universe with known numbers.
 import { describe, it, expect } from 'vitest';
-import { allocate, ddScale, downScale, justify, allocateConviction, labelBook, CONVICTION_MIN_LONGVOL_SHARE, DEFAULT_CAPS } from './algoAllocate.mjs';
+import { allocate, ddScale, downScale, justify, allocateConviction, labelBook, CONVICTION_MIN_LONGVOL_SHARE, CONVICTION_FUNDABLE, DEFAULT_CAPS } from './algoAllocate.mjs';
 
 // helper: a ranked candidate
 const cand = (algo, volSide, over = {}) => ({
@@ -121,6 +121,52 @@ describe('allocateConviction — chase returns, mandatory long-vol hedge', () =>
 
   it('throws on non-positive capital', () => {
     expect(() => allocateConviction([cand('A', 'short')], { capital: 0 })).toThrow();
+  });
+});
+
+describe('allocateConviction — quality floor (no mediocre algos for idle cash)', () => {
+  it('a deep persistence-rank name is never funded — capital left idle, not force-deployed', () => {
+    const cands = [
+      { ...cand('A', 'short', { max: 300_000 }), persist2: 3, sortino: 4 },
+      { ...cand('J', 'short', { max: 900_000 }), persist2: 98, sortino: 3 }, // would soak up the rest
+    ];
+    const book = allocateConviction(cands, { capital: 1_000_000, fundableFloor: { maxRank: 40 } });
+    expect(book.picks.find((p) => p.algo === 'J')).toBeFalsy();
+    expect(book.picks.find((p) => p.algo === 'A')).toBeTruthy();
+    expect(book.idle).toBeGreaterThan(0);
+    expect(book.warnings.join(' ')).toMatch(/idle/);
+    expect(book.skipped.find((s) => s.algo === 'J').reason).toMatch(/rank #98/);
+  });
+
+  it('a money-loser (Sortino ≤ 0) is never funded', () => {
+    const cands = [
+      { ...cand('A', 'short', { max: 300_000 }), persist2: 3, sortino: 4 },
+      { ...cand('M', 'short', { max: 900_000 }), persist2: 10, sortino: -0.8 },
+    ];
+    const book = allocateConviction(cands, { capital: 1_000_000 });
+    expect(book.picks.find((p) => p.algo === 'M')).toBeFalsy();
+    expect(book.skipped.find((s) => s.algo === 'M').reason).toMatch(/Sortino/);
+  });
+
+  it('a DD-parked name is never funded', () => {
+    const cands = [
+      { ...cand('A', 'short', { max: 300_000 }), persist2: 3, sortino: 4 },
+      { ...cand('P', 'short', { max: 900_000 }), persist2: 10, sortino: 3, parkReason: ['maxDD -61 below tolerance'] },
+    ];
+    const book = allocateConviction(cands, { capital: 1_000_000 });
+    expect(book.picks.find((p) => p.algo === 'P')).toBeFalsy();
+    expect(book.skipped.find((s) => s.algo === 'P').reason).toMatch(/DD-parked/);
+  });
+
+  it('null-safe — a universe without rank/sortino/parkReason funds exactly as before', () => {
+    const cands = [cand('A', 'short', { max: 600_000 }), cand('L', 'long', { max: 400_000 })];
+    const book = allocateConviction(cands, { capital: 1_000_000 });
+    expect(book.deployed).toBe(1_000_000);           // no floor exclusions → full deploy
+    expect(book.warnings.join(' ')).not.toMatch(/quality floor/);
+  });
+
+  it('default persistence-rank line is 40', () => {
+    expect(CONVICTION_FUNDABLE.maxRank).toBe(40);
   });
 });
 

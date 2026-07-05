@@ -146,10 +146,12 @@ export function justify(book, { regimeCaveat = null } = {}) {
 // ── CONVICTION mode (locked 2026-07-02) ───────────────────────────────────────
 // The user chose to CHASE RETURNS: rank the candidates (persistence → live Sortino),
 // then max-out each to its OWN maxCapital in order — NO single-algo cap, NO short-vol
-// cluster cap, NO drawdown scaling (drawdown is shown per-pick, not a limit). The ONE
-// enforced safety element is a mandatory LONG-VOL (premium-BUYING) hedge of ≥ this share
-// of capital: long-vol GAINS in a vol spike, so it caps the short-vol cluster's correlated
-// give-back — the specific defence against "a single event wiping out months of gains".
+// cluster cap, NO drawdown scaling (drawdown is shown per-pick, not a limit). TWO enforced
+// safety elements: (1) a mandatory LONG-VOL (premium-BUYING) hedge of ≥ this share of capital
+// — long-vol GAINS in a vol spike, capping the short-vol cluster's correlated give-back (the
+// defence against "a single event wiping out months of gains"); and (2) a QUALITY FLOOR (see
+// CONVICTION_FUNDABLE) — money-losers / deep persistence-rank / DD-parked names are NEVER sized,
+// and capital with no fundable home is left IDLE rather than force-deployed (added 2026-07-05).
 export const CONVICTION_MIN_LONGVOL_SHARE = 0.20;
 
 // KEEP / EXIT / ADD verdict for the month's holdings vs the funded book. Held+funded = KEEP,
@@ -165,7 +167,29 @@ export function labelBook(book, candidates) {
   };
 }
 
-export function allocateConviction(cands, { capital, minLongVolShare = CONVICTION_MIN_LONGVOL_SHARE } = {}) {
+// ── quality floor for CONVICTION funding (added 2026-07-05) ────────────────────
+// A candidate BELOW the bar stays in the pool (still listed in the "all candidates" table)
+// but is NEVER sized — capital with no fundable home is left IDLE, not force-deployed into a
+// money-loser, a deep persistence-rank name, or a DD-parked one. Null-safe: an ABSENT field
+// never disqualifies, so a universe without these fields funds exactly as before.
+export const CONVICTION_FUNDABLE = { maxRank: 40, requirePositiveSortino: true, excludeParked: true };
+
+function fundableAt(c, f) {
+  if (!f) return true;
+  if (f.requirePositiveSortino && c.sortino != null && c.sortino <= 0) return false;
+  if (f.excludeParked && Array.isArray(c.parkReason) && c.parkReason.length) return false;
+  if (f.maxRank != null && c.persist2 != null && c.persist2 > f.maxRank) return false;
+  return true;
+}
+function floorReason(c, f) {
+  const bits = [];
+  if (f.requirePositiveSortino && c.sortino != null && c.sortino <= 0) bits.push(`Sortino ${c.sortino} ≤ 0`);
+  if (f.excludeParked && Array.isArray(c.parkReason) && c.parkReason.length) bits.push('DD-parked');
+  if (f.maxRank != null && c.persist2 != null && c.persist2 > f.maxRank) bits.push(`rank #${c.persist2} > ${f.maxRank}`);
+  return `below quality floor${bits.length ? ` (${bits.join(' · ')})` : ''}`;
+}
+
+export function allocateConviction(cands, { capital, minLongVolShare = CONVICTION_MIN_LONGVOL_SHARE, fundableFloor = CONVICTION_FUNDABLE } = {}) {
   if (!Number.isFinite(capital) || capital <= 0) throw new Error('allocateConviction: capital must be a positive number');
   const earmark = Math.round(minLongVolShare * capital); // capital non-long picks may NOT touch
   const picks = [], skipped = [], funded = new Set();
@@ -180,9 +204,19 @@ export function allocateConviction(cands, { capital, minLongVolShare = CONVICTIO
     if (c.volSide === 'long') longSpent += target; else if (c.volSide === 'short') shortSpent += target;
   };
 
-  // Main pass — conviction max-out by rank. Non-long picks may not consume the long-vol
-  // earmark, so ≥ minLongVolShare of capital stays reserved for a long-vol sleeve.
+  // Quality floor — split the ranked pool: fundable names get sized; below-bar names are
+  // recorded in `skipped` (still shown in the pool's background table) but NEVER sized, so
+  // capital with no fundable home is left idle, not dumped into a money-loser / deep-rank / parked name.
+  const eligible = [];
+  let belowFloor = 0;
   for (const c of cands) {
+    if (fundableAt(c, fundableFloor)) eligible.push(c);
+    else { skipped.push({ algo: c.algo, volSide: c.volSide ?? 'neutral', reason: floorReason(c, fundableFloor) }); belowFloor++; }
+  }
+
+  // Main pass — conviction max-out by rank over the ELIGIBLE pool. Non-long picks may not
+  // consume the long-vol earmark, so ≥ minLongVolShare of capital stays reserved for a long-vol sleeve.
+  for (const c of eligible) {
     const totalRem = capital - spent;
     if (totalRem <= 0) break;
     const earmarkLeft = Math.max(0, earmark - longSpent);
@@ -200,9 +234,9 @@ export function allocateConviction(cands, { capital, minLongVolShare = CONVICTIO
   const warnings = [];
   if (longSpent < earmark) {
     warnings.push(`long-vol hedge INCOMPLETE: ${inr(longSpent)} of ${inr(earmark)} target (${pct(minLongVolShare)}) — too few long-vol candidates to fully hedge the short-vol cluster`);
-    // Release the earmark: GROW already-funded non-long picks toward their max (they were held
-    // back by the earmark), then fund any new ones — so we never force idle cash.
-    for (const c of cands) {
+    // Release the earmark to the best remaining ELIGIBLE non-long picks (never below the floor):
+    // grow already-funded ones toward max, then fund new ones — junk still can't be funded.
+    for (const c of eligible) {
       if (c.volSide === 'long') continue;
       const rem = capital - spent; if (rem <= 0) break;
       const existing = picks.find((p) => p.algo === c.algo);
@@ -219,10 +253,16 @@ export function allocateConviction(cands, { capital, minLongVolShare = CONVICTIO
     }
   }
 
+  // Quality-floor idle — capital left over BECAUSE below-bar names were held back, not force-funded.
+  const idle = capital - spent;
+  if (idle > 0 && belowFloor > 0) {
+    warnings.push(`left ${inr(idle)} idle — ${belowFloor} candidate(s) below the quality floor (rank ≤ ${fundableFloor?.maxRank ?? '∞'} · positive Sortino · not DD-parked) left unfunded rather than force-deployed`);
+  }
+
   return {
-    capital, mode: 'conviction', minLongVolShare,
+    capital, mode: 'conviction', minLongVolShare, fundableFloor,
     picks, skipped,
-    deployed: spent, idle: capital - spent,
+    deployed: spent, idle,
     shortVol: shortSpent, shortVolShare: +(shortSpent / capital).toFixed(4),
     longVol: picks.filter((p) => p.volSide === 'long').length, longVolRupees: longSpent, longVolShare: +(longSpent / capital).toFixed(4),
     warnings,
