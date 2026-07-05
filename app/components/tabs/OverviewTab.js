@@ -40,17 +40,7 @@ export default function OverviewTab({
 
       {/* Capital deployment calendar — per-FY monthly flows from the ledgers */}
       <SipCard fx={fx} />
-
-      <CFMemo
-        title="Loss Carryforward — Tax Asset"
-        rows={[
-          { label: 'Non-spec F&O',           val: sFull(-FY.cf.nonSpec),            sub: FY.cf.nonSpecSub },
-          { label: 'Speculative (intraday)', val: sFull(-FY.cf.speculative),        sub: FY.cf.speculativeSub },
-          { label: `Pool entering ${FY.labels.current}`, val: sFull(-FY.cf.poolEntering), accent: true,
-            sub: `${inrFull(FY.cf.currentRealised)} realised absorbed → ${inrC(FY.cf.poolEntering - FY.cf.currentRealised)} remaining` },
-        ]}
-        foot="Past F&O losses filed in the ITR offset future F&O profits rupee-for-rupee — every profit the pool absorbs is tax-free until it runs out."
-      />
+      {/* Loss-carryforward tax memo relocated to the global footer (shell-6region Phase 3). */}
     </div>
   );
 }

@@ -53,10 +53,7 @@ export default function IndianTab({
   return (
     <div>
       <AnalysisCard data={insights?.indian} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--blu)" />
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <SyncBadge rec={indianRec} />
-        <FreshnessTag mode="live" marketState={{ open: markets.nse, label: `NSE ${markets.nse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
-      </div>
+      {/* Freshness/sync provenance relocated to the global footer (shell-6region Phase 3). */}
 
       {/* Live intraday equity day-change curve (holdings × keyless quotes; daemon → KV) */}
       <EquityDayCurve />
@@ -247,15 +244,7 @@ export default function IndianTab({
         <InsightsCard stats={indianRisk} />
       </div>
 
-      <CFMemo
-        title="Equity Tax — FY24-25 Capital Gains"
-        lead="Last filed year's equity capital gains in this account (ITR):"
-        rows={[
-          { label: 'FY24-25 LTCG (Sec 112A)', val: '₹2,789', color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
-          { label: 'FY24-25 STCG (equity MF)', val: '₹1,083', color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
-        ]}
-        foot="Equity LTCG up to ₹1.25L/yr is exempt (Sec 112A) — booking gains within the limit each FY resets cost basis tax-free."
-      />
+      {/* Equity capital-gains tax memo relocated to the global footer (shell-6region Phase 3). */}
     </div>
   );
 }

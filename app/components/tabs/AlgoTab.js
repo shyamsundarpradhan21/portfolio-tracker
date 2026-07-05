@@ -106,9 +106,7 @@ export default function AlgoTab({
   const cadenceData = insights?.trading?.[cadence.toLowerCase()] || (cadence === 'Monthly' ? insights?.trading : null);
   return (
     <div>
-      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <FreshnessTag mode="manual" date={`${FY.labels.current} F&O auto${FY._lastCapture ? ` · last ${FY._lastCapture}` : ' · from Mon'}${FY._chargesReal ? '' : ' · est. charges'} · ${FY.labels.verified} ITR-verified`} />
-      </div>
+      {/* Freshness provenance relocated to the global footer (shell-6region Phase 3). */}
 
       {/* #38 — F&O Positions at the TOP, persistent across every sub-tab: live open MTM /
           capital-in-use is the standing context for all the P&L below it. */}

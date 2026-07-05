@@ -1512,21 +1512,55 @@ body { padding: 0; }
   display: grid;
   column-gap: clamp(16px, 1.4vw, 28px);
   grid-template-columns: 1fr;
-  grid-template-areas: "header" "main";
+  grid-template-areas: "header" "main" "footer";
 }
 .shell > * { min-width: 0; min-height: 0; }
 .shell-header  { grid-area: header; }
 .shell-sidebar { grid-area: sidebar; display: none; }
 .shell > .tab-content { grid-area: main; }
+.shell-footer  { grid-area: footer; }
 
 @media (min-width: 1024px) {
   .shell {
     grid-template-columns: 12rem minmax(0, 1fr);
     grid-template-areas: "header  header"
-                         "sidebar main";
+                         "sidebar main"
+                         "footer  footer";
   }
   .shell-sidebar { display: flex; }
 }
+
+/* Global footer (shell-6region Phase 3) — the ENTIRE footer is persistent: a fixed,
+   frosted panel pinned to the viewport bottom (mirrors the sticky .main-header) carrying
+   the active tab's provenance, the ITR-verified tax memo, and the disclaimer. Its measured
+   height (--foot-h, set by ShellFooter) reserves matching bottom padding on the shell so
+   the last content always clears it. Capped at 46vh with internal scroll as a safety. */
+.foot-statusbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
+  max-height: 46vh; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(var(--hdr-bg-base), .86);
+  -webkit-backdrop-filter: saturate(1.4) blur(16px);
+  backdrop-filter: saturate(1.4) blur(16px);
+  border-top: .5px solid rgba(255, 255, 255, .08);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .foot-statusbar { background: rgba(var(--hdr-bg-base), .97); }
+}
+.foot-inner {
+  max-width: 1760px; margin-inline: auto;
+  padding: 10px var(--shell-pad) 12px;
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.foot-inner .card.sec { margin: 0; }   /* the CFMemo card carries no extra outer margin here */
+.foot-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; min-width: 0; }
+.foot-bar .foot-fresh { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-width: 0; }
+.foot-bar .foot-note {
+  margin-left: auto; color: var(--txt3); font-size: var(--fs-2xs); line-height: 1.4;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Reserve space so the last content clears the fixed footer panel (height varies per tab). */
+.shell { padding-bottom: calc(var(--foot-h, 46px) + 10px); }
+@media (max-width: 720px) { .foot-bar .foot-note { margin-left: 0; white-space: normal; } }
 
 /* Left tab rail (≥1024) — the 7 sections; mirrors the top pills' active state.
    Sticky just beneath the frosted header (its measured height feeds --snav-top). */
