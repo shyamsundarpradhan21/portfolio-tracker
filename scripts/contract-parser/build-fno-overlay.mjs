@@ -4,7 +4,7 @@
 //
 //   node scripts/contract-parser/build-fno-overlay.mjs            # verify-only (no KV write)
 //   node scripts/contract-parser/build-fno-overlay.mjs --write    # write ledger:fno:overlay
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { emitOverlay, overlayRealChargeByFy } from './merge-fno-charges.mjs';
 
@@ -55,11 +55,16 @@ for (const k of fyKeys) console.log(`  ${k.padEnd(18)} ${String(Math.round(got[k
 
 const write = process.argv.includes('--write');
 if (write) {
-  const payload = { note: 'DORMANT F&O charge overlay (Phase 2c Part 1). Nothing reads this yet; Part 2 overlays it onto data/fno-ledger.json + flips deriveFY (certify-gated). self-only, NCLFO.', byKey: overlay.byKey, openingOnly: overlay.openingOnly, fyTotals: got, generatedFrom: 'ledger:cn:* (self F&O)' };
-  const res = await kv(['SET', 'ledger:fno:overlay', JSON.stringify(payload)]);
-  console.log(`\nWROTE ledger:fno:overlay -> ${res}`);
+  const payload = { note: 'F&O real-charge overlay (self-only, NCLFO, by Broker|date), applied onto data/fno-ledger.json at request time by applyFnoOverlay. KV = prod serving copy; data/fno-overlay.json = gitignored local-dev mirror.', byKey: overlay.byKey, openingOnly: overlay.openingOnly, fyTotals: got, generatedFrom: 'ledger:cn:* (self F&O)' };
+  const body = JSON.stringify(payload);
+  const res = await kv(['SET', 'ledger:fno:overlay', body]);
+  // Gitignored local mirror so local dev (no KV creds) applies the overlay too — same pattern
+  // as portfolio.private.json / eod-book.json. Atomic tmp → rename.
+  const dest = ROOT + 'data/fno-overlay.json', tmp = `${dest}.${process.pid}.tmp`;
+  writeFileSync(tmp, body); renameSync(tmp, dest);
+  console.log(`\nWROTE ledger:fno:overlay -> ${res}  + data/fno-overlay.json`);
 } else {
-  console.log('\nverify-only (no write). add --write to push ledger:fno:overlay.');
+  console.log('\nverify-only (no write). add --write to push ledger:fno:overlay + write data/fno-overlay.json.');
 }
 // Machine-readable porcelain line (the ingest daemon greps this after a rebuild).
 console.log(`OVERLAY ${write ? 'written' : 'verify'} matched=${overlay.stats.matched}+${overlay.stats.openingOnly} self=${self} fys=${fyKeys.length}`);

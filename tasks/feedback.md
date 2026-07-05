@@ -181,9 +181,14 @@ the builder filters to self), and the 03:00 EOD build carries a TODO backstop in
 note: run `build-fno-overlay.mjs --write` (immediate), and note the running daemon must be RESTARTED
 to pick up the chaining (Node caches the module). The old hardcoded `EXPECT` reconciliation table in
 that script was retired — it went stale every time a note landed (misleading MISMATCH rows); FY·broker
-totals are now printed informational-only and NEVER gate the write. Local dev can't show the overlay
-(Next has no KV creds → `applyFnoOverlay` no-ops); verify via prod KV or by running `applyFnoOverlay`
-against the fetched overlay + committed ledger.
+totals are now printed informational-only and NEVER gate the write. `build-fno-overlay --write` writes
+BOTH the KV key AND a gitignored `data/fno-overlay.json`; `loadFnoOverlay()` reads KV first, then falls
+back to that file — the SAME pattern as `loadPortfolio`/`loadEodBook` (KV serving copy + gitignored
+local JSON). So the overlay applies in local dev too (Next there has no KV creds — `loadPortfolio` reads
+`portfolio.private.json`, `loadFnoOverlay` reads `fno-overlay.json`). The public repo means neither
+file is committed. If a day's charges read ₹0 locally after new notes: re-run `build-fno-overlay --write`
+(regenerates both). Any NEW KV-backed loader must carry the same local-file fallback or it silently
+no-ops in local dev.
 
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY

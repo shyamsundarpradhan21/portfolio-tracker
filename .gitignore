@@ -51,6 +51,7 @@
 # EOD book — durable per-holding close snapshot + reconcile (scripts/build-eod-book.mjs).
 # Private (per-holding values); dormant (nothing reads it yet). Design: tasks/eod-book-design.md.
 /data/eod-book.json
+data/fno-overlay.json
 
 # Trading-business contributions/drawings ledger (scripts/build-trading-ledger.mjs).
 # Private (real fund amounts); dormant. 100% owner capital. Design: tasks/business-entity-model.md.

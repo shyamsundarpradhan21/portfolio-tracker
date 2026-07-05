@@ -74,21 +74,27 @@ export async function loadEodBook() {
   }
 }
 
-// Phase 2c: the dormant F&O charge overlay (real NCLFO charges, by Broker|date), applied onto the
-// committed fno-ledger at request time. Returns null if KV/the key is unreachable -> caller falls
-// back to the committed file unchanged (graceful; never breaks /api/portfolio).
+// Phase 2c: the F&O charge overlay (real NCLFO charges, by Broker|date), applied onto the
+// committed fno-ledger at request time. Prod source = KV `ledger:fno:overlay`; local dev falls
+// back to the gitignored data/fno-overlay.json (both written by build-fno-overlay.mjs --write) —
+// mirroring loadPortfolio / loadEodBook, so real charges also apply in local dev (no KV creds).
+// Null from both sources → the caller keeps the committed ledger's estimated charges unchanged.
 export async function loadFnoOverlay() {
   const creds = kvCreds();
-  if (!creds) return null;
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', 'ledger:fno:overlay']),
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (j?.result) return JSON.parse(j.result);
+    } catch { /* fall through to the local file */ }
+  }
   try {
-    const r = await fetch(creds.url, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(['GET', 'ledger:fno:overlay']),
-      cache: 'no-store',
-    });
-    const j = await r.json();
-    return j?.result ? JSON.parse(j.result) : null;
+    return JSON.parse(await readFile(join(process.cwd(), 'data', 'fno-overlay.json'), 'utf8'));
   } catch {
     return null;
   }
