@@ -124,6 +124,21 @@ export function persistenceRanks(records) {
   return out;
 }
 
+// ── regime serialization (shared: held cards + monthly candidates) ─────────────
+// Turn an algo's per-regime LIVE buckets (from regimeBuckets) into render-ready rows +
+// the matched-days summary. Used by buildScreenPayload (the held cards) AND folded onto
+// each monthly candidate (convictionCandidates) so the Monthly card can render the same
+// per-regime breakdown after the standalone Algo-Performance screen was retired.
+// tested ∈ empty (0 days — the finding) | thin (<25d, untested) | ok.
+export function regimeBreakdownRows(rg) {
+  if (!rg) return [];
+  return ['up', 'down', 'chop', 'stressed'].map((k) => {
+    const b = rg[k];
+    return { regime: k, days: b.dayCount, sortino: b.sortino, cagr: b.cagr, maxDD: b.maxDD, tested: b.dayCount === 0 ? 'empty' : (b.thin ? 'thin' : 'ok') };
+  });
+}
+export const regimeMatchedOf = (rg) => (rg ? { matched: rg.matched, unmatched: rg.unmatched } : null);
+
 // ── conviction candidate pool (the monthly engine's input to allocateConviction) ─
 // held + survivors + PARKED (DD-park IGNORED in conviction mode); screen OUTs (quality
 // kills) are excluded by construction. Structure ∈ tier.admit; catastrophic floor
@@ -149,6 +164,11 @@ export function convictionCandidates(screen, records, heldIds, { catastrophicDD 
       downTested: r.downTested, downSortino: r.downSortino,
       held: heldSet.has(r.id), persist2: pmap.get(r.id) ?? null,
       min: rec?.stratzy?.minimumCapital ?? null, max: rec?.stratzy?.maximumCapital ?? null,
+      // folded from the retired Algo-Performance screen → rendered per funded pick in the
+      // Monthly card (collapsible). regimeBreakdown [] / regimeMatched null when no calendar.
+      regimeBreakdown: regimeBreakdownRows(r.regime), regimeMatched: regimeMatchedOf(r.regime),
+      structureOutlier: r.structureOutlier ?? false,
+      parkReason: r.parkReasons?.length ? r.parkReasons : null, revisitTier: r.revisitTier ?? null,
     };
   });
   cands.sort((a, b) => {
@@ -394,11 +414,8 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
     ? { sortino: r.live.sortino, cagr: r.live.cagr, maxDD: r.live.maxDD, gateMaxDD: r.gateMaxDD ?? r.live.maxDD, sharpe: r.live.sharpe, worstDay: r.live.worstDay, skew: r.live.skew, n: r.live.n, tradesPerYear: r.live.tradesPerYear }
     : null;
   const flagsList = (f) => ['provisional', 'shortLive', 'noOverfitCheck', 'noCorrelation'].filter((k) => f[k]);
-  // per-regime rows: tested ∈ empty (the finding) | thin (<25d, untested) | ok
-  const regimeRows = (rg) => rg ? ['up', 'down', 'chop', 'stressed'].map((k) => {
-    const b = rg[k];
-    return { regime: k, days: b.dayCount, sortino: b.sortino, cagr: b.cagr, maxDD: b.maxDD, tested: b.dayCount === 0 ? 'empty' : (b.thin ? 'thin' : 'ok') };
-  }) : [];
+  // per-regime rows: tested ∈ empty (the finding) | thin (<25d, untested) | ok (shared helper)
+  const regimeRows = regimeBreakdownRows;
   const caveatOf = (rg) => regimeRows(rg).filter((x) => x.tested !== 'ok').map((x) => `${x.regime} ${x.tested.toUpperCase()}`).join(', ') || null;
 
   const held = s.held.map((r) => ({
@@ -406,7 +423,7 @@ export function buildScreenPayload(s, { asOf = null } = {}) {
     liveDays: r.liveDays, confidence: r.confidence,
     liveMetrics: liveOf(r),
     regimeBreakdown: regimeRows(r.regime),
-    regimeMatched: r.regime ? { matched: r.regime.matched, unmatched: r.regime.unmatched } : null,
+    regimeMatched: regimeMatchedOf(r.regime),
     flags: flagsList(r.flags), structureOutlier: r.structureOutlier,
     parkReason: r.parkReasons?.length ? r.parkReasons : null, revisitTier: r.revisitTier,
   }));

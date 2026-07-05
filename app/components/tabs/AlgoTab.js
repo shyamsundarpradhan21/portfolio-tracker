@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { SInrF, RsText, displayCurrency, displayFx } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
-import AlgoScreenReview from '../shared/AlgoScreenReview';
 import AlgoMonthlyReco from '../shared/AlgoMonthlyReco';
 import FreshnessTag from '../shared/FreshnessTag';
 import FnoSummary, { FnoPositionsLive } from '../shared/FnoSummary';
@@ -52,9 +51,8 @@ export default function AlgoTab({
 }) {
   const [sub, setSub] = useState('overview');     // Trading Journal sub-tab
   const [cadence, setCadence] = useState('Monthly'); // Review cadence (placeholder selector)
-  // Computed screen — lazy-loaded ONLY when the Review sub-tab opens (off the hot
+  // Monthly decision + review — lazy-loaded ONLY when the Review sub-tab opens (off the hot
   // private payload). null=unfetched · 'loading' · object=loaded · 'error'.
-  const [screen, setScreen] = useState(null);
   const [monthly, setMonthly] = useState(null); // monthly decision + review (KV algo-monthly:latest)
   useEffect(() => {
     try {
@@ -62,17 +60,13 @@ export default function AlgoTab({
     } catch {}
   }, []);
   useEffect(() => {
-    if (sub !== 'review' || screen !== null) return;
-    setScreen('loading'); setMonthly('loading');
-    fetch('/api/algo-screen', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((j) => setScreen(j))
-      .catch(() => setScreen('error'));
+    if (sub !== 'review' || monthly !== null) return;
+    setMonthly('loading');
     fetch('/api/algo-monthly', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((j) => setMonthly(j))
       .catch(() => setMonthly('error'));
-  }, [sub, screen]);
+  }, [sub, monthly]);
   const pickSub = (s) => { setSub(s); try { localStorage.setItem('nwTracker.algoSub', s); } catch {} };
   // Live F&O positions (all brokers, open + closed) — one derivation feeds both the
   // panel below and the YTD open-MTM line in each strategy card, so they agree.
@@ -184,11 +178,9 @@ export default function AlgoTab({
             emptyHint={`No ${cadence.toLowerCase()} review yet — generated reviews appear here once an AI run covers this cadence.`} />
         )}
 
-        {/* The month's DECISION — the headline (KV algo-monthly:latest); the data-review below is background */}
+        {/* The month's DECISION — the headline (KV algo-monthly:latest). The per-regime breakdown
+            (formerly the standalone Algo Performance card) is now folded into each funded pick. */}
         <AlgoMonthlyReco data={typeof monthly === 'object' ? monthly : null} loading={monthly === 'loading'} error={monthly === 'error'} />
-
-        {/* Computed data-review — figures from the screen calc (KV algo-screen:v1), beside the AI prose */}
-        <AlgoScreenReview data={typeof screen === 'object' ? screen : null} loading={screen === 'loading'} error={screen === 'error'} />
       </>)}
 
       {sub === 'analytics' && <AnalyticsTab ALGO={ALGO} />}

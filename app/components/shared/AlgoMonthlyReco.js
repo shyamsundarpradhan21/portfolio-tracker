@@ -1,7 +1,8 @@
 'use client';
-// The month's ALGO DECISION for the Trading → Review sub-tab — the headline above the
-// data-review (AlgoScreenReview). Renders the precomputed monthly artifact (KV
-// `algo-monthly:latest` via /api/algo-monthly); typing a different capital re-runs the
+// The month's ALGO DECISION for the Trading → Review sub-tab. Renders the precomputed
+// monthly artifact (KV `algo-monthly:latest` via /api/algo-monthly); the per-regime
+// breakdown (formerly the standalone Algo Performance / AlgoScreenReview card) is folded
+// into each funded pick as a collapsible. Typing a different capital re-runs the
 // LIGHT client allocator (app/lib/algoAllocate.mjs) on the artifact's precomputed
 // candidates and relabels KEEP/EXIT/ADD — the heavy screen never runs at render.
 //
@@ -17,6 +18,52 @@ const PC = ({ v }) => (v == null ? <span className="mut">·</span> : <span class
 const N2 = ({ v }) => (v == null ? <span className="mut">·</span> : <span>{Number(v).toFixed(2)}</span>);
 const shortLive = (c) => !!c && c.confidence && c.confidence !== 'ok'; // liveDays ≤ 180
 const VOL_LABEL = { short: 'short-vol', long: 'long-vol', neutral: 'neutral-vol' };
+
+// ── folded in from the retired Algo-Performance (AlgoScreenReview) card ──────────
+// signed value → colour-only 2-decimal magnitude (no +/- glyph)
+const R2 = ({ v }) => (v == null ? <span className="mut">·</span> : <span className={cl(v)}>{Math.abs(v).toFixed(2)}</span>);
+const TESTED = {
+  ok: { label: 'ok', style: { color: 'var(--txt3)' } },
+  thin: { label: 'thin', style: { color: 'var(--acc)', fontWeight: 600 } },
+  empty: { label: 'EMPTY', style: { color: 'var(--red)', fontWeight: 700 } },
+};
+
+// Per-regime live-day breakdown for one pick — the caveats ARE the product: thin (<25d) and
+// empty regime buckets render VISIBLY, not buried. Direction = colour (R2/PC), magnitudes unsigned.
+function RegimeTable({ rows, matched }) {
+  return (
+    <div className="ovx" style={{ marginTop: 8 }}>
+      <table className="tbl">
+        <thead><tr>
+          <th>Regime</th><th className="ra">Days</th><th className="ra">Sortino</th>
+          <th className="ra">CAGR</th><th className="ra">Max DD</th><th className="ra">Tested</th>
+        </tr></thead>
+        <tbody>
+          {rows.map((r) => {
+            const t = TESTED[r.tested];
+            const tint = r.tested === 'empty' ? 'color-mix(in srgb, var(--red) 9%, transparent)'
+              : r.tested === 'thin' ? 'var(--acc-bg)' : undefined;
+            return (
+              <tr key={r.regime} style={tint ? { background: tint } : undefined}>
+                <td style={{ textTransform: 'capitalize', color: 'var(--txt)' }}>{r.regime}</td>
+                <td className="ra mono">{r.days}</td>
+                <td className="ra mono"><R2 v={r.sortino} /></td>
+                <td className="ra mono"><PC v={r.cagr} /></td>
+                <td className="ra mono"><PC v={r.maxDD} /></td>
+                <td className="ra" style={t.style}>{t.label}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {matched && (
+        <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>
+          matched {matched.matched}/{matched.matched + matched.unmatched} live days to the regime calendar
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Chips({ c }) {
   return (
@@ -54,6 +101,30 @@ function PickCard({ pick, cand, held }) {
         {held ? 'Already held' : 'New add'} — persistence rank #{c.persist2 ?? '—'}, live Sortino <N2 v={c.sortino} />,
         live drawdown <PC v={c.liveMaxDD} />{c.downSortino != null && <> , down-regime Sortino <N2 v={c.downSortino} /></>}. Sized <Rup v={pick.rupees} /> — {pick.bindingReason}.
       </div>
+
+      {/* Folded from the retired Algo-Performance card — collapsible, closed by default so the
+          card reads the same until opened. Shown only when the pick carries a regime breakdown. */}
+      {c.regimeBreakdown?.length > 0 && (
+        <details className="mac-details" style={{ marginTop: 8, borderTop: '.5px dashed var(--warn-brd)' }}>
+          <summary style={{ padding: '8px 0' }}>
+            <span className="sub" style={{ margin: 0, fontWeight: 600, color: 'var(--txt2)' }}>Regime breakdown &amp; live-day risk</span>
+          </summary>
+          {c.worstDay != null && (
+            <div className="sub" style={{ margin: '2px 0 0' }}>Worst live day <PC v={c.worstDay} /></div>
+          )}
+          {c.structureOutlier && (
+            <div className="sub" style={{ margin: '6px 0 0', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>
+              within-structure drawdown outlier — deeper than its {c.structure} peers
+            </div>
+          )}
+          {held && c.parkReason && (
+            <div className="sub" style={{ margin: '6px 0 0', padding: '8px 10px', border: '.5px solid var(--warn-brd)', borderRadius: 8, lineHeight: 1.55 }}>
+              Held — but would <b>not clear the screen&apos;s gate today</b>: {c.parkReason.join('; ')}{c.revisitTier ? ` · revisit at ${c.revisitTier} tier` : ''}
+            </div>
+          )}
+          <RegimeTable rows={c.regimeBreakdown} matched={c.regimeMatched} />
+        </details>
+      )}
     </div>
   );
 }

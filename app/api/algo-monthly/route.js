@@ -5,7 +5,7 @@
 // when the capital input changes — the heavy screen never runs at render.
 //
 // Private (reveals the held basket) → served at request time, never in the client bundle;
-// protected at the edge exactly like /api/algo-screen. No sibling self-fetch — the loaders
+// protected at the edge exactly like /api/portfolio. No sibling self-fetch — the loaders
 // read KV + the local file directly (see tasks/feedback.md on server-side self-fetch).
 
 import { loadAlgoMonthly, loadAlgoReview } from '../../lib/serverPortfolio';

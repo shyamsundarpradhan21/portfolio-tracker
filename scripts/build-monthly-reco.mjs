@@ -62,7 +62,7 @@ const artifact = {
   book, justification, labels,
 };
 
-// Refuse-on-empty guard (mirrors build-algo-screen.mjs) — never publish a blank book.
+// Refuse-on-empty guard — never publish a blank book.
 if (!book.picks.length || candidates.length < 3) {
   console.error(`REFUSING to publish: book looks empty (picks ${book.picks.length}, pool ${candidates.length}). Check data/stratzy-daily.json + --capital.`);
   process.exit(1);
