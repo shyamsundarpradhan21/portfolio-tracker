@@ -1,5 +1,5 @@
 'use client';
-// Trading Journal → Analytics. Window-scoped (1M/3M/6M/Max) performance analytics for the
+// Trading Journal → Analytics. Window-scoped (1M/3M/6M/1Y/MAX) performance analytics for the
 // two algo strategies (S01 = Dhan+Zerodha, S02 = Upstox+Fyers) and combined, vs NIFTY 50.
 // Reads the OVERLAID realised-F&O ledger (APP.fnoLedger.rows — real contract-note charges
 // already applied server-side) and the constant own+client deployed-capital base (ALGO).
@@ -15,27 +15,30 @@ import {
   freqOfTrade, riskOMeterBand,
 } from '../../lib/pnlDaily';
 
-const PERIODS = [['1M', 30], ['3M', 90], ['6M', 180], ['Max', null]];
+const PERIODS = [['1M', 30], ['3M', 90], ['6M', 180], ['1Y', 365], ['MAX', null]];
 const STRATS = [['all', 'Overall'], ['S01', 'S01'], ['S02', 'S02']];
 const COLOR = { S01: 'var(--grn)', S02: 'var(--cyn)', all: 'var(--acc)', nifty: 'var(--txt3)' };
 const r2 = (n) => Math.round(n * 100) / 100;
 const ms = (d) => Date.parse(d);
-// compact ₹ for chart labels (no +/- glyph — colour encodes direction)
-const cmpRs = (v) => { const a = Math.abs(Math.round(v)); return a >= 1e5 ? (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? Math.round(a / 1e3) + 'K' : '' + a; };
-// Signed % — ONLY for the multi-line chart labels, where colour = series identity (not
-// gain/loss), so the sign is the direction cue. cl-coloured cards/tables use uPct (no glyph).
-const sPct = (n) => (n == null ? '—' : (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1) + '%');
+// ₹10L notional — the shared base capital for the Returns Comparison equity curves, so every
+// strategy's real TWR is expressed as the ₹ value of the SAME hypothetical ₹10L deployment.
+const BASE = 1e6;
 const uPct = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
 const sNum = (n, d = 2) => (n == null ? '—' : n.toFixed(d));
+const rsL = (v) => '₹' + inrCd(Math.abs(v));   // compact ₹ for value labels (₹14.53L)
 
-// cumulative TWR % path over a day series on a constant base, keyed by date-ms.
+// cumulative TWR % path over a day series on a constant base, keyed by date-ms (Cards 1 & 3).
 function cumPath(series, cap) {
   let f = 1; return series.map((d) => { f *= 1 + d.net / cap; return { t: ms(d.date), v: r2((f - 1) * 100) }; });
 }
-// cumulative % path for the benchmark over the window dates (rebased to 0 at window start).
-function benchPath(niftyRet, startMs) {
+// ₹-value equity path: a BASE (₹10L) notional earning the series' daily TWR, keyed by date-ms.
+function valuePath(series, cap) {
+  let f = 1; return series.map((d) => { f *= 1 + d.net / cap; return { t: ms(d.date), v: Math.round(BASE * f) }; });
+}
+// ₹-value equity path for the benchmark (BASE tracking NIFTY) over the window dates (from startMs).
+function benchValue(niftyRet, startMs) {
   let f = 1; const out = [];
-  for (const [date, ret] of niftyRet) { const t = ms(date); if (t < startMs) continue; f *= 1 + ret; out.push({ t, v: r2((f - 1) * 100) }); }
+  for (const [date, ret] of niftyRet) { const t = ms(date); if (t < startMs) continue; f *= 1 + ret; out.push({ t, v: Math.round(BASE * f) }); }
   return out;
 }
 
@@ -99,29 +102,59 @@ function useGrnHex() {
   return grn;
 }
 
-// Shared-axis multi-line SVG (x = date, y = %). lines: [{pts:[{t,v}], color, dash, bold, sw}].
-function MultiLine({ lines, w = 660, h = 220, axes: showAxes = false }) {
+// Returns Comparison — ₹-value equity curves on a ₹10L base (the tab's top card). x = date,
+// y = ₹ value. Hover → crosshair + dots + a frosted .iq-tip with the date and each line's ₹
+// value (label = series identity colour, value = direction colour vs the ₹10L base).
+// lines: [{ key, label, pts:[{t,v}], color, w, dash, dim }].
+function ValueCurve({ lines }) {
+  const [hovT, setHovT] = useState(null);
+  const w = 720, h = 300, padL = 54, padR = 52, padY = 16, axH = 22;
   const pts = lines.flatMap((l) => l.pts);
   if (pts.length < 2) return <NoData msg="Not enough data in this window." />;
-  const padL = showAxes ? 34 : 6, padR = 48, padY = 16, axH = 18;
-  let lo = 0, hi = 0, t0 = Infinity, t1 = -Infinity;
+  let lo = BASE, hi = BASE, t0 = Infinity, t1 = -Infinity;   // seed with BASE so the ₹10L rule is always on-chart
   for (const p of pts) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; if (p.t < t0) t0 = p.t; if (p.t > t1) t1 = p.t; }
-  const sp = hi - lo || 1, tspan = t1 - t0 || 1;
+  const sp = hi - lo || 1, tspan = t1 - t0 || 1, yBot = h - axH - padY;
   const X = (t) => padL + ((t - t0) / tspan) * (w - padL - padR);
-  const Y = (v) => h - axH - padY - ((v - lo) / sp) * (h - axH - 2 * padY);
-  const zeroY = Y(0);
+  const Y = (v) => padY + ((hi - v) / sp) * (yBot - padY);
   const d = (a) => a.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  const spine = [...new Set(pts.map((p) => p.t))].sort((a, b) => a - b);
+  const valueAt = (lp, t) => { let v = null; for (const p of lp) { if (p.t <= t) v = p.v; else break; } return v; };
+  const onMove = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const tRaw = t0 + (((e.clientX - r.left) / r.width * w - padL) / (w - padL - padR)) * tspan;
+    let best = spine[0], bd = Infinity;
+    for (const t of spine) { const dd = Math.abs(t - tRaw); if (dd < bd) { bd = dd; best = t; } }
+    setHovT(best);
+  };
+  const hx = hovT != null ? X(hovT) : 0;
+  const drawn = lines.filter((l) => l.pts.length >= 2);
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="an-svg" preserveAspectRatio="xMidYMid meet">
-      <line x1={padL} y1={zeroY} x2={w - padR} y2={zeroY} stroke="var(--brd)" strokeWidth="1" strokeDasharray="2 3" />
-      {lines.map((l, i) => l.pts.length >= 2 ? (
-        <g key={i}>
-          <path d={d(l.pts)} fill="none" stroke={l.color} strokeWidth={l.sw != null ? l.sw : (l.bold ? 2.6 : 1.7)} strokeDasharray={l.dash ? '5 4' : undefined} opacity={l.dim ? 0.75 : 1} strokeLinejoin="round" />
-          <text x={w - padR + 4} y={Y(l.pts[l.pts.length - 1].v) + 3} fill={l.color} opacity={l.dim ? 0.85 : 1} style={{ fontSize: 11, fontWeight: l.bold ? 700 : 600 }}>{sPct(l.pts[l.pts.length - 1].v)}</text>
+    <div style={{ position: 'relative' }}>
+      <svg viewBox={`0 0 ${w} ${h}`} className="an-svg" preserveAspectRatio="xMidYMid meet"
+        onMouseMove={onMove} onMouseLeave={() => setHovT(null)}>
+        <line x1={padL} y1={Y(BASE).toFixed(1)} x2={w - padR} y2={Y(BASE).toFixed(1)} stroke="var(--brd)" strokeWidth="1" strokeDasharray="2 3" />
+        {drawn.map((l) => (
+          <g key={l.key}>
+            <path d={d(l.pts)} fill="none" stroke={l.color} strokeWidth={l.w} strokeDasharray={l.dash ? '5 4' : undefined} opacity={l.dim ? 0.8 : 1} strokeLinejoin="round" />
+            <text x={w - padR + 4} y={Y(l.pts[l.pts.length - 1].v) + 3} fill={l.color} opacity={l.dim ? 0.85 : 1} style={{ fontSize: 11, fontWeight: l.w > 2 ? 700 : 600 }}>{rsL(l.pts[l.pts.length - 1].v)}</text>
+          </g>
+        ))}
+        <g>
+          {[hi, (hi + lo) / 2, lo].map((v, i) => <text key={`y${i}`} x={2} y={Y(v) + 3} fill="var(--txt3)" style={AX}>{rsL(v)}</text>)}
+          {monthTicks(t0, t1).map((m, i) => <text key={`m${i}`} x={X(m.t).toFixed(1)} y={yBot + 14} fill="var(--txt3)" textAnchor="middle" style={AX}>{m.label}</text>)}
         </g>
-      ) : null)}
-      {showAxes && axes({ x0: padL, x1: w - padR, yTop: padY, yBot: h - axH - padY, lo, hi, t0, t1 })}
-    </svg>
+        {hovT != null && <line x1={hx.toFixed(1)} y1={padY} x2={hx.toFixed(1)} y2={yBot} stroke="var(--txt3)" strokeWidth="1" strokeDasharray="3 3" opacity=".6" />}
+        {hovT != null && drawn.map((l) => { const v = valueAt(l.pts, hovT); return v == null ? null : <circle key={l.key} cx={hx.toFixed(1)} cy={Y(v).toFixed(1)} r="3" fill={l.color} />; })}
+      </svg>
+      {hovT != null && (
+        <div className="iq-tip" style={{ maxWidth: 220, left: `${(hx / w) * 100}%`, transform: hx / w > 0.5 ? 'translateX(calc(-100% - 10px))' : 'translateX(10px)' }}>
+          <div style={{ color: 'var(--txt3)', fontSize: 'var(--fs-2xs)', marginBottom: 4, whiteSpace: 'nowrap' }}>{fmtD(new Date(hovT).toISOString().slice(0, 10))}</div>
+          {drawn.map((l) => { const v = valueAt(l.pts, hovT); return v == null ? null : (
+            <div className="iq-r" key={l.key}><span className="iq-l" style={{ color: l.color }}>{l.label}</span><span className={'iq-v ' + cl(v - BASE)}><span className="rs">₹</span>{inrCd(Math.abs(v))}</span></div>
+          ); })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -292,51 +325,25 @@ export default function AnalyticsTab({ ALGO }) {
   const M = { S01: metric('S01'), S02: metric('S02'), all: metric('all') };
   const cur = M[strat];
 
-  // cumulative curve lines (S01/S02/Overall + Nifty), rebased to 0 over the window
-  const startMs = cur.series.length ? ms(cur.series[0].date) : cutMs;
-  const lines = strat === 'all'
+  // Returns Comparison value curves — each strategy's real TWR as the ₹ value of a shared
+  // ₹10L notional, rebased at the window start; benchmark = ₹10L tracking NIFTY 50. The
+  // strategy toggle filters which lines show (Overall → all four).
+  const winAll = win(S.all);
+  const startMs = winAll.length ? ms(winAll[0].date) : cutMs;
+  const cmpLines = strat === 'all'
     ? [
-      { pts: cumPath(win(S.S01), base.S01), color: COLOR.S01 },
-      { pts: cumPath(win(S.S02), base.S02), color: COLOR.S02 },
-      { pts: cumPath(win(S.all), base.all), color: COLOR.all, bold: true },
-      { pts: benchPath(niftyRet, startMs), color: COLOR.nifty, dash: true, dim: true },
+      { key: 'S01', label: 'S01', pts: valuePath(win(S.S01), base.S01), color: COLOR.S01, w: 1.7 },
+      { key: 'S02', label: 'S02', pts: valuePath(win(S.S02), base.S02), color: COLOR.S02, w: 1.7 },
+      { key: 'all', label: 'Overall', pts: valuePath(winAll, base.all), color: COLOR.all, w: 2.8 },
+      { key: 'nifty', label: 'NIFTY 50', pts: benchValue(niftyRet, startMs), color: COLOR.nifty, w: 1.5, dash: true, dim: true },
     ]
     : [
-      { pts: cumPath(cur.series, cur.cap), color: COLOR[strat], bold: true },
-      { pts: benchPath(niftyRet, startMs), color: COLOR.nifty, dash: true, dim: true },
+      { key: strat, label: strat, pts: valuePath(cur.series, cur.cap), color: COLOR[strat], w: 2.8 },
+      { key: 'nifty', label: 'NIFTY 50', pts: benchValue(niftyRet, startMs), color: COLOR.nifty, w: 1.5, dash: true, dim: true },
     ];
 
   // best/worst rolling sub-window (1/3 of the selected window, min 5 days) — Card 1's bands
   const subWin = Math.max(5, Math.round((cur.series.length || 0) / 3));
-
-  // Returns Comparison (Card 4): the 4-line chart tracks the selected window; the table's
-  // fixed-horizon returns are anchored on the latest ledger day REGARDLESS of the period pill.
-  const cmpLines = [
-    { pts: cumPath(win(S.S01), base.S01), color: COLOR.S01, sw: 1.6 },
-    { pts: cumPath(win(S.S02), base.S02), color: COLOR.S02, sw: 1.6 },
-    { pts: cumPath(win(S.all), base.all), color: COLOR.all, sw: 2.8, bold: true },
-    { pts: benchPath(niftyRet, win(S.all).length ? ms(win(S.all)[0].date) : cutMs), color: COLOR.nifty, sw: 1.4, dash: true, dim: true },
-  ];
-  const HOR = [['1M', 30], ['3M', 90], ['6M', 180], ['1Y', 365]];
-  const firstAllMs = S.all.length ? ms(S.all[0].date) : anchor;
-  const winH = (series, d) => series.filter((r) => ms(r.date) >= anchor - d * 86400000);
-  const coversH = (series, d) => series.length && ms(series[0].date) <= anchor - d * 86400000;
-  const stratHor = (series, cap, d) => (coversH(series, d) ? returnsPct(winH(series, d), cap) : null);
-  const niftyHor = (d) => {
-    if (!niftyRet.size) return null;
-    const c = anchor - d * 86400000; let f = 1, any = false;
-    for (const [date, ret] of niftyRet) { const t = ms(date); if (t >= c && t <= anchor) { f *= 1 + ret; any = true; } }
-    return any ? r2((f - 1) * 100) : null;
-  };
-  const niftyMaxDD = () => {
-    const cs = (closes || []).filter((c) => { const t = ms(c.date); return t >= firstAllMs && t <= anchor; });
-    if (cs.length < 2) return null;
-    let pk = -Infinity, mdd = 0;
-    for (const c of cs) { const v = +c.close; if (v > pk) pk = v; const dd = pk > 0 ? (v - pk) / pk * 100 : 0; if (dd < mdd) mdd = dd; }
-    return r2(mdd);
-  };
-  const CMP = [['all', 'Overall', COLOR.all], ['S01', 'S01', COLOR.S01], ['S02', 'S02', COLOR.S02]];
-  const swi = (color) => <span style={{ display: 'inline-block', width: 5, height: 16, borderRadius: 3, background: color, verticalAlign: 'middle', marginRight: 6 }} />;
 
   const COLS = [['S01', M.S01], ['S02', M.S02], ['Overall', M.all]];
   const cell = (key, v, c) => <td key={key} className={'an-num ' + (c || '')}>{v}</td>;
@@ -349,18 +356,16 @@ export default function AnalyticsTab({ ALGO }) {
         <Seg items={STRATS} val={strat} set={setStrat} label="Strategy" />
       </div>
 
-      {/* Cumulative performance curve */}
+      {/* Returns Comparison — ₹10L-base equity curves (replaces Cumulative Performance) */}
       <div className="card sec">
         <div className="an-head">
-          <div className="ctitle" style={{ margin: 0 }}>Cumulative Performance <span className="badge bb">vs NIFTY 50</span></div>
+          <div className="ctitle" style={{ margin: 0 }}>Returns Comparison <span className="badge bb">₹10L base · vs NIFTY 50</span></div>
           <div className="an-legend">
-            {strat === 'all' && <><span><i style={{ background: COLOR.S01 }} />S01</span><span><i style={{ background: COLOR.S02 }} />S02</span><span><i style={{ background: COLOR.all }} />Overall</span></>}
-            {strat !== 'all' && <span><i style={{ background: COLOR[strat] }} />{strat}</span>}
-            <span><i style={{ background: COLOR.nifty }} />NIFTY 50</span>
+            {cmpLines.filter((l) => l.pts.length >= 2).map((l) => <span key={l.key}><i style={{ background: l.color }} />{l.label}</span>)}
             {!closes && <span className="an-hint">loading benchmark…</span>}
           </div>
         </div>
-        <MultiLine lines={lines} />
+        <ValueCurve lines={cmpLines} />
       </div>
 
       {/* Performance — cumulative return + CAGR (TWR) */}
@@ -418,35 +423,6 @@ export default function AnalyticsTab({ ALGO }) {
           </tbody>
         </table></div>
         {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
-      </div>
-
-      {/* Returns Comparison (Card 4) — fixed-horizon returns anchored on the latest ledger day */}
-      <div className="card sec">
-        <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Returns Comparison</div>
-          <div className="an-legend">
-            <span><i style={{ background: COLOR.all }} />Overall</span><span><i style={{ background: COLOR.S01 }} />S01</span>
-            <span><i style={{ background: COLOR.S02 }} />S02</span><span><i style={{ background: COLOR.nifty }} />NIFTY 50</span>
-          </div></div>
-        <MultiLine lines={cmpLines} axes />
-        <div className="an-tblwrap" style={{ marginTop: 6 }}><table className="tbl an-tbl">
-          <thead><tr><th />{HOR.map(([l]) => <th key={l} className="an-num">{l}</th>)}<th className="an-num">Max DD</th></tr></thead>
-          <tbody>
-            {CMP.map(([k, label, color]) => {
-              const md = drawdown(S[k], base[k]).maxDD;
-              return (
-                <tr key={k}><td>{swi(color)}{label}</td>
-                  {HOR.map(([l, d]) => { const v = stratHor(S[k], base[k], d); return <td key={l} className={'an-num ' + (v == null ? '' : cl(v))}>{uPct(v)}</td>; })}
-                  <td className="an-num red">{S[k].length < 2 ? '—' : uPct(md)}</td>
-                </tr>
-              );
-            })}
-            <tr><td>{swi(COLOR.nifty)}NIFTY 50</td>
-              {HOR.map(([l, d]) => { const v = niftyHor(d); return <td key={l} className={'an-num ' + (v == null ? '' : cl(v))}>{uPct(v)}</td>; })}
-              {(() => { const md = niftyMaxDD(); return <td className="an-num red">{md == null ? '—' : uPct(md)}</td>; })()}
-            </tr>
-          </tbody>
-        </table></div>
-        {!closes && <div className="an-hint" style={{ marginTop: 8 }}>NIFTY row loads with the benchmark…</div>}
       </div>
 
       {/* Worst 5 Drawdown Periods (Card 3) — replaces the Worst-5 table */}
