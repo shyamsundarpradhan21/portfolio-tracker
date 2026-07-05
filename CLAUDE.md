@@ -9,7 +9,7 @@ for lessons; there is no separate lessons file, and don't rely on chat memory.
 
 Pinpointing order: (1) Serena MCP semantic tools (`find_symbol`, `find_referencing_symbols`,
 `get_symbols_overview`) when the server is up — symbol-level, always current; (2) grep
-`code-index.tsv` (symbol→`path:line`, ~1.2k symbols, regen with `npm run index` after
+`code-index.tsv` (symbol→`path:line`, ~5k symbols, regen with `npm run index` after
 structural changes, e.g. `grep -P "^captureTick\t" code-index.tsv`); (3) `.graphify/` if
 present (cloud sessions only); (4) this map is the human-readable fallback.
 
