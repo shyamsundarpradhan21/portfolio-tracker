@@ -44,15 +44,22 @@ const overlay = emitOverlay(committed, realCharges);
 const got = overlayRealChargeByFy(overlay);
 
 console.log(`ledger:cn:index ${idx.length} notes (${self} self) | overlay matched ${overlay.stats.matched} committed-days + ${overlay.stats.openingOnly} opening-only`);
-console.log('=== overlay real-charge per FY (from KV, DEDUPED) vs reconciliation ===');
-const EXPECT = { 'FY25-26 Zerodha': 716, 'FY25-26 Upstox': 18337, 'FY25-26 Dhan': 26404, 'FY25-26 Fyers': 32314, 'FY26-27 Dhan': 9856, 'FY26-27 Fyers': 6468 };
-let allMatch = true;
-for (const [k, exp] of Object.entries(EXPECT)) { const g = Math.round(got[k] || 0); const ok = Math.abs(g - exp) <= 2; if (!ok) allMatch = false; console.log(`  ${k.padEnd(16)} overlay=${String(g).padStart(7)} recon=${String(exp).padStart(7)} ${ok ? 'MATCH' : 'MISMATCH (' + (g - exp) + ')'}`); }
+// Per-FY·broker overlay charge totals — INFORMATIONAL only. The former hardcoded EXPECT
+// reconciliation table was retired: FY totals move every time a new note lands, so a static
+// table produced misleading MISMATCH rows and (worse) a stale allMatch that read like a gate.
+// The write is NEVER blocked by these numbers. Cross-check drift against
+// `node scripts/ingest-reconcile.mjs` (charges coverage) rather than a baked-in expectation.
+console.log('=== overlay real-charge per FY·broker (from KV, DEDUPED) ===');
+const fyKeys = Object.keys(got).sort();
+for (const k of fyKeys) console.log(`  ${k.padEnd(18)} ${String(Math.round(got[k] || 0)).padStart(8)}`);
 
-if (process.argv.includes('--write')) {
+const write = process.argv.includes('--write');
+if (write) {
   const payload = { note: 'DORMANT F&O charge overlay (Phase 2c Part 1). Nothing reads this yet; Part 2 overlays it onto data/fno-ledger.json + flips deriveFY (certify-gated). self-only, NCLFO.', byKey: overlay.byKey, openingOnly: overlay.openingOnly, fyTotals: got, generatedFrom: 'ledger:cn:* (self F&O)' };
   const res = await kv(['SET', 'ledger:fno:overlay', JSON.stringify(payload)]);
-  console.log(`\nWROTE ledger:fno:overlay -> ${res}  (allMatch=${allMatch})`);
+  console.log(`\nWROTE ledger:fno:overlay -> ${res}`);
 } else {
-  console.log(`\nverify-only (no write). allMatch=${allMatch}. add --write to push ledger:fno:overlay.`);
+  console.log('\nverify-only (no write). add --write to push ledger:fno:overlay.');
 }
+// Machine-readable porcelain line (the ingest daemon greps this after a rebuild).
+console.log(`OVERLAY ${write ? 'written' : 'verify'} matched=${overlay.stats.matched}+${overlay.stats.openingOnly} self=${self} fys=${fyKeys.length}`);

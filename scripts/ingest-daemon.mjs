@@ -29,6 +29,7 @@
 import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync, readFileSync, watch } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { spawn } from 'node:child_process';
 import { processFile, makeQueue } from './ingest/router.mjs';
 import { loadParsers } from './ingest/registry.mjs';
 import { readManifest, seenSource, assertManifestIntegrity } from './ingest/manifest.mjs';
@@ -94,20 +95,48 @@ function makeAwakeScope() {
   };
 }
 
+// After a batch with ≥1 successful contract-note PASS: rebuild ledger:fno:overlay (the app's
+// REAL charge source) from ledger:cn:* so charges stop reading estCharges:0. Spawned once at
+// batch end (not per file), non-fatal — a failed rebuild just warns; the next note or the
+// manual `build-fno-overlay.mjs --write` retries. The builder is idempotent + filters to self.
+function rebuildFnoOverlay(logFn = log) {
+  const script = join(ROOT, 'scripts', 'contract-parser', 'build-fno-overlay.mjs');
+  let out = '';
+  const child = spawn(process.execPath, [script, '--write'], { cwd: ROOT });
+  child.stdout.on('data', (d) => { out += d; });
+  child.stderr.on('data', (d) => { out += d; });
+  child.on('error', (e) => logFn(`fno-overlay: rebuild spawn failed (non-fatal): ${e.message}`));
+  child.on('close', (code) => {
+    const m = /^OVERLAY (\w+) matched=(\S+) self=(\d+) fys=(\d+)/m.exec(out);
+    if (code === 0 && m) logFn(`fno-overlay: rebuilt written matched=${m[2]} self=${m[3]} fys=${m[4]}`);
+    else logFn(`fno-overlay: rebuild ${code === 0 ? 'ok (no porcelain line?)' : 'FAILED code=' + code} — ${out.trim().split('\n').pop() || 'no output'}`);
+  });
+}
+
 // ── the one queue ─────────────────────────────────────────────────────────────
 // paths override is for tests (temp dirs); the daemon runs on the real layout.
-export function makeIngest({ parsers, dry = false, logFn = log, paths } = {}) {
+// onOverlayDirty: fired ONCE when the queue drains after any contract-note PASS (daemon-only
+// — tests don't pass it, so no spawn/KV write in vitest).
+export function makeIngest({ parsers, dry = false, logFn = log, paths, onOverlayDirty = null } = {}) {
   const P = paths || { inbox: INBOX, manifest: MANIFEST, dirs: DIRS };
   const queue = makeQueue({ onError: (e) => logFn(`queue error: ${e?.message || e}`) });
   const awake = makeAwakeScope();
   const claimed = new Set();                    // paths the gmail intake queues itself
+  let overlayDirty = false;                     // a contract-note PASSed this batch → rebuild the overlay on idle
   const enqueue = (path, source) => {
     awake.busy();
     return queue.push(async () => {
       if (!(await settled(path))) { logFn(`ingest: ${path} vanished before settle — skipped`); return null; }
       const row = await processFile(path, { parsers, manifestPath: P.manifest, dirs: P.dirs, source, dry, log: logFn });
+      if (row && row.parser === 'contract-note' && row.status === 'PASS') overlayDirty = true;
       claimed.delete(path);
-      if (queue.pending <= 1) awake.idle();
+      if (queue.pending <= 1) {
+        awake.idle();
+        if (overlayDirty && !dry && onOverlayDirty) {
+          overlayDirty = false;
+          try { onOverlayDirty(); } catch (e) { logFn(`fno-overlay: trigger error (non-fatal): ${e?.message || e}`); }
+        }
+      }
       return row;
     });
   };
@@ -369,7 +398,7 @@ async function main() {
 
   const parsers = await loadParsers();
   log(`ingest-daemon: ${parsers.length} parsers registered${dry ? ' · DRY (no writes, no moves)' : ''}`);
-  const ingest = makeIngest({ parsers, dry });
+  const ingest = makeIngest({ parsers, dry, onOverlayDirty: () => rebuildFnoOverlay(log) });
 
   if (args.has('--backfill')) {
     await runBackfill(ingest, val('--from'), val('--to'), gmailAccount(argLabel('--account')));

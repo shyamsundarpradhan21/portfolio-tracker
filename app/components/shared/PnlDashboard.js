@@ -156,8 +156,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
       </div>
 
       {/* LIVE P&L glance — net realised · charges · live MTM + today's intraday P&L curve.
-          Merged in from the standalone "Trading P&L" card (#45), so it's one card now. */}
-      <LivePnlGlance liveMtm={liveMtm} />
+          Merged in from the standalone "Trading P&L" card (#45), so it's one card now.
+          On the Day view its chart is suppressed when the DayPanel below already draws the
+          same session (curveDate match) — no duplicate curve. */}
+      <LivePnlGlance liveMtm={liveMtm} suppressCurveFor={view === 'day' ? periodKey : null} />
 
       {/* capital line + verified/YTD summary — the journal's top context row */}
       {capital ? (
@@ -234,7 +236,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
 // open MTM from broker-state) + the intraday P&L curve (today's live session; out of hours
 // it falls back to the most recent captured session). Rendered INSIDE the Trading Journal
 // card (#45 merge — the standalone "Trading P&L" card was removed), so no card / title.
-function LivePnlGlance({ liveMtm = null }) {
+function LivePnlGlance({ liveMtm = null, suppressCurveFor = null }) {
   const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
   const today = todayIstIso();
   const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[today] || []);
@@ -266,6 +268,11 @@ function LivePnlGlance({ liveMtm = null }) {
     const last = Object.keys(days).filter((d) => (days[d]?.length || 0) >= 2).sort().pop();
     if (last) { curveDate = last; tape = toLiveMtmTape(days[last]); candles = APP.niftyOhlc?.days?.[last] || null; fills = APP.fnoIntraday?.fills?.[last] || []; isLive = false; }
   }
+  // Day view already renders THIS session's curve in its DayPanel below — suppressing the
+  // glance's duplicate ONLY when the DayPanel's selected day equals the glance's RESOLVED
+  // curveDate. A different date (e.g. pre-market: DayPanel=today-empty, glance=yesterday) is
+  // a genuinely different session → both render, correctly. Pills always stay.
+  const suppressChart = suppressCurveFor != null && suppressCurveFor === curveDate;
 
   return (
     <>
@@ -275,7 +282,7 @@ function LivePnlGlance({ liveMtm = null }) {
         <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}><SInrF n={ledger.charges} /></span></span>
         <span><span className="lbl">Live MTM</span> <span className={'mono ' + (liveMtm != null ? cl(liveMtm) : '')}>{liveMtm != null ? <SInrF n={liveMtm} /> : '—'}</span></span>
       </div>
-      {tape.length >= 2 ? (
+      {suppressChart ? null : tape.length >= 2 ? (
         <div style={{ padding: '0 20px 16px' }}>
           {!isLive && <div className="lbl" style={{ margin: '0 0 2px' }}>last session · {prettyDate(curveDate)}</div>}
           <IntradayChart tape={tape} candles={candles} fills={fills} ariaLabel="Intraday P&L" primaryLabel={isLive ? 'Live MTM' : 'MTM'} />

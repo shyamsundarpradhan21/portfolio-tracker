@@ -57,6 +57,14 @@ Pull the day's contract notes (`ledger:cn:*`, `trade_date==date`) → charges/tr
 `reconcile.notes`; surface that day's **deferred** (checksum-fail) notes as `reconcile.unreconciled`
 — so the book carries what didn't reconcile, visible (same discipline as the unresolved report).
 
+> **TODO (fold in when this build is un-HELD — belt & braces for the F&O charge overlay):**
+> the 03:00 build already reads the day's `ledger:cn:*`, so it should also refresh
+> `ledger:fno:overlay` — run `scripts/contract-parser/build-fno-overlay.mjs --write` (or inline
+> `emitOverlay`) as the final reconcile step, so real charges are never stale even if the ingest
+> daemon missed the note (the daemon already chains this after each contract-note PASS as of
+> 2026-07-05; this is the scheduled backstop). NOT wired now — the EOD build itself is HELD, so
+> no new scheduled task; this marker is the reminder. See `tasks/fno-overlay-and-daycurve-prompt.md`.
+
 ### The broker-reconcile step (the checkpoint)  ← ADDED
 After the note-reconstructed composition is built, **snapshot the broker truth**
 (`broker-state.json` holdings + F&O positions) and **diff it against the note-reconstructed

@@ -169,6 +169,22 @@ live-macro market readings (index levels, FX, yields, commodities) and only in
 context for a qualitative read, not material to quote back. Enforced in the
 insights system prompt — keep that guard when editing the prompt or schema.
 
+### F&O real charges live in KV `ledger:fno:overlay` — parsing a note does NOT refresh it
+The app reads real F&O charges from KV `ledger:fno:overlay` (applied in `/api/portfolio` via
+`applyFnoOverlay`), NOT from `ledger:cn:*`. Parsing a contract note writes only `ledger:cn:*`; the
+overlay is rebuilt SEPARATELY by `scripts/contract-parser/build-fno-overlay.mjs --write` (self-only,
+NCLFO levies, keyed `broker|date`). So freshly-parsed notes leave that day reading `estCharges:0`
+(`source:'positions'`, turnover 0 → modeled 0) until the rebuild runs. **Automated 2026-07-05:** the
+ingest daemon chains a `--write` rebuild ONCE per batch after any `contract-note` PASS (idempotent;
+the builder filters to self), and the 03:00 EOD build carries a TODO backstop in
+`tasks/eod-book-design.md` for when it's un-HELD. If charges read ₹0 for a day that has a parsed
+note: run `build-fno-overlay.mjs --write` (immediate), and note the running daemon must be RESTARTED
+to pick up the chaining (Node caches the module). The old hardcoded `EXPECT` reconciliation table in
+that script was retired — it went stale every time a note landed (misleading MISMATCH rows); FY·broker
+totals are now printed informational-only and NEVER gate the write. Local dev can't show the overlay
+(Next has no KV creds → `applyFnoOverlay` no-ops); verify via prod KV or by running `applyFnoOverlay`
+against the fetched overlay + committed ledger.
+
 ---
 
 ## Git Workflow

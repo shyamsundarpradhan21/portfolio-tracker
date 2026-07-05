@@ -1,3 +1,32 @@
+# Plan — Duplicate Day-curve + F&O charge overlay automation (approved 2026-07-05)
+
+Spec: `tasks/fno-overlay-and-daycurve-prompt.md`. Two independent bug-class fixes.
+
+## Fix 1 — duplicate intraday curve on Day view (`PnlDashboard.js`)
+- [x] `LivePnlGlance` takes `suppressCurveFor`; skips ITS chart (pills stay) when
+      `suppressCurveFor === curveDate` (glance's RESOLVED date). Parent passes
+      `suppressCurveFor={view==='day' ? periodKey : null}`. Verified live: Day@3-Jul (=curveDate)
+      → 1 chart, glance suppressed; Day@2-Jul (≠curveDate) → 2 charts (both render, correct).
+
+## Fix 2 — charges stuck at ₹0 (overlay rebuild automation)
+- [x] (a) `build-fno-overlay.mjs`: retired the stale `EXPECT` MATCH/MISMATCH → informational
+      FY·broker totals + a machine `OVERLAY …` porcelain line. Ran verify then `--write`:
+      wrote KV `ledger:fno:overlay` (384 matched + 32 opening-only, 747 self notes).
+- [x] (b) `ingest-daemon.mjs`: `onOverlayDirty` on `makeIngest`, set on ANY `contract-note`
+      PASS (no tax_entity plumbing), fired ONCE on queue-idle; `main()` spawns
+      `build-fno-overlay --write` (non-fatal, porcelain log line). Test-safe (93 ingest tests green).
+- [x] (c) EOD build is WIRING-HELD → TODO marker added in `eod-book-design.md`; NO new task.
+- [x] (d) Verified via the app's `applyFnoOverlay` on real KV overlay + committed ledger:
+      Jul 1/2/3 Dhan → ₹229.26 / ₹233.68 / ₹261.29, Net = Gross − charge. (overlay realCharge
+      IS the note's deduped NCLFO total.) Prod reads the same KV (no-store route) → serves live.
+
+## Finish
+- [x] vitest green (1345 main-repo tests; 2 failures are pre-existing worktree-only venv issues),
+      certify green (day view, both themes, normal + stress), graphify skipped (not on PATH),
+      lesson appended to feedback.md. Daemon needs a RESTART to activate (b). Commit; no push.
+
+---
+
 # Plan — Analytics revamp: Stratzy-style 4-card build (mock approved 2026-07-05)
 
 Spec: `tasks/analytics-revamp-prompt.md`. Mock: `public/mock-analytics-revamp.html` (delete in final commit).
