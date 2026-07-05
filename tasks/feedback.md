@@ -53,6 +53,16 @@ as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
 
+### The no-glyph rule applies to VALUE figures, not axis scale markers
+Direction = colour governs **value figures** (card headlines, table cells, badges) —
+NOT chart **axis tick labels**. A cumulative-return / P&L axis crosses zero, so **signed
+y-ticks are correct** (`12% · −5% · −22%` reads as a proper monotonic scale); forcing
+**unsigned** ticks renders a non-monotonic, unreadable axis (`12 · 5 · 22`). An axis label
+is a scale cue, not a figure the reader parses for gain/loss, so the sign there isn't a
+direction glyph. (Caught in the Analytics revamp: shipped unsigned ticks first, they read
+as garbage across zero → reverted to signed; card values + the Returns table stay strictly
+glyph-free.)
+
 ### Hover/tooltip labels use the TAB (sleeve) accent colour — always
 On any curve hover/tooltip that breaks a point into per-sleeve rows, colour each
 sleeve's LABEL by that sleeve's **tab accent** (Indian-tab accent for the India
