@@ -345,6 +345,29 @@ export default function AnalyticsTab({ ALGO }) {
   // best/worst rolling sub-window (1/3 of the selected window, min 5 days) — Card 1's bands
   const subWin = Math.max(5, Math.round((cur.series.length || 0) / 3));
 
+  // Returns table (under the curve): fixed-horizon % returns per row, anchored on the latest
+  // ledger day REGARDLESS of the period pill — so 1M/3M/6M/1Y are all comparable at once.
+  const HOR = [['1M', 30], ['3M', 90], ['6M', 180], ['1Y', 365]];
+  const firstAllMs = S.all.length ? ms(S.all[0].date) : anchor;
+  const winH = (series, d) => series.filter((r) => ms(r.date) >= anchor - d * 86400000);
+  const coversH = (series, d) => series.length && ms(series[0].date) <= anchor - d * 86400000;
+  const stratHor = (series, cap, d) => (coversH(series, d) ? returnsPct(winH(series, d), cap) : null);
+  const niftyHor = (d) => {
+    if (!niftyRet.size) return null;
+    const c = anchor - d * 86400000; let f = 1, any = false;
+    for (const [date, ret] of niftyRet) { const t = ms(date); if (t >= c && t <= anchor) { f *= 1 + ret; any = true; } }
+    return any ? r2((f - 1) * 100) : null;
+  };
+  const niftyMaxDD = () => {
+    const cs = (closes || []).filter((c) => { const t = ms(c.date); return t >= firstAllMs && t <= anchor; });
+    if (cs.length < 2) return null;
+    let pk = -Infinity, mdd = 0;
+    for (const c of cs) { const v = +c.close; if (v > pk) pk = v; const dd = pk > 0 ? (v - pk) / pk * 100 : 0; if (dd < mdd) mdd = dd; }
+    return r2(mdd);
+  };
+  const CMP = [['all', 'Overall', COLOR.all], ['S01', 'S01', COLOR.S01], ['S02', 'S02', COLOR.S02]];
+  const swi = (color) => <span style={{ display: 'inline-block', width: 5, height: 16, borderRadius: 3, background: color, verticalAlign: 'middle', marginRight: 6 }} />;
+
   const COLS = [['S01', M.S01], ['S02', M.S02], ['Overall', M.all]];
   const cell = (key, v, c) => <td key={key} className={'an-num ' + (c || '')}>{v}</td>;
   const sCellPct = (m, k) => cell(m.key, uPct(m[k]), m[k] == null ? '' : cl(m[k]));
@@ -366,6 +389,25 @@ export default function AnalyticsTab({ ALGO }) {
           </div>
         </div>
         <ValueCurve lines={cmpLines} />
+        <div className="an-tblwrap" style={{ marginTop: 10 }}><table className="tbl an-tbl">
+          <thead><tr><th />{HOR.map(([l]) => <th key={l} className="an-num">{l}</th>)}<th className="an-num">Max DD</th></tr></thead>
+          <tbody>
+            {CMP.map(([k, label, color]) => {
+              const md = drawdown(S[k], base[k]).maxDD;
+              return (
+                <tr key={k}><td>{swi(color)}{label}</td>
+                  {HOR.map(([l, d]) => { const v = stratHor(S[k], base[k], d); return <td key={l} className={'an-num ' + (v == null ? '' : cl(v))}>{uPct(v)}</td>; })}
+                  <td className="an-num red">{S[k].length < 2 ? '—' : uPct(md)}</td>
+                </tr>
+              );
+            })}
+            <tr><td>{swi(COLOR.nifty)}NIFTY 50</td>
+              {HOR.map(([l, d]) => { const v = niftyHor(d); return <td key={l} className={'an-num ' + (v == null ? '' : cl(v))}>{uPct(v)}</td>; })}
+              {(() => { const md = niftyMaxDD(); return <td className="an-num red">{md == null ? '—' : uPct(md)}</td>; })()}
+            </tr>
+          </tbody>
+        </table></div>
+        <div className="an-hint" style={{ marginTop: 6 }}>Fixed-horizon returns, anchored on the latest ledger day — independent of the period pill above. Direction by colour; Max DD magnitude in red.</div>
       </div>
 
       {/* Performance — cumulative return + CAGR (TWR) */}
