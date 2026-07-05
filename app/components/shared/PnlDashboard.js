@@ -155,11 +155,11 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         </div>
       </div>
 
-      {/* LIVE P&L glance — net realised · charges · live MTM + today's intraday P&L curve.
+      {/* LIVE P&L glance — net realised · charges · live MTM + the intraday P&L curve.
           Merged in from the standalone "Trading P&L" card (#45), so it's one card now.
-          On the Day view its chart is suppressed when the DayPanel below already draws the
-          same session (curveDate match) — no duplicate curve. */}
-      <LivePnlGlance liveMtm={liveMtm} suppressCurveFor={view === 'day' ? periodKey : null} />
+          Its curve is suppressed in Day view (the DayPanel below IS the day curve + picker —
+          scroll it for past sessions); it renders in Month/Year/All. Pills always stay. */}
+      <LivePnlGlance liveMtm={liveMtm} suppressCurve={view === 'day'} />
 
       {/* capital line + verified/YTD summary — the journal's top context row */}
       {capital ? (
@@ -236,7 +236,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
 // open MTM from broker-state) + the intraday P&L curve (today's live session; out of hours
 // it falls back to the most recent captured session). Rendered INSIDE the Trading Journal
 // card (#45 merge — the standalone "Trading P&L" card was removed), so no card / title.
-function LivePnlGlance({ liveMtm = null, suppressCurveFor = null }) {
+function LivePnlGlance({ liveMtm = null, suppressCurve = false }) {
   const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
   const today = todayIstIso();
   const [liveTape, setLiveTape] = useState(() => APP.fnoIntraday?.days?.[today] || []);
@@ -268,11 +268,11 @@ function LivePnlGlance({ liveMtm = null, suppressCurveFor = null }) {
     const last = Object.keys(days).filter((d) => (days[d]?.length || 0) >= 2).sort().pop();
     if (last) { curveDate = last; tape = toLiveMtmTape(days[last]); candles = APP.niftyOhlc?.days?.[last] || null; fills = APP.fnoIntraday?.fills?.[last] || []; isLive = false; }
   }
-  // Day view already renders THIS session's curve in its DayPanel below — suppressing the
-  // glance's duplicate ONLY when the DayPanel's selected day equals the glance's RESOLVED
-  // curveDate. A different date (e.g. pre-market: DayPanel=today-empty, glance=yesterday) is
-  // a genuinely different session → both render, correctly. Pills always stay.
-  const suppressChart = suppressCurveFor != null && suppressCurveFor === curveDate;
+  // Day view carries its own day-picker + per-day curve (DayPanel below), so the glance curve
+  // is redundant there — suppress it entirely in Day view (pills always stay; scroll the day
+  // picker to reach any past session). The glance curve still renders in Month/Year/All, where
+  // there's no per-day picker.
+  const suppressChart = suppressCurve;
 
   return (
     <>

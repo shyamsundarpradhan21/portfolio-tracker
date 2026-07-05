@@ -185,6 +185,14 @@ totals are now printed informational-only and NEVER gate the write. Local dev ca
 (Next has no KV creds → `applyFnoOverlay` no-ops); verify via prod KV or by running `applyFnoOverlay`
 against the fetched overlay + committed ledger.
 
+### A picker-driven view shows ONLY the picked item's curve — no redundant "latest" curve above it
+When a view has its own item picker + per-item chart (e.g. Trading Journal → Day view: ‹ › day nav +
+`DayPanel` curve), do NOT ALSO render the standalone "latest session" glance curve there — one curve,
+scroll the picker for past items. The pills (net/charges/MTM) still stay. (Corrected 2026-07-05: the
+first cut suppressed the glance curve only when the picked day == the glance's `curveDate` — the user
+wanted it gone across the WHOLE Day view: "only one curve should render.. i can scroll back for past
+curves." The glance curve still renders in the non-picker views — Month/Year/All.)
+
 ---
 
 ## Git Workflow
