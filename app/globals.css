@@ -694,6 +694,30 @@ body::before {
 .tkrow.run.slow { animation-duration: 66s; }
 .tkrow.run.rev { animation-direction: reverse; }
 .tkw:hover .tkrow { animation-play-state: paused; }
+/* Global header rails (shell-6region): the 3 marquees run INLINE beside the net-worth
+   hero. The wrapper spans the whole hero row (grid-column 1/-1, row 1) but sits BEHIND
+   the hero (z-index below it), so each marquee scrolls leftward and dissolves under the
+   hero's masking panel — labels stay clear on the right. overflow:hidden is the doc-safe
+   backstop; each .tkw/.tkv already clips. */
+.hdr-rails {
+  grid-column: 1 / -1; grid-row: 1;
+  align-self: center; z-index: 1; position: relative;
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
+  min-width: 0; overflow: hidden;
+}
+/* In-header marquees are frameless (the hero is the only panel) and reversed so the
+   label anchors on the RIGHT while values scroll left, out from behind the hero. */
+.hdr-rails .tkw {
+  flex-direction: row-reverse; margin-bottom: 0;
+  border: none; border-radius: 0; background: transparent;
+}
+.hdr-rails .tklab {
+  background: transparent; color: var(--txt3);
+  border-right: none; border-left: .5px solid var(--brd);
+  padding: 2px 0 2px 10px; margin-left: 10px; font-size: var(--fs-2xs);
+}
+.hdr-rails .tkv { padding-left: 0; }
+.hdr-rails .tki { padding: 2px 14px; border-right-color: color-mix(in srgb, var(--brd) 60%, transparent); }
 @keyframes tkx { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .tki { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-right: .5px solid var(--brd); font-size: var(--fs-xs); color: var(--txt2); white-space: nowrap; }
 .tki b { color: var(--txt); font-family: var(--mono); }
@@ -1478,25 +1502,103 @@ body { padding: 0; }
   padding: 24px var(--shell-pad) 40px;
 }
 
-/* ── Header navigation (replaces the sidebar) ──────────────────────────────── */
+/* ── 6-region app shell (shell-6region) ───────────────────────────────────────
+   The .main content column doubles as the shell grid. Phase 2 wires three of the
+   six regions — header (full-bleed, spans every column), a left sidebar nav rail
+   (≥1024), and the main content (.tab-content). The widget / statistics / footer
+   regions land in later phases; until then .tab-content spans the content columns
+   as the single main region. Region children carry min-width:0 (STRESSHARD-safe). */
+.shell {
+  display: grid;
+  column-gap: clamp(16px, 1.4vw, 28px);
+  grid-template-columns: 1fr;
+  grid-template-areas: "header" "main";
+}
+.shell > * { min-width: 0; min-height: 0; }
+.shell-header  { grid-area: header; }
+.shell-sidebar { grid-area: sidebar; display: none; }
+.shell > .tab-content { grid-area: main; }
+
+@media (min-width: 1024px) {
+  .shell {
+    grid-template-columns: 12rem minmax(0, 1fr);
+    grid-template-areas: "header  header"
+                         "sidebar main";
+  }
+  .shell-sidebar { display: flex; }
+}
+
+/* Left tab rail (≥1024) — the 7 sections; mirrors the top pills' active state.
+   Sticky just beneath the frosted header (its measured height feeds --snav-top). */
+.shell-sidebar {
+  flex-direction: column;
+  gap: 3px;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--snav-top, 200px) + 10px);
+  max-height: calc(100vh - var(--snav-top, 200px) - 24px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+.shell-sidebar::-webkit-scrollbar { display: none; }
+.snav {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 12px; border-radius: 9px;
+  background: transparent; border: .5px solid transparent;
+  color: var(--txt2); font-size: var(--fs-sm); font-weight: 500;
+  letter-spacing: .01em; cursor: pointer;
+  transition: background .14s var(--ease), color .14s var(--ease), border-color .14s var(--ease);
+}
+.snav:hover { color: var(--txt); background: var(--sur2); }
+.snav.on {
+  color: var(--acc); font-weight: 650;
+  background: color-mix(in srgb, var(--acc) 12%, var(--sur2));
+  border-color: color-mix(in srgb, var(--acc) 30%, transparent);
+}
+
+/* Top pill nav (<1024) — same 7 sections, in the header region below the ticker
+   rails; the sidebar rail replaces it ≥1024. */
+.tab-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+@media (min-width: 1024px) { .tab-pills { display: none; } }
+.tpill {
+  background: var(--sur2); border: .5px solid var(--brd2); border-radius: 999px;
+  color: var(--txt2); font-size: var(--fs-xs); font-weight: 500;
+  padding: 5px 14px; cursor: pointer; white-space: nowrap;
+  transition: color .14s var(--ease), border-color .14s var(--ease);
+}
+.tpill:hover { color: var(--txt); border-color: color-mix(in srgb, var(--acc) 40%, var(--brd2)); }
+.tpill.on {
+  color: var(--acc); font-weight: 650;
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--brd2));
+  background: color-mix(in srgb, var(--acc) 12%, var(--sur2));
+}
+
+/* ── Header navigation ─────────────────────────────────────────────────────── */
 .topbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; justify-content: flex-end; justify-self: end; }
 
 /* Live NW hero (left) + 5 asset cards (right). The hero is the Overview link. */
 .hdr-grid {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px; align-items: stretch; /* hero column hugs the figure; cards stretch to the hero's height */
+  gap: 12px; align-items: center; /* hero (col1) and the inline rails share row 1, overlapping */
   margin: 12px 0 14px;
+  position: relative;             /* stacking context for hero(z2) over rails(z1) */
 }
 .hdr-hero {
+  grid-column: 1; grid-row: 1;
+  position: relative; z-index: 2; /* floats above the rails so the marquee dissolves behind it */
   display: flex; flex-direction: column; justify-content: center;
   text-align: left; cursor: pointer; min-width: 0;
-  /* fully transparent — no glass fill/border/shadow; the net-worth figure reads as
-     a heading, distinct from the glass nav cards. Transparent border preserves the
-     box size so the row stays height-aligned with the cards. */
-  background: transparent;
+  /* Masking panel: opaque on the left (hides the rails behind the net-worth figure),
+     fading to transparent on the right so the marquee scrolls out from under it rather
+     than ending on a hard edge. Matches the frosted header base, so it reads as the
+     header surface — not a separate glass card. */
+  background: linear-gradient(90deg,
+    rgba(var(--hdr-bg-base), .96) 62%,
+    rgba(var(--hdr-bg-base), 0)  100%);
   border: .5px solid transparent;
-  padding: 12px 20px; border-radius: 14px;
+  padding: 12px 44px 12px 20px; border-radius: 14px;
   transition: border-color .15s var(--ease);
 }
 .hdr-hero:hover { border-color: color-mix(in srgb, var(--acc) 20%, transparent); }

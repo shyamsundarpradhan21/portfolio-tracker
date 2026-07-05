@@ -10,7 +10,6 @@ import { smoothPath } from '../../lib/smoothPath';
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
 const apct = (p) => (p == null || !isFinite(p) ? '·—' : `${p > 0 ? '▲' : p < 0 ? '▼' : '·'}${Math.abs(p).toFixed(2)}%`);
 const fmt = (n) => (n == null || !isFinite(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 }));
-const sdot = (s) => (s > 0 ? 'g' : s < 0 ? 'r' : 'n');
 const TONE = { calm: 'calm', warn: 'warn', stress: 'stress' };
 // Solid-ish diverging tile colour for the sector squares (theme text on top).
 const sheat = (p) => (p == null || !isFinite(p)) ? 'var(--sur2)'
@@ -28,31 +27,6 @@ const SECTOR_WEIGHTS = { 'Fin Services': 30, Bank: 24, IT: 14, Energy: 13, FMCG:
 const US_SECTOR_WEIGHTS = { Technology: 32, Financials: 13, 'Health Care': 11, 'Cons. Discretionary': 10, Communication: 9, Industrials: 8, 'Cons. Staples': 6, Energy: 3.5, Utilities: 2.5, Materials: 2, 'Real Estate': 2 };
 
 // ── 3-line ticker ────────────────────────────────────────────────────────────
-function TickerLine({ label, kind, items, anim }) {
-  if (!items || !items.length) return null;
-  // Pad each half past the rail width, then duplicate, so the −50% scroll is a
-  // seamless continuous loop no matter how few items there are.
-  const half = [];
-  while (half.length < Math.max(items.length, 14)) half.push(...items);
-  const loop = half.concat(half);
-  return (
-    <div className="tkw">
-      <span className={`tklab ${kind || ''}`}>{label}</span>
-      <div className="tkv">
-        <div className={`tkrow ${anim}`}>
-          {loop.map((it, i) => (
-            <span className="tki" key={i} aria-hidden={i >= half.length}>
-              {it.dot
-                ? <><i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
-                : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── FII/DII net-flow: composition bars + net sparkline OVERLAY. Overlapping
 // translucent FII (cyan) + DII (violet) columns from the zero line show who
 // bought/sold; a dotted net line (net = FII+DII) with a green-above / red-below
@@ -484,24 +458,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const c = premarket?.cues || {};
   const ind = premarket?.indices || {};
   const ivix = ind.vix;
-  const dxy = macro?.live?.dxy && !macro.live.dxy.stale ? macro.live.dxy : null;
   const asOf = ind.asOf ? new Date(ind.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
-
-  // Ticker rows, region-aware (filtered from live data — never fabricated).
-  const q = (x, name) => (x && x.price != null ? { name: name || x.label, val: fmt(x.price), pct: apct(x.pct), cls: cls(x.pct) } : null);
-  const idx = [
-    ...(showIN ? [q(c.nifty), q(c.sensex), ivix?.last != null ? { name: 'India VIX', val: fmt(ivix.last), pct: apct(ivix.pct), cls: cls(ivix.pct) } : null] : []),
-    ...(showUS ? [q(c.sp500), q(c.nasdaq), q(c.dow), q(c.nikkei), q(c.hangseng)] : []),
-  ].filter(Boolean);
-  const fx = [
-    q(c.gold), q(c.silver), q(c.brent), q(c.usdinr), q(c.us10y),
-    dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
-  ].filter(Boolean);
-  let newsRaw = (marketNews?.items || []).filter((it) => it && it.title);
-  // Region-tagged at source (/api/news); untagged items from a stale cache stay visible.
-  if (region === 'india') { const f = newsRaw.filter((it) => it.region !== 'global'); if (f.length) newsRaw = f; }
-  else if (region === 'us') { const f = newsRaw.filter((it) => it.region !== 'india'); if (f.length) newsRaw = f; }
-  const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
   const hasPulse = insightsOn && !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -532,11 +489,6 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
 
   return (
     <div className="wrapx">
-      {/* 3-line ticker railines — pinned to the top of the tab */}
-      <TickerLine label="Indices" items={idx} anim="run" />
-      <TickerLine label="Commod · FX" kind="cmd" items={fx} anim="run rev" />
-      <TickerLine label="News" kind="nw" items={news} anim="run slow" />
-
       {/* Region filter + as-of — the India/US toggle that drives the whole tab */}
       <div className="hdr">
         <div className="seg" role="tablist" aria-label="Region filter">

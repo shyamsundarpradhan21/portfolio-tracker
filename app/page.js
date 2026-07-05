@@ -52,6 +52,7 @@ import Skel         from './components/shared/Skel';
 import AnimatedNumber from './components/shared/AnimatedNumber';
 import { LiveInrC } from './components/shared/Live';
 import FreshnessTag from './components/shared/FreshnessTag';
+import TickerRails  from './components/shared/TickerRails';
 
 // ─── cache keys ───────────────────────────────────────────────────────────────
 const FETCH_TS_KEY  = 'nwTracker.cache';
@@ -270,8 +271,22 @@ function Dashboard() {
     return () => { ro.disconnect(); window.removeEventListener('resize', updHdrEdge); el.removeEventListener('wheel', onWheel); };
   }, [updHdrEdge]);
 
+  // Feed the frosted header's live height into --snav-top so the sticky sidebar rail
+  // (≥1024) pins just beneath it — header height varies with the ticker rails + tier.
+  useEffect(() => {
+    const el = headerRef.current; if (!el) return;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty('--snav-top', el.offsetHeight + 'px');
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    window.addEventListener('resize', set);
+    return () => { ro.disconnect(); window.removeEventListener('resize', set); };
+  }, []);
+
   // Day/night + per-tab theme: set data attributes on <html> so CSS variables cascade
   const TAB_KEYS = ['overview', 'indian', 'fd', 'mf', 'us', 'algo', 'macro'];
+  const NAV_LABELS = ['Overview', 'Indian', 'FD', 'MF', 'US', 'Trading', 'Wrap'];
 
   // Tabs are URL-addressable (#overview … #algo): deep-linkable, reload-safe,
   // and back/forward navigable. State stays the source of truth; the hash syncs.
@@ -1208,10 +1223,10 @@ function Dashboard() {
   return (
     <CurrencyProvider mode={currency} fx={fxRate}>
     <div className="layout">
-      {/* MAIN CONTENT */}
-      <main className="main">
-        {/* STICKY GLOBAL HEADER — utility bar + live NW + asset-card nav */}
-        <div className="main-header" ref={headerRef}>
+      {/* MAIN CONTENT — the .main column doubles as the 6-region shell grid */}
+      <main className="main shell">
+        {/* STICKY GLOBAL HEADER — utility bar + live NW + ticker rails + top-pill nav */}
+        <div className="main-header shell-header" ref={headerRef}>
           <div className="topbar">
             <div className="topbar-left">
               {/* Net worth — live LABEL only (the figure stays in the hero). Opens Overview. */}
@@ -1278,24 +1293,24 @@ function Dashboard() {
                 </>)}
               </div>
             </button>
-
-            {/* Asset-class cards — primary navigation (single-row scroll strip; the
-                wrapper carries the state-driven edge-fade affordance — RSP-001). */}
-            <div className={'hdr-cards-wrap' + (hdrEdge.l ? ' edge-l' : '') + (hdrEdge.r ? ' edge-r' : '')}>
-            {hdrEdge.l && <button type="button" className="hdr-scroll l" aria-label="Scroll cards left" onClick={() => scrollHdr(-1)}>‹</button>}
-            {hdrEdge.r && <button type="button" className="hdr-scroll r" aria-label="Scroll cards right" onClick={() => scrollHdr(1)}>›</button>}
-            <div className="hdr-cards" ref={hdrCardsRef} onScroll={updHdrEdge}>
-              {headerCards.map((c) => (
-                <button key={c.label} className={'hdr-card' + (tab === c.tab ? ' active' : '') + (c.cls ? ' ' + c.cls : '')} onClick={() => selectTab(c.tab)} title={c.tip || `Open ${c.label}`}>
-                  <div className="lbl">{c.label}{'live' in c ? <span className={'live-dot' + (c.live ? ' on' : '')} /> : null}</div>
-                  <div className="vmd">{c.val}</div>
-                  <div className="sub">{c.sub}</div>
-                </button>
-              ))}
-            </div>
-            </div>
-          </div>
+            {/* Ticker rails — inline beside the NW hero; they span the row behind it, so the
+                marquee dissolves under the hero's masking panel (labels sit clear on the right). */}
+            <TickerRails premarket={premarket} macro={macro} marketNews={marketNews} />
+          </div>{/* hdr-grid — hero + inline ticker rails; asset summary cards relocate to Overview statistics (Phase 4) */}
+          {/* Top-pill section nav (<1024) — the sidebar rail replaces it ≥1024. Both drive tab/selectTab. */}
+          <nav className="tab-pills" aria-label="Sections">
+            {TAB_KEYS.map((key, i) => (
+              <button key={key} type="button" className={'tpill tpill-' + key + (tab === i ? ' on' : '')} onClick={() => selectTab(i)}>{NAV_LABELS[i]}</button>
+            ))}
+          </nav>
         </div>
+
+        {/* SIDEBAR — vertical section rail (≥1024); shares the same tab/selectTab as the pills. */}
+        <nav className="shell-sidebar" aria-label="Sections">
+          {TAB_KEYS.map((key, i) => (
+            <button key={key} type="button" className={'snav snav-' + key + (tab === i ? ' on' : '')} onClick={() => selectTab(i)} title={NAV_LABELS[i]}>{NAV_LABELS[i]}</button>
+          ))}
+        </nav>
 
         {/* TAB CONTENT — key forces a remount on tab switch so tabEnter plays */}
         <AiContext.Provider value={{ ts: insightsTs, refresh: refreshAll }}>
