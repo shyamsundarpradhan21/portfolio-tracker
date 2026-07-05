@@ -145,22 +145,24 @@
    Each tab gets a distinct accent that drives: active nav highlight,
    card accent borders, badge colors, hdr-val gradient, and hkpi underlines. */
 
-/* Overview — Jet Stream teal (took the US accent). The home chrome is no longer
-   bland stone; the iridescent hero + per-sleeve cards still sit on top. */
+/* Overview (home) — Muted Heather: a calm, desaturated dusty-mauve so the landing
+   page whispers; the iridescent net-worth hero + per-sleeve cards carry the colour. */
 :root[data-tab="overview"] {
-  --acc: #BDD9D7; --acc2: #D8ECEA; --acc-bg: rgba(189,217,215,.16);
+  --bg: #100D14; --hdr-bg-base: 16,13,20; --thead-bg: rgba(16,13,20,.5);
+  --acc: #AD9DB4; --acc2: color-mix(in srgb,#AD9DB4 60%,#fff); --acc-bg: color-mix(in srgb,#AD9DB4 18%,transparent); --mesh-op: .1;
 }
-/* Indian Stocks — royal blue. NIGHT uses a BRIGHTER royal blue (#5479EE, ~5:1 on
-   the dark canvas) because the deep combo #3447AA scored only 2.44:1; DAY keeps
-   the deep #3447AA on Powder Pink (Layer 4b), where dark-on-light reads fine. */
+/* Indian Stocks — periwinkle (took US's former pair). NIGHT uses the brighter
+   periwinkle (#7370FF, ~5:1 on the dark canvas); DAY uses a deep periwinkle on
+   Lavender (Layer 4b), where dark-on-light reads fine. */
 :root[data-tab="indian"] {
-  --acc: #5479EE; --acc2: #7A98F5; --acc-bg: rgba(84,121,238,.16);
-}
-/* US Stocks — periwinkle (took MF's old pair). NIGHT uses a brighter periwinkle
-   (#7370FF, ~5:1) so it clears contrast on dark; DAY uses a deeper periwinkle on
-   Lavender (Layer 4b), where it needs to be dark to read. */
-:root[data-tab="us"] {
   --acc: #7370FF; --acc2: #948FFF; --acc-bg: rgba(115,112,255,.16);
+}
+/* US Stocks — electric cyan on a deep-navy canvas (combo T1). NIGHT = bright cyan
+   (#36D2FF) on near-black navy; DAY = a deepened cyan on an ice-blue canvas (Layer
+   4b) so the accent reads on light. */
+:root[data-tab="us"] {
+  --bg: #080F1F; --hdr-bg-base: 8,15,31; --thead-bg: rgba(8,15,31,.5);
+  --acc: #36D2FF; --acc2: color-mix(in srgb,#36D2FF 62%,#fff); --acc-bg: color-mix(in srgb,#36D2FF 16%,transparent);
 }
 /* Mutual Funds — Plum Wine accent (accent-only on the global canvas). New hue,
    freed up when MF's Periwinkle/Lavender pair moved to US. Night runs a more
@@ -172,20 +174,22 @@
 :root[data-tab="fd"] {
   --acc: #34E0A1; --acc2: #7CEFC4; --acc-bg: rgba(52,224,161,.14);
 }
-/* Algo — Bright Sun yellow accent (accent-only) */
+/* Trading (algo) — muted gold on a near-black charcoal canvas (combo P26). */
 :root[data-tab="algo"] {
-  --acc: #FCDB32; --acc2: #FDE87A; --acc-bg: rgba(252,219,50,.14);
+  --bg: #0D0D0D; --hdr-bg-base: 13,13,13; --thead-bg: rgba(13,13,13,.5);
+  --acc: #B3945B; --acc2: color-mix(in srgb,#B3945B 62%,#fff); --acc-bg: color-mix(in srgb,#B3945B 16%,transparent);
 }
 /* Macro — Sulu lime accent (accent-only) */
 :root[data-tab="macro"] {
   --acc: #9FE870; --acc2: #C2F0A0; --acc-bg: rgba(159,232,112,.14);
 }
 
-/* ── Layer 4: Per-tab accent colors (day) — deepened so the accent reads on the
-   light day canvas. Indian + US carry their own light pair in Layer 4b, so they
-   are NOT here. */
+/* ── Layer 4: Per-tab day accents — deepened so the accent reads on the light day
+   canvas. Overview + Trading also swap to their own light surface here; Indian + US
+   carry theirs in Layer 4b. */
 :root[data-time="day"][data-tab="overview"] {
-  --acc: #4E807C; --acc2: #5C8C88; --acc-bg: rgba(78,128,124,.14);  /* Jet Stream, deepened */
+  --bg: #F1ECF1; --hdr-bg-base: 241,236,241; --thead-bg: rgba(241,236,241,.62);
+  --acc: #77687C; --acc2: color-mix(in srgb,#77687C 78%,#fff); --acc-bg: color-mix(in srgb,#77687C 15%,transparent);  /* Muted Heather, deepened for light */
 }
 :root[data-time="day"][data-tab="mf"] {
   --acc: #7C2F54; --acc2: #94476C; --acc-bg: rgba(124,47,84,.13);   /* Plum Wine, deepened */
@@ -194,24 +198,24 @@
   --acc: #0E9E72; --acc2: #14B884; --acc-bg: rgba(14,158,114,.13);
 }
 :root[data-time="day"][data-tab="algo"] {
-  --acc: #B68A00; --acc2: #D1A50A; --acc-bg: rgba(182,138,0,.13);
+  --bg: #FFE1CB; --hdr-bg-base: 255,225,203; --thead-bg: rgba(255,225,203,.62);
+  --acc: #BB8153; --acc2: color-mix(in srgb,#BB8153 72%,#000); --acc-bg: color-mix(in srgb,#BB8153 18%,transparent);
 }
 :root[data-time="day"][data-tab="macro"] {
   --acc: #5C9E33; --acc2: #6EB23F; --acc-bg: rgba(92,158,51,.13);
 }
 
-/* ── Layer 4b: Light-pair backgrounds for Indian · US (DAY only) ─────────────
-   On DAY these two swap the canvas for their pair's light tint (Powder Pink /
-   Lavender); the vivid glass, dark text and day P&L already come from the global
-   day theme. On NIGHT no override applies → dark canvas + accent + night P&L, so
-   the day/night toggle flips them like every other tab. */
+/* ── Layer 4b: Light-surface canvases for Indian · US (DAY) ───────────────────
+   On DAY these swap the canvas for a light tint (Lavender / Ice-blue); the vivid
+   glass, dark text and day P&L come from the global day theme. Indian keeps the
+   global dark canvas at NIGHT; US uses its own deep-navy canvas (set above). */
 :root[data-time="day"][data-tab="indian"] {
-  --bg: #FBEAEB; --hdr-bg-base: 251,234,235; --thead-bg: rgba(251,234,235,.62);
-  --acc: #3447AA; --acc2: #5A6BD0; --acc-bg: rgba(52,71,170,.14);   /* deep on pink */
+  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
+  --acc: #4F4DE0; --acc2: #6E6CEC; --acc-bg: rgba(79,77,224,.14);   /* deep periwinkle on lavender */
 }
 :root[data-time="day"][data-tab="us"] {
-  --bg: #E4E4FF; --hdr-bg-base: 228,228,255; --thead-bg: rgba(228,228,255,.62);
-  --acc: #4F4DE0; --acc2: #6E6CEC; --acc-bg: rgba(79,77,224,.14);   /* deep on lavender (~4.9:1) */
+  --bg: #D2EFFF; --hdr-bg-base: 210,239,255; --thead-bg: rgba(210,239,255,.62);
+  --acc: #0C6E93; --acc2: color-mix(in srgb,#0C6E93 78%,#fff); --acc-bg: color-mix(in srgb,#0C6E93 16%,transparent);   /* deepened cyan on ice-blue */
 }
 
 /* ── Bleed fix — Trading (yellow) · FD (turquoise) · Wrap/Macro (lime) ────────
