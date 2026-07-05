@@ -720,6 +720,19 @@ that snapshot's day-array with whatever the daemon wrote since (dedupe by `t`, l
 wins on overlap, sort by the same `tRank` used in `intraday.mjs`) rather than blindly restoring
 one side.
 
+### Verifying against a server you started — CONFIRM it bound, don't trust a port 200
+Self-caught 2026-07-06 (Growth money-made verify): ran `certify.mjs` + a Playwright render probe
+against `localhost:3000`/`:3007`, both returned HTTP 200, and BOTH were serving OLD (pre-change)
+code — a stale server from a prior/Cowork session already owned those ports, so my `next start`
+had died with `EADDRINUSE` while a `curl` 200 made it look "ready". The probe only exposed it
+because the rendered data was the OLD behaviour (MAX ₹2.80L with CMPF in the waffle; own line
+starting at the synthetic-archive date, not the first real snapshot). **Rule:** after launching a
+dev/prod server for verification, CONFIRM the process actually bound THIS build — read its log for
+`✓ Ready`/no `EADDRINUSE`, or bind a known-free port (`netstat` first) and check the PID — before
+trusting any certify/probe result. A 200 on the port only proves *someone* is listening, not that
+it's your code. Cross-check one changed-behaviour value in the render (here: the CMPF-excluded MAX)
+to prove the new build is live. Pairs with the KV-empty-in-local-dev gotcha below.
+
 ### Dev-server verification gotchas (Next.js + a live data daemon)
 Two traps cost real time verifying live changes while the capture daemon rewrites
 `data/*.json` every ~10s:

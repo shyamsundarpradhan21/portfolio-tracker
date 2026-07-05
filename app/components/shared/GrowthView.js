@@ -47,7 +47,7 @@ const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x 
 // `range` is a controlled prop — the ONE shared window selector lives in ProjectionTab (the
 // period tiles below the chart) and drives both Net worth and Growth, so Growth carries no
 // window pills of its own. Falls back to 'max' if rendered standalone.
-export default function GrowthView({ fx, range: rangeProp }) {
+export default function GrowthView({ fx, range: rangeProp, ownByDate }) {
   const range = rangeProp ?? 'max';
   const [compare, setCompare] = useState(['nifty']);
   const [data, setData] = useState(null);      // { points, available }
@@ -111,19 +111,49 @@ export default function GrowthView({ fx, range: rangeProp }) {
       xLabels = [allT[0], 'now'];
     }
   } else {
-    const pts = (data.points || []).filter((p) => p && p.d && Number.isFinite(+p.growth_inr));
+    // Server points carry the benchmark counterfactuals + the window's date span; the OWN line
+    // is drawn from the client (nw − invested) series instead of the server's daily-net
+    // `growth_inr` (which undercounts on days a sleeve wasn't captured). `nw − invested` =
+    // non-CMPF investment gains, the SAME basis the period tiles use → the Your-book endpoint
+    // ties out with each window's tile. Both ride a DATE-based x so the two grids (client
+    // snapshots vs archive dates) align regardless of cadence.
+    const pts = (data.points || []).filter((p) => p && p.d);
     if (pts.length >= 2) {
-      const span = Math.max(1, pts.length - 1);
-      const fr = (i) => i / span;
-      series.push({ key: 'own', label: 'Your book', color: 'var(--acc)', pts: pts.map((p, i) => ({ x: fr(i), v: p.growth_inr })) });
-      for (const k of BENCH_ORDER) {
-        if (!available.includes(k) || !compare.includes(k)) continue;
-        const bp = pts.map((p, i) => (p.bench && Number.isFinite(+p.bench[k]) ? { x: fr(i), v: p.bench[k] } : null)).filter(Boolean);
-        if (bp.length >= 2) series.push({ key: k, label: BENCH[k].label, color: BENCH[k].color, pts: bp });
+      const msOf = (iso) => new Date(iso + 'T00:00:00Z').getTime();
+      const dEnd = pts[pts.length - 1].d;
+      // The money-made window starts at the first REAL own-book date within the selected span
+      // (ownByDate is already synth-free) — the curve builds from captured data, never
+      // regression backfill. Fall back to the server window start only for a standalone render
+      // with no client series.
+      let odw = [];
+      if (ownByDate) odw = Object.keys(ownByDate).filter((d) => Number.isFinite(ownByDate[d]) && d >= pts[0].d && d <= dEnd).sort();
+      const haveOwn = odw.length >= 2;
+      const dStart = haveOwn ? odw[0] : pts[0].d;
+      const t0 = msOf(dStart), xspan = Math.max(1, msOf(dEnd) - t0);
+      const frD = (iso) => Math.max(0, Math.min(1, (msOf(iso) - t0) / xspan));
+
+      if (haveOwn) {
+        const base = ownByDate[odw[0]];
+        series.push({ key: 'own', label: 'Your book', color: 'var(--acc)', pts: odw.map((d) => ({ x: frD(d), v: ownByDate[d] - base })) });
+      } else if (!ownByDate) {
+        const op = pts.filter((p) => Number.isFinite(+p.growth_inr));
+        if (op.length >= 2) series.push({ key: 'own', label: 'Your book', color: 'var(--acc)', pts: op.map((p) => ({ x: frD(p.d), v: +p.growth_inr })) });
+      }
+      // BENCH — only alongside a real own line, clipped + re-based to dStart so it's the "same
+      // rupees in the index" over the exact span we have book data for.
+      if (series.some((s) => s.key === 'own')) {
+        for (const k of BENCH_ORDER) {
+          if (!available.includes(k) || !compare.includes(k)) continue;
+          const bpAll = pts.filter((p) => p.d >= dStart && p.bench && Number.isFinite(+p.bench[k]));
+          if (bpAll.length >= 2) {
+            const bb = bpAll[0].bench[k];
+            series.push({ key: k, label: BENCH[k].label, color: BENCH[k].color, pts: bpAll.map((p) => ({ x: frD(p.d), v: p.bench[k] - bb })) });
+          }
+        }
       }
       const MON = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const fmtD = (iso) => { const [, m, d] = iso.split('-'); return `${+d} ${MON[+m]}`; };
-      xLabels = [fmtD(pts[0].d), 'now'];
+      xLabels = [fmtD(dStart), 'now'];
     }
   }
 

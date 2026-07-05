@@ -1,3 +1,94 @@
+# Plan — Unify "book value return" across the growth chart line and the period tiles (AWAITING APPROVAL, 2026-07-06)
+
+## Problem (verified against the data)
+- Chart "Your book" line (`/api/growth?view=growth`, `route.js:209–252`) = cumulative daily
+  net of `{eq,us,fd,mf}` from the `growth:<date>` archive — CMPF-excluded, deposit-free,
+  365d deep — BUT that archive has sleeve-coverage holes (measured: US 16/30, eq 22/30, mf
+  20/30 days in the last month), so it UNDERCOUNTS. That's the ₹22,406.
+- Period tiles (`ProjectionTab.growth`, `:373–403`) = whole-NW delta minus deposits vs a
+  back-dated `hist` snapshot — INCLUDES CMPF/pension, different basis → different number
+  (1M ₹2.14L). Deep history is mostly synthetic ledger-replay backfill (SNAPSHOT.md has 2
+  real rows: 06-12, 06-19).
+- The two never reconcile: different sleeve set, different method, different data source.
+
+## Why the "just build it from EOD sleeve capture" answer is data-gated (measured 2026-07-06)
+- `snapshot-sleeves.json` (per-sleeve {v,i}) = **1 date: 2026-06-19**. `eod-book.json` absent.
+- The `attribution` useMemo (`:438–472`) ALREADY computes the per-sleeve, deposit-adjusted
+  windowed gain `(v_now−v_start)−(i_now−i_start)` — it's just gated on a window-start `.sl`.
+- => Today only MAX is honestly buildable (needs only today's v−i). 1M ≈ +2wk, 3M/6M/1Y months
+  out, UNLESS we backfill the per-sleeve history we never captured.
+
+## Target — one deposit-free, CMPF-excluded, investment-book series drives BOTH
+- gain(window) = Σ over {eq,us,mf,fd} of (v_now − v_start) − (i_now − i_start)
+- MAX = Σ over {eq,us,mf,fd} of (v_now − i_now)   (all-time; needs no history)
+
+## Approach — per-sleeve historical backfill (mirrors the existing whole-NW synthetic backfill)
+- [ ] Reconstruct per-sleeve `{v,i}` for past dates:
+      eq/swing = contract notes + `applyCorpActions` (≈17/20) × Yahoo closes;
+      us = US cashflows/vests × Yahoo × usdInr history; mf = MF_CASHFLOWS × AMFI NAV history;
+      fd = `compound()` (no fetch); exclude pf (CMPF).
+- [ ] Emit committed per-sleeve series (`snapshot-sleeves.json` / fold into eod-book) ≥ 365d.
+- [ ] Server endpoint: windowed investment-book gain per {1M,3M,6M,1Y,MAX} from that series.
+- [ ] Tiles read the endpoint (headline + existing `<Waffle>` from one source).
+- [ ] Rebuild the chart "Your book" line from the SAME series (replaces the holey daily-net path).
+- [ ] Decide the tile % denominator: investment-book value at window start (proposed).
+
+## Verification
+- [ ] Chart end value for window X == tile value for window X (exact tie-out).
+- [ ] MAX == Σ(v−i) over investment sleeves == existing `totalGains` (₹2.80L).
+- [ ] Reconstructed sleeve values render-verified in the LIVE app (raw API is pre-corp-action).
+- [ ] `audit/responsive/certify.mjs` green if any tile/chart layout changes.
+
+## Open decision (blocking)
+- Backfill now (unlocks all windows immediately) vs let the live capture accrue (MAX now, 1M
+  in ~2wk, 1Y next June, zero backfill risk). Awaiting your call before writing code.
+
+## RESOLUTION (2026-07-06) — BUILT, uncommitted, awaiting eyeball
+Decisions: Option 1 (accrue, no backfill) + **exclude CMPF everywhere** (user: CMPF lives in
+the Allocation + Projection views, not the money-made story). This flipped the fix: no
+per-sleeve series needed — the chart own line just moves to the SAME `(nw − invested)` basis
+the tiles already use (deep, gap-free, and by construction `nw − invested` = non-CMPF gains).
+
+Changes (3 spots, 2 files):
+- `ProjectionTab`: new `ownByDate = {d: nw − invested}` memo from `hist`; passed to `GrowthView`.
+- `GrowthView`: non-1D own line drawn from `ownByDate` (date-based x, re-baselined per window),
+  benchmarks still server-sourced; falls back to server `growth_inr` if no client series.
+- `ProjectionTab`: `MONEYMADE_EXCLUDE = {pf, trading}` applied to `totalGains` (MAX tile) and
+  `attribution` (waffles) so CMPF/trading never leak into any money-made metric. MAX drops
+  ₹2.80L → ~₹1.9L. Net worth / allocation / projection model / CMPS pension line untouched.
+
+### UPDATE 2 (2026-07-06) — REAL EOD ONLY (no synthetic backfill in the money-made story)
+User call: "stick to the ~17 days we have; no regression-fabricated data; let the curve build."
+So the money-made surfaces now use REAL EOD snapshots only (`!s.synth`), never the ledger-replay
+backfill. This removed the seam risk entirely (no synth = no seam).
+- `ownByDate` filters `!s.synth` → chart own line is real-capture only.
+- `GrowthView`: window starts at the first REAL in-window date; benchmark clipped + re-based to
+  that same date (fair "same rupees over the span we actually have"); bench only drawn beside a
+  real own line. Curve is honest-short now (~17d), grows forward.
+- Tiles: ref must be a REAL snapshot old enough for the window; else `chg:null` → renders
+  "building" (new muted state). With ~17d data: 1M/3M/6M/1Y show "building"; MAX still shows the
+  real all-time basis gain (`totalGains`, ~₹1.9L, not regression). They light up as history accrues.
+
+### VERIFIED + COMMITTED (2026-07-06, Claude Code)
+Verified against a FRESH `next build` + `next start` (own port — a stale pre-existing server was
+silently answering on 3000/3007 with OLD code; see feedback.md "confirm the server actually bound"):
+- Build clean (compiled + typechecked). Vitest: main tree green (2 fails are an unrelated
+  `.claude/worktrees` cas-parser venv test, not this change).
+- Render, BOTH themes: own line starts **12 Jun** (first real/non-synth SNAPSHOT.md date, NOT the
+  26-Jun-2025 synthetic-archive start) → real-capture-only confirmed; Nifty benchmark re-based to the
+  same 12-Jun start; "Your book" endpoint = **₹16,079** (= ownByDate gain, not the ₹1.33L server
+  daily-net). 1M/3M/6M/1Y = **"building"**; MAX = **₹1.93L** (was ₹2.80L with CMPF).
+- MAX waffle **excludes CMPF**: Indian ₹1,05,266 · US ₹68,220 · FD ₹16,479 · MF ₹2,791 · ELSS ₹110
+  = ₹1,92,866 → headline **₹1.93L == Σ waffle**. ✓
+- `certify.mjs` GREEN on the fresh build: `001/002/004 = 0`, `docOverflow = 0` across all 6 widths ×
+  both themes, NORMAL and STRESS. Zero growth-tile clips; the new "building" tile text does not overflow.
+- Known/accepted: MAX tile (all-time basis ₹1.93L) ≠ MAX curve endpoint (real-window gain ₹16,079) —
+  different spans, both real, not a regression artifact. In local dev the real window is just the 2
+  SNAPSHOT.md rows (KV dailies are prod-only); prod shows the ~17-day curve from ~18 Jun.
+Committed to branch `shell-6region` (current checkout; not `main` per the no-switch rule). Not pushed.
+
+---
+
 # Plan — Duplicate Day-curve + F&O charge overlay automation (approved 2026-07-05)
 
 Spec: `tasks/fno-overlay-and-daycurve-prompt.md`. Two independent bug-class fixes.

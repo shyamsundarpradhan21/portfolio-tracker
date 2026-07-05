@@ -65,6 +65,12 @@ const RANGES = [
 // star on the curve (1L, 10L, 50L, 1Cr, 5Cr, 10Cr, 50Cr, 100Cr). Levels behind
 // us become history stars; those ahead unfurl as the projection is scrubbed.
 const MILESTONES = [1e5, 1e6, 5e6, 1e7, 5e7, 1e8, 5e8, 1e9];
+// Sleeves excluded from the personal "money made" story so every gain metric here — the
+// chart's Your-book line, the MAX tile, and the per-window waffles — sits on ONE CMPF-free
+// basis (matching the deposit-free growth line + the benchmark): CMPF/pension (surfaced in
+// the Allocation + Projection views; it isn't investment performance and its corpus would
+// swamp the curve) and the trading business entity (its P&L lives in the Trading tab).
+const MONEYMADE_EXCLUDE = new Set(['pf', 'trading']);
 const RETIRE_ISO = '2055-03-31';
 const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 40, PADB = 22;
 
@@ -254,6 +260,19 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     [snapshots],
   );
 
+  // Own "money made" line for the Growth chart = (net worth − invested) per snapshot date,
+  // the SAME basis the period tiles use → the Your-book endpoint ties out with each tile.
+  // REAL EOD snapshots ONLY — the synthetic ledger-replay backfill (`synth`) is excluded so
+  // the curve is never regression-fabricated; it builds forward from the data we actually
+  // captured (user call 2026-07-06). `invested` is defined so nw − invested = non-CMPF
+  // investment gains, so this line excludes the pension (surfaced in Allocation + Projection).
+  // GrowthView re-bases it to 0 at the first real in-window date.
+  const ownByDate = useMemo(() => {
+    const o = {};
+    for (const s of hist) if (!s.synth) o[s.d] = (s.nw ?? 0) - (s.invested ?? 0);
+    return o;
+  }, [hist]);
+
   const liveXirr = useMemo(() => {
     if (hist.length < 2) return null;
     const first = hist[0], last = hist[hist.length - 1];
@@ -354,14 +373,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     return a[i] + (a[i + 1] - a[i]) * f;
   };
 
-  // Single source of truth for all-time gain: sum of every sleeve's (value − cost
-  // basis). Counts CMPF + FD interest as gains (they're accruing assets, same as any
-  // holding), so it equals the MAX waffle and drives the MAX pill + the lifetime
-  // decomposition — no inconsistent per-calc treatment of any sleeve.
+  // Single source of truth for all-time gain: sum of each INVESTMENT sleeve's (value − cost
+  // basis). CMPF/pension + the trading entity are excluded (MONEYMADE_EXCLUDE) so this stays
+  // on the same CMPF-free basis as the growth line + the per-window tiles; FD interest still
+  // counts (it's investment yield). Equals the MAX waffle and drives the MAX pill + the
+  // lifetime decomposition — no inconsistent per-calc treatment of any sleeve.
   const totalGains = useMemo(() => {
     if (!sleeveBasis) return null;
     let g = 0, any = false;
     for (const k in sleeveBasis) {
+      if (MONEYMADE_EXCLUDE.has(k)) continue;
       const e = sleeveBasis[k];
       if (e && Number.isFinite(e.v) && Number.isFinite(e.i)) { g += e.v - e.i; any = true; }
     }
@@ -391,11 +412,16 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
         const base = liveNw - totalGains;
         return { key: 'max', chg: totalGains, pct: base > 0 ? (totalGains / base) * 100 : 0 };
       }
-      let ref = hist[0];
-      if (r.days != null) {
-        const cutoff = ms(last.d) - r.days * 864e5;
-        for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff) { ref = hist[i]; break; }
+      // Ref must be a REAL EOD snapshot reaching back to the window start — no synthetic
+      // backfill in the money-made numbers (user call). A window with no real snapshot old
+      // enough hasn't accrued yet → chg:null renders as "building" until real history fills in.
+      const cutoff = r.days != null ? ms(last.d) - r.days * 864e5 : -Infinity;
+      let ref = null;
+      for (let i = hist.length - 1; i >= 0; i--) {
+        if (hist[i].synth) continue;
+        if (r.days == null || ms(hist[i].d) <= cutoff) { ref = hist[i]; break; }
       }
+      if (!ref) return { key: r.key, chg: null, pct: null };
       const chg = (liveNw - (ref.nw ?? 0)) - (liveInv - (ref.invested ?? 0));
       const pct = ref.nw > 0 ? (chg / ref.nw) * 100 : 0;
       return { key: r.key, chg, pct };
@@ -437,7 +463,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   // simply gets no waffle). Per-sleeve gain = value change minus capital deployed.
   const attribution = useMemo(() => {
     const byKey = {}; sleeves.forEach((s) => { byKey[s.key] = s; });
-    const order = sleeves.map((s) => s.key);
+    // Same CMPF-free basis as totalGains + the growth line: pension + trading never appear in
+    // the money-made waffle, so headline == Σ waffle for every window.
+    const order = sleeves.map((s) => s.key).filter((k) => !MONEYMADE_EXCLUDE.has(k));
     const mk = (gains) => order
       .map((k) => ({ key: k, label: byKey[k]?.label || k, color: byKey[k]?.color || 'var(--txt3)', gain: gains[k] || 0 }))
       .filter((x) => Math.abs(x.gain) >= 1);
@@ -684,7 +712,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           scrubber, so toggling never jumps the card. Charts are identical size. */}
       <div className="pjx-chartswap">
       <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'visible' : 'hidden' }} aria-hidden={view !== 'growth'}>
-        <GrowthView fx={fx} range={range} setRange={setRange} />
+        <GrowthView fx={fx} range={range} setRange={setRange} ownByDate={ownByDate} />
       </div>
       <div className="pjx-chartcell" style={{ visibility: view === 'growth' ? 'hidden' : 'visible' }} aria-hidden={view === 'growth'}>
       <div style={{ position: 'relative', marginTop: 10 }}>
@@ -956,7 +984,13 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
               onClick={() => setRange(g.key)} aria-pressed={range === g.key}>
               <span className="pjx-gk">{g.key === 'max' ? 'MAX' : g.key}</span>
               {/* deltas against live NW are meaningless while a sleeve is unpriced */}
-              {dataReady ? (
+              {!dataReady ? (
+                <span className="pjx-gvrow"><span className="pjx-gv mono">—</span><span className="pjx-gp mono">loading</span></span>
+              ) : g.chg == null ? (
+                /* no real EOD snapshot reaches this window's start yet — building forward from
+                   the real capture (no synthetic backfill). Lights up as history accrues. */
+                <span className="pjx-gvrow"><span className="pjx-gv mono" style={{ color: 'var(--txt3)' }}>—</span><span className="pjx-gp mono" style={{ color: 'var(--txt3)' }}>building</span></span>
+              ) : (
                 /* value + % on one line — % rides adjacent in a mini font; +/- figures
                    keep the semantic green/red P&L coding, the tab accent stays in chrome.
                    MAX's % is the XIRR (label dropped — it's obvious from the Max window). */
@@ -966,8 +1000,6 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
                     {g.key === 'max' && xirrPct != null ? `${xirrPct}%` : `${Math.abs(g.pct).toFixed(2)}%`}
                   </span>
                 </span>
-              ) : (
-                <span className="pjx-gvrow"><span className="pjx-gv mono">—</span><span className="pjx-gp mono">loading</span></span>
               )}
               {/* gain attribution by asset class — a thin waffle strip BELOW the figure;
                   DAY is live, longer windows fill in as per-sleeve snapshot history accrues */}
