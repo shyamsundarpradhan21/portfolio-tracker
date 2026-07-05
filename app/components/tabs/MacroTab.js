@@ -4,6 +4,7 @@ import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
+import { smoothPath } from '../../lib/smoothPath';
 
 // ── tiny formatters (mockup style: ▲/▼ glyph + grn/red/mut colour) ───────────
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
@@ -133,8 +134,8 @@ function FiiDiiChart({ trail, derivs }) {
   // Net sparkline geometry: a dotted polyline through the net points, and a
   // closed area down to the zero line, clipped into a green (above) and red
   // (below) half so the fill reads inflow vs outflow.
-  const linePath = pts.map((p, i) => `${i ? 'L' : 'M'} ${cxOf(i).toFixed(1)} ${nyOf(p).toFixed(1)}`).join(' ');
-  const areaPath = `M ${cxOf(0).toFixed(1)} ${zero} ${pts.map((p, i) => `L ${cxOf(i).toFixed(1)} ${nyOf(p).toFixed(1)}`).join(' ')} L ${cxOf(n - 1).toFixed(1)} ${zero} Z`;
+  const linePath = smoothPath(pts.map((p, i) => ({ x: cxOf(i), y: nyOf(p) })));
+  const areaPath = pts.length >= 2 ? `${linePath} L ${cxOf(n - 1).toFixed(1)} ${zero} L ${cxOf(0).toFixed(1)} ${zero} Z` : '';
 
   return (
     <>

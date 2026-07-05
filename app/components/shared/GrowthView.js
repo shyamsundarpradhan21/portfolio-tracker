@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react';
 import { mergeLiveTapes } from '../../lib/pnlDaily';
+import { smoothPath } from '../../lib/smoothPath';
 
 const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 22, PADB = 22;
 
@@ -33,16 +34,6 @@ const crAbs = (n) => { const a = Math.abs(n); if (a >= 1e7) return '₹' + (a / 
 const axLabel = (n) => { const a = Math.abs(n), s = n < 0 ? '−' : ''; if (a >= 1e7) return s + '₹' + +(a / 1e7).toFixed(2) + 'Cr'; if (a >= 1e5) { const l = a / 1e5; return s + '₹' + (Number.isInteger(l) ? l : +l.toFixed(1)) + 'L'; } if (a >= 1e3) return s + '₹' + Math.round(a / 1e3) + 'k'; return s + '₹' + Math.round(a); };
 const niceNum = (x, round) => { if (!(x > 0)) return 1; const e = Math.floor(Math.log10(x)); const f = x / 10 ** e; const nf = round ? (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) : (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10); return nf * 10 ** e; };
 const niceScale = (lo, hi, ticks = 4) => { if (!(hi > lo)) { lo -= 1; hi += 1; } const step = niceNum((hi - lo) / Math.max(1, ticks - 1), true); return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step }; };
-function smoothPath(pts) {
-  if (pts.length < 2) return pts.length ? `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}` : '';
-  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6, c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-  }
-  return d;
-}
 // ₹ in an SVG <text> — the rupee glyph lives in the body font, not the mono face.
 const RsSvg = ({ x, y, children, ...rest }) => { const parts = String(children).split('₹'); return <text x={x} y={y} {...rest}>{parts.map((p, i) => <tspan key={i}>{i > 0 && <tspan fontFamily="var(--body)" fontSize="1.05em">₹</tspan>}{p}</tspan>)}</text>; };
 // ₹ in HTML — routes the glyph through the global .rs treatment (mono digits + body ₹).

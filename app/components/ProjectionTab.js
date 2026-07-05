@@ -15,6 +15,7 @@ import { useMemo, useRef, useState, useEffect, memo } from 'react';
 import { PROJECTION, FDS } from '../portfolio';
 import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
+import { smoothPath } from '../lib/smoothPath';
 import GrowthView from './shared/GrowthView';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
@@ -151,21 +152,6 @@ const ms = (iso) => new Date(iso + 'T00:00:00Z').getTime();
 const monYr = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const YEAR_MS = 365.25 * 864e5;
 
-// Catmull-Rom → cubic Bézier: a smooth line THROUGH every point — rounds the
-// corners between the weekly history vertices without moving the data. <3 points
-// fall back to a straight polyline.
-function smoothPath(pts) {
-  if (!pts.length) return '';
-  if (pts.length < 3) return 'M' + pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L');
-  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-  }
-  return d;
-}
 
 // One milestone flag: a twinkling ★ planted ON the curve where a net-worth
 // level is reached (the star IS the marker — no separate dot), with a value·date

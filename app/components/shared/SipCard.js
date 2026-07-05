@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { RsText, inrFull } from '../../lib/fmt';
 import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS, CMPF_CONTRIBUTIONS, CMPF_HATCH } from '../../portfolio';
 import { APP } from '../../lib/appData';
+import { smoothPath } from '../../lib/smoothPath';
 
 // ── Capital deployment calendar ──────────────────────────────────────────────
 // Derived entirely from the ledgers in portfolio.js — nothing monthly recorded:
@@ -29,20 +30,6 @@ let _payslipMap, _cmpfMap;
 const PAYSLIP_MAP = () => (_payslipMap ||= Object.fromEntries(PAYSLIPS.map((p) => [p.month, p.net])));
 const CMPF_MAP = () => (_cmpfMap ||= Object.fromEntries(CMPF_CONTRIBUTIONS.map((c) => [c.month, c.emp * 2])));
 
-// Catmull-Rom → cubic Bézier: a smooth line through every point (rounds the
-// corners between months without moving the data).
-function smoothPath(pts) {
-  if (!pts.length) return '';
-  if (pts.length < 3) return 'M ' + pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ');
-  let d = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-  }
-  return d;
-}
 
 function SavingsSparkline({ months }) {
   const svgRef = useRef(null);

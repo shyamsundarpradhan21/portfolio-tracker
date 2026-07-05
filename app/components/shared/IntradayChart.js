@@ -11,6 +11,7 @@
 // per-position hover would need the daemon to capture each leg's P&L over time.
 import { useState, useMemo } from 'react';
 import { scaleLines, scaleCandles, niftyLevels } from '../../lib/pnlDaily';
+import { smoothPath } from '../../lib/smoothPath';
 
 // Default overlay = the three F&O brokers. The Overview live curve passes its own
 // (F&O / equity / US sleeves). Each entry: { key, c (colour), label }.
@@ -47,7 +48,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
   const levels = useMemo(() => (candles && candles.length ? niftyLevels(candles) : null), [candles]);
   const srLines = levels ? [...levels.resistances.map((l) => ({ ...l, k: 'R' })), ...levels.supports.map((l) => ({ ...l, k: 'S' }))] : [];
   const VOL_BAND = H * 0.16;
-  const path = (a) => (a || []).filter(Boolean).map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
+  const path = (a) => smoothPath((a || []).filter(Boolean));
 
   const net = g.byKey.net;
   const n = net.length;

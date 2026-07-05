@@ -9,6 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { APP } from '../../lib/appData';
 import { cl, pct1, inrCd, MON } from '../../lib/fmt';
+import { smoothPath } from '../../lib/smoothPath';
 import {
   seriesByStrategy, summaryStats, returnsPct, cagr, volatility, sharpe, sortino,
   drawdown, drawdownEpisodes, calmar, beta, alpha, bestWorstWindows, riskReward,
@@ -116,7 +117,7 @@ function ValueCurve({ lines }) {
   const sp = hi - lo || 1, tspan = t1 - t0 || 1, yBot = h - axH - padY;
   const X = (t) => padL + ((t - t0) / tspan) * (w - padL - padR);
   const Y = (v) => padY + ((hi - v) / sp) * (yBot - padY);
-  const d = (a) => a.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  const d = (a) => smoothPath(a.map((p) => ({ x: X(p.t), y: Y(p.v) })));
   const spine = [...new Set(pts.map((p) => p.t))].sort((a, b) => a - b);
   const valueAt = (lp, t) => { let v = null; for (const p of lp) { if (p.t <= t) v = p.v; else break; } return v; };
   const onMove = (e) => {
@@ -167,7 +168,7 @@ function DurationChart({ series, cap, subWin }) {
   for (const p of curve) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; if (p.t < t0) t0 = p.t; if (p.t > t1) t1 = p.t; }
   if (lo === hi) { lo -= 1; hi += 1; }
   const { X, Y, yBot } = plotScales(h, lo, hi, t0, t1);
-  const d = curve.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  const d = smoothPath(curve.map((p) => ({ x: X(p.t), y: Y(p.v) })));
   const bw = bestWorstWindows(series, subWin);
   const bandRect = (rec, fill, key) => {
     const bx0 = X(ms(rec.startDate)), bx1 = X(ms(rec.endDate));
@@ -193,7 +194,7 @@ function Underwater({ curve, avgDD }) {
   if (lo === 0) lo = -1;
   const hi = 0;
   const { X, Y, yBot } = plotScales(h, lo, hi, t0, t1);
-  const d = curve.map((p, i) => (i ? 'L' : 'M') + X(ms(p.date)).toFixed(1) + ' ' + Y(p.dd).toFixed(1)).join(' ');
+  const d = smoothPath(curve.map((p) => ({ x: X(ms(p.date)), y: Y(p.dd) })));
   const z = Y(0);
   return (
     <svg viewBox={`0 0 ${PLOT.w} ${h}`} className="an-svg" preserveAspectRatio="xMidYMid meet">
@@ -216,7 +217,7 @@ function DrawdownPeriods({ series, cap, episodes, grnHex }) {
   for (const p of curve) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; if (p.t < t0) t0 = p.t; if (p.t > t1) t1 = p.t; }
   if (lo === hi) { lo -= 1; hi += 1; }
   const { X, Y, yBot } = plotScales(h, lo, hi, t0, t1);
-  const d = curve.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+  const d = smoothPath(curve.map((p) => ({ x: X(p.t), y: Y(p.v) })));
   const lastT = curve[curve.length - 1].t;
   const bands = episodes.slice(0, 5).map((e, i) => {
     const bx0 = X(ms(e.peakDate));
