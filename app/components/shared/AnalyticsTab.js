@@ -419,17 +419,33 @@ export default function AnalyticsTab({ ALGO }) {
           <div className="sub split"><span className={cl(M.S01.cagr || 0)}>S01 {uPct(M.S01.cagr)}</span><span className={cl(M.S02.cagr || 0)}>S02 {uPct(M.S02.cagr)}</span></div></div>
       </div>
 
-      {/* Best vs Worst duration (Card 1) */}
-      <div className="card sec">
-        <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Best Vs Worst Duration</div>
-          <div className="an-legend">
-            <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />worst duration</span>
-            <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--grn-bg)' }} />best duration</span>
-          </div></div>
-        <DurationChart series={cur.series} cap={cur.cap} subWin={subWin} />
+      {/* Best Vs Worst Duration  |  Efficiency Ratios — paired side by side */}
+      <div className="an-2 sec">
+        <div className="card">
+          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Best Vs Worst Duration</div>
+            <div className="an-legend">
+              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />worst duration</span>
+              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--grn-bg)' }} />best duration</span>
+            </div></div>
+          <DurationChart series={cur.series} cap={cur.cap} subWin={subWin} />
+        </div>
+        <div className="card">
+          <div className="ctitle">Efficiency Ratios <span className="badge bb">vs NIFTY 50 · annualised</span></div>
+          <div className="an-tblwrap"><table className="tbl an-tbl">
+            <thead><tr><th>Ratio</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th><th>Definition</th></tr></thead>
+            <tbody>
+              <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}<td className="an-def">return / total risk</td></tr>
+              <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}<td className="an-def">return / downside risk</td></tr>
+              <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}<td className="an-def">CAGR / max drawdown</td></tr>
+              <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}<td className="an-def">excess return vs NIFTY</td></tr>
+              <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}<td className="an-def">sensitivity to NIFTY</td></tr>
+            </tbody>
+          </table></div>
+          {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
+        </div>
       </div>
 
-      {/* Key metrics table */}
+      {/* Key metrics table — full width */}
       <div className="card sec">
         <div className="ctitle">Key Metrics</div>
         <div className="an-tblwrap"><table className="tbl an-tbl">
@@ -451,38 +467,22 @@ export default function AnalyticsTab({ ALGO }) {
         </table></div>
       </div>
 
-      {/* Efficiency ratios table */}
-      <div className="card sec">
-        <div className="ctitle">Efficiency Ratios <span className="badge bb">vs NIFTY 50 · annualised</span></div>
-        <div className="an-tblwrap"><table className="tbl an-tbl">
-          <thead><tr><th>Ratio</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th><th>Definition</th></tr></thead>
-          <tbody>
-            <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}<td className="an-def">return / total risk</td></tr>
-            <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}<td className="an-def">return / downside risk</td></tr>
-            <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}<td className="an-def">CAGR / max drawdown</td></tr>
-            <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}<td className="an-def">excess return vs NIFTY</td></tr>
-            <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}<td className="an-def">sensitivity to NIFTY</td></tr>
-          </tbody>
-        </table></div>
-        {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
-      </div>
-
-      {/* Worst 5 Drawdown Periods (Card 3) — replaces the Worst-5 table */}
-      <div className="card sec">
-        <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Worst 5 Drawdown Periods <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
-          <div className="an-legend">
-            <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />drawdown window</span>
-            <span><i style={{ background: 'var(--grn)' }} />cumulative return</span>
-          </div></div>
-        <DrawdownPeriods series={cur.series} cap={cur.cap} episodes={cur.episodes} grnHex={grnHex} />
-        <div className="an-hint" style={{ marginTop: 4 }}>Hover a band → depth · peak → trough · recovery.</div>
-      </div>
-
-      {/* Underwater Plot (Card 2) */}
-      <div className="card sec">
-        <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Underwater Plot <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
-          <div className="an-legend"><span><i style={{ background: 'var(--gld)' }} />drawdown</span><span><i style={{ background: 'var(--red)' }} />avg drawdown</span></div></div>
-        <Underwater curve={cur.dd.curve} avgDD={cur.dd.avgDD} />
+      {/* Worst 5 Drawdown Periods  |  Underwater Plot — paired side by side */}
+      <div className="an-2 sec">
+        <div className="card">
+          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Worst 5 Drawdown Periods <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
+            <div className="an-legend">
+              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />drawdown window</span>
+              <span><i style={{ background: 'var(--grn)' }} />cumulative return</span>
+            </div></div>
+          <DrawdownPeriods series={cur.series} cap={cur.cap} episodes={cur.episodes} grnHex={grnHex} />
+          <div className="an-hint" style={{ marginTop: 4 }}>Hover a band → depth · peak → trough · recovery.</div>
+        </div>
+        <div className="card">
+          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Underwater Plot <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
+            <div className="an-legend"><span><i style={{ background: 'var(--gld)' }} />drawdown</span><span><i style={{ background: 'var(--red)' }} />avg drawdown</span></div></div>
+          <Underwater curve={cur.dd.curve} avgDD={cur.dd.avgDD} />
+        </div>
       </div>
 
       <div className="an-foot">CAGR · Sharpe/Sortino/Calmar · Alpha/Beta · drawdowns are TIME-WEIGHTED on the constant own+client deployed base, vs NIFTY 50 over the selected window. Net is after real contract-note charges.</div>

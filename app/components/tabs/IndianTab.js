@@ -102,14 +102,15 @@ export default function IndianTab({
       </div>
 
       <div className="g2 sec">
-        <div className="card">
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="ctitle" style={{ marginBottom: 4 }}>vs Benchmarks</div>
           <div className="sub" style={{ marginBottom: 14 }}>Same dated {curMode === 'usd' ? 'dollars' : 'rupees'} — your <InrC n={inStats.totalInvested} /> deployed into each instead.</div>
-          <BenchmarkBars you={inStats.portXirr} rows={inStats.benchmarks.filter((b) => !['niftybank', 'next50'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
+          <BenchmarkBars you={inStats.portXirr} rows={inStats.benchmarks.filter((b) => !['next50'].includes(b.key)).map((b) => ({ label: b.label, val: b.xirr }))} />
           <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
             Annualised over a {inStats.years != null ? `~${Math.max(1, Math.round(inStats.years * 12))}-month` : 'short'} average holding — a short window; indicative, not proven edge.
           </div>
-          <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
+          {/* Winner/Drag/Largest pinned to the card bottom as a footer (margin-top:auto). */}
+          <div style={{ height: 1, background: 'var(--brd)', margin: 'auto 0 14px' }} />
           <div className="g3">
             {[
               { label: 'Winner',  cls: 'grn', sym: inStats.winner?.sym,  pct: inStats.winner?.pct },

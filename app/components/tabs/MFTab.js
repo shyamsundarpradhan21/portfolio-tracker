@@ -36,13 +36,17 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
       </div>
       <div className="sub" style={{ marginBottom: 16 }}>Your MF cashflows replayed into each index · annualised</div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <BenchmarkBars you={port} rows={[{ label: 'Nifty 50', val: bench }, ...extra.map((b) => ({ label: b.label, val: b.xirr }))]} />
+      {/* bars sit at the TOP (same as the Indian/US benchmark cards) — not vertically centred */}
+      <BenchmarkBars you={port} rows={[{ label: 'Nifty 50', val: bench }, ...extra.map((b) => ({ label: b.label, val: b.xirr }))]} />
+
+      <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
+        Counterfactual: every SIP/lump-sum replayed into each index at the same dates — XIRR weights early money more. A young SIP book swings hard on recent months; the gap narrows as history builds.
       </div>
 
       {minis.length > 0 && (
         <>
-          <div style={{ height: 1, background: 'var(--brd)', margin: '16px 0 14px' }} />
+          {/* Winner/Drag/Largest pinned to the card bottom as a footer (margin-top:auto). */}
+          <div style={{ height: 1, background: 'var(--brd)', margin: 'auto 0 14px' }} />
           <div className="g3">
             {minis.map(({ label, cls, name, sub, subCls }) => (
               <div className="mini" key={label}>
@@ -54,9 +58,6 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
           </div>
         </>
       )}
-      <div className="sub" style={{ marginTop: 12, color: 'var(--txt3)', lineHeight: 1.6 }}>
-        Counterfactual: every SIP/lump-sum replayed into each index at the same dates — XIRR weights early money more. A young SIP book swings hard on recent months; the gap narrows as history builds.
-      </div>
     </div>
   );
 }

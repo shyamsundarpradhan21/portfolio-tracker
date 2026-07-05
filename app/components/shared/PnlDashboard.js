@@ -113,7 +113,6 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
         <div style={{ padding: '16px 20px 12px' }}>
           <div className="ctitle" style={{ margin: 0 }}>Trading Journal <span className="badge bb" style={{ fontSize: 'var(--fs-2xs)' }}>F&amp;O</span></div>
         </div>
-        <LivePnlGlance liveMtm={liveMtm} />
         {summary ? <div className="pnl-summary">{summary}</div> : null}
         <div className="sub" style={{ padding: '12px 20px 16px' }}>No captured F&amp;O days yet — the realised ledger fills as the daily broker sync runs.</div>
       </div>
@@ -154,11 +153,6 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
           ))}
         </div>
       </div>
-
-      {/* LIVE P&L glance — the net realised · charges · live MTM pills (no curve; the only
-          intraday curve is the Day view's DayPanel, day-picker driven). Merged in from the
-          standalone "Trading P&L" card (#45), so it's one card now. */}
-      <LivePnlGlance liveMtm={liveMtm} />
 
       {/* capital line + verified/YTD summary — the journal's top context row */}
       {capital ? (
@@ -231,22 +225,10 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
   );
 }
 
-// LIVE P&L glance — just the pills now (all-time net realised + charges from the F&O ledger,
-// live open MTM from broker-state). The intraday P&L CURVE was removed from EVERY view
-// (2026-07-05: "there should not be a glance view curve, not daily, not monthly, not annually")
-// — the sole intraday curve now lives in the Day view's DayPanel (day-picker driven). Rendered
-// INSIDE the Trading Journal card (#45 merge — the standalone "Trading P&L" card was removed).
-function LivePnlGlance({ liveMtm = null }) {
-  const ledger = useMemo(() => summaryStats(dailySeries(APP.fnoLedger?.rows || [])), []);
-  return (
-    // pills — colour-coded net/MTM (direction=colour), charges neutral (a cost, not a P&L)
-    <div className="pnl-psum" style={{ padding: '0 20px 14px' }}>
-      <span><span className="lbl">Net realised</span> <span className={'mono ' + cl(ledger.net)}><SInrF n={ledger.net} /></span></span>
-      <span><span className="lbl">Charges</span> <span className="mono" style={{ color: 'var(--txt2)' }}><SInrF n={ledger.charges} /></span></span>
-      <span><span className="lbl">Live MTM</span> <span className={'mono ' + (liveMtm != null ? cl(liveMtm) : '')}>{liveMtm != null ? <SInrF n={liveMtm} /> : '—'}</span></span>
-    </div>
-  );
-}
+// The glance (net realised / charges / live MTM pills + an intraday curve) was fully removed
+// 2026-07-05: those figures already live in the stat cards / F&O Positions card, and the sole
+// intraday curve is the Day view's DayPanel. The Trading Journal now opens straight into the
+// capital line + stat panel + calendar.
 
 // ── view bodies ──
 function YearHeat({ fy, byDate, buckets }) {

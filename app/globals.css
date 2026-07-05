@@ -2145,6 +2145,10 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .an-foot { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 12px; line-height: 1.6; }
 /* paired rows collapse to one column on tablet so wide cards aren't cramped */
 .an-2 { display: grid; gap: var(--gap); grid-template-columns: repeat(2, 1fr); align-items: stretch; }
+/* grid items must be allowed to shrink below their content's min-content so a wide child
+   (e.g. the 5-col Efficiency Ratios table paired at half-width) scrolls inside its own
+   .an-tblwrap instead of forcing the column — and the document — wider. */
+.an-2 > * { min-width: 0; }
 @media (max-width: 900px) { .an-2 { grid-template-columns: 1fr; } }
 /* wide metric tables scroll WITHIN their card on narrow widths (scroll, never clip) */
 .an-tblwrap { overflow-x: auto; }
