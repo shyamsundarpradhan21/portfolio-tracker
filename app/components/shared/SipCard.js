@@ -531,7 +531,7 @@ export default function SipCard({ fx }) {
       {/* summary stats — re-scope to the selected view (all-time / month / FY).
           For a month, avg + run-rate become "vs FY avg" + "share of FY"; every
           figure carries its sign through colour (grn/red), never a +/- glyph. */}
-      <div className={'g' + (2 + (showThird ? 1 : 0) + (statOut > 0 ? 1 : 0) + (viewSavingsRate != null ? 1 : 0))} style={{ marginBottom: 12 }}>
+      <div className="sip-stats" style={{ marginBottom: 12 }}>
         <div className="mini">
           <div className="lbl">{allFys ? 'net deployed all-time' : monthView ? `net · ${mo.mn} ’${mo.yy}` : 'net deployed · this FY'}</div>
           <div className={'vsm ' + (statTot < 0 ? 'red' : 'grn')}>{(monthView ? !planned : statMonths) ? <RsText>{inrFull(Math.abs(statTot))}</RsText> : '—'}</div>
