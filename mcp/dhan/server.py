@@ -20,6 +20,7 @@ SECURITY MODEL
 Built on the DhanHQ v2 REST API (https://dhanhq.co/docs/v2/).
 """
 import os
+import sys
 import json
 import time
 from typing import Optional
@@ -83,20 +84,28 @@ def _mint():
     """Mint a fresh 24h access token via the pure-API TOTP endpoint — no browser.
     Returns (token, expiry_ts) or None."""
     if not (CLIENT_ID and PIN and TOTP_SEED):
+        print("[dhan-mint] no creds — set DHAN_CLIENT_ID/PIN/TOTP_SEED in .env", file=sys.stderr)
         return None
     try:
         totp = pyotp.TOTP(TOTP_SEED).now()
         r = requests.post(AUTH_URL, params={
             "dhanClientId": CLIENT_ID, "pin": PIN, "totp": totp}, timeout=20)
-        tok = (r.json() or {}).get("accessToken")
+        j = r.json() if r.content else {}
+        tok = (j or {}).get("accessToken")
         if tok:
             # Tokens are ~24h; re-mint conservatively after 23h rather than parse
             # the (timezone-ambiguous) expiryTime string. Minting is one cheap call.
             exp = time.time() + 23 * 3600
             _save_cached(tok, exp)
             return tok, exp
-    except Exception:
-        pass
+        # No token in the body → LOG WHY (rate limit / bad TOTP / …) instead of a bare
+        # `except: pass`. A silently-swallowed miss stranded the F&O tape for a whole
+        # trading day (06-Jul-2026). Log only the error field, NEVER the response
+        # wholesale — it carries the access token on success.
+        reason = str((j.get("errorType") or j.get("errorMessage") or j.get("message") or "")) if isinstance(j, dict) else ""
+        print(f"[dhan-mint] no token — HTTP {r.status_code} {reason}".rstrip(), file=sys.stderr)
+    except Exception as e:
+        print(f"[dhan-mint] {type(e).__name__}: {e}", file=sys.stderr)
     return None
 
 

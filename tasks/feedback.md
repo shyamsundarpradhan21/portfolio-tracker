@@ -271,6 +271,23 @@ full use of the knowledge graph everywhere:
   suspect the same `C:\Users\Business` → `E:\Work` path rot. The Dhan cache also
   lies (server.py `_token()` trusts mint+23h, so it won't re-mint a dead morning
   token) — `mint.py` calls `_mint()` directly to bypass it.
+- **The morning mint must RETRY and fail LOUD — one silent miss loses the whole day.**
+  (06-Jul-2026) The `capture.cmd` auto-mint is in place and fires pre-open, BUT
+  `dhan/server.py::_mint` was a single POST with `except: pass`: a transient blip at
+  09:10 (network / 5xx / TOTP-window edge) returned None, the daemon degraded to
+  upstox-only, and **dhan's live per-broker MTM was silently absent from the F&O tape
+  ALL day** — found only by a manual check, not any alert. A manual re-mint 40 min
+  later succeeded on the first try (creds/TOTP/endpoint were fine — purely transient).
+  Upstox's `login.py` already retried; dhan had no parity. Fixed: `mint.py` now retries
+  3× with short backoff (NOT the ~2-min rate-limit wait — that'd delay the daemon
+  start), and `_mint` logs the HTTP status + error field (never the token) instead of
+  swallowing it. Lesson: any unattended broker auth needs **retry + a surfaced reason**;
+  "non-fatal, just skip the broker" is NOT enough when a whole sleeve's data silently
+  vanishes for a session. Diagnose broker-MTM gaps from `data/fno-intraday.json` (a
+  `null` broker field = that broker not captured; `0` = captured-but-flat) cross-checked
+  with the `[dhan-mint]`/`[upstox-login]` lines and the `dhan+upstox` broker list in
+  `capture-in.log`. Still-open hardening (not yet built): a real alert when an enabled
+  broker drops out mid-session, so this never again waits on a manual check.
 
 ### Deployment (Vercel) — API routes must NOT server-side self-fetch a sibling route
 A server-side `fetch(\`${origin}/api/other\`)` from inside one API route carries NO auth
