@@ -1,4 +1,69 @@
-# Plan — Vested parser becomes the single source for US deposits/withdrawals (US_CASHFLOWS) (PHASE 1 DONE · PHASE 2 BLOCKED, 2026-07-06)
+# Plan — US sleeve measured on BUYS / cost-basis, not deposits (DONE, 2026-07-07)
+
+## Outcome (verified)
+Shared `usBuyLedger(usTrades)` in deposits.js = US net buys/date (Buy +, Sell −) from the Vested
+tradebook. Wired into ALL deposit-basis surfaces; `US_CASHFLOWS` kept only as the parser-owned
+deposits ledger (no longer feeds deployment/return). Decisions applied: idle cash EXCLUDED (deferred
+to the future income/expense dashboard); XIRR on buys/cost basis.
+- [x] SipCard, deposits.js `buildDepositLedger`, backfill.js (flows + dropped `cashAt`), growth
+      route, projection.js, page.js `usStats` (netInvested/XIRR/CAGR/benchmark) → all on net buys.
+- [x] `next build` ✓ Compiled successfully · 663 lib tests + 6 new `deposits.test.js` green.
+- [x] Numbers: Jun '26 US deploy **$130.61** (was $206.66 deposit) · Feb '26 **withdrawn $283.68**
+      (net sold, not the $140 cash-transfer) · Mar '26 deploy $221.82 · all-time deployed $3,606.31.
+- Certify N/A: no layout/CSS change (only which ledger feeds figures); card already renders
+  withdrawal/negative states. Verified deterministically + tests instead of a stale-server render.
+- NOTE: `/api/snapshot` build page-collection error is pre-existing/environmental (route untouched).
+
+
+
+## Why (user)
+"A 50% gain on actual buys of $200 ≠ a 50% gain from a deposit of $200 + a buy of $100."
+Measuring US returns/deployment against DEPOSITS dilutes them with idle-cash drag. US must be
+measured on ACTUAL BUYS (securities cost basis), mirroring Indian EQ + the US tab + Vested itself.
+
+## Verified current state — the app is already INCONSISTENT
+- US tab headline (`usData`, page.js:565-569): inv = Σ `US[].inv` = cost basis **$3,979.80** (buys),
+  val = securities only → return on actual buys ✓ (ties Vested's 19.53%). **Already correct.**
+- Live net worth (page.js:727 `usData.val`): securities only — **idle Vested cash already excluded.**
+- Capital Deployment card (SipCard), growth curve (backfill.js), XIRR (`netInvested`, page.js:609),
+  projection (deposits.js): all use `US_CASHFLOWS` = **deposits** ✗ → the diluted basis.
+- Withdrawals TODAY = a Transfers cash-out (the lone `-140` on 2026-02-17), in SipCard:217 /
+  deposits.js:31 / backfill:74. On a buys basis this should be **net SELLS** (Feb = −$283 sold),
+  matching Indian sells / MF redemptions; the $140/$208 cash transfers become irrelevant.
+
+## Target model — US mirrors Indian (cost-basis)
+- Dated US deploy = **net buys per date** (Buy +, Sell −), sourced from `us_trades.json`
+  (flows + other; parser-generated from the Trades sheet). Net sells = withdrawals.
+- US value = securities only (drop `cashAt` from backfill → aligns history with the live NW).
+- Invested (stat) = Σ `US[].inv` (the Holdings cost basis, already parser-owned via Phase 2).
+
+## Changes
+- [ ] SipCard: US stream (lines 189/217/228/244/264/383) → net buys from `APP.usTrades`
+      (flows+other) per month, ×FX; withdrawals (line 217) → US net sells. Card layout unchanged.
+- [ ] deposits.js `buildDepositLedger`: US term → net buys (pass usTrades / a pre-agg array) not
+      `US_CASHFLOWS`. (Feeds projection + growth route — single source stays single.)
+- [ ] backfill.js: US invested flows → net buys; **drop `cashAt`** from US value (line 114) so
+      value = securities only. (Removes the phantom-gain risk; matches live NW.)
+- [ ] page.js `usStats.netInvested` (609) → buys basis (Σ US[].inv or cum net-buys) for XIRR/benchmark.
+- [ ] `US_CASHFLOWS` stays parser-owned (Phase 1, the real deposits ledger) but is NO LONGER the
+      deployment/return source. (June still shows — as $130.61 buys instead of $206.66 deposit.)
+
+## Verify
+- [ ] Card: June '26 US = net buys (~$130.61×fx), Feb '26 shows a US WITHDRAWAL (~$283 sold).
+- [ ] Growth curve US invested line == cost basis; no phantom gain on idle cash; NW history == live NW basis.
+- [ ] US tab XIRR/benchmark now on cost basis (unchanged headline P&L — already correct).
+- [ ] `certify.mjs` green (card figures change width) · both themes.
+
+## DECISIONS TO CONFIRM (blocking)
+1. **Idle Vested cash (~$183 / ₹16k):** exclude everywhere (recommended — matches current live NW +
+   Vested; the growth curve stops counting it) OR track as a separate "US cash" line to keep it in NW.
+2. **XIRR basis:** move to buys (consistent with everything else) OR keep XIRR on true external
+   deposits/withdrawals + cash-inclusive value (textbook money-weighted return). Nuance: XIRR is the
+   one place deposits is arguably *more* correct — but then it diverges from the rest.
+
+---
+
+# Plan — Vested parser becomes the single source for US deposits/withdrawals (US_CASHFLOWS) (PHASE 1 DONE · PHASE 2 DONE, 2026-07-06)
 
 ## Problem (verified, with data)
 June 2026's US allocation is missing from the **Capital Deployment** card. That card

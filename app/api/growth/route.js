@@ -9,6 +9,7 @@
 import growthArchive from '../../../data/growth.json';
 import indianExits from '../../../data/indian_exits.json';
 import niftyOhlc from '../../../data/nifty-ohlc.json';
+import usTrades from '../../../data/us_trades.json';
 import { loadPortfolio } from '../../lib/serverPortfolio';
 import { buildDepositLedger } from '../../lib/deposits';
 import { fetchYahooSeriesMany } from '../../lib/yahooHistory';
@@ -227,7 +228,7 @@ export async function GET(req) {
     const now = new Date();
     const priv = await loadPortfolio();
     const ledger = priv
-      ? buildDepositLedger({ TRANSACTIONS: priv.TRANSACTIONS, MF_CASHFLOWS: priv.MF_CASHFLOWS, US_CASHFLOWS: priv.US_CASHFLOWS, FDS: priv.FDS, indianExits }, fx, now)
+      ? buildDepositLedger({ TRANSACTIONS: priv.TRANSACTIONS, MF_CASHFLOWS: priv.MF_CASHFLOWS, usTrades, FDS: priv.FDS, indianExits }, fx, now)
       : [];
     let series = {};
     if (ledger.length) {

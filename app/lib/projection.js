@@ -5,7 +5,7 @@
 // live base; the contribution and its annual step-up are DERIVED from the
 // ledgers (below) — never typed in.
 
-import { MF_CASHFLOWS, US_CASHFLOWS, TRANSACTIONS, FDS, PAYSLIPS, PROJECTION } from '../portfolio';
+import { MF_CASHFLOWS, TRANSACTIONS, FDS, PAYSLIPS, PROJECTION } from '../portfolio';
 import { APP } from './appData';
 import { buildDepositLedger } from './deposits';
 
@@ -26,7 +26,7 @@ export function deriveProjInputs(fx) {
   // Net deployment over the trailing 12 months = the sum of the shared deposit ledger's
   // signed flows that fall inside the window (the ledger encodes every sleeve's sign once).
   const ledger = buildDepositLedger(
-    { TRANSACTIONS, MF_CASHFLOWS, US_CASHFLOWS, FDS, indianExits: APP.indianExits },
+    { TRANSACTIONS, MF_CASHFLOWS, usTrades: APP.usTrades, FDS, indianExits: APP.indianExits },
     rate, now,
   );
   const net = ledger.filter((e) => inWin(e.date)).reduce((s, e) => s + e.amt, 0);

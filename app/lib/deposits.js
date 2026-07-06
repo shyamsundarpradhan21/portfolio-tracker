@@ -17,8 +17,27 @@ const fdMaturityValue = (f) => {
   return f.principal * Math.pow(1 + f.rate / 400, 4 * yrs);
 };
 
+// US net BUYS per date from the Vested tradebook (us_trades.json: {flows, other}).
+// Buy = +USD, Sell = −USD; same-day/all-symbol summed. This is the US analogue of
+// the Indian TRANSACTIONS buy line: the US sleeve is measured on ACTUAL SECURITIES
+// BOUGHT (cost basis), NOT account deposits — so idle cash + funding transfers
+// (the old US_CASHFLOWS/Transfers basis) don't dilute the deployed/return figures.
+// A net-sell date is a withdrawal (invested < 0), mirroring Indian sells. Returns
+// [{date, invested}] (USD, signed), sorted ascending; [] if no tradebook.
+export function usBuyLedger(usTrades) {
+  const t = usTrades || {};
+  const byDate = {};
+  const add = ([date, usd]) => { if (date && usd) byDate[date] = (byDate[date] || 0) + usd; };
+  for (const arr of Object.values(t.flows || {})) for (const pt of arr) add(pt);
+  for (const pt of (t.other || [])) add(pt);
+  return Object.keys(byDate)
+    .map((date) => ({ date, invested: Math.round(byDate[date] * 100) / 100 }))
+    .filter((c) => c.invested !== 0)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
 export function buildDepositLedger(
-  { TRANSACTIONS = [], MF_CASHFLOWS = [], US_CASHFLOWS = [], FDS = [], indianExits = null } = {},
+  { TRANSACTIONS = [], MF_CASHFLOWS = [], usTrades = null, FDS = [], indianExits = null } = {},
   fx,
   now = new Date(),
 ) {
@@ -28,7 +47,7 @@ export function buildDepositLedger(
 
   for (const t of TRANSACTIONS) push(t.date, t.invested);
   for (const c of MF_CASHFLOWS) push(c.date, -(c.amount || 0));        // amount < 0 = money in
-  for (const c of US_CASHFLOWS) push(c.date, (c.invested || 0) * rate);
+  for (const c of usBuyLedger(usTrades)) push(c.date, (c.invested || 0) * rate);  // US = net buys (cost basis), not deposits
   for (const f of FDS) {
     if (f.status !== 'pipeline') push(f.open, f.newMoney ?? f.principal);
     if (f.status === 'closed' && f.closedOn) push(f.closedOn, -(f.payout ?? f.principal));

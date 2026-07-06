@@ -24,9 +24,10 @@
 // Output: [{ d, nw, assets, invested, synth: true }] — callers must only use
 // dates BEFORE the first real snapshot; real dailies always win.
 
-import { TRANSACTIONS, US_CASHFLOWS, MF_CASHFLOWS, MF_FUNDS, FDS, LOAN, loanOutstanding } from '../portfolio';
+import { TRANSACTIONS, MF_CASHFLOWS, MF_FUNDS, FDS, LOAN, loanOutstanding } from '../portfolio';
 import { cmpfCorpus } from './cmpf';
 import { APP } from './appData';
+import { usBuyLedger } from './deposits';
 
 const DAY = 24 * 3600 * 1000;
 const YEAR = 365.25 * DAY;
@@ -71,7 +72,7 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
   const flows = [
     ...TRANSACTIONS.map((t) => ({ date: t.date, inr: t.invested })),
     ...MF_CASHFLOWS.map((c) => ({ date: c.date, inr: -c.amount })), // outflows positive
-    ...US_CASHFLOWS.map((c) => ({ date: c.date, inr: c.invested * fx(c.date) })),
+    ...usBuyLedger(APP.usTrades).map((c) => ({ date: c.date, inr: c.invested * fx(c.date) })), // US = net buys (cost basis), not deposits
     ...FDS.filter((f) => f.status !== 'pipeline').map((f) => ({ date: f.open, inr: f.newMoney ?? f.principal })),
     // Exited Indian delivery trades (Zerodha tax P&L): buy in at entry,
     // proceeds out at exit — keeps "invested" a true net-deployed line.
@@ -89,14 +90,6 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
     .filter((d) => d >= first);
   if (!grid.length) return [];
 
-  // US: actual cash balance at t (last statement balance ≤ t)
-  const cashDays = Object.keys(APP.usTrades.cash).sort();
-  const cashAt = (d) => {
-    let v = 0;
-    for (const k of cashDays) { if (k > d) break; v = APP.usTrades.cash[k]; }
-    return v;
-  };
-
   return grid.map((d) => {
     // IND: replay each live buy at its own closes; exited trades are carried
     // at buy value while held (no price history for exited names — their
@@ -110,8 +103,10 @@ export function buildBackfill(series, fxRates, fxLive, mfNav) {
     for (const [e, x, buy] of APP.indianExits.trades) {
       if (e <= d && d < x) ind += buy;
     }
-    // US: per-ticker unit replay from the tradebook + cash + exited-at-cost
-    let usd = cashAt(d);
+    // US: per-ticker unit replay from the tradebook + exited-at-cost. Idle Vested
+    // cash is EXCLUDED (securities-only), so value pairs with the net-buys invested
+    // line — matches the live net worth (page.js usData.val) + the US tab.
+    let usd = 0;
     for (const [sym, fls] of Object.entries(APP.usTrades.flows)) {
       const s = series[sym];
       let units = 0, costFallback = 0;

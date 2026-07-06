@@ -10,6 +10,7 @@ import {
 } from './portfolio';
 import { deriveFY } from './lib/fnoLedger';
 import { APP, hydrateAppData } from './lib/appData';
+import { usBuyLedger } from './lib/deposits';
 import MARKET_WRAP from '../data/market-wrap.json';
 import { classifyRegime } from './lib/regime';
 
@@ -606,14 +607,18 @@ function Dashboard() {
     const topPos  = valued.length && value ? valued.reduce((a, b) => ((b.liveVal || 0) > (a.liveVal || 0) ? b : a)) : null;
     let dayPl = 0, prevTot = 0;
     usData.rows.forEach((r) => { if (r.liveVal == null || r.dayPct == null) return; const prev = r.liveVal / (1 + r.dayPct / 100); dayPl += r.liveVal - prev; prevTot += prev; });
-    const netInvested = US_CASHFLOWS.reduce((s, c) => s + c.invested, 0);
+    // US return is measured on ACTUAL BUYS (cost basis), not account deposits — so
+    // idle-cash drag doesn't dilute the XIRR/CAGR/benchmark. Pairs with value =
+    // securities-only (usData.val). usBuys = net buys per date (Buy +, Sell −).
+    const usBuys = usBuyLedger(APP.usTrades);
+    const netInvested = usBuys.reduce((s, c) => s + c.invested, 0);
     let xr = null, cagr = null, years = null;
     if (value) {
-      const cfs = US_CASHFLOWS.map((c) => ({ date: new Date(c.date), amount: -c.invested }));
+      const cfs = usBuys.map((c) => ({ date: new Date(c.date), amount: -c.invested }));
       const x = xirr([...cfs, { date: now, amount: value }]); xr = x != null ? x * 100 : null;
-      const c = weightedCagr(US_CASHFLOWS, value, now); cagr = c.cagr; years = c.years;
+      const c = weightedCagr(usBuys, value, now); cagr = c.cagr; years = c.years;
     }
-    const cfFor = (b) => { if (!hist?.series || !value) return null; for (const sym of b.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], US_CASHFLOWS, now); if (cf) return cf; } return null; };
+    const cfFor = (b) => { if (!hist?.series || !value) return null; for (const sym of b.yahooSyms) { const cf = benchCounterfactual(hist.series[sym], usBuys, now); if (cf) return cf; } return null; };
     const benchmarks = US_BENCHMARKS.map((b) => { const cf = cfFor(b); return { ...b, value: cf?.value ?? null, xirr: cf?.xirr ?? null, cagr: cf?.cagr ?? null, ret: cf?.ret ?? null }; });
     return { value, sectors, caps, winner, laggard, topPos, topSector: sectors[0] || null, dayPl, dayPct: prevTot ? (dayPl / prevTot) * 100 : 0, netInvested, xirr: xr, cagr, years, benchmarks };
   }, [usData, hist, now]);
