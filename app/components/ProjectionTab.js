@@ -270,7 +270,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   );
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
-  const [range, setRange] = useState('max');
+  const [range, setRange] = useState('1M');   // land on the 1-month window (was 'max')
   // 'value' = net-worth growth + projection scrubber; 'growth' = ₹ money-made curve vs a
   // same-dated-rupees benchmark counterfactual (GrowthView), windowed 1D…Max.
   const [view, setView] = useState('value');
@@ -518,8 +518,14 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
           let ref;
           for (let i = hist.length - 1; i >= 0; i--) if (ms(hist[i].d) <= cutoff && hist[i].sl) { ref = hist[i]; break; }
           if (!ref || !ref.sl) continue;
+          // Snapshots predating the ELSS→MF merge carry a separate `elss` sleeve;
+          // fold it into `mf` so per-sleeve window gains line up with the current
+          // (merged) sleeveBasis and the parts still sum to the headline.
+          const refSl = ref.sl.elss
+            ? { ...ref.sl, mf: { v: (ref.sl.mf?.v || 0) + (ref.sl.elss.v || 0), i: (ref.sl.mf?.i || 0) + (ref.sl.elss.i || 0) } }
+            : ref.sl;
           for (const k of order) {
-            const cur = sleeveBasis[k], st = ref.sl[k];
+            const cur = sleeveBasis[k], st = refSl[k];
             if (cur && st) gains[k] = (cur.v - st.v) - (cur.i - st.i);
           }
         }
