@@ -15,12 +15,14 @@ import { payslipParser } from './payslip.mjs';
 import { brokerTaxParser } from './broker-tax.mjs';
 import { itrJsonParser } from './itr-json.mjs';
 import { vestedParser } from './vested.mjs';
+import { vestedHoldingsParser } from './vested-holdings.mjs';
 
 export const PARSERS = [
   contractNoteParser,   // most frequent doc (per trading day) — checked first
   casMfParser,
   payslipParser,
   brokerTaxParser,
-  vestedParser,         // Vested_Transactions*.xlsx -> data/us_trades.json
+  vestedParser,          // Vested_Transactions*.xlsx -> data/us_trades.json + US_CASHFLOWS
+  vestedHoldingsParser,  // Vested_Holdings*.xlsx     -> US[] composition
   itrJsonParser,
 ];

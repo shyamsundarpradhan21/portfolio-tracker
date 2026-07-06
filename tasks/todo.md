@@ -35,18 +35,28 @@ does NOT emit `US_CASHFLOWS`. Directive: make the parser the source so it can't 
 - [x] Replayed SipCard month calc: **JUN '26 US = $206.66 (~₹17,938), was ₹0**; Apr/May unchanged.
 - [x] No regression: same run regenerated us_trades.json + US_DIVIDENDS.
 
-## Phase 2 — allocation (buy/sell) → US[] composition  🚫 BLOCKED (wrong export)
-Reconstructing current `US[]` qty/cost from the **transactions** export does NOT reproduce the
-live holdings — proven: **31/101 symbols drift**, incl. structural failures:
-- Negative reconstructed qty (NFLX −0.51, MSTR −0.25, NOW −0.10): shares SOLD that were never
-  BOUGHT in-window → **stock splits** mint shares with no buy row, and `US_CORP_ACTIONS` holds
-  only dividends (no split entries). History IS complete (2024-03-08, 1695 rows) — not a horizon.
-- **DRIP**: SCHD live 26.89 vs traded-net 24.42 — dividend-reinvestment shares aren't booked as trades.
-The transactions export is the WRONG source for composition. Correct source = a Vested
-**holdings/positions export** (current qty + avg cost directly); NOT present in `data/reports/`
-(only `Vested_Transactions.xlsx`). Until it exists, `US[]` stays manual (status quo).
-→ NEXT: user exports the Vested holdings/positions file → a Phase-2 parser maps it straight to
-`US[]` qty/cost/inv (preserving curated `name`/`cat`), reconciling to broker.
+## Phase 2 — allocation (buy/sell) → US[] composition  ✅ DONE (2026-07-06, via Holdings export)
+The **transactions** export CAN'T reconstruct holdings (proven: 31/101 drift — splits mint shares
+with no buy row; DRIP shares aren't booked as trades). Resolved by the RIGHT source: the user
+uploaded the Vested **Holdings** positions snapshot (`Vested_Holdings*.xlsx`) — `Ticker · Total
+Shares Held · Average Cost · Total Amount Invested` per position, as-of 06 Jul 2026.
+- [x] `parse-vested.py --holdings [--one|--write]`: reads the Holdings sheet → US[] rows.
+      qty/cost/inv from the broker snapshot; **curated name/cat PRESERVED** from current US[]
+      (join by sym). Existing order kept; new tickers appended; sold-out dropped.
+- [x] New tickers need a human cat (drives CAT_COLORS/mix) — `NEW_META` staging map; an
+      uncategorised newcomer FAILs the write (no uncategorised holding ships). Seeded `BMNR→Crypto`.
+- [x] Registry wrapper `scripts/ingest/parsers/vested-holdings.mjs` (sniff `Vested_Holdings*.xlsx`,
+      copy→canonical, `--holdings --write`, seed) + registered in `parsers/index.mjs`. Sniffs are
+      exclusive vs `vested` (transactions); classify routes correctly; 78 ingest tests green.
+- [x] Verified write: only `US` changed; 49→50 holdings; invested $3764.07→$3979.80 (ties the
+      broker Summary sheet); BMNR added (Crypto); NO name/cat changed on existing syms; no null cats.
+- [x] Reseeded KV `portfolio:v1`. (US qty renders as-is — no corp-action qty transform like INDIAN —
+      so the data-level check is authoritative.)
+
+## Result
+US sleeve is now fully parser-sourced: **US_CASHFLOWS** (deposits/withdrawals) ← Transactions
+Transfers sheet; **US[]** (composition) ← Holdings positions snapshot. Drop either Vested export
+into the ingest inbox and it auto-updates + reseeds. Manual hand-editing of the US sleeve retired.
 
 ## Assumptions / caveats
 - Vested is the ONLY US cash source today, so full-replacing `US_CASHFLOWS` from Transfers loses

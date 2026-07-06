@@ -52,6 +52,22 @@ REPORTS = os.path.join("data", "reports")
 DEFAULT_IN = os.environ.get("VESTED_XLSX", os.path.join(REPORTS, "Vested_Transactions.xlsx"))
 DEFAULT_OUT = os.environ.get("US_TRADES_OUT", os.path.join("data", "us_trades.json"))
 PRIVATE = os.environ.get("VESTED_PRIVATE", os.path.join("data", "portfolio.private.json"))
+# Vested HOLDINGS export (positions snapshot) — the authoritative source for the
+# US[] composition (qty/cost/inv). A SEPARATE file from the transactions export;
+# see the --holdings mode. Reconstruction from the transactions Trades sheet is
+# NOT viable (splits mint shares with no buy row; DRIP shares aren't booked as
+# trades) — this positions file gives current qty + avg cost + invested directly.
+HOLDINGS_IN = os.environ.get("VESTED_HOLDINGS_XLSX", os.path.join(REPORTS, "Vested_Holdings.xlsx"))
+
+# First-appearance curation for holdings the current US[] has never seen. name/cat
+# are USER-CURATED (cat drives CAT_COLORS + the allocation mix; it is not in any
+# Vested export) so a genuinely new ticker needs a human category ONCE. After the
+# first successful write the symbol lives in US[] and its name/cat are preserved
+# from there, so an entry here can be pruned. A new ticker absent from BOTH US[]
+# and this map FAILS the write (refuse to ship an uncategorised holding).
+NEW_META = {
+    "BMNR": {"name": "Bitmine Immersion", "cat": "Crypto"},   # crypto miner (mirrors HUT/IREN/CIFR…)
+}
 
 _TIME_RE = re.compile(r"^\s*(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)\s*$", re.I)
 
@@ -245,6 +261,96 @@ def write_json(obj, path, compact):
             json.dump(obj, f, indent=1, ensure_ascii=False)
 
 
+# ── Holdings (positions) export → US[] composition ────────────────────────────
+
+def _hdr_index(row):
+    """Map a Holdings header row to column indices by fuzzy name (order-independent).
+    First match wins per field; if/elif keeps 'Ticker' from also claiming 'name'."""
+    idx = {}
+    for i, c in enumerate(row):
+        k = str(c or "").lower()
+        if "ticker" in k and "sym" not in idx: idx["sym"] = i
+        elif "name" in k and "name" not in idx: idx["name"] = i
+        elif "shares" in k and "qty" not in idx: idx["qty"] = i
+        elif "average cost" in k and "cost" not in idx: idx["cost"] = i
+        elif "amount invested" in k and "inv" not in idx: idx["inv"] = i
+        elif "current value" in k and "val" not in idx: idx["val"] = i
+    return idx
+
+
+def parse_holdings(path):
+    """Reduce a Vested Holdings export to [{sym, name(file), qty, cost, inv, val}]
+    from the `Holdings` sheet, plus the as-of date from `User Details`. PII-SAFE:
+    reads ONLY the Holdings sheet + the 'Period' cell of User Details (never the
+    User/Govt Id/Account/Email columns)."""
+    import openpyxl
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if "Holdings" not in wb.sheetnames:
+        raise ValueError("no 'Holdings' sheet — not a Vested Holdings export")
+
+    asof = None
+    if "User Details" in wb.sheetnames:
+        rows = list(wb["User Details"].iter_rows(values_only=True))
+        if len(rows) > 1 and rows[1] and rows[1][0]:            # 'Period' column only
+            m = re.search(r"(\d{2} \w{3} \d{4})", str(rows[1][0]))   # "As of 06 Jul 2026"
+            if m:
+                try:
+                    asof = _dt.datetime.strptime(m.group(1), "%d %b %Y").date().isoformat()
+                except ValueError:
+                    asof = m.group(1)
+
+    rows = list(wb["Holdings"].iter_rows(values_only=True))
+    idx = _hdr_index(rows[0]) if rows else {}
+    for req in ("sym", "qty", "cost", "inv"):
+        if req not in idx:
+            raise ValueError(f"Holdings sheet missing a '{req}' column")
+    out = []
+    for r in rows[1:]:
+        sym = r[idx["sym"]]
+        if not sym:
+            continue
+        out.append({
+            "sym": str(sym).strip(),
+            "name": (str(r[idx["name"]]).strip() if "name" in idx and r[idx["name"]] else None),
+            "qty": num(r[idx["qty"]]),
+            "cost": round(num(r[idx["cost"]]), 2),
+            "inv": round(num(r[idx["inv"]]), 2),
+            "val": round(num(r[idx["val"]]), 2) if "val" in idx else None,
+        })
+    return {"asOf": asof, "holdings": out}
+
+
+def build_us(holdings, cur_us):
+    """Merge a holdings snapshot into US[] rows. Numeric fields (qty/cost/inv) come
+    from the broker snapshot; curated name/cat are PRESERVED from the current US[]
+    (or NEW_META for a first-seen ticker). Existing order is kept; new tickers are
+    appended; tickers no longer held are dropped. Returns (rows, new_syms, dropped,
+    uncategorised)."""
+    hold = {h["sym"]: h for h in holdings}
+    curmap = {h["sym"]: h for h in cur_us}
+
+    uncategorised = []
+    def meta(sym, file_name):
+        if sym in curmap:
+            return curmap[sym].get("name"), curmap[sym].get("cat")
+        if sym in NEW_META:
+            return NEW_META[sym]["name"], NEW_META[sym]["cat"]
+        uncategorised.append(sym)
+        return (file_name or sym), None
+
+    def row(sym):
+        h = hold[sym]
+        name, cat = meta(sym, h.get("name"))
+        return {"sym": sym, "name": name, "cat": cat,
+                "qty": h["qty"], "cost": h["cost"], "inv": h["inv"]}
+
+    rows = [row(h["sym"]) for h in cur_us if h["sym"] in hold]     # keep order
+    new_syms = [s for s in hold if s not in curmap]
+    rows += [row(s) for s in new_syms]                            # append newcomers
+    dropped = [s for s in curmap if s not in hold]
+    return rows, new_syms, dropped, uncategorised
+
+
 def probe(path):
     """Registry probe: latest activity date + coarse counts. No PII, no split. One
     workbook open; maxd scans the same sheets parse() does so keys agree."""
@@ -277,7 +383,56 @@ def probe(path):
             "tickers": len(tickers), "trades": trades, "cashDays": len(cash_days)}
 
 
+def _run_holdings():
+    """--holdings modes: probe (--one), review (default), or write US[] (--write)."""
+    # probe — single-file porcelain for scripts/ingest/parsers/vested-holdings.mjs
+    if "--one" in sys.argv:
+        path = sys.argv[sys.argv.index("--one") + 1]
+        try:
+            hp = parse_holdings(path)
+        except Exception as e:  # noqa: BLE001 — a foreign/broken xlsx is a FAIL, not a crash
+            print(json.dumps({"asOf": None, "error": f"{type(e).__name__}: {e}"[:200]}))
+            sys.exit(1)
+        st = {"asOf": hp["asOf"], "key": hp["asOf"], "holdings": len(hp["holdings"])}
+        print(json.dumps(st))
+        sys.exit(0 if hp["holdings"] else 1)
+
+    hp = parse_holdings(HOLDINGS_IN)
+    priv = json.load(open(PRIVATE, encoding="utf-8"))
+    cur_us = priv.get("US", [])
+    rows, new_syms, dropped, uncat = build_us(hp["holdings"], cur_us)
+
+    # refuse to ship an uncategorised holding — a new ticker needs a name/cat in
+    # US[] or NEW_META first (cat drives CAT_COLORS + the allocation mix).
+    if uncat:
+        print(f"FAIL: {len(uncat)} new ticker(s) with no curated cat: {', '.join(uncat)} "
+              f"— add to NEW_META (or US[]) then re-run. NOT writing.")
+        sys.exit(1)
+
+    inv = round(sum(r["inv"] for r in rows), 2)
+    curinv = round(sum(h.get("inv", 0) for h in cur_us), 2)
+    catof = {r["sym"]: r["cat"] for r in rows}
+    print(f"holdings: {HOLDINGS_IN}  asOf {hp['asOf']}")
+    print(f"US[]: {len(cur_us)} -> {len(rows)} holdings | invested ${curinv} -> ${inv}")
+    if new_syms:
+        print("           NEW: " + ", ".join(f"{s} ({catof[s]})" for s in new_syms))
+    if dropped:
+        print("           SOLD OUT (dropped): " + ", ".join(dropped))
+
+    if "--write" not in sys.argv:
+        print("(review only — pass --write to update US[] + re-seed KV)")
+        return
+
+    priv["US"] = rows
+    write_json(priv, PRIVATE, compact=False)
+    print(f"wrote US[]: {len(rows)} holdings, invested ${inv} -> {PRIVATE} (re-seed KV to publish)")
+
+
 def main():
+    if "--holdings" in sys.argv:
+        _run_holdings()
+        return
+
     # --one <file> [--porcelain]: single-file probe for scripts/ingest/parsers/vested.mjs
     if "--one" in sys.argv:
         path = sys.argv[sys.argv.index("--one") + 1]
