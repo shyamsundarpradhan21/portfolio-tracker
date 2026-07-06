@@ -219,6 +219,24 @@ source for US allocation + deposits/withdrawals — do NOT hand-edit these in `p
   genuinely NEW ticker needs a one-time cat in `NEW_META` (script) or it FAILs the write (no
   uncategorised holding ships — cat drives CAT_COLORS + the allocation mix).
 
+### US sleeve is measured on BUYS (cost basis), NOT account deposits — `usBuyLedger`, not US_CASHFLOWS
+Locked 2026-07-07. The US sleeve mirrors Indian EQ (TRANSACTIONS buys): deployment + returns are
+measured on ACTUAL SECURITIES BOUGHT (cost basis), never Vested account deposits — otherwise a $200
+deposit that only buys $100 of ETFs dilutes a 50% gain down to 25% (idle-cash drag). Source of the
+deployment/return basis EVERYWHERE = `usBuyLedger(usTrades)` in `app/lib/deposits.js` (net buys per
+date from `us_trades.json` flows+other; Buy +, Sell −; a net-sell date is a withdrawal, like Indian
+sells). Wired into: `SipCard` (Capital Deployment card + withdrawals=net sells), `buildDepositLedger`
+(→ growth route benchmark counterfactual + projection), `backfill.js` (growth-curve invested line;
+and `cashAt` idle cash DROPPED so US value = securities-only), `page.js usStats` (netInvested/XIRR/
+CAGR/benchmark). **`US_CASHFLOWS` is retained ONLY as the parser-owned deposits ledger (Phase 1,
+Transfers sheet) — do NOT re-wire it into deployment/returns.** The US tab headline already used
+cost basis (Σ US[].inv = Vested's own return %); this just made the rest match. **Idle Vested cash is
+EXCLUDED for now** (matches the live net worth `usData.val`, which already excludes it) — deferred to
+the future income/expense dashboard (Phase II) that will integrate cash. **Why:** the user caught that
+deposits ≠ buys ("a 50% gain on actual buys of $200 is different from a 50% gain from a deposit of $200
+and a buy of $100"). **How to apply:** for any US deployed/return/XIRR figure, source `usBuyLedger`,
+pair it with securities-only value, and treat net sells as withdrawals; never reach for US_CASHFLOWS.
+
 ---
 
 ## Git Workflow
