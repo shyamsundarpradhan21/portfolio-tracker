@@ -882,19 +882,8 @@ enter implementation until this section is greenlit.
   GREEN — docOverflow=0, RSP-001/002/004=0, SYMMETRY/DIRECTION/VALUE-SIZE PASS, 6 widths × both themes ×
   normal + STRESSHARD.
 
-## Phase 3 — Global footer  ✅ DONE
-- [x] New `app/components/shared/ShellFooter.js` — one persistent footer driven by the active
-      tab: per-tab `FreshnessTag`/`SyncBadge` provenance + the ITR-verified `CFMemo` tax memo +
-      the app-wide disclaimer. Removed the standalone `.sec` freshness rows from Indian/FD/US/Algo
-      and the `CFMemo` blocks from Overview/Indian/US/MF (data via `FY.cf.*` + `MF_SIP.elssLockYears`,
-      all already in page.js). MF's NAV tag stays contextual in its value card (not duplicated).
-- [x] User refinement: the WHOLE footer is persistent — a fixed, frosted panel pinned to the
-      viewport bottom (mirrors the sticky header), including the tax memo. `--foot-h` (ResizeObserver
-      on the panel) reserves matching `.shell` bottom padding; capped at 46vh w/ internal scroll.
-- [x] certify GREEN (docOverflow=0, RSP-001/002/004=0, SYMMETRY/DIRECTION/VALUE-SIZE PASS) across
-      6 widths × both themes × normal + STRESSHARD; render-verified all 7 tabs.
-- [ ] OPEN (design): the persistent memo panel is ~300px tall on Overview/Indian/US/MF (≈⅓ viewport)
-      — decide keep-as-is vs condense/collapsible per user annotation feedback.
+## Phase 3 — Global footer
+- [ ] Move `FreshnessTag` / `SyncBadge` / `CFMemo` tax memos + data-as-of into a global footer region.
 
 ## Phase 4 — Per-tab region wiring (7 tabs)
 - [ ] Overview · Indian · FD (build maturity widget) · MF · US · Trading · Wrap slotted per map.

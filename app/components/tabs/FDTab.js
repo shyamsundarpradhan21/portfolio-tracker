@@ -30,7 +30,9 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
   return (
     <div>
       <AnalysisCard data={insights?.fd} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--gld)" />
-      {/* Freshness provenance relocated to the global footer (shell-6region Phase 3). */}
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <FreshnessTag mode="manual" date={`${fmtDateObj(now)} · accrued recalculated daily`} />
+      </div>
 
       <div className="g4 sec">
         <div className="csm">

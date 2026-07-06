@@ -51,8 +51,8 @@ import MacroTab     from './components/tabs/MacroTab';
 import Skel         from './components/shared/Skel';
 import AnimatedNumber from './components/shared/AnimatedNumber';
 import { LiveInrC } from './components/shared/Live';
+import FreshnessTag from './components/shared/FreshnessTag';
 import TickerRails  from './components/shared/TickerRails';
-import ShellFooter  from './components/shared/ShellFooter';
 
 // ─── cache keys ───────────────────────────────────────────────────────────────
 const FETCH_TS_KEY  = 'nwTracker.cache';
@@ -1362,12 +1362,6 @@ function Dashboard() {
           )}
         </div>
         </AiContext.Provider>
-
-        {/* GLOBAL FOOTER (shell-6region Phase 3) — per-tab freshness/sync provenance,
-            the ITR-verified tax memo, and the app-wide disclaimer, de-duped out of the
-            individual tab bodies. */}
-        <ShellFooter tab={tab} markets={markets} lastUpdate={lastUpdate} indianRec={indianRec}
-          now={now} FY={FY} elssLockYears={MF_SIP.elssLockYears} />
       </main>
     </div>
     </CurrencyProvider>

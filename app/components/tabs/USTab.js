@@ -25,7 +25,9 @@ export default function USTab({
   return (
     <div>
       <AnalysisCard data={insights?.us} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--cyn)" />
-      {/* Freshness provenance relocated to the global footer (shell-6region Phase 3). */}
+      <div className="sec" style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <FreshnessTag mode="live" marketState={{ open: markets.nyse, label: `NYSE ${markets.nyse ? 'OPEN' : 'CLOSED'} · ${lastUpdate}` }} />
+      </div>
 
       {/* Live intraday US-equity day-change curve (₹), captured during US hours */}
       <EquityDayCurve kind="us" />
@@ -199,7 +201,14 @@ export default function USTab({
         </div>
       </div>
 
-      {/* Foreign-equity capital-gains tax memo relocated to the global footer (shell-6region Phase 3). */}
+      <CFMemo
+        title={`Foreign Equity Tax — ${FY.labels.verified} Capital Gains`}
+        rows={[
+          { label: `${FY.labels.verified} foreign STCG`, val: '+₹' + FY.cf.cgVerified.foreignStcg.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.cgVerified.foreignStcgNote },
+          { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
+        ]}
+        foot="Foreign equity gains are taxed at slab (STCG <24m) or 12.5% (LTCG ≥24m) — no Sec 112A exemption; US withholding on dividends is creditable via DTAA."
+      />
     </div>
   );
 }

@@ -212,7 +212,14 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
         </div>
       </div>
 
-      {/* MF redemption tax memo relocated to the global footer (shell-6region Phase 3). */}
+      <CFMemo
+        title={`MF Redemption Tax — ${FY.labels.verified} Capital Gains`}
+        rows={[
+          { label: `${FY.labels.verified} MF redemptions`, val: FY.cf.cgVerified.mfStcg === 0 ? 'Nil' : '+₹' + FY.cf.cgVerified.mfStcg.toLocaleString('en-IN'), color: 'var(--txt2)', sub: FY.cf.cgVerified.mfStcgNote },
+          { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
+        ]}
+        foot={`${FY.cf.cgVerified.mfStcg === 0 ? `No redemptions in ${FY.labels.verified} — no MF capital-gains event.` : `${FY.labels.verified} redemptions taxed as capital gains.`} ELSS units stay locked ${MF_SIP.elssLockYears} years from each SIP date; gains crystallise only on redemption.`}
+      />
     </div>
   );
 }
