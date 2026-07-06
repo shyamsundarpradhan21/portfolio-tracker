@@ -1,3 +1,60 @@
+# Plan — Vested parser becomes the single source for US deposits/withdrawals (US_CASHFLOWS) (PHASE 1 DONE · PHASE 2 BLOCKED, 2026-07-06)
+
+## Problem (verified, with data)
+June 2026's US allocation is missing from the **Capital Deployment** card. That card
+(`app/components/shared/SipCard.js`) builds its US stream ENTIRELY from the dated
+`US_CASHFLOWS` ledger (`{date, invested}`, USD, converted at that day's FX) — it never
+reads the `US[]` holdings. `US_CASHFLOWS` is a MANUAL block in gitignored
+`data/portfolio.private.json`; no script writes it (grep of `scripts/` = 0 refs).
+
+The Vested export (`data/reports/Vested_Transactions.xlsx`, asOf 2026-07-02) already has a
+**Transfers** sheet that IS this ledger. Reconciled it against the live `US_CASHFLOWS`:
+- All **25/25** current rows reproduced EXACTLY from Transfers (Deposit → +usd,
+  Withdrawal → −usd; the `2026-02-17 Withdrawal 140` = the ledger's `-140`).
+- Transfers has exactly ONE extra row: **`2026-06-18 Deposit $206.66`** — June, never transcribed.
+- Nothing in the ledger is absent from Transfers → a parser full-replace is provably lossless.
+
+Root cause: `US_CASHFLOWS` was hand-copied from Vested Transfers and June was skipped. The
+`parse-vested.py` parser already opens this workbook (for us_trades.json + US_DIVIDENDS) but
+does NOT emit `US_CASHFLOWS`. Directive: make the parser the source so it can't drift.
+
+## Phase 1 — deposits/withdrawals → US_CASHFLOWS  ✅ DONE (2026-07-06)
+- [x] `scripts/parse-vested.py`: `parse()` reduces the **Transfers** sheet to `[{date, invested}]`
+      (Deposit → +, Withdrawal → −; USD; sorted; same-day netted; drop 0.00).
+- [x] `--write` full-replaces `priv['US_CASHFLOWS']` alongside `US_DIVIDENDS` (one read + one write).
+- [x] Review-mode + `--write` print a PII-safe summary (count · net USD · date range).
+- [x] No `vested.mjs` change — it already chains `--write` → `seed-portfolio-kv.mjs`. Seed guard
+      PASSed (26/26 keys populated).
+- Verification of record = the real-data reconciliation (25/25 + June), stronger than a synthetic
+  xlsx fixture; no fixture test added.
+
+## Phase 1 — verification ✅
+- [x] Review: **26 transfers, net $3772.15**, ends `2026-06-18` ($206.66).
+- [x] `--write` diff vs backup: ONLY `US_CASHFLOWS` changed; 26 rows; all 25 prior intact; +$206.66.
+- [x] Reseeded KV `portfolio:v1` (26 keys).
+- [x] Replayed SipCard month calc: **JUN '26 US = $206.66 (~₹17,938), was ₹0**; Apr/May unchanged.
+- [x] No regression: same run regenerated us_trades.json + US_DIVIDENDS.
+
+## Phase 2 — allocation (buy/sell) → US[] composition  🚫 BLOCKED (wrong export)
+Reconstructing current `US[]` qty/cost from the **transactions** export does NOT reproduce the
+live holdings — proven: **31/101 symbols drift**, incl. structural failures:
+- Negative reconstructed qty (NFLX −0.51, MSTR −0.25, NOW −0.10): shares SOLD that were never
+  BOUGHT in-window → **stock splits** mint shares with no buy row, and `US_CORP_ACTIONS` holds
+  only dividends (no split entries). History IS complete (2024-03-08, 1695 rows) — not a horizon.
+- **DRIP**: SCHD live 26.89 vs traded-net 24.42 — dividend-reinvestment shares aren't booked as trades.
+The transactions export is the WRONG source for composition. Correct source = a Vested
+**holdings/positions export** (current qty + avg cost directly); NOT present in `data/reports/`
+(only `Vested_Transactions.xlsx`). Until it exists, `US[]` stays manual (status quo).
+→ NEXT: user exports the Vested holdings/positions file → a Phase-2 parser maps it straight to
+`US[]` qty/cost/inv (preserving curated `name`/`cat`), reconciling to broker.
+
+## Assumptions / caveats
+- Vested is the ONLY US cash source today, so full-replacing `US_CASHFLOWS` from Transfers loses
+  nothing. If a non-Vested US flow ever exists, this becomes append/merge, not full-replace.
+- Amounts stay in USD in the ledger (the card converts); we do NOT bake in an FX rate at parse time.
+
+---
+
 # Plan — Curves honor the ₹/$ toggle (Live MTM + all daily-gain curves) (AWAITING APPROVAL, 2026-07-06)
 
 ## Problem (verified)

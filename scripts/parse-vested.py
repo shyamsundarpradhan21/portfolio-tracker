@@ -202,6 +202,27 @@ def parse(path, held):
             elif tk is not None:                       # Dividend row (Balance rows have no ticker)
                 div.append((d, tk, num(amt)))
 
+    # Transfers -> US_CASHFLOWS, the dated deposit/withdrawal ledger the Capital
+    # Deployment card reads (app/components/shared/SipCard.js via US_CASHFLOWS).
+    # Deposit -> +usd, Withdrawal -> -usd; USD kept raw (the card converts at each
+    # date's USD/INR close). This sheet IS that ledger — verified to reproduce the
+    # previously hand-maintained US_CASHFLOWS exactly, so the parser can own it and
+    # a skipped month (the bug this fixes) can no longer happen. Same-day transfers
+    # net; a net-zero day is dropped.
+    cf = defaultdict(float)                            # date -> net usd
+    if "Transfers" in wb.sheetnames:
+        for i, r in enumerate(wb["Transfers"].iter_rows(values_only=True)):
+            if i == 0:
+                continue
+            date, _tm, act, amt = r[:4]
+            if amt is None:
+                continue
+            d = day(date)
+            maxd = max(maxd, d)
+            cf[d] += num(amt) * (1 if str(act).lower().startswith("dep") else -1)
+    cashflows = [{"date": d, "invested": round(cf[d], 2)}
+                 for d in sorted(cf) if round(cf[d], 2) != 0.0]
+
     # emit us_trades — symbols alphabetical, dates ascending, drop 0.00 entries
     out_flows = {}
     for s in sorted(flows):
@@ -211,6 +232,7 @@ def parse(path, held):
     out_other = [[d, round(other[d], 2)] for d in sorted(other) if round(other[d], 2) != 0.0]
 
     return {"asOf": maxd, "cash": cash, "flows": out_flows, "other": out_other,
+            "cashflows": cashflows,
             "dividends": build_dividends(div, tax_sum, maxd)}
 
 
@@ -284,13 +306,21 @@ def main():
         print(f"wrote us_trades.json: {len(us['flows'])} held symbols, {len(us['other'])} other pts, "
               f"{len(us['cash'])} cash days, asOf {us['asOf']} -> {DEFAULT_OUT}")
 
-        # 2) US_DIVIDENDS -> portfolio.private.json (full-replace block, like BASIC_PAY)
+        # 2) US_DIVIDENDS + US_CASHFLOWS -> portfolio.private.json (full-replace
+        #    blocks, like BASIC_PAY). US_CASHFLOWS = the Transfers ledger (deposits/
+        #    withdrawals); it feeds the Capital Deployment card's US stream. One
+        #    private-JSON read + one write patches both.
         dv = data["dividends"]
+        cf = data["cashflows"]
         priv = json.load(open(PRIVATE, encoding="utf-8"))
         priv["US_DIVIDENDS"] = dv
+        priv["US_CASHFLOWS"] = cf
         write_json(priv, PRIVATE, compact=False)
         print(f"wrote US_DIVIDENDS: gross {dv['grossAllTime']} / tax {dv['taxAllTime']} / net {dv['netAllTime']}, "
               f"asOf {dv['asOf']} -> {PRIVATE} (re-seed KV to publish)")
+        net = round(sum(c["invested"] for c in cf), 2)
+        print(f"wrote US_CASHFLOWS: {len(cf)} transfers, net ${net}, "
+              f"{cf[0]['date'] if cf else '—'} .. {cf[-1]['date'] if cf else '—'} -> {PRIVATE} (re-seed KV to publish)")
         return
 
     # review mode — parse + PII-free summary, no writes
@@ -304,6 +334,10 @@ def main():
     if data["cash"]:
         d = sorted(data["cash"])
         print(f"           cash {d[0]} .. {d[-1]}, last balance ${data['cash'][d[-1]]}")
+    cf = data["cashflows"]
+    net = round(sum(c["invested"] for c in cf), 2)
+    print(f"US_CASHFLOWS: {len(cf)} transfers (deposits/withdrawals), net ${net}"
+          + (f", {cf[0]['date']} .. {cf[-1]['date']}" if cf else ""))
     if held:
         missing = sorted(held - set(data["flows"]))
         print(f"           holdings covered: {len(set(data['flows']) & held)}/{len(held)}"
