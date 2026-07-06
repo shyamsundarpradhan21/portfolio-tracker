@@ -62,10 +62,13 @@ const RANGES = [
   { key: '1M', days: 30 }, { key: '3M', days: 91 }, { key: '6M', days: 182 },
   { key: '1Y', days: 365 }, { key: 'max', days: null },
 ];
-// Celebratory net-worth ladder — each round number the journey crosses earns a
-// star on the curve (1L, 10L, 50L, 1Cr, 5Cr, 10Cr, 50Cr, 100Cr). Levels behind
-// us become history stars; those ahead unfurl as the projection is scrubbed.
-const MILESTONES = [1e5, 1e6, 5e6, 1e7, 5e7, 1e8, 5e8, 1e9];
+// Celebratory net-worth ladder — each round number the journey crosses earns a star
+// on the curve. Milestones are SEMANTIC round targets (not a scale), so each currency
+// gets its OWN round ladder rather than a mechanical ₹→$ conversion (which would make
+// "₹1Cr" read as "$114K"). Same 1 / 2.5 / 5 cadence per decade so ₹ and $ feel parallel.
+// Levels behind us become history stars; those ahead unfurl as the projection is scrubbed.
+const MILESTONES_INR = [1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8, 5e8];   // ₹10L·25L·50L·1Cr·2.5Cr·5Cr·10Cr·50Cr
+const MILESTONES_USD = [1e4, 2.5e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 5e6];   // $10K·25K·50K·100K·250K·500K·1M·5M
 // Sleeves excluded from the personal "money made" story so every gain metric here — the
 // chart's Your-book line, the MAX tile, and the per-window waffles — sits on ONE CMPF-free
 // basis (matching the deposit-free growth line + the benchmark): CMPF/pension (surfaced in
@@ -257,7 +260,14 @@ function Waffle({ parts, n = 10 }) {
 }
 
 function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
-  useDisplayCurrency();   // subscribe: re-render on the ₹/$ toggle (cr/axLabel/crShort read the live mirror)
+  const { mode: dispMode, fx: dispFx } = useDisplayCurrency();   // ₹/$ toggle — re-render + pick the ladder
+  // Chart milestone flags use the DISPLAY-currency ladder (round native targets). $-mode maps
+  // the round-$ figures into ₹ (×fx) so the ₹-based crossing math AND crShort (÷fx in $-mode)
+  // round-trip them back to clean $ labels — no separate formatter needed.
+  const MILESTONES = useMemo(
+    () => (dispMode === 'usd' ? MILESTONES_USD.map((d) => d * dispFx) : MILESTONES_INR),
+    [dispMode, dispFx],
+  );
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('max');
@@ -386,7 +396,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
     };
 
     return { base, inv0, arr, crossings, allocAt };
-  }, [nw, loan, sleeves, MAXY, fdCeiling, invested0, rates, projIn]);
+  }, [nw, loan, sleeves, MAXY, fdCeiling, invested0, rates, projIn, MILESTONES]);
 
   const sampleAt = (a, yr) => {
     const m = yr * 12, i = Math.floor(m), f = m - i;
@@ -473,7 +483,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       out.push({ value: target, atMs });
     }
     return out;
-  }, [hist]);
+  }, [hist, MILESTONES]);
 
   // Per-window market-gain attribution by asset class, for the growth pills'
   // waffles. DAY uses live per-sleeve day P&L (accurate today). MAX uses the
@@ -571,7 +581,9 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
   // return — hooks can't be conditional.
   useEffect(() => {
     if (!dataReady || !(nw > 0) || typeof window === 'undefined') return;
-    const reached = MILESTONES.filter((m) => nw >= m).pop() || 0;
+    // Celebration tracks the ₹ ladder ALWAYS (a home-currency life event) — independent of the
+    // display toggle, so flipping ₹↔$ never spuriously re-fires the party.
+    const reached = MILESTONES_INR.filter((m) => nw >= m).pop() || 0;
     let stored;
     try { stored = localStorage.getItem('pjx-ms-celebrated'); } catch { return; }
     if (stored === null) {                         // first run → set baseline, no party
