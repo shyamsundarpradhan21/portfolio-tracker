@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react';
 import { mergeLiveTapes } from '../../lib/pnlDaily';
 import { smoothPath } from '../../lib/smoothPath';
+import { compactMoney, displayCurrency, displayFx, useDisplayCurrency } from '../../lib/fmt';
 
 const W = 1100, H = 252, PADL = 46, PADR = 14, PADT = 22, PADB = 22;
 
@@ -30,14 +31,37 @@ const BENCH_ORDER = ['nifty', 'nasdaq', 'china', 'germany', 'uk', 'crypto', 'gol
 
 // ₹ helpers (mirror ProjectionTab / GrowthCurve). Figures are UNSIGNED — direction is by
 // colour (.up/.dn), never a +/- glyph. Axis tick labels keep a sign (it's a scale).
-const crAbs = (n) => { const a = Math.abs(n); if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + 'Cr'; if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + 'L'; return '₹' + Math.round(a).toLocaleString('en-IN'); };
-const axLabel = (n) => { const a = Math.abs(n), s = n < 0 ? '−' : ''; if (a >= 1e7) return s + '₹' + +(a / 1e7).toFixed(2) + 'Cr'; if (a >= 1e5) { const l = a / 1e5; return s + '₹' + (Number.isInteger(l) ? l : +l.toFixed(1)) + 'L'; } if (a >= 1e3) return s + '₹' + Math.round(a / 1e3) + 'k'; return s + '₹' + Math.round(a); };
+// Value labels follow the global ₹/$ toggle (read off the module mirror; the component
+// subscribes via useDisplayCurrency so it re-renders on flip). ₹ output is unchanged; $-mode
+// converts the ₹-native value at the live fx and uses the $ scale (M/K), never L/Cr.
+const crAbs = (n) => {
+  const a = Math.abs(n);
+  if (displayCurrency() === 'usd') return compactMoney(a, 'usd', displayFx());
+  if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + 'L';
+  return '₹' + Math.round(a).toLocaleString('en-IN');
+};
+// Axis ticks keep their sign (it's a scale) and stay integer-clean ($8K not $8.0K, ₹2L not ₹2.0L).
+const axLabel = (n) => {
+  const s = n < 0 ? '−' : '';
+  if (displayCurrency() === 'usd') {
+    const d = Math.abs(n) / displayFx();
+    if (d >= 1e6) { const m = d / 1e6; return s + '$' + (Number.isInteger(m) ? m : +m.toFixed(2)) + 'M'; }
+    if (d >= 1e3) { const k = d / 1e3; return s + '$' + (Number.isInteger(k) ? k : +k.toFixed(1)) + 'K'; }
+    return s + '$' + Math.round(d);
+  }
+  const a = Math.abs(n);
+  if (a >= 1e7) return s + '₹' + +(a / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) { const l = a / 1e5; return s + '₹' + (Number.isInteger(l) ? l : +l.toFixed(1)) + 'L'; }
+  if (a >= 1e3) return s + '₹' + Math.round(a / 1e3) + 'k';
+  return s + '₹' + Math.round(a);
+};
 const niceNum = (x, round) => { if (!(x > 0)) return 1; const e = Math.floor(Math.log10(x)); const f = x / 10 ** e; const nf = round ? (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) : (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10); return nf * 10 ** e; };
 const niceScale = (lo, hi, ticks = 4) => { if (!(hi > lo)) { lo -= 1; hi += 1; } const step = niceNum((hi - lo) / Math.max(1, ticks - 1), true); return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step }; };
-// ₹ in an SVG <text> — the rupee glyph lives in the body font, not the mono face.
-const RsSvg = ({ x, y, children, ...rest }) => { const parts = String(children).split('₹'); return <text x={x} y={y} {...rest}>{parts.map((p, i) => <tspan key={i}>{i > 0 && <tspan fontFamily="var(--body)" fontSize="1.05em">₹</tspan>}{p}</tspan>)}</text>; };
-// ₹ in HTML — routes the glyph through the global .rs treatment (mono digits + body ₹).
-const Rs = ({ of }) => { const s = String(of); const i = s.indexOf('₹'); return i === -1 ? <>{s}</> : <>{s.slice(0, i)}<span className="rs">₹</span>{s.slice(i + 1)}</>; };
+// Currency glyph in an SVG <text> — ₹ or $ (whichever the label carries), in the body font.
+const RsSvg = ({ x, y, children, ...rest }) => { const s = String(children); const g = s.includes('$') ? '$' : '₹'; const parts = s.split(g); return <text x={x} y={y} {...rest}>{parts.map((p, i) => <tspan key={i}>{i > 0 && <tspan fontFamily="var(--body)" fontSize="1.05em">{g}</tspan>}{p}</tspan>)}</text>; };
+// Currency glyph in HTML — routes ₹ or $ through the global .rs treatment (mono digits + body glyph).
+const Rs = ({ of }) => { const s = String(of); const g = s.includes('$') ? '$' : '₹'; const i = s.indexOf(g); return i === -1 ? <>{s}</> : <>{s.slice(0, i)}<span className="rs">{g}</span>{s.slice(i + 1)}</>; };
 const cls = (v) => (v == null || !isFinite(v) ? '' : v >= 0 ? 'up' : 'dn');
 // The portfolio "day" — the US sleeve runs overnight, so before 06:00 IST the live session
 // still belongs to the previous IST date (matches PortfolioLiveCurve / the capture buckets).
@@ -49,6 +73,7 @@ const tRank = (t) => { const [h, m] = String(t).split(':').map(Number); const x 
 // window pills of its own. Falls back to 'max' if rendered standalone.
 export default function GrowthView({ fx, range: rangeProp, ownByDate }) {
   const range = rangeProp ?? 'max';
+  useDisplayCurrency();   // subscribe: re-render on the ₹/$ toggle (crAbs/axLabel read the live mirror)
   const [compare, setCompare] = useState(['nifty']);
   const [data, setData] = useState(null);      // { points, available }
   const [ownTape, setOwnTape] = useState([]);   // 1D only: merged intraday own P&L
@@ -246,7 +271,7 @@ export default function GrowthView({ fx, range: rangeProp, ownByDate }) {
           {hovPts.map((h) => (
             <div key={h.key} className="iq-r">
               <span className="iq-l" style={{ color: h.color, fontWeight: 600 }}>{h.label}</span>
-              <span className="iq-v" style={{ color: dirCol(h.v) }}><span className="rs">₹</span>{crAbs(h.v).slice(1)}</span>
+              <span className="iq-v" style={{ color: dirCol(h.v) }}><span className="rs">{crAbs(h.v)[0]}</span>{crAbs(h.v).slice(1)}</span>
             </div>
           ))}
         </div>

@@ -17,6 +17,7 @@ import { simMonthly, deriveProjInputs } from '../lib/projection';
 import { xirr } from '../lib/calc';
 import { smoothPath } from '../lib/smoothPath';
 import GrowthView from './shared/GrowthView';
+import { compactMoney, displayCurrency, displayFx, useDisplayCurrency, inrFull } from '../lib/fmt';
 
 // Single source for the numbers quoted in the footer caveat — the XIRR gate,
 // the pre-history fallback rate and the Cons/Opt bracket all read from here.
@@ -103,8 +104,17 @@ const niceScale = (lo, hi, ticks = 4) => {
 };
 // Axis tick label — like crShort but keeps one decimal for a partial lakh so
 // zoomed gridlines (₹17.5L) don't round onto each other.
+// Follows the global ₹/$ toggle (read off the module mirror; the component subscribes via
+// useDisplayCurrency so it re-renders on flip). ₹ output is unchanged; $-mode converts at the
+// live fx and uses the $ scale (M/K), integer-clean ($8K not $8.0K), never L/Cr.
 const axLabel = (n) => {
   const a = Math.abs(n);
+  if (displayCurrency() === 'usd') {
+    const d = a / displayFx();
+    if (d >= 1e6) { const m = d / 1e6; return '$' + (Number.isInteger(m) ? m : +m.toFixed(2)) + 'M'; }
+    if (d >= 1e3) { const k = d / 1e3; return '$' + (Number.isInteger(k) ? k : +k.toFixed(1)) + 'K'; }
+    return '$' + Math.round(d);
+  }
   if (a >= 1e7) return '₹' + +(a / 1e7).toFixed(2) + 'Cr';
   if (a >= 1e5) { const l = a / 1e5; return '₹' + (Number.isInteger(l) ? l : +l.toFixed(1)) + 'L'; }
   if (a >= 1e3) return '₹' + Math.round(a / 1e3) + 'k';
@@ -120,13 +130,14 @@ const SVG_FS = { grid: 15, label: 14.5, caption: 13, value: 21, flag: 14.5 };
 // digit portion stays mono while the symbol glyph uses the correct typeface.
 function RsSvg({ x, y, children, ...rest }) {
   const s = String(children);
-  const parts = s.split('₹');
+  const g = s.includes('$') ? '$' : '₹';   // the currency glyph the label carries
+  const parts = s.split(g);
   if (parts.length === 1) return <text x={x} y={y} {...rest}>{s}</text>;
   return (
     <text x={x} y={y} {...rest}>
       {parts.map((p, i) => (
         <tspan key={i}>
-          {i > 0 && <tspan fontFamily="var(--body)" fontSize="1.05em">₹</tspan>}
+          {i > 0 && <tspan fontFamily="var(--body)" fontSize="1.05em">{g}</tspan>}
           {p}
         </tspan>
       ))}
@@ -136,6 +147,7 @@ function RsSvg({ x, y, children, ...rest }) {
 
 const cr = (n) => {
   const a = Math.abs(n);
+  if (displayCurrency() === 'usd') return compactMoney(a, 'usd', displayFx());
   if (a >= 1e7) return '₹' + (a / 1e7).toFixed(2) + 'Cr';
   if (a >= 1e5) return '₹' + (a / 1e5).toFixed(2) + 'L';
   return '₹' + Math.round(a).toLocaleString('en-IN');
@@ -145,11 +157,18 @@ const cr = (n) => {
 // this gives the symbol the global .rs treatment (sized/weighted to match).
 const Crs = ({ n, of }) => {
   const s = of != null ? of : cr(n);
-  const i = s.indexOf('₹');
-  return i === -1 ? s : <>{s.slice(0, i)}<span className="rs">₹</span>{s.slice(i + 1)}</>;
+  const g = s.includes('$') ? '$' : '₹';
+  const i = s.indexOf(g);
+  return i === -1 ? s : <>{s.slice(0, i)}<span className="rs">{g}</span>{s.slice(i + 1)}</>;
 };
 const crShort = (n) => {
   const a = Math.abs(n);
+  if (displayCurrency() === 'usd') {
+    const d = a / displayFx();
+    if (d >= 1e6) return '$' + (d / 1e6).toFixed(d >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+    if (d >= 1e3) return '$' + Math.round(d / 1e3) + 'K';
+    return '$' + Math.round(d);
+  }
   if (a >= 1e7) return '₹' + (a / 1e7).toFixed(a >= 1e8 ? 0 : 1).replace(/\.0$/, '') + 'Cr';
   if (a >= 1e5) return '₹' + Math.round(a / 1e5) + 'L';
   return '₹' + Math.round(a / 1e3) + 'k';
@@ -211,7 +230,8 @@ function MilestoneFlag({ cx, cy, label, tone, idx, blink = true }) {
 // window's GROSS market move (|gain|), coloured by the sleeve. A sleeve that
 // dragged the window (negative) renders hollow, so a glance reads which classes
 // drove the move and which fought it. The signed breakdown rides the title.
-const INR0 = (v) => (v >= 0 ? '+' : '−') + '₹' + Math.abs(Math.round(v)).toLocaleString('en-IN');
+const INR0 = (v) => { const sgn = v >= 0 ? '+' : '−'; const a = Math.abs(Math.round(v));
+  return displayCurrency() === 'usd' ? sgn + '$' + Math.round(a / displayFx()).toLocaleString('en-US') : sgn + '₹' + a.toLocaleString('en-IN'); };
 function Waffle({ parts, n = 10 }) {
   const tot = parts.reduce((s, p) => s + Math.abs(p.gain), 0);
   if (!(tot > 0)) return null;
@@ -237,6 +257,7 @@ function Waffle({ parts, n = 10 }) {
 }
 
 function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, invested0, snapshots, histSeries, dayGain = {}, sleeveBasis = {}, cmpsRetirement, cmpsPension = 0, cmpsService = null, cmpsVested = false, cmpsVestYear = null, dataReady = true, footer = null }) {
+  useDisplayCurrency();   // subscribe: re-render on the ₹/$ toggle (cr/axLabel/crShort read the live mirror)
   const [t, setT] = useState(0);
   const [sc, setSc] = useState('base');
   const [range, setRange] = useState('max');
@@ -1046,7 +1067,7 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       {cmpsPension > 0 && (
         <div className="pjx-cmps-line">
           <span className="pjx-cmps-flag">⚑ CMPS pension</span>{' '}
-          projected <b><Crs of={`₹${cmpsPension.toLocaleString('en-IN')}/mo`} /></b> at superannuation ({retireIso.slice(0, 4)}) if served to 60
+          projected <b><Crs of={`${inrFull(cmpsPension)}/mo`} /></b> at superannuation ({retireIso.slice(0, 4)}) if served to 60
           {!cmpsVested && cmpsVestYear
             ? <> · not yet vested — needs 10 yrs ({cmpsService != null ? `${cmpsService.toFixed(1)} now, ` : ''}vests {cmpsVestYear}); leave before and it&rsquo;s a contribution refund, not a pension</>
             : <> · {cmpsService != null ? `${cmpsService.toFixed(1)} yrs service · ` : ''}defined benefit, for life</>}

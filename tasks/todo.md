@@ -1,3 +1,67 @@
+# Plan — Curves honor the ₹/$ toggle (Live MTM + all daily-gain curves) (AWAITING APPROVAL, 2026-07-06)
+
+## Problem (verified)
+The global topbar toggle (`CurrencyProvider`/`CurrencyCtx`, `app/lib/fmt.js:12`) is documented
+to "flip EVERY money figure between ₹ and $" and headline/table/panel figures honor it (via
+`SInrF`/`InrF`/`UsdF`). But the curves DON'T — they build axis + in-chart value labels with
+bespoke local fns that hardcode `₹` and lakh/crore scaling, so flipping to $ leaves the curves
+in ₹. Confirmed inconsistency, not intent.
+
+## Surface is TWO components (delegation collapses the "four curves")
+- `IntradayChart` = the ONE shared SVG chart → powers **Live MTM** (F&O, via PnlDashboard),
+  **PortfolioLiveCurve** (Overview), **EquityDayCurve** (Indian + US). All values reaching it
+  are INR-native → uniform ÷fx to $. Hardcoded ₹ lives in ONE formatter `f()` (`:25`) + the
+  tooltip glyph (`:263`). Fix here = 3 of 4 curves.
+- `GrowthView` = separate SVG (net-worth growth). Hardcoded ₹ in `crAbs`/`axLabel` (`:33–34`),
+  `RsSvg`/`Rs` glyph splitters (`:38,40`), inline `₹` (`:249`).
+
+## Approach (minimal, DRY, testable)
+1. `app/lib/fmt.js`: add ONE pure helper `compactMoney(vInr, mode, fx)` → `'$'+usdCd(v/fx)`
+   (usd) / `'₹'+inrCd(v)` (inr). Reuses existing cores; unit-testable. (Signed axis variant keeps
+   the `−` U+2212 glyph.) Export `usdCd` or wrap it.
+2. `IntradayChart`: consume `useDisplayCurrency()` (re-render on toggle); `f()` → `compactMoney`;
+   tooltip glyph `:263` → mode-aware ($ or ₹). Note: NIFTY S/R price labels (`:173`) are INDEX
+   points, NOT ₹ — leave untouched.
+3. `GrowthView`: consume `useDisplayCurrency()`; `crAbs`/`axLabel` → `compactMoney` (read
+   mirror via `displayCurrency()`/`displayFx()`, call sites unchanged); make `RsSvg`/`Rs`
+   glyph-agnostic (split `[₹$]`); inline `₹` `:249` → mode-aware.
+
+## Constraints (this repo)
+- $-mode uses its OWN scaling: K/M + en-US grouping, NOT L/Cr.
+- Zero-crossing P&L/growth axes keep SIGNED y-ticks (feedback rule); value badges stay UNSIGNED
+  (direction = colour).
+- Hold in BOTH day + night themes.
+- Not complete until `node audit/responsive/certify.mjs` is GREEN (label widths change). $ labels
+  are ≤ ₹ width so no new clip expected — but must be proven, not assumed.
+- Add a `fmt.test.js` case for `compactMoney` (₹/$ tiers + fx).
+
+## Steps
+- [x] Render-mock the $-mode axis (Live MTM badges + Growth signed ticks) → user signed off
+- [x] `compactMoney` + unit test (extracted pure cores to JSX-free `app/lib/money.js`; `money.test.js`, 18 pass)
+- [x] IntradayChart wired through toggle (covers Live MTM + PortfolioLiveCurve + EquityDayCurve)
+- [x] GrowthView wired through toggle
+- [x] **ProjectionTab (Net-Worth chart) wired too** — added mid-flight on user report ("net worth did not flip"): axis, milestone chips, TODAY caption, waffle delta, pension /mo
+- [x] Verify live in-app: flip toggle, all curves + net-worth convert (₹↔$, reactive, no console errors)
+- [x] `certify.mjs` green — normal + stress + usd + usd-stress, all `001/002/004=0 docOverflow=0`, both themes
+
+## Review
+- **Scope grew from 2 → 3 components.** Original 4 "curves" collapsed to `IntradayChart` (3 curves)
+  + `GrowthView`. User then caught that the **Net-Worth trajectory chart** (`ProjectionTab`) also
+  didn't flip → extended the same pattern to its 5 formatters + `INR0` + pension caption.
+- **Pattern:** one pure `compactMoney(vInr, mode, fx)` in JSX-free `money.js` (re-exported by fmt.js);
+  each chart consumes `useDisplayCurrency()` to re-render on flip; module-level formatters read the
+  live mirror (`displayCurrency()`/`displayFx()`) so call sites are untouched; glyph splitters
+  (`Rs`/`RsSvg`/`Crs`) made currency-agnostic (`[₹$]`). ₹ output preserved byte-for-byte; $ uses its
+  own scale (K/M, en-US), integer-clean axis ticks, signed ticks on zero-crossing axes.
+- **Verified:** live fx ≈ ₹95 (not the 88 placeholder); conversions consistent across axis + captions.
+- **Not touched (out of scope, flag if wanted):** `EquityDayCurve`'s prose note "in ₹ at the live
+  USD/INR" is a data-basis caption (true regardless of display), left as-is.
+- **Refactor note:** moving inrCd/inrFd/usdCd/usdFd out of fmt.js into money.js is a clean win —
+  fmt.js's own comment already said direction.js was split off "so it unit-tests directly"; money.js
+  now does the same for the number cores. All 86 non-worktree test files stay green.
+
+---
+
 # Plan — Unify "book value return" across the growth chart line and the period tiles (AWAITING APPROVAL, 2026-07-06)
 
 ## Problem (verified against the data)

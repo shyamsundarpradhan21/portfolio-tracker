@@ -40,24 +40,13 @@ export const pct1 = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + NNBSP +
 export const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // ── number cores (glyph-free) ─────────────────────────────────────────────────
-// ₹ compact (Cr/L/K) and grouped; $ compact (M/K) and grouped. inrCd/inrFd stay the
-// ₹ cores (used by callers that add their own literal glyph); the display components
-// pick a ₹ or $ core off the live currency.
-export function inrCd(n) {
-  const a = Math.abs(n);
-  if (a >= 1e7) return (n / 1e7).toFixed(2) + 'Cr';
-  if (a >= 1e5) return (n / 1e5).toFixed(2) + 'L';
-  if (a >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return '' + Math.round(n);
-}
-export const inrFd = (n) => Math.round(n).toLocaleString('en-IN');
-const usdCd = (n) => {
-  const a = Math.abs(n), s = n < 0 ? '-' : '';
-  if (a >= 1e6) return s + (a / 1e6).toFixed(2) + 'M';
-  if (a >= 1e3) return s + (a / 1e3).toFixed(1) + 'K';
-  return s + Math.round(a);
-};
-const usdFd = (n) => Math.round(n).toLocaleString('en-US');
+// The pure ₹/$ number cores live in JSX-free money.js so they unit-test directly (this
+// file is 'use client' + JSX). inrCd/inrFd are the ₹ cores (callers add their own glyph);
+// compactMoney is the mode-aware chart label; the display COMPONENTS below pick a ₹ or $
+// core off the live currency. Re-exported so `import { inrCd, compactMoney } from '../lib/fmt'`
+// keeps working for existing callers.
+import { inrCd, inrFd, usdCd, usdFd, compactMoney } from './money.js';
+export { inrCd, inrFd, compactMoney };
 
 // glyph-carrying STRING helpers (titles/tooltips) — mode-aware off the module mirror.
 export function inrC(n)  { return _CUR === 'usd' ? '$' + usdCd(n / _FX) : '₹' + inrCd(n); }

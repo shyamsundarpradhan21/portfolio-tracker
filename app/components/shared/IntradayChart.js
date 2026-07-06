@@ -12,6 +12,7 @@
 import { useState, useMemo } from 'react';
 import { scaleLines, scaleCandles, niftyLevels } from '../../lib/pnlDaily';
 import { smoothPath } from '../../lib/smoothPath';
+import { useDisplayCurrency, compactMoney } from '../../lib/fmt';
 
 // Default overlay = the three F&O brokers. The Overview live curve passes its own
 // (F&O / equity / US sleeves). Each entry: { key, c (colour), label }.
@@ -21,16 +22,15 @@ const BROKER = [
   { key: 'fyers', c: '#5FC9B5', label: 'Fyers' },
 ];
 
-// Compact ₹ for in-chart labels (no +/- glyph — direction is by COLOUR).
-const f = (v) => {
-  const a = Math.abs(Math.round(v));
-  return a >= 1e5 ? '₹' + (a / 1e5).toFixed(2) + 'L' : a >= 1e3 ? '₹' + (a / 1e3).toFixed(1) + 'K' : '₹' + a;
-};
 const dirColor = (v) => (v >= 0 ? 'var(--grn)' : 'var(--red)');
 
 export default function IntradayChart({ tape, candles = null, pending = false, fills = [], overlays = BROKER, legsInHoverOnly = false, ariaLabel = 'Intraday P&L', primaryLabel = 'Net' }) {
   const LABEL_W = 54, W = 660, PLOT_W = W - LABEL_W, H = 200; // tight right strip, values right-justified
   const [hov, setHov] = useState(null);   // hovered point index
+  // Compact money for in-chart labels (no +/- glyph — direction is by COLOUR). Follows the
+  // global ₹/$ toggle: consuming the context re-renders this chart on flip; values are ₹-native.
+  const { mode, fx } = useDisplayCurrency();
+  const f = (v) => compactMoney(Math.abs(Math.round(v)), mode, fx);
 
   const pts = (tape || []).filter((p) => p && p.t != null && Number.isFinite(+p.net));
   const present = overlays.filter((o) => pts.some((p) => p && p[o.key] != null));
@@ -260,7 +260,7 @@ export default function IntradayChart({ tape, candles = null, pending = false, f
         {tipRows.map((row, i) => (
           <div key={i} className={'iq-r' + (row.kind === 'net' ? ' iq-net' : '')}>
             <span className="iq-l" style={{ color: row.lc, fontWeight: row.kind === 'net' ? 700 : 600 }}>{row.label}</span>
-            <span className="iq-v" style={{ color: row.vc }}><span className="rs">₹</span>{f(row.v).slice(1)}</span>
+            <span className="iq-v" style={{ color: row.vc }}><span className="rs">{f(row.v)[0]}</span>{f(row.v).slice(1)}</span>
           </div>
         ))}
       </div>
