@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
-import NiftyHeatmap from '../shared/NiftyHeatmap';
+import MarketHeatmap from '../shared/MarketHeatmap';
+import { HEATMAP_META as NASDAQ_META, HEATMAP_FALLBACK as NASDAQ_FALLBACK } from '../../../data/nasdaq100-heatmap';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
 import { smoothPath } from '../../lib/smoothPath';
@@ -474,7 +475,7 @@ function CalendarBoard({ cal, region = 'india' }) {
   );
 }
 
-export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, nifty50Loading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, nifty50Loading, nasdaq, nasdaqLoading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
@@ -614,15 +615,24 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Nifty 50 heatmap — Fyers-style nested treemap (sector › industry › stock),
-          sized by market cap, drill into a sector. India only; full-width so the
-          treemap has room. The compact "Hot sectors" cell above stays as the glance. */}
+      {/* Market heatmap — Fyers-style nested treemap (sector › industry › stock), sized
+          by market cap, drill into a sector. Full-width so the treemap has room. Nifty-50
+          on the India view, Nasdaq-100 on US; the compact "Hot sectors" cell stays as the
+          glance. Same MarketHeatmap component, different taxonomy + feed. */}
       {showIN && (nifty50Loading || nifty50?.stocks?.length) ? (
         <div className="card fdcard">
           <div className="wlabel">Nifty 50 · heatmap
             <span className="hint">sized by market cap · click a sector to drill in</span>
           </div>
-          <NiftyHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
+          <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
+        </div>
+      ) : null}
+      {showUS && (nasdaqLoading || nasdaq?.stocks?.length) ? (
+        <div className="card fdcard">
+          <div className="wlabel">Nasdaq 100 · heatmap
+            <span className="hint">sized by market cap · click a sector to drill in</span>
+          </div>
+          <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" />
         </div>
       ) : null}
 

@@ -68,6 +68,7 @@ const ECAL_KEY      = 'nwTracker.econCal';
 const PNEWS_KEY     = 'nwTracker.portfolioNews';
 const NEWS_KEY      = 'nwTracker.marketNews';
 const NIFTY50_KEY   = 'nwTracker.nifty50';
+const NASDAQ_KEY    = 'nwTracker.nasdaq100';
 const REFRESH_MS    = 15 * 60 * 1000;
 
 
@@ -226,6 +227,8 @@ function Dashboard() {
   const [marketNews, setMarketNews] = useState(null); // market-headline ticker (/api/news)
   const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Wrap tab)
   const [nifty50Loading, setN50Loading] = useState(false);
+  const [nasdaq, setNasdaq]         = useState(null); // Nasdaq 100 heatmap (lazy — only on the Wrap tab, US view)
+  const [nasdaqLoading, setNdqLoading]  = useState(false);
   const [fiidiiTrail, setFiidiiTrail] = useState([]); // 10-session FII/DII flow trail (localStorage, builds forward)
   const [flash, setFlash]           = useState({});
   const [ath, setAth]               = useState(false); // all-time-high celebration
@@ -843,6 +846,29 @@ function Dashboard() {
     return () => { dead = true; };
   }, [tab]);
 
+  // Nasdaq 100 heatmap — lazy: fetched only when the Wrap tab (6) is open (renders
+  // on the US view), same sessionStorage-cached pattern as the Nifty 50 feed above.
+  useEffect(() => {
+    if (tab !== 6) return;
+    try {
+      const c = JSON.parse(sessionStorage.getItem(NASDAQ_KEY) || 'null');
+      if (c?.nasdaq) setNasdaq(c.nasdaq);
+      if (c?.ts && Date.now() - c.ts < 5 * 60 * 1000) return; // fresh enough
+    } catch {}
+    let dead = false;
+    setNdqLoading(true);
+    fetch('/api/nasdaq100', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (dead || !j) return;
+        setNasdaq(j);
+        try { sessionStorage.setItem(NASDAQ_KEY, JSON.stringify({ ts: Date.now(), nasdaq: j })); } catch {}
+      })
+      .catch(() => {})
+      .finally(() => { if (!dead) setNdqLoading(false); });
+    return () => { dead = true; };
+  }, [tab]);
+
   // Per-holding headlines (sentiment-shaded cards) — lazy, only on the Wrap tab;
   // ~18 RSS fetches server-side, so kept off the price-refresh path. Cached 10 min.
   useEffect(() => {
@@ -1345,7 +1371,7 @@ function Dashboard() {
               ALGO={ALGO} FY={FY} fnoRealized={APP.fnoRealized} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} econCal={econCal} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} usSentiment={usSentiment} indiaSentiment={indiaSentiment} nifty50={nifty50} nifty50Loading={nifty50Loading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
+            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} econCal={econCal} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} usSentiment={usSentiment} indiaSentiment={indiaSentiment} nifty50={nifty50} nifty50Loading={nifty50Loading} nasdaq={nasdaq} nasdaqLoading={nasdaqLoading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

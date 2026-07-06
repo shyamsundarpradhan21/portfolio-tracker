@@ -1,6 +1,6 @@
 'use client';
 
-// Fyers-style Nifty-50 market heatmap — a NESTED squarified treemap: sectors
+// Fyers-style market heatmap — a NESTED squarified treemap: sectors
 // contain industries contain stocks. Tile SIZE = market-cap weight (data/
 // nifty50-heatmap.js), tile COLOUR = 1D % (green up / red down, intensity by
 // magnitude, capped at ±3% so the spread stays readable). Click a sector to
@@ -14,7 +14,7 @@
 // place of it — this is the drill-down instrument, that one is the glance.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HEATMAP_META, HEATMAP_FALLBACK } from '../../../data/nifty50-heatmap';
+import { HEATMAP_META as NIFTY_META, HEATMAP_FALLBACK as NIFTY_FALLBACK } from '../../../data/nifty50-heatmap';
 
 const CANVAS_H = 452;
 
@@ -112,7 +112,9 @@ function layout(tree, drill, W, H) {
 
 const pxpc = (v, total) => (total > 0 ? (v / total) * 100 + '%' : '0%');
 
-export default function NiftyHeatmap({ stocks, loading }) {
+// Market-agnostic: `meta`/`fallback` = the {sym → {sector, industry, cap}} taxonomy
+// (defaults to the Nifty-50 one for back-compat), `label` = the root-crumb name.
+export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fallback = NIFTY_FALLBACK, label = 'Nifty 50' }) {
   const [drill, setDrill] = useState(null);
   const [w, setW] = useState(0);
   const roRef = useRef(null);
@@ -136,9 +138,9 @@ export default function NiftyHeatmap({ stocks, loading }) {
   const tree = useMemo(() => {
     const rows = (stocks || [])
       .filter((s) => s && s.sym && s.pct != null && isFinite(s.pct))
-      .map((s) => { const m = HEATMAP_META[s.sym] || HEATMAP_FALLBACK; return { sym: s.sym, name: s.name || s.sym, pct: s.pct, ...m }; });
+      .map((s) => { const m = meta[s.sym] || fallback; return { sym: s.sym, name: s.name || s.sym, pct: s.pct, ...m }; });
     return buildTree(rows);
-  }, [stocks]);
+  }, [stocks, meta, fallback]);
 
   // If a drilled sector vanishes from a later feed, fall back to the overview.
   useEffect(() => { if (drill && !tree.some((s) => s.name === drill)) setDrill(null); }, [drill, tree]);
@@ -156,7 +158,7 @@ export default function NiftyHeatmap({ stocks, loading }) {
         <span className="nhx-pill">Colour <b>1D %</b></span>
         <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-xs)', color: 'var(--txt3)', fontFamily: 'var(--mono)' }}>
           {drill
-            ? <><span className="nhx-back" role="button" tabIndex={0} onClick={() => setDrill(null)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDrill(null); }}>‹ Nifty 50</span> / {drill}</>
+            ? <><span className="nhx-back" role="button" tabIndex={0} onClick={() => setDrill(null)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDrill(null); }}>‹ {label}</span> / {drill}</>
             : 'click a sector to dig in'}
         </span>
       </div>
@@ -199,7 +201,7 @@ export default function NiftyHeatmap({ stocks, loading }) {
 
         {tiles.map((t) => {
           const r = t.rect, s = t.stock;
-          const showTk = r.w > 26 && r.h > 16, showPc = r.h > 30;
+          const showTk = r.w > 26 && r.h > 16, showPc = r.h > 30 && r.w > 40;
           const tkSize = t.big ? Math.max(9, Math.min(15, r.w / 6.5)) : Math.max(8, Math.min(11.5, r.w / 4.5));
           return (
             <div key={'t:' + s.sym} style={{ position: 'absolute', boxSizing: 'border-box', left: pxpc(r.x, w), top: pxpc(r.y, H), width: pxpc(r.w, w), height: pxpc(r.h, H), padding: 1 }}>

@@ -1,4 +1,64 @@
-# Plan — Fyers-style Nifty-50 heatmap treemap (BUILT, uncommitted, 2026-07-07)
+# Plan — US market heatmap (Nasdaq-100), mirror of the Nifty-50 one (BUILT & COMMITTED to main, 2026-07-07)
+
+Goal: the same Fyers-style nested drill-down treemap (sector › industry › stock, cap-sized,
+1D%-coloured) for the US market, on the Macro tab **US** region — mirroring the Nifty-50 heatmap.
+
+## Why it's a bigger build than the India one
+The India heatmap reused the EXISTING `/api/nifty50` live feed. **There is NO US per-stock feed** —
+the US Macro view only has index quotes + sector-level data. So this needs a new constituents feed.
+
+## Proposed scope (Nasdaq-100 — recommended)
+- [ ] `data/nasdaq100.js` — constituent list `[{sym, name, sector}]` (~100 US tickers), mirroring
+      `data/nifty50.js`. As-of dated; static reference (index reconstitutes ~annually).
+- [ ] `data/nasdaq100-heatmap.js` — `HEATMAP_META[sym] = {sector, industry, cap}` + `HEATMAP_FALLBACK`,
+      mirroring `nifty50-heatmap.js`. **This is the bulk of the work**: ~100 symbols hand-curated to
+      sector/industry (Tech › Semis/Software/Hardware, Comm Services › Interactive Media, Consumer ›
+      Retail/Autos, Healthcare › Biotech/Pharma, …) + approximate index weights (Nasdaq-100 is very
+      top-heavy: AAPL/MSFT/NVDA/AMZN/GOOGL/META dominate).
+- [ ] `app/api/nasdaq100/route.js` — Yahoo per-symbol fetch (US tickers, no `.NS`), `force-dynamic`,
+      query1→query2 fallback, drop failed symbols. Same `{stocks:[{sym,name,sector,price,pct}]}`
+      contract as `/api/nifty50`. Lazy (only when the Macro tab opens).
+- [ ] Generalize `NiftyHeatmap.js` → accept `meta`/`fallback` (+ optional label) as PROPS instead of
+      importing HEATMAP_META directly; default to the Nifty taxonomy for backward-compat so the India
+      card is unchanged. (Or rename to a generic `MarketHeatmap`; India + US both consume it.)
+- [ ] `page.js` — lazy-fetch `/api/nasdaq100` when the Macro tab is open (mirror the nifty50 fetch +
+      `nasdaqLoading` state); pass `nasdaq` + loading to MacroTab.
+- [ ] `MacroTab.js` — US-only (`showUS`) full-width "Nasdaq 100 · heatmap" card, mirroring the India one.
+
+## Verify (same bar as the India heatmap)
+- [ ] Build clean; 100/100 symbol coverage (nasdaq100.js ↔ nasdaq100-heatmap.js).
+- [ ] Render (both themes) on Macro › US: tiles sized by cap (AAPL/MSFT/NVDA largest), green/red by 1D%,
+      sector › industry headers, drill + crumb, visible empty states, no blank canvas.
+- [ ] `certify.mjs` GREEN (RSP-001/002/004=0, docOverflow=0, 6 widths × both themes, normal + stress).
+
+## Decisions to confirm before building
+1. **Index: Nasdaq-100** (recommended — ~100 tiles, tech-heavy, matches your QQQM holding) vs S&P 500
+   (500 tiles — too dense for a treemap) vs Dow 30 (too sparse).
+2. **Component:** generalize the existing `NiftyHeatmap` to take the taxonomy as a prop (DRY, India
+   stays byte-identical via defaults) — vs a separate copy. Recommend generalize.
+3. **Taxonomy caps:** hand-set approximate weights (like the Nifty file), refreshed at reconstitution.
+Decisions (user): Nasdaq-100; generalize the component.
+
+## Review — DONE (2026-07-07)
+- `data/nasdaq100.js` + `data/nasdaq100-heatmap.js` (subagent-compiled from Wikipedia Nasdaq-100, as-of
+  2026-06): **101 symbols** (GOOGL+GOOG both count), matching sets (0 mismatch/dup), 10 clean sectors,
+  top-heavy caps (NVDA 8.5 / MSFT 8 / AAPL 7.5 / AMZN 5.5 / AVGO 5). Independently re-verified.
+- `app/api/nasdaq100/route.js` — Yahoo per-symbol (US tickers, no suffix), mirror of /api/nifty50.
+  Live: returns count 101.
+- Component `NiftyHeatmap.js` → renamed `MarketHeatmap.js`, generalized: `meta`/`fallback`/`label` props
+  (default to the Nifty taxonomy → India card unchanged). Both views consume it. Bonus: `showPc` now
+  needs `r.w>40` so the % line doesn't clip in narrow tiles (helps both heatmaps; dropped macro-us
+  `other` clips 22→10).
+- `page.js` — lazy `/api/nasdaq100` fetch (tab 6, sessionStorage-cached) + `nasdaq`/`nasdaqLoading`
+  state, passed to MacroTab. `MacroTab.js` — US-only "Nasdaq 100 · heatmap" card.
+- Verified: build clean; render (both themes) draws **101 tiles**, sized by cap (NVDA/AVGO/MSFT/AAPL
+  largest), green/red by 1D%, sector › industry headers (TECHNOLOGY › Semiconductors/Software/Hardware,
+  COMM SERVICES › Interactive Media/Entertainment, …), drill TECHNOLOGY→43 + `‹ Nasdaq 100` crumb.
+  certify GREEN (RSP-001/002/004=0, docOverflow=0, 6 widths × both themes, NORMAL + STRESS).
+
+---
+
+# Plan — Fyers-style Nifty-50 heatmap treemap (COMMITTED to main 92c700c, 2026-07-07)
 
 Goal: a nested drill-down market heatmap of the Nifty 50 (sector › industry › stock),
 tiles sized by market-cap weight, coloured by 1D %, matching Fyers' granularity — sitting
