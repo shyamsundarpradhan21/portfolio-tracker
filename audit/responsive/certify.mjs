@@ -21,16 +21,12 @@ const BASE = process.env.CERT_BASE || 'http://localhost:3000';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const ALL_SURFACES = [
-  // Nav moved to the shell sidebar (shell-6region): the .snav-* buttons are always in
-  // the DOM (display:none <1024, but $eval's programmatic click ignores visibility), so
-  // one selector works at every width. .hdr-hero + .pulse-pill are unchanged. Hash nav
-  // (gotoSurface's goto('/#<hash>')) is the primary path; the click is a belt-and-braces.
   { id: 'overview', hash: 'overview', btn: '.hdr-hero' },
-  { id: 'indian',   hash: 'indian',   btn: '.snav-indian' },
-  { id: 'fd',       hash: 'fd',       btn: '.snav-fd' },
-  { id: 'mf',       hash: 'mf',       btn: '.snav-mf' },
-  { id: 'us',       hash: 'us',       btn: '.snav-us' },
-  { id: 'algo',     hash: 'algo',     btn: '.snav-algo' },
+  { id: 'indian',   hash: 'indian',   btn: '.hdr-card.hc-indian' },
+  { id: 'fd',       hash: 'fd',       btn: '.hdr-card.hc-fd' },
+  { id: 'mf',       hash: 'mf',       btn: '.hdr-card.hc-mf' },
+  { id: 'us',       hash: 'us',       btn: '.hdr-card.hc-us' },
+  { id: 'algo',     hash: 'algo',     btn: '.hdr-card.hc-algo' },
   { id: 'macro-in', hash: 'macro',    btn: '.pulse-pill', region: 'india' },
   { id: 'macro-us', hash: 'macro',    btn: '.pulse-pill', region: 'us' },
 ];
