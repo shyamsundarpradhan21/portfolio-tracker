@@ -208,14 +208,16 @@ source for US allocation + deposits/withdrawals — do NOT hand-edit these in `p
   (`SipCard.js`) reads ONLY this ledger for its US stream — never the `US[]` holdings — so a deposit
   that isn't in US_CASHFLOWS is invisible on that card even though the sleeve VALUE is right. (This
   was the bug: June's $206.66 deposit was hand-transcription-skipped.)
-- **US[] composition (qty/cost/inv)** CANNOT be reconstructed from the **transactions** export —
-  proven 31/101 symbols drift: stock splits mint shares with no buy row (`US_CORP_ACTIONS` holds only
-  dividends, no split rows) → negative reconstructed qty (NFLX/MSTR/NOW), and DRIP reinvestment shares
-  aren't booked as trades (SCHD live 26.89 vs traded-net 24.42). Correct source for composition = a
-  Vested **holdings/positions export** (current qty + avg cost directly), which is a DIFFERENT file
-  from `Vested_Transactions.xlsx`. Until that export exists, `US[]` stays manual. The curated
-  `name`/`cat` on each holding are user-assigned (cat isn't in any Vested export) → any composition
-  parser must PRESERVE name/cat and only recompute the numeric fields.
+- **US[] composition (qty/cost/inv)** ← the Vested **Holdings** export (`Vested_Holdings*.xlsx`, a
+  DIFFERENT file from the tradebook), via `parse-vested.py --holdings --write` + the registry parser
+  `vested-holdings.mjs`. Do NOT hand-edit US[]. It CANNOT be reconstructed from the transactions Trades
+  sheet — proven 31/101 drift: stock splits mint shares with no buy row (`US_CORP_ACTIONS` holds only
+  dividends, no split rows) → negative reconstructed qty (NFLX/MSTR/NOW), and DRIP shares aren't booked
+  as trades (SCHD live 26.89 vs traded-net 24.42). The Holdings sheet gives current qty + avg cost +
+  invested directly. Curated `name`/`cat` are user-assigned (cat isn't in any Vested export) → the
+  `--holdings` parser PRESERVES name/cat from the current US[] and only recomputes qty/cost/inv; a
+  genuinely NEW ticker needs a one-time cat in `NEW_META` (script) or it FAILs the write (no
+  uncategorised holding ships — cat drives CAT_COLORS + the allocation mix).
 
 ---
 
