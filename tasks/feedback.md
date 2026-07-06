@@ -199,6 +199,24 @@ whole Day view, then — "there should not be a glance view curve, not daily, no
 — removed it from every view. Month/Year/All now show the calendar + pills, no curve. Don't re-add a
 "latest session" curve to the glance.)
 
+### US sleeve is TWO books — US_CASHFLOWS (deposits) is parser-owned; US[] composition is NOT reconstructable from the txn export
+Standing directive (2026-07-06): the **Vested parser** (`scripts/parse-vested.py`) is the single
+source for US allocation + deposits/withdrawals — do NOT hand-edit these in `portfolio.private.json`.
+- **US_CASHFLOWS** = the Vested export's **Transfers** sheet (Deposit → +usd, Withdrawal → −usd, USD
+  raw; the Capital Deployment card converts at each date's FX). `parse-vested.py --write` now
+  full-replaces it (verified: reproduces all prior rows exactly + catches skipped months). The card
+  (`SipCard.js`) reads ONLY this ledger for its US stream — never the `US[]` holdings — so a deposit
+  that isn't in US_CASHFLOWS is invisible on that card even though the sleeve VALUE is right. (This
+  was the bug: June's $206.66 deposit was hand-transcription-skipped.)
+- **US[] composition (qty/cost/inv)** CANNOT be reconstructed from the **transactions** export —
+  proven 31/101 symbols drift: stock splits mint shares with no buy row (`US_CORP_ACTIONS` holds only
+  dividends, no split rows) → negative reconstructed qty (NFLX/MSTR/NOW), and DRIP reinvestment shares
+  aren't booked as trades (SCHD live 26.89 vs traded-net 24.42). Correct source for composition = a
+  Vested **holdings/positions export** (current qty + avg cost directly), which is a DIFFERENT file
+  from `Vested_Transactions.xlsx`. Until that export exists, `US[]` stays manual. The curated
+  `name`/`cat` on each holding are user-assigned (cat isn't in any Vested export) → any composition
+  parser must PRESERVE name/cat and only recompute the numeric fields.
+
 ---
 
 ## Git Workflow
