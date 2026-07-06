@@ -46,17 +46,41 @@ function commitArchive() {
     const { date } = istParts(Date.now());
     execSync(`git commit -m "chore: intraday P&L tape ${date}"`, { cwd: ROOT, stdio: 'inherit' });
     execSync('git fetch origin main', { cwd: ROOT });
-    // --autostash so an unrelated dirty working tree (dev edits, other generated
-    // files) at the 15:32 close doesn't abort the rebase and strand the commit.
-    try { execSync('git rebase --autostash origin/main', { cwd: ROOT, stdio: 'inherit' }); }
-    catch {
-      try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
-      console.error('archive: rebase onto main conflicted — commit left local, next close bundles it');
-      return; // committed stays false: the local commit survives and next day's push carries it
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT }).toString().trim();
+    if (branch === 'main') {
+      // On main: fast-forward the tape onto origin/main and push HEAD. --autostash so an
+      // unrelated dirty working tree (dev edits, other generated files) at the close doesn't
+      // abort the rebase and strand the commit.
+      try { execSync('git rebase --autostash origin/main', { cwd: ROOT, stdio: 'inherit' }); }
+      catch {
+        try { execSync('git rebase --abort', { cwd: ROOT }); } catch {}
+        console.error('archive: rebase onto main conflicted — commit left local, next close bundles it');
+        return; // committed stays false: the local commit survives and next day's push carries it
+      }
+      const ahead = +execSync('git rev-list --count origin/main..HEAD', { cwd: ROOT }).toString().trim();
+      if (ahead > 0) { execSync('git push origin HEAD:main', { cwd: ROOT, stdio: 'inherit' }); console.log('archive pushed'); }
+      committed = true; // only now is the archive durably on origin/main
+    } else {
+      // On a FEATURE branch: push ONLY this tape commit to main — cherry-pick it onto origin/main
+      // in an ISOLATED throwaway worktree and push that, so the checked-out branch is NEVER shipped.
+      // (2026-07-06 prod incident: the old `rebase origin/main && push HEAD:main` from shell-6region
+      // rebased the WHOLE branch onto main and pushed all of it, deploying unfinished shell work.)
+      const tape = execSync('git rev-parse HEAD', { cwd: ROOT }).toString().trim();
+      const WT = join(ROOT, '..', '.pt-tape-push-wt');
+      try { execSync(`git worktree remove --force "${WT}"`, { cwd: ROOT }); } catch {} // clear any stale wt
+      execSync(`git worktree add --quiet --detach "${WT}" origin/main`, { cwd: ROOT });
+      try {
+        execSync(`git -C "${WT}" cherry-pick ${tape}`, { cwd: ROOT, stdio: 'inherit' });
+        execSync(`git -C "${WT}" push origin HEAD:main`, { cwd: ROOT, stdio: 'inherit' });
+        console.log(`archive pushed (tape-only → main; branch ${branch} not touched)`);
+        committed = true;
+      } catch {
+        try { execSync(`git -C "${WT}" cherry-pick --abort`, { cwd: ROOT }); } catch {}
+        console.error('archive: tape-only push onto main failed — held locally + in KV, next close retries');
+      } finally {
+        try { execSync(`git worktree remove --force "${WT}"`, { cwd: ROOT }); } catch {}
+      }
     }
-    const ahead = +execSync('git rev-list --count origin/main..HEAD', { cwd: ROOT }).toString().trim();
-    if (ahead > 0) { execSync('git push origin HEAD:main', { cwd: ROOT, stdio: 'inherit' }); console.log('archive pushed'); }
-    committed = true; // only now is the archive durably on origin/main
   } catch (e) { console.error('archive commit:', e.message); }
 }
 
