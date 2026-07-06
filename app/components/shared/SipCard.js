@@ -186,9 +186,14 @@ export default function SipCard({ fx }) {
   const curFY = fyOf(curKey + '-01');
 
   // US deployment = net BUYS per date (Buy +, Sell −) from the Vested tradebook —
-  // same {date, invested} shape usBuys had, so every filter below is unchanged;
-  // only the BASIS moves from deposits to actual securities bought (cost basis).
+  // same {date, invested} shape the old US_CASHFLOWS ledger had, so every filter
+  // below is unchanged; only the BASIS moves from deposits to actual securities
+  // bought (cost basis).
   const usBuys = useMemo(() => usBuyLedger(APP.usTrades), []);
+
+  // Composition-bar hover: brighten the hovered stream, dim the rest (bar + legend
+  // cross-highlight), mirroring the Overview AllocBar / SunburstMix interaction.
+  const [barHov, setBarHov] = useState(null);
 
   // Every FY the ledgers touch, oldest first.
   const FYS = useMemo(() => {
@@ -334,12 +339,13 @@ export default function SipCard({ fx }) {
   // Bar percentages are based on total capital formed (incl. CMPF) so the
   // segments still sum to 100% — viewGross itself is take-home only.
   const viewGrossAll = viewStreams.reduce((s, x) => s + x.amount, 0);
-  // CMPF always renders last so its hatched segment sits at the right edge
-  // of the bar, mirroring its right-aligned legend entry.
+  // Ordered largest → smallest so the bar + legend read decreasing. EXCEPTION:
+  // CMPF always renders last (right edge, hatched) — the pension pool, segregated
+  // from the investable streams, regardless of its size.
   const segs = viewGrossAll
     ? viewStreams
         .map((s) => ({ ...s, color: STREAM_COLORS[s.label] || 'var(--pnk)', pct: Math.round(s.amount / viewGrossAll * 100) }))
-        .sort((a, b) => (a.label === 'CMPF') - (b.label === 'CMPF'))
+        .sort((a, b) => ((a.label === 'CMPF') - (b.label === 'CMPF')) || (b.amount - a.amount))
     : [];
 
   // Minis follow the view: all-time when "overall", a single month when one is
@@ -431,19 +437,26 @@ export default function SipCard({ fx }) {
         </div>
       </div>
 
-      {/* composition bar — derived from the selected view's ledger flows */}
-      <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}>
+      {/* composition bar — derived from the selected view's ledger flows. 2px
+          divider strips (the sur2 container shows between segments); hovering a
+          segment brightens it + dims the rest, cross-linked to the legend below. */}
+      <div style={{ height: 22, background: 'var(--sur2)', borderRadius: 3, overflow: 'hidden', position: 'relative', marginBottom: 8 }}
+        onMouseLeave={() => setBarHov(null)}>
         {segs.map((s, i) => {
           const left = segs.slice(0, i).reduce((a, x) => a + x.pct, 0);
           const bg = s.label === 'CMPF' ? CMPF_HATCH : s.color;
-          return <div key={s.label} style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: s.pct + '%', background: bg, opacity: s.label === 'CMPF' ? 1 : .9, transition: 'all .45s cubic-bezier(.16,1,.3,1)' }} />;
+          const dim = barHov && barHov !== s.label;
+          return <div key={s.label} title={`${s.label} ${s.pct}%`} onMouseEnter={() => setBarHov(s.label)}
+            style={{ position: 'absolute', left: left + '%', top: 0, height: '100%', width: `calc(${s.pct}% - 2px)`, background: bg, opacity: dim ? 0.3 : (s.label === 'CMPF' ? 1 : .9), transition: 'opacity .15s, all .45s cubic-bezier(.16,1,.3,1)', cursor: 'pointer' }} />;
         })}
       </div>
-      <div className="alloc-leg" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}>
+      <div className="alloc-leg" style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap', minHeight: 16 }}
+        onMouseLeave={() => setBarHov(null)}>
         {!segs.length ? (
           <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--txt3)' }}>{planned ? 'Month not reached.' : 'No flows recorded.'}</span>
         ) : segs.filter((s) => s.label !== 'CMPF').map((s) => (
-          <span key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)' }}>
+          <span key={s.label} onMouseEnter={() => setBarHov(s.label)}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', cursor: 'pointer', opacity: barHov && barHov !== s.label ? 0.35 : 1, transition: 'opacity .15s' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: s.color }} />
             <RsText>{`${s.label} ${inrFull(s.amount)} · ${s.pct}%`}</RsText>
           </span>
@@ -455,7 +468,8 @@ export default function SipCard({ fx }) {
           </span>
         )}
         {segs.find((s) => s.label === 'CMPF') && (() => { const c = segs.find((s) => s.label === 'CMPF'); return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', marginLeft: 'auto' }}>
+          <span onMouseEnter={() => setBarHov('CMPF')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-xs)', color: 'var(--txt2)', marginLeft: 'auto', cursor: 'pointer', opacity: barHov && barHov !== 'CMPF' ? 0.35 : 1, transition: 'opacity .15s' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, flexShrink: 0, background: CMPF_HATCH }} />
             <RsText>{`${c.label} ${inrFull(c.amount)} · ${c.pct}%`}</RsText>
           </span>

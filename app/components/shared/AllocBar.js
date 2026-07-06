@@ -13,11 +13,13 @@ export default function AllocBar({ sleeves, mfAlloc, drift = null }) {
   const view = drift ? sleeves.map((s) => ({ ...s, value: drift.out[s.key] || 0 })) : sleeves;
   const total = view.reduce((s, x) => s + (x.value || 0), 0);
 
-  // CMPF (pf) forced last so it reads right-most in both the bar and the legend.
+  // Ordered largest → smallest allocation, so the bar + legend read decreasing.
+  // EXCEPTION: CMPF (pf) is forced right-most (pension pool, segregated) regardless
+  // of its size — pf sorts last, everything else by descending share.
   const sectors = view
     .filter((s) => (s.value || 0) > 0)
     .map((s) => ({ key: s.key, label: s.label, pct: total ? (s.value / total) * 100 : 0, color: s.color }))
-    .sort((a, b) => (a.key === 'pf') - (b.key === 'pf'));
+    .sort((a, b) => ((a.key === 'pf') - (b.key === 'pf')) || (b.pct - a.pct));
 
   // Class partition (same split the old sunburst inner ring used): hedged =
   // arbitrage MF, debt = FD + CMPF, equity = the rest. Under drift the arbitrage

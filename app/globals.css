@@ -1057,23 +1057,24 @@ body::before {
    one line. Scoped to Overview — on a sleeve's own tab the cards unify to that
    tab's theme. The iridescent hero blends these same hues; the cards separate them. */
 :root[data-tab="overview"] .hdr-card .lbl { color: var(--acc); }
-/* Per-sleeve TAB accents as a GLOBAL palette (mirror the :root[data-tab=…] values,
-   night + day). Both the Overview header cards AND the allocation bar (ALLOC_COLORS)
-   colour each sleeve by its linked tab's theme — Indian blue · US violet · FD green ·
-   MF pink · Trading yellow. */
+/* Per-sleeve TAB accents as a GLOBAL palette — EXACTLY mirror the :root[data-tab=…]
+   accent (--acc/--acc2) of each sleeve's tab, night + day, so the Overview header
+   cards AND the allocation bar (ALLOC_COLORS) read the same colour as the tab itself:
+   Indian periwinkle · US cyan · FD green · MF plum · Trading gold. Keep these in
+   lockstep with the per-tab --acc values above; a drift makes a sleeve mis-match its tab. */
 :root {
-  --tab-indian: #5479EE; --tab-indian2: #7A98F5;
-  --tab-us:     #7370FF; --tab-us2:     #948FFF;
+  --tab-indian: #7370FF; --tab-indian2: #948FFF;
+  --tab-us:     #36D2FF; --tab-us2:     color-mix(in srgb, #36D2FF 62%, #fff);
   --tab-fd:     #34E0A1; --tab-fd2:     #7CEFC4;
   --tab-mf:     #CB5189; --tab-mf2:     #E47BAB;
-  --tab-algo:   #FCDB32; --tab-algo2:   #FDE87A;
+  --tab-algo:   #B3945B; --tab-algo2:   color-mix(in srgb, #B3945B 62%, #fff);
 }
 :root[data-time="day"] {
-  --tab-indian: #3447AA; --tab-indian2: #5A6BD0;
-  --tab-us:     #4F4DE0; --tab-us2:     #6E6CEC;
+  --tab-indian: #4F4DE0; --tab-indian2: #6E6CEC;
+  --tab-us:     #0C6E93; --tab-us2:     color-mix(in srgb, #0C6E93 78%, #fff);
   --tab-fd:     #0E9E72; --tab-fd2:     #14B884;
   --tab-mf:     #7C2F54; --tab-mf2:     #94476C;
-  --tab-algo:   #B68A00; --tab-algo2:   #D1A50A;
+  --tab-algo:   #BB8153; --tab-algo2:   color-mix(in srgb, #BB8153 72%, #000);
 }
 :root[data-tab="overview"] .hdr-card.hc-indian { --acc: var(--tab-indian); --acc2: var(--tab-indian2); }
 :root[data-tab="overview"] .hdr-card.hc-us     { --acc: var(--tab-us);     --acc2: var(--tab-us2); }
@@ -1383,7 +1384,7 @@ body::before {
    right-most segment, in its grey/black hatch. */
 .pjx-alloc { border-bottom: .5px solid var(--brd); margin: 4px 0 16px; padding-bottom: 15px; }
 .alloc-bar-lbl { text-align: center; font-family: var(--mono); font-size: var(--fs-2xs); letter-spacing: .1em; text-transform: uppercase; color: var(--txt3); margin-bottom: 10px; }
-.alloc-bar-track { display: flex; height: 22px; border-radius: 8px; overflow: hidden; }
+.alloc-bar-track { display: flex; gap: 2px; height: 22px; border-radius: 8px; overflow: hidden; }
 .alloc-bar-track > div { min-width: 0; }
 .alloc-bar-leg { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; font-size: var(--fs-xs); color: var(--txt2); margin-top: 11px; }
 .alloc-bar-leg span { display: inline-flex; align-items: center; gap: 6px; }
