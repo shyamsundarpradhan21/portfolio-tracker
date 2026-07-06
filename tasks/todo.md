@@ -1,3 +1,55 @@
+# Plan — Fyers-style Nifty-50 heatmap treemap (BUILT, uncommitted, 2026-07-07)
+
+Goal: a nested drill-down market heatmap of the Nifty 50 (sector › industry › stock),
+tiles sized by market-cap weight, coloured by 1D %, matching Fyers' granularity — sitting
+BESIDE the existing aggregate Sector-heatmap card (user: keep both, replace later if liked).
+Mock approved via two visualize widgets (flat → then Fyers granularity).
+
+Decisions (user): market-cap sizing "just like fyers"; keep both cards for now.
+
+Built:
+- `data/nifty50-heatmap.js` — `HEATMAP_META[sym] = {sector, industry, cap}` for all 50 exact
+  tickers (incl. INDUSINDBK + JIOFIN; excludes LTIM/DIVISLAB/BEL which aren't in nifty50.js).
+  Caps are approximate index weights (hand-set; refresh at reconstitution). `HEATMAP_FALLBACK`
+  for any unmapped live symbol.
+- `app/components/shared/NiftyHeatmap.js` — nested squarified treemap (same family as
+  TreeMap.js), sector→industry→stock, single-industry sectors flattened. Joins `/api/nifty50`
+  `stocks` (live sym+name+pct) with the taxonomy. Colour via tokens (`color-mix(var(--grn)/
+  --red)`, cap ±3%), text `var(--txt)`, borders `--brd/--brd2` → theme-safe. Drill: click
+  sector → zoom to its stocks, crumb back. ResizeObserver-measured, %-positioned divs.
+- `app/components/tabs/MacroTab.js` — new full-width India-only `.card fdcard` "Nifty 50 ·
+  heatmap" (below FII/DII, above the macro sliders): `<NiftyHeatmap stocks={nifty50?.stocks}
+  loading={nifty50Loading} />`. (First wired to NiftyOverview by mistake — that component is
+  dead/unmounted; reverted it and moved to MacroTab, where nifty50 data + the live "Hot
+  sectors" SectorTreemap actually render. The compact SectorTreemap glance stays untouched.)
+
+Verified here: esbuild syntax OK on the data file + NiftyHeatmap; NiftyOverview confirmed
+complete/balanced by file read (bash mount serves a stale truncated copy — known artifact).
+No existing consumers touched (SectorHeatmap, nifty50.js untouched).
+
+## Review — VERIFIED & COMMITTED to main (2026-07-07, Claude Code)
+- Diff = exactly `data/nifty50-heatmap.js` (new) · `app/components/shared/NiftyHeatmap.js` (new)
+  · `app/components/tabs/MacroTab.js` · `globals.css` · `todo.md`. NiftyOverview.js NOT touched ✓.
+- Symbol coverage 50/50 vs nifty50.js (no missing/extra); `HEATMAP_FALLBACK` exported.
+- `next build` clean. Render-verified (puppeteer, 1440, both themes): the "Nifty 50 · heatmap"
+  card draws **49 tiles** (49/50 live from /api/nifty50), sized by cap (HDFCBANK/RELIANCE/ICICIBANK/
+  TCS largest), green/red by 1D %, nested sector › industry headers (BANK › Private/Public, OIL & GAS
+  › Refineries, AUTOMOBILE › Passenger Cars/Two-Wheelers …). Drill: click BANK → 6 bank tiles + `‹
+  Nifty 50` crumb. Empty states present (loading / feed-unavailable), no blank canvas.
+- `certify.mjs` GREEN: RSP-001/002/004 = 0, docOverflow = 0 across all 6 widths × both themes,
+  NORMAL **and** STRESS. (High `ellipsis` count = the tiles' intentional single-line truncation —
+  bucketed, not a clip.)
+- CHANGE from handoff: page.js already passed `nifty50Loading` (state at page.js:228, prop at :1348) —
+  so it was pre-wired; page.js correctly not in the diff. The `nhx-pill`/`nhx-back` classes the
+  component referenced were absent from globals.css (the "no globals.css change" note was inaccurate —
+  they'd have rendered unstyled), so **added ~4 lines** of theme-safe `.nhx-pill`/`.nhx-back` (user-
+  approved) and re-certified. Committed to **main** (not shell-6region): the changes are main-based
+  (MacroTab.js/todo.md diverge on shell-6region), so that branch couldn't take them cleanly (user-approved).
+- Dynamic-px tile/header font sizes kept as-is (must fit variable tiles — SVG-chart-text precedent,
+  not the `--fs-*` rule), per the handoff note.
+
+---
+
 # Plan — US sleeve measured on BUYS / cost-basis, not deposits (DONE, 2026-07-07)
 
 ## Outcome (verified)

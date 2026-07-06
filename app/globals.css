@@ -794,6 +794,11 @@ body::before {
 .tm { flex: 1 1 46px; min-height: 50px; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
 .tm span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
 .tm b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 1px; }
+/* Nifty-50 drill-down heatmap (NiftyHeatmap): legend pills + the drill crumb. */
+.nhx-pill { display: inline-flex; align-items: baseline; gap: 5px; font-size: var(--fs-2xs); color: var(--txt3); background: var(--sur2); border: .5px solid var(--brd2); border-radius: 999px; padding: 2px 9px; letter-spacing: .02em; }
+.nhx-pill b { color: var(--txt2); font-weight: 700; }
+.nhx-back { color: var(--acc); cursor: pointer; }
+.nhx-back:hover { text-decoration: underline; }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
 .gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); margin-top: 4px; }
 .gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }

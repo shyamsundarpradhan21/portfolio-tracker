@@ -607,6 +607,23 @@ a concrete implementation prompt (verified formulas, file targets, decisions loc
 is the one that makes the code changes.** So when a task arrives already-specced from a Cowork
 session, build to that spec (don't re-derive it), but still VERIFY the handed state first (below).
 
+### A Cowork handoff's META claims (branch, "no X change") are ASSERTIONS to verify, not facts
+Caught 2026-07-07 (Nifty-50 heatmap handoff): the prompt said "branch shell-6region" and "No
+globals.css change" — both were wrong about the actual working tree. (a) **Branch:** `git branch
+--show-current` was `main`, and the changes were main-BASED (the MacroTab.js edit's context matched
+main); shell-6region existed but its MacroTab.js/todo.md DIVERGED, so `git checkout shell-6region`
+could NOT carry the changes cleanly. The handoff's branch name was the Cowork author's belief, not
+the repo state. (b) **"No globals.css change":** the new component referenced `.nhx-pill`/`.nhx-back`
+classes that did NOT exist in globals.css → they'd have shipped unstyled; "finishing" required adding
+them (a globals.css change the note explicitly disclaimed). **How to apply:** before committing a
+handoff, independently confirm (1) the actual branch + whether the target branch can even take the
+diff (`git diff --stat <target> HEAD -- <touched files>`; non-empty on a touched file ⇒ it diverges,
+no clean carry), and (2) that every class/symbol the new code references actually resolves (grep
+globals.css for referenced classes) — a "no CSS change" claim is falsified by an undefined class the
+component uses. Verify the handoff's factual claims the same way you'd verify its formulas. Never
+switch branches to satisfy a handoff's branch claim without the user's OK (CLAUDE.md); surface the
+divergence and let them choose the target. [[cowork-mount-reads-stale]]
+
 ### Package pins: verify against the LIVE index (`pip index versions <pkg>`) — and expect ENVIRONMENTS to disagree
 Cas-parser P2 (2026-07-02): a Cowork-sandbox verification concluded the pinned
 `casparser==1.2.1` was "fabricated" because ITS pip resolved 0.8.1 as latest — the sandbox

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
+import NiftyHeatmap from '../shared/NiftyHeatmap';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
 import { smoothPath } from '../../lib/smoothPath';
@@ -473,7 +474,7 @@ function CalendarBoard({ cal, region = 'india' }) {
   );
 }
 
-export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, nifty50Loading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
@@ -612,6 +613,18 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
           <FiiDiiChart trail={fiidiiTrail} derivs={fiiDerivs} />
         </div>
       )}
+
+      {/* Nifty 50 heatmap — Fyers-style nested treemap (sector › industry › stock),
+          sized by market cap, drill into a sector. India only; full-width so the
+          treemap has room. The compact "Hot sectors" cell above stays as the glance. */}
+      {showIN && (nifty50Loading || nifty50?.stocks?.length) ? (
+        <div className="card fdcard">
+          <div className="wlabel">Nifty 50 · heatmap
+            <span className="hint">sized by market cap · click a sector to drill in</span>
+          </div>
+          <NiftyHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
+        </div>
+      ) : null}
 
       {/* Macro percentile sliders */}
       <SliderBoard board={macroBoard} region={region} />
