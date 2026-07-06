@@ -1503,67 +1503,32 @@ body { padding: 0; }
 }
 
 /* ── 6-region app shell (shell-6region) ───────────────────────────────────────
-   The .main content column IS the shell grid. Regions: header (full-bleed, spans every
-   column), a left sidebar nav rail (≥1024), and the per-tab main / widget / statistics
-   trio — the mock's 4-tier reflow, translated verbatim. The footer is a FIXED persistent
-   panel (see .foot-statusbar), so it is NOT a grid row. Region children carry min-width:0. */
+   The .main content column doubles as the shell grid. Phase 2 wires three of the
+   six regions — header (full-bleed, spans every column), a left sidebar nav rail
+   (≥1024), and the main content (.tab-content). The widget / statistics / footer
+   regions land in later phases; until then .tab-content spans the content columns
+   as the single main region. Region children carry min-width:0 (STRESSHARD-safe). */
 .shell {
   display: grid;
   column-gap: clamp(16px, 1.4vw, 28px);
   grid-template-columns: 1fr;
-  grid-template-areas: "header" "main" "widget" "stats";
+  grid-template-areas: "header" "main" "footer";
 }
 .shell > * { min-width: 0; min-height: 0; }
 .shell-header  { grid-area: header; }
 .shell-sidebar { grid-area: sidebar; display: none; }
-.shell-main    { grid-area: main;   min-width: 0; }
-.shell-widget  { grid-area: widget; min-width: 0; }
-.shell-stats   { grid-area: stats;  min-width: 0; }
-/* A regioned tab returns its three regions inside a display:contents wrapper, so they
-   drop straight into the grid; tabs not yet regioned render one full-span block. */
-.tab-regions { display: contents; }
-.shell-main, .shell-widget, .shell-stats { animation: tabEnter 140ms cubic-bezier(0.23,1,0.32,1); }
-.shell-span  { grid-area: main; }
+.shell > .tab-content { grid-area: main; }
+.shell-footer  { grid-area: footer; }
 
-@media (min-width: 768px) {
-  .shell {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas: "header header" "main main" "widget stats";
-  }
-  .shell-span { grid-column: 1 / -1; }
-}
 @media (min-width: 1024px) {
   .shell {
-    grid-template-columns: 12rem minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "header  header header"
-                         "sidebar main   main"
-                         "sidebar widget stats";
+    grid-template-columns: 12rem minmax(0, 1fr);
+    grid-template-areas: "header  header"
+                         "sidebar main"
+                         "footer  footer";
   }
   .shell-sidebar { display: flex; }
-  .shell-span { grid-column: 2 / -1; grid-row: 2 / -1; }
 }
-@media (min-width: 1440px) {
-  .shell {
-    grid-template-columns: 12rem minmax(0, 1fr) 16rem;
-    grid-template-areas: "header  header header"
-                         "sidebar main   widget"
-                         "sidebar main   stats";
-  }
-}
-
-/* FD maturity ladder widget (shell-6region Phase 4) — bars on a shared time axis. */
-.fdmat-track { position: relative; padding-top: 4px; }
-.fdmat-grid { position: absolute; top: 18px; bottom: 4px; border-left: 1px dashed var(--brd); pointer-events: none; }
-.fdmat-grid i { position: absolute; top: -16px; transform: translateX(-50%); font-size: var(--fs-2xs); color: var(--txt3); font-style: normal; white-space: nowrap; }
-.fdmat-now { position: absolute; top: 18px; bottom: 4px; border-left: 1.5px solid var(--acc); z-index: 2; pointer-events: none; }
-.fdmat-now i { position: absolute; top: -16px; left: 3px; font-size: var(--fs-2xs); font-style: normal; color: var(--acc); font-weight: 600; white-space: nowrap; }
-.fdmat-row { position: relative; margin-top: 14px; }
-.fdmat-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-width: 0; margin-bottom: 5px; }
-.fdmat-name { color: var(--txt); font-weight: 600; font-size: var(--fs-xs); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fdmat-when { color: var(--txt3); font-size: var(--fs-2xs); white-space: nowrap; flex-shrink: 0; }
-.fdmat-lane { position: relative; height: 8px; }
-.fdmat-bar  { position: absolute; height: 8px; border-radius: 4px; background: var(--sur2); overflow: hidden; }
-.fdmat-fill { display: block; height: 100%; background: var(--gld); border-radius: 4px; }
 
 /* Global footer (shell-6region Phase 3) — the ENTIRE footer is persistent: a fixed,
    frosted panel pinned to the viewport bottom (mirrors the sticky .main-header) carrying

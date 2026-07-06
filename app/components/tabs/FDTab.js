@@ -1,9 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { InrC, InrF, Pct, inrFull, fmtNavDate } from '../../lib/fmt';
+import { InrC, InrF, Pct, inrFull, fmtNavDate, fmtDateObj } from '../../lib/fmt';
 import { LiveInrF, LiveInrC } from '../shared/Live';
 import AnalysisCard from '../shared/AnalysisCard';
-import FdMaturity from '../shared/FdMaturity';
+import FreshnessTag from '../shared/FreshnessTag';
 
 // Active-FDs table columns — drives both the sortable header and the sort.
 const FD_COLS = [
@@ -28,10 +28,9 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
     return sort.dir * ((av ?? -Infinity) - (bv ?? -Infinity));
   });
   return (
-    <div className="tab-regions">
-      {/* STATISTICS region — AI card + summary figures (grid places it per the shell map). */}
-      <aside className="shell-stats">
+    <div>
       <AnalysisCard data={insights?.fd} on={insightsOn} loading={insightsOn && insightsFirstLoad} accent="var(--gld)" />
+      {/* Freshness provenance relocated to the global footer (shell-6region Phase 3). */}
 
       <div className="g4 sec">
         <div className="csm">
@@ -55,15 +54,7 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
           <div className="sub">principal-weighted avg rate</div>
         </div>
       </div>
-      </aside>
 
-      {/* WIDGET region — the new maturity-ladder visual (FD's synthesised 2nd chart). */}
-      <aside className="shell-widget">
-        <FdMaturity fds={fds} now={now} />
-      </aside>
-
-      {/* MAIN region — the FD ladder table + pipeline + matured/closed history. */}
-      <section className="shell-main">
       <div className="card sec">
         <div className="ctitle" style={{ marginBottom: 10 }}>Active FDs</div>
         <div className="ovx">
@@ -216,7 +207,6 @@ export default function FDTab({ fds, now, insights, insightsOn, insightsFirstLoa
           </div>
         </div>
       )}
-      </section>
     </div>
   );
 }
