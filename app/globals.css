@@ -1367,19 +1367,20 @@ body::before {
    read SMALLER than the mono digits) — just calm the weight next to bold. */
 .pjx .rs { font-weight: 500; }
 
-/* Capital Deployment stats — a constant 5-column row like the projection card's
-   .pjx-gcards (NOT the .g* symmetry grid), so the up-to-5 minis read as one line;
-   collapses 5→3→2 at the same tablet/phone breakpoints. */
-.sip-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+/* Capital Deployment stats — columns match the stat count so the row is always FULL
+   (no empty trailing columns when a view has <5 minis). auto-fit collapses unused
+   tracks, so N minis → N equal columns on one line; wraps only when they can't fit
+   (min track 150px). Off the .g* symmetry grid, like the projection card's .pjx-gcards. */
+.sip-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: stretch; }
 .sip-stats > * { min-width: 0; }
 @media (max-width: 820px) {
   /* Hold 5-across down through tablet-landscape (was dropping at <=1000, which
      wrapped to an ugly 3+2 on live feedback). Only below ~820 does the value+waffle
      genuinely squeeze — there, drop to 3 columns. */
-  .pjx-gcards, .sip-stats { grid-template-columns: repeat(3, 1fr); }
+  .pjx-gcards { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 760px) {
-  .pjx-gcards, .sip-stats { grid-template-columns: repeat(2, 1fr); }
+  .pjx-gcards { grid-template-columns: repeat(2, 1fr); }
   .pjx-sctabs { grid-template-columns: 1fr; }
   .pjx-sctab { border-right: 0; border-bottom: .5px solid var(--brd2); }
 }
