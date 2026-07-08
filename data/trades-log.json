@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-07-07T18:31:44+05:30",
+  "updatedAt": "2026-07-08T18:30:32+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -1071,6 +1071,166 @@
       "qty": 130,
       "price": 85,
       "value": 11050
+    },
+    {
+      "broker": "Dhan",
+      "id": "2225805",
+      "sym": "NIFTY-Jul2026-24200-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 65,
+      "price": 132.7,
+      "value": 8625.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2225806",
+      "sym": "NIFTY-Jul2026-24200-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 130,
+      "price": 132.7,
+      "value": 17251
+    },
+    {
+      "broker": "Dhan",
+      "id": "2225807",
+      "sym": "NIFTY-Jul2026-24200-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 130,
+      "price": 132.7,
+      "value": 17251
+    },
+    {
+      "broker": "Dhan",
+      "id": "1754666",
+      "sym": "NIFTY-Jul2026-24100-PE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 65,
+      "price": 166.7,
+      "value": 10835.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1754667",
+      "sym": "NIFTY-Jul2026-24100-PE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 65,
+      "price": 166.7,
+      "value": 10835.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2939890",
+      "sym": "NIFTY-Jul2026-24100-PE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 130,
+      "price": 359.9,
+      "value": 46787
+    },
+    {
+      "broker": "Dhan",
+      "id": "1073768",
+      "sym": "NIFTY-Jul2026-24650-CE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 130,
+      "price": 21.5,
+      "value": 2795
+    },
+    {
+      "broker": "Dhan",
+      "id": "1073769",
+      "sym": "NIFTY-Jul2026-24650-CE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 130,
+      "price": 21.5,
+      "value": 2795
+    },
+    {
+      "broker": "Dhan",
+      "id": "1087599",
+      "sym": "NIFTY-Jul2026-24250-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 65,
+      "price": 128.35,
+      "value": 8342.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1087600",
+      "sym": "NIFTY-Jul2026-24250-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 130,
+      "price": 128.35,
+      "value": 16685.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1087601",
+      "sym": "NIFTY-Jul2026-24250-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 65,
+      "price": 128.35,
+      "value": 8342.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1294324",
+      "sym": "NIFTY-Jul2026-24300-CE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 195,
+      "price": 122.5,
+      "value": 23887.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2293960",
+      "sym": "NIFTY-Jul2026-24600-CE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 195,
+      "price": 22.85,
+      "value": 4455.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "2293961",
+      "sym": "NIFTY-Jul2026-24600-CE",
+      "date": "2026-07-08",
+      "side": "BUY",
+      "qty": 130,
+      "price": 22.85,
+      "value": 2970.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2753175",
+      "sym": "NIFTY-Jul2026-24300-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 65,
+      "price": 70.3,
+      "value": 4569.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "2753176",
+      "sym": "NIFTY-Jul2026-24300-CE",
+      "date": "2026-07-08",
+      "side": "SELL",
+      "qty": 130,
+      "price": 70.3,
+      "value": 9139
     }
   ]
 }
