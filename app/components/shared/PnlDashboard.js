@@ -188,7 +188,7 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
       {view !== 'day' && (
       <div className="pnl-stats">
         <Stat k="Net realised" vc={cl(stats.net)} v={<SInrC n={stats.net} />} vt={sFull(stats.net)}
-          foot={<><span className={cl(stats.gross)}>Gross {inrC(stats.gross)}</span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
+          foot={<><span className={cl(stats.gross)}>Gross <SInrC n={stats.gross} /></span><span style={{ color: 'var(--txt2)' }}>Charges {inrC(stats.charges)}</span></>} />
         <WinRateStat stats={stats} />
         <Stat k="Returns" vc={ret == null ? '' : cl(ret)} v={ret == null ? '—' : sPctG(ret)} vt="TWR on deployed capital"
           foot={activeBroker === 'all'
