@@ -420,69 +420,70 @@ export default function AnalyticsTab({ ALGO }) {
           <div className="sub split"><span className={cl(M.S01.cagr || 0)}>S01 {uPct(M.S01.cagr)}</span><span className={cl(M.S02.cagr || 0)}>S02 {uPct(M.S02.cagr)}</span></div></div>
       </div>
 
-      {/* Best Vs Worst Duration  |  Efficiency Ratios — paired side by side */}
-      <div className="an-2 sec">
-        <div className="card">
-          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Best Vs Worst Duration</div>
-            <div className="an-legend">
-              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />worst duration</span>
-              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--grn-bg)' }} />best duration</span>
-            </div></div>
-          <DurationChart series={cur.series} cap={cur.cap} subWin={subWin} />
+      {/* Metrics tables (LEFT) | performance-curve cards (RIGHT) */}
+      <div className="an-2 an-cols sec">
+        {/* LEFT — Key Metrics + Efficiency Ratios */}
+        <div className="an-col">
+          <div className="card">
+            <div className="ctitle">Key Metrics</div>
+            <div className="an-tblwrap"><table className="tbl an-tbl">
+              <thead><tr><th>Metric</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th></tr></thead>
+              <tbody>
+                <tr><td>Net P&amp;L (overlaid)</td>{COLS.map(([n, m]) => cell(n, <span><span className="rs">₹</span>{inrCd(Math.abs(m.net))}</span>, cl(m.net)))}</tr>
+                <tr><td>Profit Factor</td>{COLS.map(([n, m]) => cell(n, sNum(m.pf)))}</tr>
+                <tr><td>Win / Loss days</td>{COLS.map(([n, m]) => cell(n, `${m.win}/${m.loss}`))}</tr>
+                <tr><td>Success Ratio</td>{COLS.map(([n, m]) => cell(n, (m.st.winPct || 0) + '%', 'grn'))}</tr>
+                <tr><td>Risk-o-meter</td>{COLS.map(([n, m]) => <td key={n} className="an-num"><span className="badge" style={riskChip(m.risk)}>{m.risk}</span></td>)}</tr>
+                <tr><td>Avg Profit / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.win ? <span><span className="rs">₹</span>{inrCd(m.st.winSum / m.win)}</span> : '—', 'grn'))}</tr>
+                <tr><td>Avg Loss / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.loss ? <span><span className="rs">₹</span>{inrCd(Math.abs(m.st.lossSum / m.loss))}</span> : '—', 'red'))}</tr>
+                <tr><td>Max Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'maxDD'))}</tr>
+                <tr><td>Avg Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'avgDD'))}</tr>
+                <tr><td>Volatility (ann.)</td>{COLS.map(([n, m]) => cell(n, pct1(m.vol)))}</tr>
+                <tr><td>Risk : Reward</td>{COLS.map(([n, m]) => cell(n, m.rr == null ? '—' : '1 : ' + sNum(m.rr)))}</tr>
+                <tr><td>Freq / day (synced)</td>{COLS.map(([n, m]) => cell(n, m.freq == null ? '—' : sNum(m.freq)))}</tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div className="card">
+            <div className="ctitle">Efficiency Ratios <span className="badge bb">vs NIFTY 50 · annualised</span></div>
+            <div className="an-tblwrap"><table className="tbl an-tbl">
+              <thead><tr><th>Ratio</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th><th>Definition</th></tr></thead>
+              <tbody>
+                <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}<td className="an-def">return / total risk</td></tr>
+                <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}<td className="an-def">return / downside risk</td></tr>
+                <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}<td className="an-def">CAGR / max drawdown</td></tr>
+                <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}<td className="an-def">excess return vs NIFTY</td></tr>
+                <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}<td className="an-def">sensitivity to NIFTY</td></tr>
+              </tbody>
+            </table></div>
+            {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
+          </div>
         </div>
-        <div className="card">
-          <div className="ctitle">Efficiency Ratios <span className="badge bb">vs NIFTY 50 · annualised</span></div>
-          <div className="an-tblwrap"><table className="tbl an-tbl">
-            <thead><tr><th>Ratio</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th><th>Definition</th></tr></thead>
-            <tbody>
-              <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}<td className="an-def">return / total risk</td></tr>
-              <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}<td className="an-def">return / downside risk</td></tr>
-              <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}<td className="an-def">CAGR / max drawdown</td></tr>
-              <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}<td className="an-def">excess return vs NIFTY</td></tr>
-              <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}<td className="an-def">sensitivity to NIFTY</td></tr>
-            </tbody>
-          </table></div>
-          {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
-        </div>
-      </div>
 
-      {/* Key metrics table — full width */}
-      <div className="card sec">
-        <div className="ctitle">Key Metrics</div>
-        <div className="an-tblwrap"><table className="tbl an-tbl">
-          <thead><tr><th>Metric</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th></tr></thead>
-          <tbody>
-            <tr><td>Net P&amp;L (overlaid)</td>{COLS.map(([n, m]) => cell(n, <span><span className="rs">₹</span>{inrCd(Math.abs(m.net))}</span>, cl(m.net)))}</tr>
-            <tr><td>Profit Factor</td>{COLS.map(([n, m]) => cell(n, sNum(m.pf)))}</tr>
-            <tr><td>Win / Loss days</td>{COLS.map(([n, m]) => cell(n, `${m.win}/${m.loss}`))}</tr>
-            <tr><td>Success Ratio</td>{COLS.map(([n, m]) => cell(n, (m.st.winPct || 0) + '%', 'grn'))}</tr>
-            <tr><td>Risk-o-meter</td>{COLS.map(([n, m]) => <td key={n} className="an-num"><span className="badge" style={riskChip(m.risk)}>{m.risk}</span></td>)}</tr>
-            <tr><td>Avg Profit / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.win ? <span><span className="rs">₹</span>{inrCd(m.st.winSum / m.win)}</span> : '—', 'grn'))}</tr>
-            <tr><td>Avg Loss / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.loss ? <span><span className="rs">₹</span>{inrCd(Math.abs(m.st.lossSum / m.loss))}</span> : '—', 'red'))}</tr>
-            <tr><td>Max Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'maxDD'))}</tr>
-            <tr><td>Avg Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'avgDD'))}</tr>
-            <tr><td>Volatility (ann.)</td>{COLS.map(([n, m]) => cell(n, pct1(m.vol)))}</tr>
-            <tr><td>Risk : Reward</td>{COLS.map(([n, m]) => cell(n, m.rr == null ? '—' : '1 : ' + sNum(m.rr)))}</tr>
-            <tr><td>Freq / day (synced)</td>{COLS.map(([n, m]) => cell(n, m.freq == null ? '—' : sNum(m.freq)))}</tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      {/* Worst 5 Drawdown Periods  |  Underwater Plot — paired side by side */}
-      <div className="an-2 sec">
-        <div className="card">
-          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Worst 5 Drawdown Periods <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
-            <div className="an-legend">
-              <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />drawdown window</span>
-              <span><i style={{ background: 'var(--grn)' }} />cumulative return</span>
-            </div></div>
-          <DrawdownPeriods series={cur.series} cap={cur.cap} episodes={cur.episodes} grnHex={grnHex} />
-          <div className="an-hint" style={{ marginTop: 4 }}>Hover a band → depth · peak → trough · recovery.</div>
-        </div>
-        <div className="card">
-          <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Underwater Plot <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
-            <div className="an-legend"><span><i style={{ background: 'var(--gld)' }} />drawdown</span><span><i style={{ background: 'var(--red)' }} />avg drawdown</span></div></div>
-          <Underwater curve={cur.dd.curve} avgDD={cur.dd.avgDD} />
+        {/* RIGHT — Best Vs Worst · Worst 5 Drawdown · Underwater */}
+        <div className="an-col">
+          <div className="card">
+            <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Best Vs Worst Duration</div>
+              <div className="an-legend">
+                <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />worst duration</span>
+                <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--grn-bg)' }} />best duration</span>
+              </div></div>
+            <DurationChart series={cur.series} cap={cur.cap} subWin={subWin} />
+          </div>
+          <div className="card">
+            <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Worst 5 Drawdown Periods <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
+              <div className="an-legend">
+                <span><i style={{ width: 14, height: 12, border: '1px dashed var(--txt3)', borderRadius: 2, background: 'var(--red-bg)' }} />drawdown window</span>
+                <span><i style={{ background: 'var(--grn)' }} />cumulative return</span>
+              </div></div>
+            <DrawdownPeriods series={cur.series} cap={cur.cap} episodes={cur.episodes} grnHex={grnHex} />
+            <div className="an-hint" style={{ marginTop: 4 }}>Hover a band → depth · peak → trough · recovery.</div>
+          </div>
+          <div className="card">
+            <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Underwater Plot <span className="an-hint">{STRATS.find(([k]) => k === strat)[1]}</span></div>
+              <div className="an-legend"><span><i style={{ background: 'var(--gld)' }} />drawdown</span><span><i style={{ background: 'var(--red)' }} />avg drawdown</span></div></div>
+            <Underwater curve={cur.dd.curve} avgDD={cur.dd.avgDD} />
+          </div>
         </div>
       </div>
 

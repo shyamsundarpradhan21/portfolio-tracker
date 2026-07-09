@@ -2128,6 +2128,10 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
    .an-tblwrap instead of forcing the column — and the document — wider. */
 .an-2 > * { min-width: 0; }
 @media (max-width: 900px) { .an-2 { grid-template-columns: 1fr; } }
+/* a column that STACKS several cards (tables in the left column, charts in the right),
+   each column top-aligned so neither stretches into a void when the stacks differ in height */
+.an-2.an-cols { align-items: start; }
+.an-col { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 /* wide metric tables scroll WITHIN their card on narrow widths (scroll, never clip) */
 .an-tblwrap { overflow-x: auto; }
 
