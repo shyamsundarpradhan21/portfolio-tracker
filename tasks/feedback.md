@@ -231,8 +231,15 @@ Dhan; `overnight_buy_amount` = qty×original, not the close mark) — left as-is
 next carried-close. **Fyers PARKED.** **Guard (item 5):** `build-trading-ledger.mjs` now prints
 `fnoLedgerDrift = realisedDerived (cash-account identity) − fno-ledger Dhan gross`; run it to catch a
 re-emergence — it currently flags **~₹51k** of residual HISTORICAL undercount across the ~10 older
-`source:'positions'` rows (pre-fix), still to be re-derived (item 4). Note: the running capture DAEMON
-caches modules — RESTART it so the tape uses the fixed `dhanRealised` (the one-shot sync already does).
+`source:'positions'` rows (pre-fix), still to be re-derived (item 4). Note: the India F&O capture daemon
+SELF-EXITS after each session ("market post — exiting") and Task Scheduler relaunches it FRESH at
+pre-open, so the tape auto-picks-up code fixes like `dhanRealised` — no manual restart needed (only a
+truly persistent process would; the US daemon is equity-only, no F&O). **History re-derived (item 4):**
+`scripts/backfill-fno-realised.mjs` FIFO-reconstructs the older `source:'positions'` days from the
+Dhan trade-history (`/v2/trades/{from}/{to}/{page}`, month-by-month; note `exchangeTradeId` is always 0
+so DON'T dedup on it; recent days lag settlement — today isn't in trade-history so it stays positions-API).
+Recovered ~₹38k; guard drift ₹51k→₹13k. A NO-TRADE day with a marked-MTM `positions` row is a PHANTOM
+(remove it). Residual ~₹13k is older report-row / charge-accounting nuance, within guard tolerance.
 
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY
