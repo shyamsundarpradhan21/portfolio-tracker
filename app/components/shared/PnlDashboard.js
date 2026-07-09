@@ -32,7 +32,7 @@ const sPctG = (n) => Math.abs(n).toFixed(1) + '%';
 // Profit factor display: the number, ∞ when there are wins but no losses, else —.
 const pfDisplay = (s) => (s.profitFactor != null ? s.profitFactor.toFixed(2) : (s.winDays && !s.lossDays ? '∞' : '—'));
 
-export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null, deployed = null, liveMtm = null } = {}) {
+export default function PnlDashboard({ rows: rowsProp, summary = null, capital = null, composition = null, deployed = null, liveMtm = null } = {}) {
   const allRows = rowsProp || APP.fnoLedger?.rows || [];
   // Brokers present, busiest first — drives the broker toggle (All + each broker).
   const brokers = useMemo(() => {
@@ -165,6 +165,8 @@ export default function PnlDashboard({ rows: rowsProp, summary = null, capital =
           {capital.foot ? <span className="pnl-capfoot">{capital.foot}</span> : null}
         </div>
       ) : null}
+      {/* per-strategy capital composition (S01 / S02) — sits just below the capital line */}
+      {composition ? <div className="pnl-comp">{composition}</div> : null}
       {summary ? <div className="pnl-summary">{summary}</div> : null}
 
       {/* ── controls: broker filter (drives the calendar AND recomputes the six cards) ── */}

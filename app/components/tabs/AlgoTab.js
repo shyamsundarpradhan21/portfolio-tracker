@@ -128,26 +128,7 @@ export default function AlgoTab({
 
       {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve).
           (F&O Positions is now persistent at the top of the tab — #38, no longer here.) */}
-      {sub === 'overview' && (<>
-        {/* Capital composition — LIVE per-strategy account capital (utilised vs available).
-            Moved here from the Summary sub-tab so it sits with the trading journal. */}
-        <div className="card sec">
-          <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
-            Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>{s01c.live || s02c.live ? 'Deployed / Available' : 'own capital'}</span>
-          </div>
-          <div className="g2">
-            {[[ALGO.s01.title, s01c], [ALGO.s02.title.replace(' + Swing', ''), s02c]].map(([title, c]) => (
-              <div className="mini" key={title}>
-                <div className="lbl" style={{ marginBottom: 4 }}>{title}{c.brokers ? ` · ${c.brokers}` : ''}</div>
-                <div className="sub" style={{ margin: 0 }}><RsText>{`Capital ${cap(c.total)}`}</RsText></div>
-                <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>
-                  {/* #37 — lead with AVAILABLE (free funds) to match the "Deployed / Available" badge */}
-                  {c.live ? <RsText>{`${cap(c.avail)} available · ${cap(c.used)} deployed`}</RsText> : 'live funds n/a · own-capital config'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {sub === 'overview' && (
         <div className="sec">
           <PnlDashboard
             liveMtm={fno.netOpenMtm}
@@ -155,9 +136,20 @@ export default function AlgoTab({
             capital={dep.any
               ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
               : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
+            /* per-strategy capital composition (S01 / S02) — rendered inside the journal card
+               just below the capital line (was a standalone card on the Summary sub-tab). */
+            composition={[[ALGO.s01.title, s01c], [ALGO.s02.title.replace(' + Swing', ''), s02c]].map(([title, c]) => (
+              <div className="mini" key={title}>
+                <div className="lbl" style={{ marginBottom: 4 }}>{title}{c.brokers ? ` · ${c.brokers}` : ''}</div>
+                <div className="sub" style={{ margin: 0 }}><RsText>{`Capital ${cap(c.total)}`}</RsText></div>
+                <div className="sub" style={{ marginTop: 4, color: 'var(--txt3)' }}>
+                  {c.live ? <RsText>{`${cap(c.avail)} available · ${cap(c.used)} deployed`}</RsText> : 'live funds n/a · own-capital config'}
+                </div>
+              </div>
+            ))}
           />
         </div>
-      </>)}
+      )}
 
       {sub === 'summary' && <FnoSummary />}
 
