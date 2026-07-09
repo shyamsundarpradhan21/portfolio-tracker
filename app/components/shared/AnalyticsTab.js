@@ -23,6 +23,11 @@ const r2 = (n) => Math.round(n * 100) / 100;
 const ms = (d) => Date.parse(d);
 const uPct = (n) => (n == null ? '—' : Math.abs(n).toFixed(1) + '%');
 const sNum = (n, d = 2) => (n == null ? '—' : n.toFixed(d));
+// Magnitude-only ratio: direction is conveyed by COLOUR (grn/red via cl), never a −/+
+// glyph — for the signed performance ratios (Sharpe/Sortino/Calmar). Beta keeps its sign:
+// it's a neutral correlation coefficient (a negative beta = inverse to NIFTY), not a
+// gain/loss figure, and it carries no direction colour, so there's no double-encoding.
+const sNumG = (n, d = 2) => (n == null ? '—' : Math.abs(n).toFixed(d));
 
 // cumulative TWR % path over a day series on a constant base, keyed by date-ms (Cards 1 & 3).
 function cumPath(series, cap) {
@@ -353,9 +358,9 @@ export default function AnalyticsTab({ ALGO }) {
               </tbody>
               <tbody>
                 <tr className="an-sect"><td colSpan={4}>Efficiency Ratios · annualised</td></tr>
-                <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}</tr>
-                <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}</tr>
-                <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}</tr>
+                <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNumG(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}</tr>
+                <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNumG(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}</tr>
+                <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNumG(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}</tr>
                 <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}</tr>
                 <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}</tr>
               </tbody>

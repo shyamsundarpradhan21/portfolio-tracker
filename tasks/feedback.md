@@ -53,6 +53,14 @@ as a signed comparison (e.g. "vs average"), prefer an absolute, unsigned figure
 instead of reintroducing the glyph. (Equation connectors in prose — "X deployed
 + Y gains" — are fine; that `+` is arithmetic, not a sign indicator.)
 
+**Watch numeric ratios formatted with `.toFixed()`** — they KEEP the sign, so a
+colour-coded cell (`cl(...)`) shows BOTH a `−` glyph AND red = double-encoded direction
+(the violation). For signed performance ratios that are colour-coded, render MAGNITUDE
+(Sharpe/Sortino/Calmar → `Math.abs`/`sNumG`, mirroring Alpha's `uPct`). A NEUTRAL
+coefficient (Beta — carries no direction colour; its sign = correlation direction, not
+gain/loss) keeps its sign. Caught in the Analytics Efficiency Ratios (2026-07-09):
+`sNum(m.sharpe)` rendered `-2.18` in red.
+
 ### The no-glyph rule applies to VALUE figures, not axis scale markers
 Direction = colour governs **value figures** (card headlines, table cells, badges) —
 NOT chart **axis tick labels**. A cumulative-return / P&L axis crosses zero, so **signed
