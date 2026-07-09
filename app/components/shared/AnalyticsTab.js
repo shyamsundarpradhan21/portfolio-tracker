@@ -163,7 +163,7 @@ function ValueCurve({ lines }) {
 function DurationChart({ series, cap, subWin }) {
   const curve = cumPath(series, cap);
   if (curve.length < 2) return <NoData />;
-  const h = 240;
+  const h = 300;
   let lo = curve[0].v, hi = curve[0].v, t0 = curve[0].t, t1 = curve[0].t;
   for (const p of curve) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; if (p.t < t0) t0 = p.t; if (p.t > t1) t1 = p.t; }
   if (lo === hi) { lo -= 1; hi += 1; }
@@ -188,7 +188,7 @@ function DurationChart({ series, cap, subWin }) {
 // Card 2 — underwater drawdown area (gold), red rule at the average drawdown.
 function Underwater({ curve, avgDD }) {
   if (!curve || curve.length < 2) return <NoData />;
-  const h = 210;
+  const h = 280;
   let lo = 0, t0 = ms(curve[0].date), t1 = t0;
   for (const p of curve) { const t = ms(p.date); if (p.dd < lo) lo = p.dd; if (t < t0) t0 = t; if (t > t1) t1 = t; }
   if (lo === 0) lo = -1;
@@ -212,7 +212,7 @@ function DrawdownPeriods({ series, cap, episodes, grnHex }) {
   const [hover, setHover] = useState(null);
   const curve = cumPath(series, cap);
   if (curve.length < 2) return <NoData />;
-  const h = 240;
+  const h = 300;
   let lo = curve[0].v, hi = curve[0].v, t0 = curve[0].t, t1 = curve[0].t;
   for (const p of curve) { if (p.v < lo) lo = p.v; if (p.v > hi) hi = p.v; if (p.t < t0) t0 = p.t; if (p.t > t1) t1 = p.t; }
   if (lo === hi) { lo -= 1; hi += 1; }
@@ -422,10 +422,10 @@ export default function AnalyticsTab({ ALGO }) {
 
       {/* Metrics tables (LEFT) | performance-curve cards (RIGHT) */}
       <div className="an-2 an-cols sec">
-        {/* LEFT — Key Metrics + Efficiency Ratios */}
+        {/* LEFT — Key Metrics + Efficiency Ratios merged into ONE aligned 4-col table */}
         <div className="an-col">
           <div className="card">
-            <div className="ctitle">Key Metrics</div>
+            <div className="ctitle">Key Metrics <span className="badge bb">&amp; efficiency vs NIFTY 50</span></div>
             <div className="an-tblwrap"><table className="tbl an-tbl">
               <thead><tr><th>Metric</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th></tr></thead>
               <tbody>
@@ -440,27 +440,21 @@ export default function AnalyticsTab({ ALGO }) {
                 <tr><td>Avg Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'avgDD'))}</tr>
                 <tr><td>Volatility (ann.)</td>{COLS.map(([n, m]) => cell(n, pct1(m.vol)))}</tr>
                 <tr><td>Risk : Reward</td>{COLS.map(([n, m]) => cell(n, m.rr == null ? '—' : '1 : ' + sNum(m.rr)))}</tr>
-                <tr><td>Freq / day (synced)</td>{COLS.map(([n, m]) => cell(n, m.freq == null ? '—' : sNum(m.freq)))}</tr>
               </tbody>
-            </table></div>
-          </div>
-          <div className="card">
-            <div className="ctitle">Efficiency Ratios <span className="badge bb">vs NIFTY 50 · annualised</span></div>
-            <div className="an-tblwrap"><table className="tbl an-tbl">
-              <thead><tr><th>Ratio</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th><th>Definition</th></tr></thead>
               <tbody>
-                <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}<td className="an-def">return / total risk</td></tr>
-                <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}<td className="an-def">return / downside risk</td></tr>
-                <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}<td className="an-def">CAGR / max drawdown</td></tr>
-                <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}<td className="an-def">excess return vs NIFTY</td></tr>
-                <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}<td className="an-def">sensitivity to NIFTY</td></tr>
+                <tr className="an-sect"><td colSpan={4}>Efficiency Ratios · annualised</td></tr>
+                <tr><td>Sharpe</td>{COLS.map(([n, m]) => cell(n, sNum(m.sharpe), m.sharpe == null ? '' : cl(m.sharpe)))}</tr>
+                <tr><td>Sortino</td>{COLS.map(([n, m]) => cell(n, sNum(m.sortino), m.sortino == null ? '' : cl(m.sortino)))}</tr>
+                <tr><td>Calmar</td>{COLS.map(([n, m]) => cell(n, sNum(m.calmar), m.calmar == null ? '' : cl(m.calmar)))}</tr>
+                <tr><td>Alpha (ann.)</td>{COLS.map(([n, m]) => sCellPct(m, 'alpha'))}</tr>
+                <tr><td>Beta</td>{COLS.map(([n, m]) => cell(n, sNum(m.beta)))}</tr>
               </tbody>
             </table></div>
             {!closes && <div className="an-hint" style={{ marginTop: 8 }}>α/β load with the benchmark…</div>}
           </div>
         </div>
 
-        {/* RIGHT — Best Vs Worst · Worst 5 Drawdown · Underwater */}
+        {/* RIGHT — Best Vs Worst · Worst 5 Drawdown · Underwater, with a caption footer */}
         <div className="an-col">
           <div className="card">
             <div className="an-head"><div className="ctitle" style={{ margin: 0 }}>Best Vs Worst Duration</div>
@@ -484,10 +478,9 @@ export default function AnalyticsTab({ ALGO }) {
               <div className="an-legend"><span><i style={{ background: 'var(--gld)' }} />drawdown</span><span><i style={{ background: 'var(--red)' }} />avg drawdown</span></div></div>
             <Underwater curve={cur.dd.curve} avgDD={cur.dd.avgDD} />
           </div>
+          <div className="an-foot" style={{ marginTop: 0 }}>CAGR · Sharpe/Sortino/Calmar · Alpha/Beta · drawdowns are TIME-WEIGHTED on the constant own+client deployed base, vs NIFTY 50 over the selected window. Net is after real contract-note charges.</div>
         </div>
       </div>
-
-      <div className="an-foot">CAGR · Sharpe/Sortino/Calmar · Alpha/Beta · drawdowns are TIME-WEIGHTED on the constant own+client deployed base, vs NIFTY 50 over the selected window. Net is after real contract-note charges.</div>
     </div>
   );
 }

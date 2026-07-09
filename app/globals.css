@@ -2120,6 +2120,8 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .an-tbl td, .an-tbl th { white-space: nowrap; }
 .an-num { text-align: right; font-family: var(--mono); }
 .an-def { color: var(--txt3); }
+/* in-table section divider (Key Metrics ▸ Efficiency Ratios merged into one table) */
+.an-tbl .an-sect td { padding-top: 14px; color: var(--acc); font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
 .an-foot { font-size: var(--fs-2xs); color: var(--txt3); margin-top: 12px; line-height: 1.6; }
 /* paired rows collapse to one column on tablet so wide cards aren't cramped */
 .an-2 { display: grid; gap: var(--gap); grid-template-columns: repeat(2, 1fr); align-items: stretch; }
