@@ -58,13 +58,18 @@ reconstructs both cleanly; no new table strategy needed.
       concurrent gmail-state write — see tasks/ingest-handoff.md).  ← WAITING HERE
 
 ## After the adapter lands (separate confirmations)
-- [ ] Ingest the 2025 notes (stop daemon → backfill → restart), rebuild `fno-overlay.json`.
+- [x] Ingested the 36 2025 notes → `ledger:cn:*` (KV, all PUSHED; via run.py direct — no daemon
+      stop needed, it writes idempotent cn keys only, not gmail-state/manifest).
+- [x] Rebuilt the overlay → `ledger:fno:overlay` (KV prod) + `data/fno-overlay.json` (local
+      mirror): 55 Dhan-2025 days now carry REAL F&O charges (earliest was 2025-10-06 → now
+      2025-01-07). FY24-25 Dhan 382 · FY25-26 Dhan 26,404.
 - [ ] Re-derive 2025 F&O realised from the parsed notes; compare to the `source:'report'`
-      +₹40,159 — correct the fno-ledger only if the notes disagree.
-- [ ] **Re-scope the guard** in `build-trading-ledger.mjs`: it currently subtracts F&O-only
-      `fnoGross` from whole-account `realisedDerived` (which includes cash −₹15k + currency),
-      so its "₹51k undercount ⚠" is a multi-segment residual, NOT an F&O gap. With per-note
-      F&O realised available, compare F&O-only↔F&O-only (or at minimum relabel it).
+      +₹40,159. NOTE: a note states charges + trades, NOT realised — needs cross-note FIFO, and
+      the F&O fill descs are truncated (strike+CE, no underlying/expiry) → needs contract
+      reassembly first. Deferred (not in the selected scope).
+- [ ] **Re-scope the guard** in `build-trading-ledger.mjs`: it subtracts F&O-only `fnoGross`
+      from whole-account `realisedDerived` (incl. cash −₹15k + currency), so its "₹51k undercount
+      ⚠" is a multi-segment residual, NOT an F&O gap. Deferred (not in the selected scope).
 - [ ] Revisit item-4's removal of the 2026-07-07 fno row (a contract note exists for it).
 
 ## Open questions / risks
