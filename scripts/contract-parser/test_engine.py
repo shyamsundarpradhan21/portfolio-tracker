@@ -901,5 +901,76 @@ check("groww: residual ~0", abs(gresid) <= 0.01, gresid)
 gps = P.per_segment_checksum(gch, [])
 check("groww: per-segment Equity checksum closes", gps.get("Equity", {}).get("pass") is True, gps.get("Equity"))
 
+print("[dhan-2025] text-positioned GST-invoice note: detector, unclosed-paren label key, charges + fills:")
+# The 2025 Dhan "Cash F&O and Currency" layout renders as TEXT (no row rules). Synthetic sample of
+# the extracted text: a cash-ETF fill line, an F&O fill line, and the charges block with a WRAPPED
+# 'NSE TRANSACTION\n...\nCHARGES)' label and an UNCLOSED 'IGST ... (' / '(IPFT' paren.
+dhan2025_text = "\n".join([
+    "I/We have this day done by your order and on your account the following transactions :",
+    "1000000067531089 10:15:04 123456 10:15:04FAKEETF S -100 250.0000 253.7500 25375.00 D",
+    "1500000067192785 09:20:01 654321 09:20:01 48000 CE B 150 176.2500 176.2500 -26437.50",
+    "Symbol :FAKEETF ISIN : INF204KB15I9 Net -100 253.7500 25375.00",
+    "Description NCLCM NCLFO Total",
+    "PAY IN/PAY OUT OBLIGATION 25375.00 CR 0.00 CR 25375.00 CR",
+    "TAXABLE VALUE OF SUPPLY (IPFT 0.10 DR 0.00 CR 0.10 DR",
+    "TAXABLE VALUE OF SUPPLY (NSE TRANSACTION",
+    "2.93 DR 0.00 CR 2.93 DR",
+    "CHARGES)",
+    "TAXABLE VALUE OF SUPPLY (SEBI FEES) 0.10 DR 0.00 CR 0.10 DR",
+    "IGST* RATE:18% AMOUNT (",
+    "0.56 DR 0.00 CR 0.56 DR",
+    "RS.)",
+    "SECURITIES TRANSACTIONS TAX (RS.) 1.00 DR 0.00 CR 1.00 DR",
+    "Description NCLCM NCLFO Total",
+    "NET AMOUNT RECEIVABLE/PAYABLE BY CLIENT 25370.31 CR 0.00 CR 25370.31 CR",
+    "LEDGER BALANCE 25370.31 CR",
+    "Total Amount In Words ... ONLY",
+])
+check("dhan2025: detector fires on the GST-invoice markers", P.is_dhan_2025_textnote(dhan2025_text) is True)
+check("dhan2025: detector does NOT fire on a plain note", P.is_dhan_2025_textnote("Zerodha\nNet Amount ... Pay-in") is False)
+# unclosed-paren label must key on the INNER charge, not fall back to the generic 'brokerage' lead
+check("dhan2025: '(IPFT' unclosed-paren -> ipft (not brokerage)", P._dhan2025_key("TAXABLE VALUE OF SUPPLY (IPFT") == "ipft", P._dhan2025_key("TAXABLE VALUE OF SUPPLY (IPFT"))
+check("dhan2025: '(NSE TRANSACTION CHARGES)' -> exchange_txn", P._dhan2025_key("TAXABLE VALUE OF SUPPLY (NSE TRANSACTION CHARGES)") == "exchange_txn")
+d_ch = P.parse_dhan2025_charges_from_text(dhan2025_text)
+dnt = d_ch["net_total"]
+check("dhan2025 charges: pay_in (CR) positive", dnt.get("pay_in") == 25375.00, dnt.get("pay_in"))
+check("dhan2025 charges: exchange_txn (DR, wrapped label) negative", dnt.get("exchange_txn") == -2.93, dnt.get("exchange_txn"))
+check("dhan2025 charges: igst (DR, wrapped) negative", dnt.get("igst") == -0.56, dnt.get("igst"))
+check("dhan2025 charges: net_amount present", dnt.get("net_amount") == 25370.31, dnt.get("net_amount"))
+check("dhan2025 charges: NCLCM segment captured", round(d_ch["by_clearing_segment"].get("NCLCM", {}).get("net_amount", 0), 2) == 25370.31, d_ch["by_clearing_segment"].get("NCLCM"))
+d_fills = P.parse_dhan2025_fills_from_text(dhan2025_text)
+check("dhan2025 fills: 2 fills (ETF sell + option buy), summary line skipped", len(d_fills) == 2, len(d_fills))
+sell = next((f for f in d_fills if f["side"] == "SELL"), None)
+buy = next((f for f in d_fills if f["side"] == "BUY"), None)
+check("dhan2025 fills: SELL net_total credit (+)", sell and sell["net_total"] == 25375.00, sell and sell["net_total"])
+check("dhan2025 fills: BUY net_total debit (-)", buy and buy["net_total"] == -26437.50, buy and buy["net_total"])
+check("dhan2025 fills: qty absolute (sign carried by side)", sell and sell["qty"] == 100 and buy and buy["qty"] == 150, (sell and sell["qty"], buy and buy["qty"]))
+dpass, dresid = P.checksum(dnt, d_fills)
+check("dhan2025: total CHECKSUM PASS (net == pay_in + charges)", dpass is True, (dpass, dresid))
+check("dhan2025: residual ~0", abs(dresid) <= 0.01, dresid)
+
+# Ruled 'Eqfo_signed' variant: 'Receivable (CR) / Payable (DR)' wording, and 0-value charges
+# rendered as BARE cells (no DR/CR). The bare zero line must NOT glue onto the next charge's label
+# (the SGST-0 → Stamp-Duty pollution that dropped stamp_duty and broke the checksum).
+dhan2025_ruled = "\n".join([
+    "1500000067192785 09:20:01 09:20:01 FUT B 50 100.0000 100.0000 -5000.00",
+    "Description NCLCM NCLFO Total",
+    "Pay In/Pay Out Obligation 5000.00 CR 0.00 5000.00 CR",
+    "Taxable Value Of Supply (Brokerage) 20.00 DR 0.00 20.00 DR",
+    "CGST* RATE:9% On Taxable Value Of Supply 0.00 0.00 0.00",
+    "SGST* RATE:9% On Taxable Value Of Supply 0.00 0.00 0.00",
+    "Stamp Duty (Rs.) 3.60 DR 0.00 3.60 DR",
+    "IGST* RATE:18% on Taxable Value of Supply 3.60 DR 0.00 3.60 DR",
+    "Net Amount Receivable (CR) / Payable (DR) By Client 4972.80 CR 0.00 4972.80 CR",
+])
+check("dhan2025 ruled: detector fires on 'Receivable (CR) / Payable (DR)'", P.is_dhan_2025_textnote(dhan2025_ruled) is True)
+r_ch = P.parse_dhan2025_charges_from_text(dhan2025_ruled)
+rnt = r_ch["net_total"]
+check("dhan2025 ruled: bare-zero SGST does not swallow Stamp Duty", rnt.get("stamp_duty") == -3.60, rnt.get("stamp_duty"))
+check("dhan2025 ruled: bare-zero CGST/SGST captured as 0 (flushed, not merged)", rnt.get("cgst") == 0.0 and rnt.get("sgst") == 0.0, (rnt.get("cgst"), rnt.get("sgst")))
+check("dhan2025 ruled: brokerage kept", rnt.get("brokerage") == -20.00, rnt.get("brokerage"))
+rpass, rresid = P.checksum(rnt, P.parse_dhan2025_fills_from_text(dhan2025_ruled))
+check("dhan2025 ruled: total CHECKSUM PASS", rpass is True, (rpass, rresid))
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)

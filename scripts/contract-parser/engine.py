@@ -921,6 +921,129 @@ def backfill_wap(fills, waps):
                 break
     return fills
 
+# ---------- Dhan 2025+ "Cash F&O and Currency" GST-invoice notes (TEXT-POSITIONED) ----------
+# These notes rule COLUMNS but not ROWS, and each fill wraps across several physical rows, so
+# pdfplumber's table extraction (both strategies) shreds them -> net_total 0/N, net_amount lost,
+# checksum can't run -> REFUSED. But the data is clean in the extracted TEXT: one fill per line
+# (<trade-no> <times> <desc> <B|S> <qty> <rates...> <net-total> <remark>), and a charges block
+# "Description NCLCM NCLFO Total" with DR/CR values. Parse both from text (same idea as the Astha
+# free-text charge path). Adopted ONLY when it reconciles, so an older Dhan note that this detector
+# might match is never regressed off the proven table path (build_ledger falls through).
+_DHAN2025_MONEY = re.compile(r"(-?\d[\d,]*\.\d{2})\s*(DR|CR)\b", re.I)
+
+def is_dhan_2025_textnote(text):
+    """The GST-tax-invoice-cum-contract-note layout: 'Taxable Value of Supply (<charge>)' charge
+    labels + the 'NET AMOUNT RECEIVABLE/PAYABLE BY CLIENT' obligation block. (NOT gated on a
+    'PAY IN/PAY OUT' row — some of these notes omit it, and obligation then comes from the fills.)
+    Used only as a FALLBACK when the table path can't reconcile, so the ruled 2025 'Eqfo_signed'
+    notes and 2023-24 old-Dhan — which reconcile via tables — are never routed here.
+    Matched on the three tokens 'receivable' + 'payable' + 'taxable value of supply' independently,
+    NOT as one phrase — the wording between them varies ('RECEIVABLE/PAYABLE' on the Grp1 notes vs
+    'Receivable (CR) / Payable (DR)' on the ruled Eqfo notes) and a value line can even wrap between
+    them. Only consulted for broker=='dhan', so a Fyers GST note (also 'Taxable Value of Supply')
+    can't reach it — and it's only a fallback when the table path fails, so ruled notes are unaffected."""
+    t = text or ""
+    return bool(re.search(r"\breceivable\b", t, re.I)
+                and re.search(r"\bpayable\b", t, re.I)
+                and re.search(r"taxable value of supply", t, re.I))
+
+def _dhan2025_key(label):
+    """Peel Dhan's 'TAXABLE VALUE OF SUPPLY (<charge>)' wrapper — the paren often stays UNCLOSED
+    after a mid-label wrap, which would make label_key() fall back to the generic lead and mis-key
+    it as brokerage — and key on the inner charge name (IPFT/SEBI FEES/NSE TRANSACTION CHARGES/
+    BROKERAGE) via the shared map. Non-wrapped labels (IGST/STT/STAMP/PAY IN/NET AMOUNT) key direct."""
+    m = re.search(r"taxable value of supply\s*\((.+)", label, re.I)
+    if m:
+        return label_key(m.group(1).rstrip(")").strip())
+    return label_key(label)
+
+def parse_dhan2025_charges_from_text(text):
+    """Charges block 'Description <seg...> Total' with signed DR/CR cells. Reassembles WRAPPED
+    labels (a value line can sit BETWEEN a label's head and its ')' tail), takes the TOTAL (last)
+    column for net_total, and keeps the leading per-segment columns (NCLCM/NCLFO) for the segment
+    hint + per-segment checksum. DR -> negative (charge/debit), CR -> positive."""
+    lines = (text or "").splitlines()
+    net_total, by_seg, col_names, buf = {}, {}, [], ""
+    def commit(label, vals):
+        key = _dhan2025_key(label)
+        if not key:
+            return
+        signed = [v for v in (pnum("%s %s" % pair) for pair in vals) if v is not None]
+        if not signed:
+            return
+        total = signed[-1]                                   # the across-segment Total column
+        net_total[key] = round(net_total.get(key, 0.0) + total, 4) if key in _ACCUM_KEYS else total
+        if col_names and len(signed) == len(col_names) + 1:  # per-segment cols present (NCLCM/NCLFO)
+            for name, v in zip(col_names, signed[:-1]):
+                seg = by_seg.setdefault(name, {})
+                seg[key] = round(seg.get(key, 0.0) + v, 4) if key in _ACCUM_KEYS else v
+    inblk = False
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        mh = re.search(r"description\s+(ncl.*?)\s+total\s*$", ln, re.I)   # 'Description NCLCM NCLFO Total'
+        if mh:
+            inblk, buf, col_names = True, "", mh.group(1).split(); i += 1; continue
+        if not inblk:
+            i += 1; continue
+        if re.search(r"amount in words|gst is calculated|page \d+ of", ln, re.I):
+            inblk, buf = False, ""; i += 1; continue
+        if not _DHAN2025_MONEY.search(ln):
+            # A SELF-CONTAINED charge line whose cells are BARE (a ruled 'Eqfo_signed' note renders a
+            # 0 charge WITHOUT a DR/CR suffix, e.g. 'Taxable Value Of Supply (BSE Transaction Charges)
+            # 0.00 0.00 0.00') has trailing bare decimal cells AND keys on its own -> commit it (flush
+            # buf) so its bare cells can't glue onto the NEXT charge's label and mis-key it. A WRAPPED
+            # label head ('IGST* RATE:18% AMOUNT (' — no value cells) must NOT match: it accumulates
+            # into buf for its value line below (the bare-cell guard is what distinguishes the two).
+            bare = re.findall(r"-?\d[\d,]*\.\d{2}", ln)
+            if bare and _dhan2025_key(ln.strip()):
+                commit(ln.strip(), [(bare[-1], "DR")])   # charge = debit; flush buf
+                buf = ""
+            else:
+                buf = (buf + " " + ln).strip()
+            i += 1; continue
+        label = (buf + " " + ln[:_DHAN2025_MONEY.search(ln).start()]).strip()
+        buf = ""
+        if i + 1 < len(lines) and not _DHAN2025_MONEY.search(lines[i + 1]):   # absorb a paren-closing tail
+            tail = lines[i + 1].strip()
+            # the label's '(' opened on a prior line and its ')' wrapped BELOW the value line —
+            # absorb the tail iff the label paren is still open and the tail closes it (has ')',
+            # no new '('). Handles 'CHARGES)' / 'RS.)' / 'TRANSACTION CHARGES)' / 'CONTRIBUTION)'.
+            if ")" in tail and "(" not in tail and label.count("(") > label.count(")"):
+                label = (label + " " + tail).strip(); i += 1
+        commit(label, _DHAN2025_MONEY.findall(ln))
+        i += 1
+    if "net_amount" not in net_total:
+        return None
+    return {"by_clearing_segment": by_seg, "net_total": net_total, "unmapped_labels": []}
+
+# Anchor: a 15-16 digit trade-no at the start, then the strong ' <B|S> <signed-qty> <nums...>
+# [remark]' tail. Times / order-no / desc in the middle are glued inconsistently -> match loosely.
+_DHAN2025_FILL = re.compile(
+    r"^(\d{15,16})(.*?)\s([BS])\s+(-?\d[\d,]*)\s+((?:-?[\d.,]+\s+)*-?[\d.,]+)\s*([A-Z*]{0,4})\s*$")
+
+def parse_dhan2025_fills_from_text(text):
+    fills = []
+    for raw in (text or "").splitlines():
+        m = _DHAN2025_FILL.match(raw.strip())
+        if not m:
+            continue
+        trade_no, mid, side, qty, nums, _remark = m.groups()
+        numlist = [pnum(x) for x in nums.split() if pnum(x) is not None]
+        if not numlist:
+            continue
+        s = "SELL" if side == "S" else "BUY"
+        q = pnum(qty)
+        nt = abs(numlist[-1]) * (-1 if s == "BUY" else 1)   # Net Total (Before Levies), signed by side
+        tms = re.findall(r"\d\d:\d\d:\d\d", mid)
+        desc = re.sub(r"\s+", " ", re.sub(r"\d\d:\d\d:\d\d", " ", mid)).strip()   # drop the time tokens
+        sym, isin = split_isin(desc, "")
+        fills.append({"instrument": sym or desc, "isin": isin, "side": s,
+                      "qty": abs(q) if q is not None else q, "price": numlist[0], "net_total": nt,
+                      "wap": None, "brokerage": None, "trade_no": trade_no,
+                      "trade_time": tms[-1] if tms else ""})
+    return fills
+
 def build_ledger(path):
     pdf, entity = open_decrypted(path)
     if pdf is None:
@@ -941,6 +1064,18 @@ def build_ledger(path):
     charges = parse_charges_from_tables(all_tables)
     if charges is None and broker == "astha":       # Astha lists charges as free text, not a ruled table
         charges = parse_charges_from_text(note_text)
+    # Dhan 2025+ text-positioned GST-invoice notes shred under table extraction (net_total lost ->
+    # checksum can't run). When the table parse doesn't reconcile AND this is that layout, re-parse
+    # fills + charges from the TEXT and adopt ONLY if IT reconciles — so the proven table path (incl.
+    # the RULED 2025 'Eqfo_signed' notes, which reconcile via tables) is never regressed.
+    if broker == "dhan" and is_dhan_2025_textnote(note_text) \
+            and not checksum((charges or {}).get("net_total"), fills)[0]:
+        d_fills = parse_dhan2025_fills_from_text(note_text)
+        d_charges = parse_dhan2025_charges_from_text(note_text)
+        if d_charges and checksum(d_charges["net_total"], d_fills)[0]:
+            fills, charges, source = d_fills, d_charges, "dhan2025-text"
+            tbl_counts = {"detail_tables": 0, "summary_tables": 0}
+            waps = {"buy": {}, "sell": {}, "any": {}}
     if broker == "upstox" and charges:              # Trap 4: Upstox charges table is CLIENT-perspective
         # ((+) payable / (-) receivable) - INVERTED vs our cashflow convention. Flip into ours so a
         # charge/payable is negative and a receivable is positive. Obligation still comes from SIGNED fills.
