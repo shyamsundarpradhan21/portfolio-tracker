@@ -8007,19 +8007,19 @@
       "estCharges": 0,
       "net": 12967.5,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 6,
+      "source": "trades"
     },
     {
       "date": "2026-06-25",
       "broker": "Dhan",
       "sleeve": "S01",
-      "grossRealised": -4202.25,
+      "grossRealised": 2801.5,
       "estCharges": 0,
-      "net": -4202.25,
+      "net": 2801.5,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 6,
+      "source": "trades"
     },
     {
       "date": "2026-06-29",
@@ -8029,19 +8029,19 @@
       "estCharges": 0,
       "net": -5612.75,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 10,
+      "source": "trades"
     },
     {
       "date": "2026-06-30",
       "broker": "Dhan",
       "sleeve": "S01",
-      "grossRealised": 17592.25,
+      "grossRealised": 29422.25,
       "estCharges": 0,
-      "net": 17592.25,
+      "net": 29422.25,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 6,
+      "source": "trades"
     },
     {
       "date": "2026-07-01",
@@ -8051,8 +8051,8 @@
       "estCharges": 0,
       "net": 2821,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 4,
+      "source": "trades"
     },
     {
       "date": "2026-07-02",
@@ -8062,19 +8062,19 @@
       "estCharges": 0,
       "net": 6786,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 4,
+      "source": "trades"
     },
     {
       "date": "2026-07-03",
       "broker": "Dhan",
       "sleeve": "S01",
-      "grossRealised": 18772,
+      "grossRealised": 34424,
       "estCharges": 0,
-      "net": 18772,
+      "net": 34424,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 6,
+      "source": "trades"
     },
     {
       "date": "2026-07-06",
@@ -8084,19 +8084,8 @@
       "estCharges": 0,
       "net": -3129.75,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
-    },
-    {
-      "date": "2026-07-07",
-      "broker": "Dhan",
-      "sleeve": "S01",
-      "grossRealised": -3802.5,
-      "estCharges": 0,
-      "net": -3802.5,
-      "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 8,
+      "source": "trades"
     },
     {
       "date": "2026-07-08",
@@ -8106,8 +8095,8 @@
       "estCharges": 0,
       "net": 14937,
       "turnover": 0,
-      "orders": 0,
-      "source": "positions"
+      "orders": 8,
+      "source": "trades"
     },
     {
       "date": "2026-07-09",
