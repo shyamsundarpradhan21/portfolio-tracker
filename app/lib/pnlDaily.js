@@ -322,7 +322,7 @@ const stdev = (a) => {
 };
 const retVals = (returns) => (returns || []).map((x) => (typeof x === 'number' ? x : x.r));
 
-// Per-strategy day series. S01 = Dhan+Zerodha, S02 = Upstox+Fyers — each fno-ledger
+// Per-strategy day series. S01 = Dhan, S02 = Upstox+Fyers — each fno-ledger
 // row carries its `sleeve`, so just filter then reuse dailySeries. `all` = every broker.
 export function seriesByStrategy(rows) {
   const bySleeve = (s) => dailySeries((rows || []).filter((r) => r && r.sleeve === s));

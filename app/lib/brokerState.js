@@ -12,8 +12,8 @@ export function brokerFunds() { return APP.brokerState?.funds || {}; }
 export function brokerPositions(key) { return APP.brokerState?.positions?.[key] || null; }
 
 // The brokers that trade F&O, mapped to their position sleeve, funds key, and the
-// trading strategy the sleeve belongs to (S01 = Dhan + Zerodha, S02 = Upstox +
-// Fyers — same split the sync's SLEEVE map uses). Drives the live F&O panel.
+// trading strategy the sleeve belongs to (S01 = Dhan, S02 = Upstox + Fyers — same
+// split the sync's SLEEVE map uses). Drives the live F&O panel.
 const FNO_META = [
   { key: 'DHAN_FNO',   name: 'Dhan',   funds: 'dhan',   sleeve: 'S01' },
   { key: 'UPSTOX_FNO', name: 'Upstox', funds: 'upstox', sleeve: 'S02' },

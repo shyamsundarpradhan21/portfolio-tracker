@@ -1,6 +1,6 @@
 'use client';
 // Trading Journal → Analytics. Window-scoped (1M/3M/6M/1Y/MAX) performance analytics for the
-// two algo strategies (S01 = Dhan+Zerodha, S02 = Upstox+Fyers) and combined, vs NIFTY 50.
+// two algo strategies (S01 = Dhan, S02 = Upstox+Fyers) and combined, vs NIFTY 50.
 // Reads the OVERLAID realised-F&O ledger (APP.fnoLedger.rows — real contract-note charges
 // already applied server-side) and the constant own+client deployed-capital base (ALGO).
 // All ratios are TIME-WEIGHTED on that base (see app/lib/pnlDaily.js). Benchmark = daily

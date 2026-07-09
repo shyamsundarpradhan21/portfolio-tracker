@@ -85,10 +85,10 @@ export default function AlgoTab({
   // reads when present — dynamic, moves with the account — else the static own-capital config.
   const ownStatic = ALGO.s01.split.own + ALGO.s02.split.own;
   // Deployed own-capital base per strategy → per broker (sleeve map), for the Overview
-  // Returns% card. Dhan/Zerodha → S01, Upstox/Fyers → S02; 'all' = combined.
+  // Returns% card. Dhan → S01, Upstox/Fyers → S02; 'all' = combined.
   const s01Base = ALGO.s01.split.own;
   const s02Base = ALGO.s02.split.own;
-  const deployed = { all: s01Base + s02Base, Dhan: s01Base, Zerodha: s01Base, Upstox: s02Base, Fyers: s02Base };
+  const deployed = { all: s01Base + s02Base, Dhan: s01Base, Upstox: s02Base, Fyers: s02Base };
   // Per-strategy LIVE capital (broker-state funds): total = utilised + available, i.e. the
   // account capital sitting in that strategy — utilised (deployed) vs available. Brokers are
   // the live ones actually mapped to the strategy (S01→Dhan, S02→Upstox·Fyers). Falls back to
