@@ -12,6 +12,8 @@
 //                                              #   no deletes/moves, no manifest — zero GCP needed
 //   node scripts/ingest-daemon.mjs --auth      # one-time OAuth consent (gmail.readonly)
 //   node scripts/ingest-daemon.mjs --backfill --from 2024-01-01 [--to 2026-06-30]
+//   node scripts/ingest-daemon.mjs --backfill --from 2025-01-01 --to 2025-10-01 --query "from:dhan.co"
+//     (--query = raw Gmail search WITHOUT the label — for notes that predate the filter/label)
 //                                              # historical sweep → same inbox/, same pipeline;
 //                                              #   resumable per message, polite rate-limit
 //
@@ -298,20 +300,28 @@ async function startGmailIntake(ingest, timers, account) {
 // recorded in state.backfill, and both live (gmail:<id>) and backfill
 // (backfill:<id>) source rows in the manifest block a re-intake. Polite rate
 // limit between message fetches — this can sweep years of mail.
-async function runBackfill(ingest, fromIso, toIso, account) {
-  const q = backfillQuery(fromIso, toIso);            // fail-loud on bad dates
+async function runBackfill(ingest, fromIso, toIso, account, queryOverride) {
+  const dateQ = backfillQuery(fromIso, toIso);        // fail-loud on bad dates
+  // Notes that PREDATE the Gmail filter were never labelled, so a label-scoped sweep misses
+  // them (e.g. Dhan Jan–Sep 2025 — the filter/label came later). --query sweeps by a RAW Gmail
+  // search (sender/subject) WITHOUT the label, catching unlabelled mail in the date window;
+  // still deduped (state + manifest) and piped through the identical parser chain.
+  const q = queryOverride ? `${queryOverride} ${dateQ}`.trim() : dateQ;
+  const useLabel = !queryOverride;
   const auth = await oauthClient({ clientSecretPath: account.clientSecret, tokenPath: account.token });
   const gmail = await gmailClient(auth);
-  const lid = await labelId(gmail);
+  const lid = useLabel ? await labelId(gmail) : null;
   const state = readGmailState(account.state);
   const manifest = readManifest(MANIFEST);
   const pause = (ms) => new Promise((r) => setTimeout(r, ms));
   const src = (id) => `backfill:${account.label}:${id}`;
 
-  log(`backfill[${account.label}]: sweeping "${q}" under ${GMAIL_LABEL}`);
+  log(`backfill[${account.label}]: sweeping "${q}"${useLabel ? ` under ${GMAIL_LABEL}` : ' (label-less raw search)'}`);
   let pageToken, listed = 0, fetched = 0, skipped = 0;
   do {
-    const { data } = await gmail.users.messages.list({ userId: 'me', labelIds: [lid], q, maxResults: 50, pageToken });
+    const listOpts = { userId: 'me', q, maxResults: 50, pageToken };
+    if (useLabel) listOpts.labelIds = [lid];
+    const { data } = await gmail.users.messages.list(listOpts);
     for (const m of data.messages || []) {
       listed++;
       if (state.backfill[m.id] || state.done[m.id]
@@ -401,7 +411,7 @@ async function main() {
   const ingest = makeIngest({ parsers, dry, onOverlayDirty: () => rebuildFnoOverlay(log) });
 
   if (args.has('--backfill')) {
-    await runBackfill(ingest, val('--from'), val('--to'), gmailAccount(argLabel('--account')));
+    await runBackfill(ingest, val('--from'), val('--to'), gmailAccount(argLabel('--account')), val('--query'));
     ingest.awake.stop();
     return;
   }

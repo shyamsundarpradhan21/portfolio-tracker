@@ -65,15 +65,22 @@ const ownerEquity = r2(dhanFunds + dhanMtm);
 const drift = r2(dhanFunds - ledgerCash);   // ledger cash vs broker-state cash → snapshot-timing residual only
 
 // ── GUARD: the Trading-tab realised ledger must tie to this cash-account truth ───
-// data/fno-ledger.json sums broker-native realised per day. A large gap vs realisedDerived
-// flags the carried-position undercount — Dhan `realizedProfit` marks carried legs to the
-// PREVIOUS settlement, dropping the carried-in P&L (fixed at CAPTURE 2026-07-09 for new days
-// via lib/brokers.mjs `dhanRealised`; older source:'positions' rows can still be under). The
-// ledger gross ties ABOVE the cash truth by exchange charges, so flag on a generous tolerance.
+// realisedDerived is NET of trading charges — they're baked into the cash "Trades Executed"
+// entries (the cash-ledger has no separate STT/brokerage lines). So the ledger GROSS should
+// EXCEED realisedDerived by the real charges: true gross ≈ realisedDerived + realCharges, and
+// UNDERCOUNT = that − ledger gross. (A naive gross-vs-realisedDerived diff conflates the
+// undercount with the charges and gives false comfort — that was the original bug in this
+// guard.) Real charges are overlay-only (contract notes), so pre-2025 charges are missing here,
+// but 2023/24 ledger gross is FIFO-EXACT (verified) so their omission doesn't distort the gap —
+// the residual localises to 2025 (Jan–Sep notes unparsed). Precise per-year check:
+//   node scripts/backfill-fno-realised.mjs --audit
+const overlay = J('data/fno-overlay.json')?.byKey || {};
+const dhanCharges = r2(Object.entries(overlay).filter(([k]) => k.startsWith('Dhan|')).reduce((a, [, v]) => a + (v.realCharge || 0), 0));
 const fnoDhan = (J('data/fno-ledger.json')?.rows || []).filter((r) => r.broker === 'Dhan');
 const fnoGross = r2(fnoDhan.reduce((a, r) => a + (r.grossRealised || 0), 0));
 const fnoPositionsRows = fnoDhan.filter((r) => r.source === 'positions').length;
-const fnoDrift = r2(realisedDerived - fnoGross);   // cash truth − ledger gross (charges make this ≳ 0)
+const trueGross = r2(realisedDerived + dhanCharges);      // cash-net realised + real charges
+const fnoUndercount = r2(trueGross - fnoGross);           // >0 ⇒ the ledger under-books realised
 
 const out = {
   version: 2, builtFor: 'dhan', ownerOnly: true, asOf: (process.argv[3] || 'run-time'),
@@ -81,8 +88,8 @@ const out = {
   summary: { fundTransferRows: rows.length, contributions, drawings, netCapital, expenses, openingBal, ledgerCash, realisedDerived, unclassifiedNarrations: unclassified },
   reconcile: {
     ledgerCash, dhanFunds, dhanMtm, ownerEquity, drift,
-    fnoLedgerGross: fnoGross, fnoPositionsRows, realisedDerived, fnoLedgerDrift: fnoDrift,
-    note: '100% OWNER capital — no client, no subtraction. ownerEquity = dhanFunds + open MTM. Cash tie-out = the Dhan CLOSING BALANCE (ledgerCash) vs broker-state dhanFunds → drift is snapshot timing only. Realised is DERIVED from the identity (ledgerCash − opening − netCapital + expenses), NOT summed (Trades Executed credit/debit is F&O-margin-polluted). fnoLedgerDrift = realisedDerived − fno-ledger Dhan gross: a large gap flags the carried-position undercount or a missing day.',
+    fnoLedgerGross: fnoGross, fnoPositionsRows, realCharges: dhanCharges, trueGross, fnoUndercount,
+    note: '100% OWNER capital — no client, no subtraction. ownerEquity = dhanFunds + open MTM. Cash tie-out = the Dhan CLOSING BALANCE (ledgerCash) vs broker-state dhanFunds → drift is snapshot timing only. Realised is DERIVED from the identity (ledgerCash − opening − netCapital + expenses), NOT summed (Trades Executed credit/debit is F&O-margin-polluted); it is NET of trading charges. fnoUndercount = (realisedDerived + real charges) − fno-ledger Dhan gross: >0 means the ledger under-books realised (carried-position undercount / a period the parser missed). Precise per-year check: backfill-fno-realised.mjs --audit.',
   },
 };
 writeFileSync(join(ROOT, 'data', 'trading-ledger.json'), JSON.stringify(out, null, 2));
@@ -95,5 +102,6 @@ console.log('\n=== owner equity + cash reconciliation ===');
 console.log('owner equity = dhanFunds ₹' + dhanFunds + ' + MTM ₹' + dhanMtm + ' = ₹' + ownerEquity);
 console.log('cash tie-out: ledgerCash ₹' + ledgerCash + ' vs dhanFunds ₹' + dhanFunds + ' → DRIFT ₹' + drift, Math.abs(drift) > 5000 ? '  ⚠ >₹5k — investigate' : '  ✓ ties out (snapshot timing)');
 console.log('\n=== fno-ledger reconcile (carried-position guard) ===');
-console.log('ledger Dhan gross realised ₹' + fnoGross + ' (' + fnoDhan.length + ' rows, ' + fnoPositionsRows + " source:'positions')");
-console.log('vs cash-identity realised  ₹' + realisedDerived + ' → DRIFT ₹' + fnoDrift, Math.abs(fnoDrift) > 20000 ? '  ⚠ >₹20k — carried-position undercount / missing day (see tasks/feedback.md)' : '  ✓ within tolerance');
+console.log('ledger Dhan gross ₹' + fnoGross + ' (' + fnoDhan.length + ' rows, ' + fnoPositionsRows + " source:'positions')");
+console.log('true gross ≈ realisedDerived ₹' + realisedDerived + ' + real charges ₹' + dhanCharges + ' = ₹' + trueGross);
+console.log('→ UNDERCOUNT ₹' + fnoUndercount, Math.abs(fnoUndercount) > 20000 ? '  ⚠ >₹20k — a period is under-booked; run `node scripts/backfill-fno-realised.mjs --audit` to localise' : '  ✓ within tolerance');

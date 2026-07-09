@@ -27,8 +27,10 @@ const num = (n) => (Number.isFinite(+n) ? +n : 0);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const WRITE = process.argv.includes('--write');
-const LOOKBACK = process.argv.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || '2026-04-01';
-const TODAY = '2026-07-09';
+const AUDIT = process.argv.includes('--audit');   // full-history per-year FIFO vs ledger gross (no write)
+const LOOKBACK = process.argv.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) || (AUDIT ? '2023-08-01' : '2026-04-01');
+const END = new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10);   // current IST date
+const TODAY = '2026-07-09';   // the day already fixed via the positions API (kept, not re-derived)
 const TARGET_TRUTH = 22649.25;   // 2026-07-09 Dhan-console realised (self-check anchor)
 const CHARGE_FIELDS = ['sebiTax', 'stt', 'brokerageCharges', 'serviceTax', 'exchangeTransactionCharges', 'stampDuty'];
 
@@ -61,14 +63,14 @@ function monthChunks(from, to) {
 }
 
 const raw = [];
-for (const [f, t] of monthChunks(LOOKBACK, TODAY)) raw.push(...await tradesFor(f, t));
+for (const [f, t] of monthChunks(LOOKBACK, END)) raw.push(...await tradesFor(f, t));
 // Dhan returns exchangeTradeId:0 for every trade, but paginates cleanly (page 0/1/2…) and
 // the month ranges don't overlap — so no dedup is needed; just filter to F&O, chronological.
 const fno = raw.filter((t) => /FNO|FO/.test(String(t.exchangeSegment || '')));
 fno.sort((a, b) => String(a.exchangeTime || a.createTime).localeCompare(String(b.exchangeTime || b.createTime)));
 
 // FIFO per contract → realised per day at the ORIGINAL entry price.
-const books = {}, dayRealised = {}, dayCharges = {}, dayTrades = {};
+const books = {}, dayRealised = {}, dayCharges = {}, dayTrades = {}, byYr = {};
 for (const t of fno) {
   const key = String(t.securityId || t.customSymbol);
   const date = String(t.exchangeTime || t.createTime).slice(0, 10);
@@ -87,7 +89,22 @@ for (const t of fno) {
     if (lot.qty === 0) book.shift();
   }
   if (rem > 0) book.push({ qty: sign * rem, price });   // remainder opens/extends
-  if (realised) dayRealised[date] = r2((dayRealised[date] || 0) + realised);
+  if (realised) { dayRealised[date] = r2((dayRealised[date] || 0) + realised); byYr[date.slice(0, 4)] = r2((byYr[date.slice(0, 4)] || 0) + realised); }
+}
+
+// ── --audit: full-history per-year FIFO gross vs the ledger (reliable — GROSS vs GROSS,
+// no charge accounting). Residual open lots at end flag a year whose trade-history is
+// incomplete (missing closes → that year's FIFO is unreliable, e.g. 2025 Jan–Sep). ──
+if (AUDIT) {
+  let openLots = 0; for (const k in books) openLots += books[k].reduce((a, l) => a + Math.abs(l.qty), 0);
+  const lrows = (J('data/fno-ledger.json').rows || []).filter((r) => r.broker === 'Dhan');
+  const ledYr = {}; for (const r of lrows) ledYr[r.date.slice(0, 4)] = r2((ledYr[r.date.slice(0, 4)] || 0) + (r.grossRealised || 0));
+  console.log(`=== FIFO AUDIT ${LOOKBACK} → ${END}: ${fno.length} F&O fills, ${Object.keys(books).length} contracts ===`);
+  console.log('year      FIFO gross     ledger gross            Δ');
+  for (const y of [...new Set([...Object.keys(byYr), ...Object.keys(ledYr)])].sort())
+    console.log(`${y}  ${String(r2(num(byYr[y]))).padStart(14)}  ${String(r2(num(ledYr[y]))).padStart(14)}  ${String(r2(num(byYr[y]) - num(ledYr[y]))).padStart(12)}`);
+  console.log(`\nresidual open lots at end: ${openLots}  ${openLots > 500 ? '⚠ trade-history INCOMPLETE (missing closes) — a year\'s FIFO is unreliable' : '✓ book clears'}`);
+  process.exit(0);
 }
 
 // affected rows = the Dhan source:'positions' days
