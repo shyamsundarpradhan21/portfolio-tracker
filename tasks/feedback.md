@@ -198,6 +198,14 @@ file is committed. If a day's charges read ₹0 locally after new notes: re-run 
 (regenerates both). Any NEW KV-backed loader must carry the same local-file fallback or it silently
 no-ops in local dev.
 
+**Timing — self contract notes land in email at ~2200 IST the SAME day** (T+0 evening), NOT T+1
+(user-corrected 2026-07-09; don't assert "T+1, not available yet"). So a same-day F&O row is
+legitimately `source:"positions"` / `estCharges:0` until ~22:00, when the note arrives → the ingest
+daemon Gmail-syncs it → the chained `build-fno-overlay --write` applies real NCLFO charges and
+trade-verifies the row. Before ~2200 the day being unparsed is EXPECTED, not a bug. If a PAST day
+(≥ next morning) is still positions-sourced with no overlay key, THEN suspect a stalled ingest —
+check `data/gmail-state.json` last-processed ts vs the overlay's latest `Broker|date`.
+
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY
 view. The SOLE intraday curve is the Day view's `DayPanel` (day-picker driven: ‹ › nav + that day's
