@@ -202,23 +202,26 @@ function SigRow({ label, value, tag, title, context }) {
   );
 }
 
-// Generic LEADING vs COINCIDENT detail: two collapsibles fed by row arrays, each group
-// label tinted by the mean of its (non-context) scores, with an optional divergence
-// callout on top. The per-market row + divergence wiring lives in the build* helpers
-// below, so US and India share this shell without if(market) branches.
+// Generic LEADING vs COINCIDENT detail: two SIDE-BY-SIDE columns fed by row arrays,
+// each group label tinted by the mean of its (non-context) scores, with an optional
+// divergence callout on top. Factors are always visible (the two columns fill the card
+// so it matches the movers height — no void). The per-market row + divergence wiring
+// lives in the build* helpers below, so US and India share this shell.
 function SentimentDetail({ leading, coincident, divergence }) {
   const outlook = (rows) => { const xs = (rows || []).filter((r) => !r.context && isNum(r.score)).map((r) => r.score); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
   const Group = ({ title, sub, rows }) => (
-    <details className="uscol">
-      <summary className={sChip(outlook(rows))}>{title} <span className="usdx">{sub}</span></summary>
+    <div className="scol">
+      <div className={`scol-h ${sChip(outlook(rows))}`}>{title} <span className="usdx">{sub}</span></div>
       {(rows || []).map((r, i) => <SigRow key={i} {...r} />)}
-    </details>
+    </div>
   );
   return (
     <div className="usdet">
       {divergence && <div className="usdiv">{divergence}</div>}
-      <Group title="Leading" sub="forward-looking" rows={leading} />
-      <Group title="Coincident" sub="price-derived" rows={coincident} />
+      <div className="s2col">
+        <Group title="Leading" sub="forward-looking" rows={leading} />
+        <Group title="Coincident" sub="price-derived" rows={coincident} />
+      </div>
     </div>
   );
 }

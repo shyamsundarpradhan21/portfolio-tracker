@@ -809,20 +809,32 @@ body::before {
 .lv { font-family: var(--mono); font-weight: 700; color: var(--txt); text-align: right; }
 /* descriptor is neutral — colour is carried only by the group outlook labels + headline */
 .lt { font-size: var(--fs-2xs); font-weight: 600; text-transform: capitalize; text-align: right; min-width: 62px; color: var(--txt2); }
-.uscol { margin-top: 2px; }
-.uscol + .uscol { border-top: .5px solid var(--brd2); }
-.uscol > summary { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; cursor: pointer; list-style: none; padding: 5px 0; user-select: none; }
-.uscol > summary.grn { color: var(--grn); } .uscol > summary.red { color: var(--red); }
-.uscol > summary::-webkit-details-marker { display: none; }
-.uscol > summary::before { content: '\25B8'; margin-right: 5px; }
-.uscol[open] > summary::before { content: '\25BE'; }
-.mvlist { display: flex; flex-direction: column; gap: 1px; }
-.mv { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-xs); padding: 2px 0; }
-.mv .s { color: var(--txt2); font-weight: 600; }
-.mv .p { font-family: var(--mono); font-weight: 700; }
+/* Two-column sentiment detail: Leading | Coincident side by side, always visible.
+   The whole insights card is a flex column so the sentiment cell + its two columns
+   stretch to fill the row height (movers matches) — no void area. */
+.wrap-mid > .card { display: flex; flex-direction: column; }
+.wrap-mid .wstack { flex: 1; }
+.wrap-mid .wstack > .qc { flex: 1; }
+.qc.sent .usdet { flex: 1; }
+.s2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; margin-top: 4px; flex: 1; }
+.s2col .scol { min-width: 0; }
+.s2col .scol + .scol { padding-left: 14px; border-left: .5px solid var(--brd2); }
+.scol-h { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; padding: 5px 0; }
+.scol-h.grn { color: var(--grn); } .scol-h.red { color: var(--red); }
+/* narrow columns: let the factor label shrink/break and the tag drop its min-width
+   so a long signal never pushes the card wider (certify-safe). */
+.s2col .lsig .ll { min-width: 0; overflow-wrap: anywhere; }
+.s2col .lsig .lt { min-width: 0; }
+/* movers rows grow EQUALLY to fill the card height — an even leaderboard rhythm that
+   reads the same whether the card is short (India) or tall (US), with subtle dividers */
+.mvlist { display: flex; flex-direction: column; flex: 1; }
+.mv { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--fs-md); }
+.mv + .mv { border-top: .5px solid var(--brd2); }
+.mv .s { color: var(--txt2); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mv .p { font-family: var(--mono); font-weight: 700; flex-shrink: 0; }
 /* movers split: gainers (green tint) | draggers (red tint), centre divider */
 .mvcols { display: grid; grid-template-columns: 1fr 1fr; }
-.mvcols > div { padding: 8px 12px; }
+.mvcols > div { padding: 10px 14px; display: flex; flex-direction: column; }
 .mvcols > div:first-child { background: color-mix(in srgb, var(--grn) 8%, transparent); border-right: .5px solid var(--brd); border-radius: 8px 0 0 8px; }
 .mvcols > div:last-child { background: color-mix(in srgb, var(--red) 8%, transparent); border-radius: 0 8px 8px 0; }
 /* FII/DII — its own full-width card below the internals + news row */

@@ -30,9 +30,21 @@ from a general market one.
       right column as its own card (`.card.movers`), region-aware `note` (NSE/US · date). Left card =
       sentiment + hot sectors; both cards height-matched, green/red movers columns fill.
 
+## Follow-up 2 (same session)
+- [x] Dropped the **Hot-sectors** treemap from Market insights (+ dead helpers/CSS). Committed 97b8cf6.
+- [x] **Sentiment card → two columns**: Leading | Coincident side-by-side, factors always visible
+      (`.s2col`/`.scol`); the insights card is a flex column so the sentiment cell + columns stretch to
+      fill the row height. Removed the old collapsible `<details>`/`.uscol` (Option A, not B).
+- [x] **Movers fill**: rows grow equally (`.mv{flex:1}`) with subtle dividers + larger figures
+      (`--fs-md`) so the leaderboard reads the same whether the card is short (India) or tall (US) —
+      fixes the US "weird gaps" (US sentiment has 6 factors → taller card → edge-pinned space-between
+      looked sparse). Ellipsis guard on long symbols.
+
 ## Verify
 - [x] Full `certify.mjs` — all 8 surfaces × 6 widths × 2 themes, normal + stress:
-      docOverflow=0, RSP-001/002/004=0; SYMMETRY/DIRECTION/VALUE-SIZE all PASS.
+      docOverflow=0, RSP-001/002/004=0; SYMMETRY/DIRECTION/VALUE-SIZE all PASS. Re-certified after the
+      two-column + movers-fill changes (final-stress: docOverflow=0, 001/002/004=0).
+- [x] Render-verified both India + US live: two-column sentiment fills, movers leaderboard even in both.
 - [x] Render-verified live (both India + US views): Indices ticker common, News rail merged +
       `COIN` accent pill visible, movers region-aware + note updates, calendar gone, no card gap.
 
