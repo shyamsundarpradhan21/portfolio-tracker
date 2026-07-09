@@ -700,6 +700,8 @@ body::before {
 .tki em { font-style: normal; font-size: var(--fs-2xs); font-family: var(--mono); }
 .tdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--txt3); }
 .tdot.g { background: var(--grn); } .tdot.r { background: var(--red); } .tdot.n { background: var(--txt3); }
+/* portfolio-holding tag pill on a merged-in portfolio headline (accent-tinted) */
+.tkpf { flex-shrink: 0; font-family: var(--mono); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .03em; color: var(--acc); background: var(--acc-bg); border: .5px solid color-mix(in srgb, var(--acc) 42%, transparent); border-radius: 4px; padding: 1px 6px; }
 @media (prefers-reduced-motion: reduce) { .tkv { overflow-x: auto; } .tkrow { animation: none; } }
 
 /* two-column: market internals | news */
@@ -837,41 +839,14 @@ body::before {
 /* FII/DII — its own full-width card below the internals + news row */
 .fdcard { margin-bottom: 12px; }
 
-/* portfolio news feed */
-.feedcard { display: flex; flex-direction: column; }
-.feed { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; overflow-y: auto; max-height: 520px; padding-right: 4px; align-content: start; }
-@media (max-width: 520px) { .feed { grid-template-columns: 1fr; } }
-.ncard { background: var(--sur2); border: .5px solid var(--brd); border-left: 3px solid var(--brd); border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 138px; text-decoration: none; color: inherit; transition: border-color .12s; }
-.ncard:hover { border-color: color-mix(in srgb, var(--acc) 40%, var(--brd)); }
-.ncard.pos { background: var(--grn-bg); border-left-color: var(--grn); }
-.ncard.neg { background: var(--red-bg); border-left-color: var(--red); }
-.ncard .tag { align-self: flex-start; font-size: var(--fs-2xs); font-weight: 700; color: var(--txt2); background: color-mix(in srgb, var(--txt) 7%, transparent); border: .5px solid var(--brd); border-radius: 5px; padding: 2px 7px; font-family: var(--mono); }
-.ncard.pos .tag { color: var(--grn); border-color: color-mix(in srgb, var(--grn) 40%, transparent); }
-.ncard.neg .tag { color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
-.ncard .nh { font-size: var(--fs-sm); color: var(--txt); line-height: 1.34; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.ncard .nm { font-size: var(--fs-2xs); color: var(--txt3); margin-top: auto; }
-
-/* Wrap mid-row: left = market insights (tall), right column = portfolio news
-   (3-up, scrollable) stacked over the upcoming calendar (scrollable). */
-/* Insights (left) drives the row height; the right column stretches to match it,
-   so news + calendar together never exceed the insights card. */
+/* Wrap mid-row: left = market insights (sentiment + hot sectors), right = top movers
+   (day gainers | draggers). Insights (left) drives the row height; the movers card
+   stretches to match it, its green/red columns filling the height. */
 .wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }
 @media (max-width: 920px) { .wrap-mid { grid-template-columns: 1fr; align-items: start; } }
-/* overflow:hidden zeroes the flex auto-min so the cards bound to their share and
-   SCROLL inside, instead of a long news list inflating the whole row. Insights
-   (left) stays the height authority; news : calendar = 1 : 1. */
-.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow: hidden; }
-.wrap-mid-r .feedcard { flex: 1 1 0; min-height: 0; overflow: hidden; }
-.wrap-mid-r .feedcard .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 290px; min-height: 0; }
-.wrap-mid-r .calcard { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-.wrap-mid-r .calcard .ecal { flex: 1; max-height: 290px; min-height: 0; overflow-y: auto; padding-right: 4px; }
-@media (max-width: 920px) {
-  .wrap-mid-r { overflow: visible; }
-  .wrap-mid-r .feedcard, .wrap-mid-r .calcard { flex: none; overflow: visible; }
-  .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr 1fr; max-height: 520px; }
-  .wrap-mid-r .calcard .ecal { max-height: 230px; }
-}
-@media (max-width: 520px) { .wrap-mid-r .feedcard .feed { grid-template-columns: 1fr; } }
+.wrap-mid-r { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.wrap-mid-r .movers { flex: 1 1 0; display: flex; flex-direction: column; }
+.wrap-mid-r .movers .mvcols { flex: 1; }
 
 /* macro percentile sliders — multi-column packing so the 5 groups fill the card
    (balanced columns) instead of orphaning the 5th group on its own grid row. */
@@ -892,20 +867,6 @@ body::before {
 .sld-knob { position: absolute; top: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--txt); border: 2px solid var(--sur); transform: translateX(-50%); box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
 .sld-sc { display: flex; justify-content: space-between; margin-top: 5px; font-size: var(--fs-2xs); color: var(--txt3); font-family: var(--mono); }
 .sld-sc .pl { opacity: .7; font-family: var(--body); }
-
-/* Upcoming — economic calendar (Wrap). Importance via dot intensity, not gain/loss colour. */
-.ecal { display: flex; flex-direction: column; margin-top: 8px; }
-.ecal-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; align-items: baseline; gap: 12px; padding: 6px 0; border-bottom: .5px solid var(--brd); font-size: var(--fs-sm); }
-.ecal-row:last-child { border-bottom: 0; }
-.ecal-d { color: var(--txt3); font-family: var(--mono); font-size: var(--fs-xs); white-space: nowrap; }
-.ecal-t { color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ecal-v { color: var(--txt3); font-size: var(--fs-xs); white-space: nowrap; text-align: right; }
-.ecal-v b { color: var(--txt2); font-family: var(--mono); font-weight: 600; }
-.ecal-p { opacity: .75; }
-.ecal-i { font-size: var(--fs-2xs); letter-spacing: 1px; white-space: nowrap; line-height: 1; }
-.ecal-i.high { color: var(--acc); }
-.ecal-i.medium { color: var(--txt3); }
-.ecal-i.low { color: var(--brd); }
 
 /* amber alert banner */
 .alert {

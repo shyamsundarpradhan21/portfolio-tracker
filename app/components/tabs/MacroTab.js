@@ -45,7 +45,7 @@ function TickerLine({ label, kind, items, anim }) {
           {loop.map((it, i) => (
             <span className="tki" key={i} aria-hidden={i >= half.length}>
               {it.dot
-                ? <><i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
+                ? <>{it.tag && <span className="tkpf">{it.tag}</span>}<i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
                 : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
             </span>
           ))}
@@ -352,13 +352,15 @@ function SectorTreemap({ tiles }) {
   );
 }
 
-// ── Day movers: top-5 gainers (green tint) | draggers (red tint), one cell. ────
-function MoversSplit({ gainers, losers }) {
+// ── Day movers: top-5 gainers (green tint) | draggers (red tint) — own card,
+// lives in the wrap-mid RIGHT column beside Market insights. ───────────────────
+function MoversSplit({ gainers, losers, note }) {
   return (
-    <div className="qc movers">
+    <div className="card movers">
+      <div className="wlabel">Top movers <span className="hint">{note || 'day'}</span></div>
       <div className="mvcols">
-        <div><div className="qh">Top gainers · day</div><Movers list={gainers} /></div>
-        <div><div className="qh">Top draggers · day</div><Movers list={losers} /></div>
+        <div><div className="qh">Gainers</div><Movers list={gainers} /></div>
+        <div><div className="qh">Draggers</div><Movers list={losers} /></div>
       </div>
     </div>
   );
@@ -371,28 +373,6 @@ function Movers({ list }) {
       {rows.map((m) => (
         <div className="mv" key={m.sym}><span className="s">{m.sym}</span><span className={`p ${cls(m.pct)}`}>{Math.abs(m.pct).toFixed(2)}%</span></div>
       ))}
-    </div>
-  );
-}
-
-// ── Portfolio news feed (sentiment-shaded cards, scrollable) ─────────────────
-function NewsFeed({ news, region }) {
-  let items = (news?.items || []).filter((it) => it && it.title);
-  // Region-aware: India hides US-holding news, Global hides India's (untagged
-  // items from a stale cache stay visible until the route's region tag lands).
-  if (region === 'india') items = items.filter((it) => it.region !== 'us');
-  else if (region === 'us') items = items.filter((it) => it.region !== 'in');
-  return (
-    <div className="card feedcard">
-      <div className="wlabel">Portfolio news · your holdings</div>
-      {items.length
-        ? <div className="feed">{items.map((it, i) => (
-          <a className={`ncard ${it.sentiment > 0 ? 'pos' : it.sentiment < 0 ? 'neg' : 'neu'}`} key={i} href={it.link || undefined} target="_blank" rel="noopener noreferrer">
-            <span className="tag">{it.ticker}</span>
-            <div className="nh">{it.title}</div>
-            <div className="nm">{it.source || 'Yahoo'} · {it.ago}</div>
-          </a>))}</div>
-        : <div className="na">Headlines load when the tab opens…</div>}
     </div>
   );
 }
@@ -438,44 +418,7 @@ function SliderBoard({ board, region = 'india' }) {
   );
 }
 
-// "Upcoming" — region-aware economic calendar. India = computed publication
-// cadence (CPI/IIP/WPI/GDP/RBI MPC); US = ForexFactory keyless feed (carries
-// forecast/previous). Importance via dot-glyph + intensity, NOT gain/loss colour.
-const IMP_DOTS = { high: '●●●', medium: '●●○', low: '●○○' };
-const fmtCalDate = (iso) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-function CalendarBoard({ cal, region = 'india' }) {
-  if (!cal) return null;
-  const rows = region === 'us' ? (cal.us || []) : (cal.india || []);
-  if (!rows.length) {
-    if (region === 'us' && cal.usSource === 'unavailable') return (
-      <div className="card calcard">
-        <div className="wlabel">Upcoming <span className="hint">economic calendar</span></div>
-        <div className="sub" style={{ padding: '4px 2px 0' }}>US calendar feed momentarily unavailable.</div>
-      </div>
-    );
-    return null;
-  }
-  return (
-    <div className="card calcard">
-      <div className="wlabel">Upcoming <span className="hint">{region === 'us' ? 'US · ForexFactory' : 'India · scheduled'}</span></div>
-      <div className="ecal">
-        {rows.map((e, i) => {
-          const showDate = i === 0 || rows[i - 1].date !== e.date;
-          return (
-            <div className="ecal-row" key={e.date + e.title + i}>
-              <span className="ecal-d">{showDate ? fmtCalDate(e.date) : ''}</span>
-              <span className="ecal-t">{e.title}</span>
-              <span className="ecal-v">{e.forecast ? <>est <b>{e.forecast}</b></> : ''}{e.previous ? <span className="ecal-p"> · prev {e.previous}</span> : ''}</span>
-              <span className={`ecal-i ${e.impact}`} title={e.impact} aria-label={`${e.impact} impact`}>{IMP_DOTS[e.impact] || ''}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, econCal, nifty50, nifty50Loading, nasdaq, nasdaqLoading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, nifty50Loading, nasdaq, nasdaqLoading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
@@ -491,19 +434,37 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
 
   // Ticker rows, region-aware (filtered from live data — never fabricated).
   const q = (x, name) => (x && x.price != null ? { name: name || x.label, val: fmt(x.price), pct: apct(x.pct), cls: cls(x.pct) } : null);
+  // Indices + Commod·FX rails are COMMON across regions (India + US shown together);
+  // only the News rail below stays region-aware.
   const idx = [
-    ...(showIN ? [q(c.nifty), q(c.sensex), ivix?.last != null ? { name: 'India VIX', val: fmt(ivix.last), pct: apct(ivix.pct), cls: cls(ivix.pct) } : null] : []),
-    ...(showUS ? [q(c.sp500), q(c.nasdaq), q(c.dow), q(c.nikkei), q(c.hangseng)] : []),
+    q(c.nifty), q(c.sensex),
+    ivix?.last != null ? { name: 'India VIX', val: fmt(ivix.last), pct: apct(ivix.pct), cls: cls(ivix.pct) } : null,
+    q(c.sp500), q(c.nasdaq), q(c.dow), q(c.nikkei), q(c.hangseng),
   ].filter(Boolean);
   const fx = [
     q(c.gold), q(c.silver), q(c.brent), q(c.usdinr), q(c.us10y),
     dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
   ].filter(Boolean);
-  let newsRaw = (marketNews?.items || []).filter((it) => it && it.title);
-  // Region-tagged at source (/api/news); untagged items from a stale cache stay visible.
-  if (region === 'india') { const f = newsRaw.filter((it) => it.region !== 'global'); if (f.length) newsRaw = f; }
-  else if (region === 'us') { const f = newsRaw.filter((it) => it.region !== 'india'); if (f.length) newsRaw = f; }
-  const news = newsRaw.slice(0, 12).map((it) => ({ dot: sdot(it.sentiment), text: it.title, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
+  // News rail = market headlines (/api/news) + per-holding portfolio headlines
+  // (/api/portfolio-news) merged into ONE region-aware rail. Portfolio items carry the
+  // holding ticker as an accent-tinted pill (it.tag); market items don't. Region tags
+  // differ by source (market: india/global · portfolio: in/us) → normalise to india/us
+  // so the toggle filters both; untagged (stale-cache) items stay visible. Deduped by
+  // title, newest-first, capped so portfolio headlines don't swamp the market ones.
+  const canonRegion = (r) => (r === 'india' || r === 'in') ? 'india' : (r === 'global' || r === 'us') ? 'us' : null;
+  const mkNewsItem = (it, tag) => ({ title: it.title, sentiment: it.sentiment, date: it.date, reg: canonRegion(it.region), tag });
+  let newsRaw = [
+    ...(portfolioNews?.items || []).filter((it) => it && it.title).map((it) => mkNewsItem(it, it.ticker || null)),
+    ...(marketNews?.items || []).filter((it) => it && it.title).map((it) => mkNewsItem(it, null)),
+  ];
+  const inReg = newsRaw.filter((it) => it.reg == null || it.reg === region);
+  if (inReg.length) newsRaw = inReg;
+  const seenNews = new Set();
+  const news = newsRaw
+    .filter((it) => it.title && !seenNews.has(it.title) && seenNews.add(it.title))
+    .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0))
+    .slice(0, 16)
+    .map((it) => ({ dot: sdot(it.sentiment), text: it.title, tag: it.tag, cls: it.sentiment > 0 ? 'grn' : it.sentiment < 0 ? 'red' : '' }));
 
   const pulse = insights?.pulse;
   const hasPulse = insightsOn && !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
@@ -572,8 +533,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Left: market insights (sentiment · treemap · movers). Right: portfolio news
-          (3-up, scrollable) stacked over the upcoming calendar (scrollable). */}
+      {/* Left: market insights (sentiment · hot sectors). Right: top movers
+          (day gainers | draggers). Portfolio news now lives in the News rail above,
+          tagged per-holding — no separate news card, no calendar here. */}
       <div className="wrap-mid">
         <div className="card">
           <div className="wlabel">Market insights <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
@@ -591,16 +553,14 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
               momLabel={showIN ? 'Nifty' : 'S&P'}
             />
             <SectorTreemap tiles={sectorTiles} />
-            <MoversSplit
-              gainers={showIN ? nifty50?.movers?.gainers : usMovers?.gainers}
-              losers={showIN ? nifty50?.movers?.losers : usMovers?.losers}
-            />
           </div>
         </div>
         <div className="wrap-mid-r">
-          <NewsFeed news={portfolioNews} region={region} />
-          {/* Upcoming — region-aware economic calendar (keyless), under the news */}
-          <CalendarBoard cal={econCal} region={region} />
+          <MoversSplit
+            gainers={showIN ? nifty50?.movers?.gainers : usMovers?.gainers}
+            losers={showIN ? nifty50?.movers?.losers : usMovers?.losers}
+            note={showIN ? (asOf ? `NSE · ${asOf}` : 'day') : (usAsOf ? `US · ${usAsOf}` : 'day')}
+          />
         </div>
       </div>
 

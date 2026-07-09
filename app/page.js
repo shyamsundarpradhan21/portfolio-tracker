@@ -64,7 +64,6 @@ const PREMKT_KEY    = 'nwTracker.premarket';
 const USSENT_KEY    = 'nwTracker.usSentiment';
 const INDSENT_KEY   = 'nwTracker.indiaSentiment';
 const MBOARD_KEY    = 'nwTracker.macroBoard';
-const ECAL_KEY      = 'nwTracker.econCal';
 const PNEWS_KEY     = 'nwTracker.portfolioNews';
 const NEWS_KEY      = 'nwTracker.marketNews';
 const NIFTY50_KEY   = 'nwTracker.nifty50';
@@ -222,7 +221,6 @@ function Dashboard() {
   const [usSentiment, setUsSentiment] = useState(null); // US leading/coincident sentiment (/api/us-sentiment)
   const [indiaSentiment, setIndiaSentiment] = useState(null); // India leading/coincident sentiment (/api/india-sentiment)
   const [macroBoard, setMacroBoard] = useState(null); // macro percentile sliders (FRED + Yahoo, /api/macro-board)
-  const [econCal, setEconCal]       = useState(null); // upcoming econ calendar (ForexFactory + computed India, /api/econ-calendar)
   const [portfolioNews, setPortfolioNews] = useState(null); // per-holding sentiment headlines (/api/portfolio-news)
   const [marketNews, setMarketNews] = useState(null); // market-headline ticker (/api/news)
   const [nifty50, setNifty50]       = useState(null); // Nifty 50 heatmap + movers (lazy — only on the Wrap tab)
@@ -438,13 +436,12 @@ function Dashboard() {
   const fetchUsSentiment = async () => { try { const res = await fetch('/api/us-sentiment', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
   const fetchIndiaSentiment = async () => { try { const res = await fetch('/api/india-sentiment', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
   const fetchMacroBoard = async () => { try { const res = await fetch('/api/macro-board', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
-  const fetchEconCal = async () => { try { const res = await fetch('/api/econ-calendar', { cache: 'no-store' }); return res.ok ? await res.json() : null; } catch { return null; } };
 
   const doRefresh = useCallback(async (opts = {}) => {
     setLoading(true); setStatus({ msg: 'Fetching live prices…', type: '' });
     try {
       const inSyms = INDIAN.map((s) => s.ns).concat(SWING.map((s) => s.ns)).concat(['INR=X']);
-      const [inData, usData, mfData, histData, macroData, premarketData, usSentData, indiaSentData, mboardData, econCalData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro(), fetchPremarket(), fetchUsSentiment(), fetchIndiaSentiment(), fetchMacroBoard(), fetchEconCal()]);
+      const [inData, usData, mfData, histData, macroData, premarketData, usSentData, indiaSentData, mboardData] = await Promise.all([fetchBatch(inSyms), fetchBatch(US.map((s) => s.sym)), fetchMfNav(), fetchHistory(), fetchMacro(), fetchPremarket(), fetchUsSentiment(), fetchIndiaSentiment(), fetchMacroBoard()]);
       const merged = { ...inData, ...usData };
       const tick = {};
       Object.keys(merged).forEach((k) => {
@@ -460,7 +457,6 @@ function Dashboard() {
       if (usSentData) { setUsSentiment(usSentData); try { sessionStorage.setItem(USSENT_KEY, JSON.stringify({ ts: Date.now(), usSentiment: usSentData })); } catch {} }
       if (indiaSentData) { setIndiaSentiment(indiaSentData); try { sessionStorage.setItem(INDSENT_KEY, JSON.stringify({ ts: Date.now(), indiaSentiment: indiaSentData })); } catch {} }
       if (mboardData) { setMacroBoard(mboardData); try { sessionStorage.setItem(MBOARD_KEY, JSON.stringify({ ts: Date.now(), macroBoard: mboardData })); } catch {} }
-      if (econCalData) { setEconCal(econCalData); try { sessionStorage.setItem(ECAL_KEY, JSON.stringify({ ts: Date.now(), econCal: econCalData })); } catch {} }
       if (mfData)   { setMfNav(mfData);  try { sessionStorage.setItem(MFNAV_KEY, JSON.stringify({ ts: Date.now(), mfNav: mfData })); } catch {} }
       const fx = inData['INR=X']?.price;
       if (fx) setUsdInr(fx);
@@ -483,7 +479,6 @@ function Dashboard() {
     try { const us = JSON.parse(sessionStorage.getItem(USSENT_KEY) || 'null'); if (us?.usSentiment) setUsSentiment(us.usSentiment); } catch {}
     try { const ind = JSON.parse(sessionStorage.getItem(INDSENT_KEY) || 'null'); if (ind?.indiaSentiment) setIndiaSentiment(ind.indiaSentiment); } catch {}
     try { const mb = JSON.parse(sessionStorage.getItem(MBOARD_KEY) || 'null'); if (mb?.macroBoard) setMacroBoard(mb.macroBoard); } catch {}
-    try { const ec = JSON.parse(sessionStorage.getItem(ECAL_KEY) || 'null'); if (ec?.econCal) setEconCal(ec.econCal); } catch {}
     let hydrated = false;
     try {
       const c = JSON.parse(sessionStorage.getItem(FETCH_TS_KEY) || 'null');
@@ -1371,7 +1366,7 @@ function Dashboard() {
               ALGO={ALGO} FY={FY} fnoRealized={APP.fnoRealized} />
           )}
           {tab === 6 && (
-            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} econCal={econCal} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} usSentiment={usSentiment} indiaSentiment={indiaSentiment} nifty50={nifty50} nifty50Loading={nifty50Loading} nasdaq={nasdaq} nasdaqLoading={nasdaqLoading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
+            <MacroTab model={macroModel} macro={macro} macroBoard={macroBoard} portfolioNews={portfolioNews} marketNews={marketNews} premarket={premarket} usSentiment={usSentiment} indiaSentiment={indiaSentiment} nifty50={nifty50} nifty50Loading={nifty50Loading} nasdaq={nasdaq} nasdaqLoading={nasdaqLoading} marketWrap={MARKET_WRAP} fiidiiTrail={fiidiiTrail} fxRate={fxRate} regime={regime} markets={markets}
               reg={{ usNdx: regUsNdx, usDur: regUsDur, india: regIndia }}
               insights={insights} insightsOn={insightsOn} insightsFirstLoad={insightsFirstLoad}
               insightsLoading={insightsLoading} insightsTs={insightsTs}

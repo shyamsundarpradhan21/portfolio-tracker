@@ -1,3 +1,48 @@
+# Plan — Merge Portfolio-news card INTO the News rail (with a per-holding accent tag) — PROPOSED 2026-07-09
+
+Goal: remove the standalone "Portfolio news" card in the Wrap; fold its per-holding headlines
+into the single scrolling **News** ticker rail, each marked with an **accent-tinted holding
+ticker pill** (chosen option: ticker pill + accent colour) so a portfolio headline stands out
+from a general market one.
+
+## Decisions locked
+- Keep `/api/portfolio-news` route as-is (distinct per-holding, search-by-name logic) — reuse its
+  output, do NOT fold it into `/api/news`.
+- Tag = the holding ticker (e.g. COFORGE / NVDA), rendered as an accent-tinted `.tkpf` pill.
+
+## Steps
+- [x] Render-mock the news rail with tagged portfolio items, both themes → `public/mock-news-rail.html`.
+- [x] **Approve the mock** — user picked "ticker pill + accent colour".
+- [x] `MacroTab.js` — `TickerLine` item render: prepend an optional `it.tag` pill (`.tkpf`) before the dot.
+- [x] `MacroTab.js` — merged `news` array (market + portfolio), region tags normalised (`in`/`us` ↔
+      `india`/`global`), deduped by title, newest-first, capped at 16.
+- [x] `MacroTab.js` — deleted the `NewsFeed` component + its render slot; `portfolioNews` prop kept
+      (consumed by the merged rail).
+- [x] `globals.css` — added `.tkpf` (accent-tinted); pruned dead `.feedcard/.feed/.ncard` rules.
+
+## Follow-up (same session, user directives)
+- [x] Tickers COMMON across regions except News: made the **Indices** line show India + US together
+      (Commod·FX was already common); News stays region-aware.
+- [x] Removed the **Upcoming economic calendar** entirely (UI + `CalendarBoard`/helpers +
+      `.ecal*` CSS + page.js `econCal` state/fetch/key/prop). Left `/api/econ-calendar` route +
+      `lib/econCalendar.js` on disk (self-contained, unused, trivially re-wired if wanted).
+- [x] Moved **Top movers** (day gainers | draggers) out of the Market-insights stack into the
+      right column as its own card (`.card.movers`), region-aware `note` (NSE/US · date). Left card =
+      sentiment + hot sectors; both cards height-matched, green/red movers columns fill.
+
+## Verify
+- [x] Full `certify.mjs` — all 8 surfaces × 6 widths × 2 themes, normal + stress:
+      docOverflow=0, RSP-001/002/004=0; SYMMETRY/DIRECTION/VALUE-SIZE all PASS.
+- [x] Render-verified live (both India + US views): Indices ticker common, News rail merged +
+      `COIN` accent pill visible, movers region-aware + note updates, calendar gone, no card gap.
+
+## Review
+- Net: one region-aware News rail (market + per-holding, ticker-pill tagged), common Indices/Commod·FX
+  rails, movers relocated to the right column, calendar dropped. No new deps. All feeds keyless as before.
+- Temp mock `public/mock-news-rail.html` removed after approval.
+
+---
+
 # Plan — US market heatmap (Nasdaq-100), mirror of the Nifty-50 one (BUILT & COMMITTED to main, 2026-07-07)
 
 Goal: the same Fyers-style nested drill-down treemap (sector › industry › stock, cap-sized,
