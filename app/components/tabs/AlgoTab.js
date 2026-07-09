@@ -128,20 +128,9 @@ export default function AlgoTab({
 
       {/* Overview — Groww/Dhan-style realised-F&O journal (calendar + stat panel + day curve).
           (F&O Positions is now persistent at the top of the tab — #38, no longer here.) */}
-      {sub === 'overview' && (
-        <div className="sec">
-          <PnlDashboard
-            liveMtm={fno.netOpenMtm}
-            deployed={deployed}
-            capital={dep.any
-              ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
-              : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
-          />
-        </div>
-      )}
-
-      {sub === 'summary' && (<>
-        {/* Capital composition — LIVE per-strategy account capital (utilised vs available). */}
+      {sub === 'overview' && (<>
+        {/* Capital composition — LIVE per-strategy account capital (utilised vs available).
+            Moved here from the Summary sub-tab so it sits with the trading journal. */}
         <div className="card sec">
           <div className="ctitle" style={{ marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
             Capital composition <span className="badge ba" style={{ fontSize: 'var(--fs-2xs)' }}>{s01c.live || s02c.live ? 'Deployed / Available' : 'own capital'}</span>
@@ -159,8 +148,18 @@ export default function AlgoTab({
             ))}
           </div>
         </div>
-        <FnoSummary />
+        <div className="sec">
+          <PnlDashboard
+            liveMtm={fno.netOpenMtm}
+            deployed={deployed}
+            capital={dep.any
+              ? { label: 'trading capital · live', value: <RsText>{cap(dep.total)}</RsText>, foot: <><span>{cap(dep.used)} used</span><span>{cap(dep.free)} free</span></> }
+              : { label: 'own capital', value: <RsText>{cap(ownStatic)}</RsText> }}
+          />
+        </div>
       </>)}
+
+      {sub === 'summary' && <FnoSummary />}
 
       {sub === 'review' && (<>
         {/* #13 — the cadence toggle now lives INSIDE the AI-review card (passed as its
