@@ -206,6 +206,20 @@ trade-verifies the row. Before ~2200 the day being unparsed is EXPECTED, not a b
 (≥ next morning) is still positions-sourced with no overlay key, THEN suspect a stalled ingest —
 check `data/gmail-state.json` last-processed ts vs the overlay's latest `Broker|date`.
 
+### F&O realised UNDERCOUNTS carried/overnight positions — `realizedProfit` is today's MARGINAL move, not entry→exit
+The capture (`splitLegs realised: (p) => p.realizedProfit` in `scripts/lib/brokers.mjs` dhan(), and the
+Upstox/Fyers equivalents) sums the positions-API `realizedProfit`. On a CLOSED **carried/overnight**
+position that field is only TODAY's realised move (since the prior close / daily M2M settlement), NOT
+the full entry→exit P&L — so the overnight-carried gain (captured as UNREALIZED MTM the prior day) is
+never booked to the realised ledger and is lost. **Proven 2026-07-09:** Dhan console = **+₹22,649.25**
+realised (5 positions, 0 live); app captured **−₹12,922**. Gap = **+₹35,571.25 = EXACTLY the 09:13 open
+`dhanMtm`** (the carried-in unrealized). So true realised = carried-in MTM (+35,571.25) + today's
+`realizedProfit` (−12,922) = **+22,649.25**. The overlay/contract-note only fixes CHARGES, not this gross.
+**Don't trust positions-API `realizedProfit` as "today's realised" when positions carry overnight.** Fix
+is a data-model change (book daily M2M settlement, OR add carried-in MTM on close via per-position carry
+tracking, OR trade-book entry→exit reconstruction) — belongs in the pending EOD-book build
+(`tasks/eod-book-design.md`). Same class likely affects Upstox/Fyers carried positions too.
+
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY
 view. The SOLE intraday curve is the Day view's `DayPanel` (day-picker driven: ‹ › nav + that day's
