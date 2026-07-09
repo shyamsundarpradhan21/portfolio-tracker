@@ -96,6 +96,18 @@ function loadEnvFile(p) {
   return env;
 }
 
+// True entry→exit realised for a Dhan F&O leg. Dhan's `realizedProfit` marks a CARRIED
+// leg's cost to the PREVIOUS settlement (buyAvg/sellAvg are DAY-marked, not the original
+// entry) — so on a position carried overnight and closed today it reports only today's
+// marginal move and DROPS the carried-in P&L: a +₹35,571 carried gain shows as a −₹12,922
+// loss (2026-07-09: Dhan console +22,649.25 vs realizedProfit −12,922). The truth is on the
+// same payload: today's realised cash flow, with today's NET quantity change valued at the
+// ORIGINAL entry (`costPrice`, which Dhan preserves) instead of the marked price. Holds for
+// carried / day-trade / partial / still-open (→ 0) alike; validated to the ₹ vs the console
+// on 2026-07-09. See tasks/feedback.md ("F&O realised UNDERCOUNTS carried positions").
+export const dhanRealised = (p) =>
+  num(p.daySellValue) - num(p.dayBuyValue) + num(p.costPrice) * (num(p.dayBuyQty) - num(p.daySellQty));
+
 async function dhan(withOrders) {
   const tok = readJSON(join(ROOT, 'mcp', 'dhan', '.token.json'))?.accessToken;
   if (!tok) return null;
@@ -103,8 +115,8 @@ async function dhan(withOrders) {
   const pos = await getJSON('https://api.dhan.co/v2/positions', H);
   if (!pos.ok || !pos.json) return null;
   const list = Array.isArray(pos.json) ? pos.json : (pos.json.data || []);
-  const { net, realised, mtm } = splitLegs(list, { isLeg: isFnoPosition, realised: (p) => p.realizedProfit, mtm: (p) => p.unrealizedProfit });
-  const legs = legsOf(list, { isLeg: isFnoPosition, sym: (p) => p.tradingSymbol, realised: (p) => p.realizedProfit, mtm: (p) => p.unrealizedProfit });
+  const { net, realised, mtm } = splitLegs(list, { isLeg: isFnoPosition, realised: dhanRealised, mtm: (p) => p.unrealizedProfit });
+  const legs = legsOf(list, { isLeg: isFnoPosition, sym: (p) => p.tradingSymbol, realised: dhanRealised, mtm: (p) => p.unrealizedProfit });
   let pending = false, fills = [];
   if (withOrders) {
     const ord = await getJSON('https://api.dhan.co/v2/orders', H);
@@ -127,6 +139,11 @@ async function upstox(withOrders) {
   const pos = await getJSON('https://api.upstox.com/v2/portfolio/short-term-positions', H);
   if (!pos.ok || !Array.isArray(pos.json?.data)) return null;
   const isUpLeg = (p) => isFno(p.trading_symbol || p.tradingsymbol || '');
+  // Reviewed for the Dhan carried-position bug (2026-07-09): Upstox's `average_price`/
+  // `buy_price` are the ORIGINAL entry, UNMARKED (overnight_buy_amount = qty × original avg,
+  // not the close_price mark) — so its native `realised` books against the true entry and is
+  // trusted correct, unlike Dhan's day-marked buyAvg. TODO: spot-check on the next Upstox
+  // carried-close day (0 realised on 2026-07-09 — both legs open — so untestable then).
   const { net, realised, mtm } = splitLegs(pos.json.data, { isLeg: isUpLeg, realised: (p) => p.realised, mtm: (p) => p.unrealised });
   const legs = legsOf(pos.json.data, { isLeg: isUpLeg, sym: (p) => p.trading_symbol || p.tradingsymbol, realised: (p) => p.realised, mtm: (p) => p.unrealised });
   let pending = false, fills = [];

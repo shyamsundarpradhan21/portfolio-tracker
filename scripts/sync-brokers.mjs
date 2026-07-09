@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path';
 import { appendTrades } from './lib/trades-log.mjs';
 import { appendLedger } from './lib/fno-ledger.mjs';
 import { chargesForFills, segmentOf } from './lib/fno-charges.mjs';
+import { dhanRealised } from './lib/brokers.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE_PATH = join(ROOT, 'data', 'broker-state.json');
@@ -238,7 +239,10 @@ async function pullDhan() {
     sym: p.tradingSymbol, type: p.drvOptionType, strike: p.drvStrikePrice,
     expiry: String(p.drvExpiryDate || '').slice(0, 10), status: p.positionType,
     netQty: p.netQty, avg: p.positionType === 'SHORT' ? p.sellAvg : p.buyAvg,
-    realized: p.realizedProfit, unrealized: p.unrealizedProfit,
+    // NOT p.realizedProfit — that marks carried legs to the prev settlement and drops the
+    // carried-in P&L (see dhanRealised in lib/brokers.mjs). This feeds broker-state → the
+    // fno-ledger row (sync below) + the app's live F&O panel, so all read the true realised.
+    realized: dhanRealised(p), unrealized: p.unrealizedProfit,
   }));
   const fund = await getJSON('https://api.dhan.co/v2/fundlimit', H);
   return {
@@ -453,7 +457,7 @@ for (const [name, label, fn] of [['upstox', 'Upstox', tradesUpstox], ['dhan', 'D
     // Realised F&O for the ledger (gross − modeled charges = net).
     const fno = (fills || []).filter((f) => isFno(f.sym));
     let gross = null, source = 'fills';
-    if (name === 'dhan') { // native realised — includes expiry/settlement P&L
+    if (name === 'dhan') { // corrected entry→exit realised (dhanRealised, set at pull time) — includes carried/settlement P&L
       const native = (state.positions.DHAN_FNO?.rows || []).reduce((a, p) => a + (Number(p.realized) || 0), 0);
       if (native) { gross = native; source = 'positions'; }
     }
