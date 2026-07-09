@@ -64,13 +64,25 @@ const dhanMtm = r2((bs?.positions?.DHAN_FNO?.rows || []).filter((r) => (+r.netQt
 const ownerEquity = r2(dhanFunds + dhanMtm);
 const drift = r2(dhanFunds - ledgerCash);   // ledger cash vs broker-state cash → snapshot-timing residual only
 
+// ── GUARD: the Trading-tab realised ledger must tie to this cash-account truth ───
+// data/fno-ledger.json sums broker-native realised per day. A large gap vs realisedDerived
+// flags the carried-position undercount — Dhan `realizedProfit` marks carried legs to the
+// PREVIOUS settlement, dropping the carried-in P&L (fixed at CAPTURE 2026-07-09 for new days
+// via lib/brokers.mjs `dhanRealised`; older source:'positions' rows can still be under). The
+// ledger gross ties ABOVE the cash truth by exchange charges, so flag on a generous tolerance.
+const fnoDhan = (J('data/fno-ledger.json')?.rows || []).filter((r) => r.broker === 'Dhan');
+const fnoGross = r2(fnoDhan.reduce((a, r) => a + (r.grossRealised || 0), 0));
+const fnoPositionsRows = fnoDhan.filter((r) => r.source === 'positions').length;
+const fnoDrift = r2(realisedDerived - fnoGross);   // cash truth − ledger gross (charges make this ≳ 0)
+
 const out = {
   version: 2, builtFor: 'dhan', ownerOnly: true, asOf: (process.argv[3] || 'run-time'),
   rows,
   summary: { fundTransferRows: rows.length, contributions, drawings, netCapital, expenses, openingBal, ledgerCash, realisedDerived, unclassifiedNarrations: unclassified },
   reconcile: {
     ledgerCash, dhanFunds, dhanMtm, ownerEquity, drift,
-    note: '100% OWNER capital — no client, no subtraction. ownerEquity = dhanFunds + open MTM. Cash tie-out = the Dhan CLOSING BALANCE (ledgerCash) vs broker-state dhanFunds → drift is snapshot timing only. Realised is DERIVED from the identity (ledgerCash − opening − netCapital + expenses), NOT summed (Trades Executed credit/debit is F&O-margin-polluted).',
+    fnoLedgerGross: fnoGross, fnoPositionsRows, realisedDerived, fnoLedgerDrift: fnoDrift,
+    note: '100% OWNER capital — no client, no subtraction. ownerEquity = dhanFunds + open MTM. Cash tie-out = the Dhan CLOSING BALANCE (ledgerCash) vs broker-state dhanFunds → drift is snapshot timing only. Realised is DERIVED from the identity (ledgerCash − opening − netCapital + expenses), NOT summed (Trades Executed credit/debit is F&O-margin-polluted). fnoLedgerDrift = realisedDerived − fno-ledger Dhan gross: a large gap flags the carried-position undercount or a missing day.',
   },
 };
 writeFileSync(join(ROOT, 'data', 'trading-ledger.json'), JSON.stringify(out, null, 2));
@@ -82,3 +94,6 @@ console.log('unclassified (surfaced):', Object.keys(unclassified).length ? JSON.
 console.log('\n=== owner equity + cash reconciliation ===');
 console.log('owner equity = dhanFunds ₹' + dhanFunds + ' + MTM ₹' + dhanMtm + ' = ₹' + ownerEquity);
 console.log('cash tie-out: ledgerCash ₹' + ledgerCash + ' vs dhanFunds ₹' + dhanFunds + ' → DRIFT ₹' + drift, Math.abs(drift) > 5000 ? '  ⚠ >₹5k — investigate' : '  ✓ ties out (snapshot timing)');
+console.log('\n=== fno-ledger reconcile (carried-position guard) ===');
+console.log('ledger Dhan gross realised ₹' + fnoGross + ' (' + fnoDhan.length + ' rows, ' + fnoPositionsRows + " source:'positions')");
+console.log('vs cash-identity realised  ₹' + realisedDerived + ' → DRIFT ₹' + fnoDrift, Math.abs(fnoDrift) > 20000 ? '  ⚠ >₹20k — carried-position undercount / missing day (see tasks/feedback.md)' : '  ✓ within tolerance');

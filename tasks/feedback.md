@@ -220,6 +220,20 @@ is a data-model change (book daily M2M settlement, OR add carried-in MTM on clos
 tracking, OR trade-book entry→exit reconstruction) — belongs in the pending EOD-book build
 (`tasks/eod-book-design.md`). Same class likely affects Upstox/Fyers carried positions too.
 
+**RESOLVED at CAPTURE 2026-07-09** (not the EOD build — the truth is already on the positions
+payload): `costPrice` is the ORIGINAL entry (Dhan's `buyAvg`/`sellAvg` are day-marked). Fix =
+`dhanRealised(p) = daySellValue − dayBuyValue + costPrice×(dayBuyQty − daySellQty)` in
+`lib/brokers.mjs` (exported) — fixes the intraday tape; and `sync-brokers.mjs pullDhan()` stores
+`realized: dhanRealised(p)` into broker-state, which feeds BOTH the fno-ledger row AND the app's
+live F&O panel (both sum broker-state `realized`). Holds for carried/day-trade/partial/open(→0).
+**Upstox reviewed = CORRECT** (its `average_price`/`buy_price` are the UNMARKED original entry, unlike
+Dhan; `overnight_buy_amount` = qty×original, not the close mark) — left as-is, TODO spot-check on its
+next carried-close. **Fyers PARKED.** **Guard (item 5):** `build-trading-ledger.mjs` now prints
+`fnoLedgerDrift = realisedDerived (cash-account identity) − fno-ledger Dhan gross`; run it to catch a
+re-emergence — it currently flags **~₹51k** of residual HISTORICAL undercount across the ~10 older
+`source:'positions'` rows (pre-fix), still to be re-derived (item 4). Note: the running capture DAEMON
+caches modules — RESTART it so the tape uses the fixed `dhanRealised` (the one-shot sync already does).
+
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY
 view. The SOLE intraday curve is the Day view's `DayPanel` (day-picker driven: ‹ › nav + that day's
