@@ -775,27 +775,16 @@ body::before {
 .wstack .qc { min-height: 0; }
 .qc { background: var(--glass-bg2); border: .5px solid var(--glass-brd); border-radius: 11px; padding: 9px 10px; min-height: 126px; display: flex; flex-direction: column; }
 .qh { font-size: var(--fs-2xs); letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; }
-/* Legend mirrors the treemap's sheat(): mix toward --sur2 (the panel surface) so
-   it tracks the tiles in BOTH themes — vivid green → surface-neutral → vivid red. */
-.hlg { margin-left: auto; display: inline-block; height: 6px; width: 64px; border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--grn) 80%, var(--sur2)) 0%, color-mix(in srgb, var(--grn) 32%, var(--sur2)) 42%, var(--sur2) 50%, color-mix(in srgb, var(--red) 32%, var(--sur2)) 58%, color-mix(in srgb, var(--red) 80%, var(--sur2)) 100%); }
 /* sentiment band — score in the header corner, card tinted by the reading */
 .senthd { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; text-transform: none; letter-spacing: 0; }
 .senthd b { font-size: var(--fs-xl); font-family: var(--mono); font-weight: 800; line-height: 1; }
 .senthd em { font-size: var(--fs-xs); font-weight: 700; font-style: normal; }
 .qc.sent.greed { background: color-mix(in srgb, var(--grn) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--grn) 22%, var(--brd)); }
 .qc.sent.fear { background: color-mix(in srgb, var(--red) 9%, var(--sur2)); border-color: color-mix(in srgb, var(--red) 22%, var(--brd)); }
-/* treemap square — fills the tall cell, bigger tiles */
-.tree .treemap { flex: 1; align-content: stretch; }
-.tree .tm { min-height: 74px; flex: 1 1 92px; }
 .sgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
 .st { aspect-ratio: 1; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
 .st span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
 .st b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 2px; }
-/* cap-weighted sector treemap: tile width ∝ market-cap weight (flexGrow), colour = move */
-.treemap { display: flex; flex-wrap: wrap; gap: 4px; }
-.tm { flex: 1 1 46px; min-height: 50px; border-radius: 7px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
-.tm span { font-size: var(--fs-2xs); color: var(--txt); font-weight: 600; line-height: 1.05; }
-.tm b { font-size: var(--fs-2xs); font-family: var(--mono); color: var(--txt); margin-top: 1px; }
 /* Nifty-50 drill-down heatmap (NiftyHeatmap): legend pills + the drill crumb. */
 .nhx-pill { display: inline-flex; align-items: baseline; gap: 5px; font-size: var(--fs-2xs); color: var(--txt3); background: var(--sur2); border: .5px solid var(--brd2); border-radius: 999px; padding: 2px 9px; letter-spacing: .02em; }
 .nhx-pill b { color: var(--txt2); font-weight: 700; }
@@ -839,7 +828,7 @@ body::before {
 /* FII/DII — its own full-width card below the internals + news row */
 .fdcard { margin-bottom: 12px; }
 
-/* Wrap mid-row: left = market insights (sentiment + hot sectors), right = top movers
+/* Wrap mid-row: left = market insights (sentiment), right = top movers
    (day gainers | draggers). Insights (left) drives the row height; the movers card
    stretches to match it, its green/red columns filling the height. */
 .wrap-mid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin-bottom: 12px; }

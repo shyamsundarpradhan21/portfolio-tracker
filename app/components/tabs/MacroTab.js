@@ -14,20 +14,7 @@ const apct = (p) => (p == null || !isFinite(p) ? '·—' : `${p > 0 ? '▲' : p 
 const fmt = (n) => (n == null || !isFinite(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 }));
 const sdot = (s) => (s > 0 ? 'g' : s < 0 ? 'r' : 'n');
 const TONE = { calm: 'calm', warn: 'warn', stress: 'stress' };
-// Solid-ish diverging tile colour for the sector squares (theme text on top).
-const sheat = (p) => (p == null || !isFinite(p)) ? 'var(--sur2)'
-  : `color-mix(in srgb, ${p >= 0 ? 'var(--grn)' : 'var(--red)'} ${Math.round(22 + Math.min(1, Math.abs(p) / 3) * 58)}%, var(--sur2))`;
-// Tile-friendly short names — strip the "Nifty " prefix (India) or map the long
-// SPDR sector labels to something that fits a square (US).
-const US_SHORT = { Technology: 'Tech', Communication: 'Comm', 'Cons. Discretionary': 'Cons Disc', Financials: 'Financials', 'Health Care': 'Health', Industrials: 'Industrials', 'Cons. Staples': 'Staples', Energy: 'Energy', Utilities: 'Utilities', Materials: 'Materials', 'Real Estate': 'Real Est' };
-const shortSec = (n) => US_SHORT[n] || String(n || '').replace(/^Nifty\s*/i, '');
 const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-// Approximate sectoral market-cap shares (relative) — size the treemap tiles
-// (colour still encodes the day's move). Not in the live feeds, so maintained
-// here; the proportions are stable (refresh occasionally). NSE indices for India,
-// S&P 500 GICS weights for the US.
-const SECTOR_WEIGHTS = { 'Fin Services': 30, Bank: 24, IT: 14, Energy: 13, FMCG: 9, Auto: 8, Pharma: 7, Metal: 5, 'PSU Bank': 5, Realty: 2 };
-const US_SECTOR_WEIGHTS = { Technology: 32, Financials: 13, 'Health Care': 11, 'Cons. Discretionary': 10, Communication: 9, Industrials: 8, 'Cons. Staples': 6, Energy: 3.5, Utilities: 2.5, Materials: 2, 'Real Estate': 2 };
 
 // ── 3-line ticker ────────────────────────────────────────────────────────────
 function TickerLine({ label, kind, items, anim }) {
@@ -340,18 +327,6 @@ function SentimentCell({ detail = null, fallback = {}, momLabel = 'Nifty' }) {
   );
 }
 
-// ── Hot-sectors treemap cell: tile size = sector-cap weight, shade = the move. ─
-function SectorTreemap({ tiles }) {
-  return (
-    <div className="qc tree">
-      <div className="qh">Hot sectors<span className="hlg" /></div>
-      {tiles.length
-        ? <div className="treemap">{tiles.map((s) => <div className="tm" key={s.name} style={{ flexGrow: s.w, background: sheat(s.pct) }}><span>{shortSec(s.name)}</span><b>{Math.abs(s.pct).toFixed(2)}</b></div>)}</div>
-        : <div className="na">—</div>}
-    </div>
-  );
-}
-
 // ── Day movers: top-5 gainers (green tint) | draggers (red tint) — own card,
 // lives in the wrap-mid RIGHT column beside Market insights. ───────────────────
 function MoversSplit({ gainers, losers, note }) {
@@ -468,13 +443,8 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
 
   const pulse = insights?.pulse;
   const hasPulse = insightsOn && !insightsFirstLoad && pulse && (pulse.read || pulse.drivers || pulse.drags);
+  // US sector day-moves feed the US breadth fallback below (not a treemap anymore).
   const usSectors = (premarket?.usSectors || []).map((s) => ({ name: s.label, pct: s.pct })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
-  const nseSectors = (ind.sectors || []).slice().sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
-  const sectors = showIN ? nseSectors : usSectors;
-  // Treemap tiles: size by maintained sector-cap weight (region-aware), shade by
-  // today's move; show the 8 largest sleeves.
-  const sectorWeights = showIN ? SECTOR_WEIGHTS : US_SECTOR_WEIGHTS;
-  const sectorTiles = [...sectors].filter((s) => s.pct != null).map((s) => ({ ...s, w: sectorWeights[s.name] ?? 4 })).sort((a, b) => b.w - a.w).slice(0, 8);
   const niftyPct = c.nifty?.pct;
   const breadthPct = ind.breadthAD?.pctUp;
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
@@ -533,9 +503,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Left: market insights (sentiment · hot sectors). Right: top movers
-          (day gainers | draggers). Portfolio news now lives in the News rail above,
-          tagged per-holding — no separate news card, no calendar here. */}
+      {/* Left: market insights (sentiment, leading/coincident expanded). Right: top
+          movers (day gainers | draggers). Portfolio news now lives in the News rail
+          above, tagged per-holding — no separate news card, no calendar here. */}
       <div className="wrap-mid">
         <div className="card">
           <div className="wlabel">Market insights <span className="hint">{showIN ? (asOf ? `NSE · ${asOf}` : 'today') : (usAsOf ? `US · ${usAsOf}` : 'US')}</span></div>
@@ -552,7 +522,6 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
               }}
               momLabel={showIN ? 'Nifty' : 'S&P'}
             />
-            <SectorTreemap tiles={sectorTiles} />
           </div>
         </div>
         <div className="wrap-mid-r">
@@ -577,8 +546,8 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
 
       {/* Market heatmap — Fyers-style nested treemap (sector › industry › stock), sized
           by market cap, drill into a sector. Full-width so the treemap has room. Nifty-50
-          on the India view, Nasdaq-100 on US; the compact "Hot sectors" cell stays as the
-          glance. Same MarketHeatmap component, different taxonomy + feed. */}
+          on the India view, Nasdaq-100 on US. Same MarketHeatmap component, different
+          taxonomy + feed. */}
       {showIN && (nifty50Loading || nifty50?.stocks?.length) ? (
         <div className="card fdcard">
           <div className="wlabel">Nifty 50 · heatmap
