@@ -20,7 +20,7 @@ import { upsertGrowth } from '../../../scripts/lib/intraday.mjs';
 import { kvGetJSON, kvSetJSON, kvConfigured } from '../../../scripts/lib/kv.mjs';
 import { captureFiiDiiTrail } from '../../lib/fiidiiTrail';
 import { JOB_META, classify, maxDateKey, maxRowDate, isoDate } from '../../../scripts/lib/scheduleHealth.mjs';
-import { sendAlert, alertConfigured } from '../../lib/alert';
+import { sendAlert, alertConfigured, pingHealthcheck } from '../../lib/alert';
 import brokerState from '../../../data/broker-state.json';
 import snapshotSleeves from '../../../data/snapshot-sleeves.json';
 import fnoLedger from '../../../data/fno-ledger.json';
@@ -109,6 +109,11 @@ export async function GET(req) {
       health = stale.length ? `stale:${stale.length}` : 'ok';
     } catch { health = 'error'; /* alerting must never break the snapshot */ }
   }
+
+  // Dead-man's-switch: this cron can't watch ITSELF (if it doesn't run, nothing runs). Ping
+  // HEALTHCHECK_URL on a successful run — an external monitor (healthchecks.io) pages you when
+  // the ping stops. No-op until the env is set. Placed last so it only fires on a clean run.
+  await pingHealthcheck();
 
   const captured = ['eq', 'us', 'fd', 'mf', 'cmpf'].filter((k) => partial[k]);
   return Response.json(

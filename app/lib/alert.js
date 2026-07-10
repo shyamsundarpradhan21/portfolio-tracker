@@ -27,3 +27,19 @@ export async function sendAlert(text) {
 // Is an alert channel configured? Lets a caller skip the staleness computation entirely
 // when there's nowhere to send (and lets a health route report its own readiness).
 export const alertConfigured = () => !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
+
+// Dead-man's-switch. The Telegram alert can't fire if the cron itself never runs (Vercel
+// Hobby drops ~35% of nights) — nothing would be there to send it. So on each successful
+// run we ping a HEALTHCHECK_URL (e.g. healthchecks.io): that service pages YOU when a ping
+// DOESN'T arrive within its window. This is the only thing that watches the watcher.
+// No-op (returns false) without HEALTHCHECK_URL — same graceful pattern as the alert.
+export async function pingHealthcheck() {
+  const url = process.env.HEALTHCHECK_URL;
+  if (!url) return false;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    return res.ok;
+  } catch {
+    return false;                                    // a down pinger must never break the caller
+  }
+}
