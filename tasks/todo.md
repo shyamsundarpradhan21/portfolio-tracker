@@ -34,10 +34,24 @@ visible within one cadence instead of 3 weeks.
 - [x] Verify: live run 7 ok · 2 unknown · exit 0; `HEALTH_TODAY=+10d` → 7 STALE · exit 1 (gates);
       `+3d` → only the 3 daily jobs (maxAge 2) STALE, weekday jobs (maxAge 4) still ok (weekend
       tolerance discriminates correctly).
-### 2. Collapse doc-vs-reality to one source (loophole 3) — SEPARATE, after step 1 lands
-- [ ] Reconcile `SCHEDULE.md` ↔ `vercel.json` (decide premarket: restore cron or drop the claim).
-- [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`.
-- [ ] Point `SCHEDULE.md` at the manifest as the machine-checkable inventory.
+### 2. Collapse doc-vs-reality to one source (loophole 3)
+- [x] **Premarket fork → resolved by folding, not restoring (Option C, "fold multiples into one").**
+      The FII/DII trail already builds on the live `/api/snapshot` cron via the shared
+      `captureFiiDiiTrail`; the only gap was that the cron persisted cash but not the FII
+      derivative stance (`der`). Fixed by:
+      - moving `fetchParticipantStats` (+ MON/toDDMMYYYY/istDDMMYYYY helpers) out of
+        `app/api/premarket/route.js` into the shared `app/lib/fiidiiTrail.js` — one copy,
+        two callers (route + cron), matching the existing `fetchFiiDii`/`nseCookie` pattern;
+      - `captureFiiDiiTrail()` now fetches the derivative stance and passes it to
+        `persistTrail`, so the daily cron builds the positioning history too.
+      - `SCHEDULE.md §1` + overview rewritten: the sole Vercel cron is `/api/snapshot`
+        (growth + FII/DII cash + derivatives), `/api/premarket` is the live route (on-demand
+        persist, no cron), cap corrected 10-day → ~20-session.
+      - Verified: 8/8 behavioral checks (stubbed fetch) — moved fn parses CSV → bearish/divergence,
+        cron path now fetches participant-OI, persistTrail no-ops w/o KV. `next build`/KV write
+        deferred to prod (no toolchain/KV in this clone — repo's documented KV-verify pattern).
+- [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`. ← needs the routine prompts pasted
+- [ ] Point `SCHEDULE.md` at the `schedule-health.mjs` manifest as the machine-checkable inventory.
 ### 3. Retire genuine redundancy (loopholes 4/5) — SEPARATE, after step 2
 - [ ] Pick primary + proven-fallback for dual F&O capture and dual snapshot; demote/delete the rest,
       health check proves the survivor.

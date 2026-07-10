@@ -13,7 +13,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 
 | Job | When (TZ) | Runs where | Defined in |
 |---|---|---|---|
-| `/api/premarket` (FII/DII trail → KV) | 00:30 UTC daily | Vercel | `vercel.json` (repo) |
+| `/api/snapshot` (growth day-change + FII/DII trail → KV) | 21:30 UTC daily (03:00 IST) | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
 | **UpstoxDailyLogin** (mint Upstox token) | 06:20 IST daily | this laptop, headless | Windows Task Scheduler |
 | **DailyNetworthSnapshot** (durable growth + NW/value → `growth.json` / `SNAPSHOT.md` / `snapshot-sleeves.json`) | 07:00 IST daily | this laptop, headless | Windows Task Scheduler |
@@ -76,15 +76,28 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 
 ---
 
-## 1. Vercel cron — FII/DII trail
+## 1. Vercel cron — daily snapshot (growth day-change + FII/DII trail)
 
-- **Schedule:** `30 0 * * *` (00:30 UTC = 06:00 IST), in [vercel.json](vercel.json).
-- **What:** hits `GET /api/premarket`; the route persists the latest NSE FII/DII
-  cash-flow point into the Vercel KV store (`premarket:fiidiiTrail`, 10-day cap),
-  so the Wrap tab's flow trail keeps building cross-device even with no browser open.
+- **Schedule:** `30 21 * * *` (21:30 UTC = 03:00 IST), in [vercel.json](vercel.json).
+  This is the **sole** Vercel cron.
+- **What:** hits `GET /api/snapshot`, which does two things server-side (no browser):
+  1. writes the day's per-sleeve growth point → KV `growth:<date>` (the live serving
+     copy; the durable git archive is the laptop `DailyNetworthSnapshot`, §4).
+  2. via `captureFiiDiiTrail()` ([app/lib/fiidiiTrail.js](app/lib/fiidiiTrail.js)),
+     persists the latest NSE FII/DII **cash** net **and** the FII **derivative-positioning**
+     stance into KV `premarket:fiidiiTrail` (dedup by date, ~20-session cap ≈ a month), so
+     the Wrap tab's flow trail keeps building cross-device with no browser open.
+- **`/api/premarket` is NOT a cron** — it's the live **Market Wrap** route (rendered when
+  you open the tab) and it persists the *same* trail on-demand through the *same*
+  `lib/fiidiiTrail` helpers. One capture path, two callers (cron + page load). An earlier
+  separate `30 0 * * *` premarket cron was folded into snapshot: Vercel Hobby is cron-limited
+  and a second cron was redundant once snapshot built the trail. Folding the derivative
+  stance into `captureFiiDiiTrail` (2026-07-10) closed the one gap — the cron used to persist
+  cash only, so on days nobody opened the app the positioning history had holes.
 - **Deps:** Vercel KV / Upstash creds (`KV_REST_API_*` or `UPSTASH_REDIS_REST_*`);
-  no-op if absent (falls back to the client's localStorage trail).
-- **Verify:** the Wrap tab's FII/DII trail shows ≥2 recent sessions; or check KV.
+  no-op if absent (falls back to the client's localStorage trail, `app/lib/fiidii.js`).
+- **Verify:** the Wrap tab's FII/DII trail shows ≥2 recent sessions (incl. the FII stance on
+  captured days); or check KV `premarket:fiidiiTrail` / `growth:<date>`.
 - **Notes:** runs in Vercel's infra — independent of the laptop.
 
 ## 2. FyersDailyLogin — daily Fyers token mint (Windows Task Scheduler)
