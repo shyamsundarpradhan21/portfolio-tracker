@@ -241,6 +241,22 @@ so DON'T dedup on it; recent days lag settlement — today isn't in trade-histor
 Recovered ~₹38k; guard drift ₹51k→₹13k. A NO-TRADE day with a marked-MTM `positions` row is a PHANTOM
 (remove it). Residual ~₹13k is older report-row / charge-accounting nuance, within guard tolerance.
 
+### Dhan's positions book EMPTIES after-hours — the sync must keep-previous on an empty pull, and single-broker refreshes should use `SYNC_ONLY`
+Dhan's `/v2/positions` returns an **empty array** after EOD settlement (the book resets overnight)
+**even while legs are still open** — a genuinely flat account instead returns CLOSED rows (`netQty 0`),
+never `[]`. So `[]` uniquely means the after-hours quirk. **2026-07-10:** running the *full* daily sync
+after close to refresh a stale Upstox MTM had a side effect — `sync-brokers.mjs` overwrote
+`state.positions[X_FNO]` on every successful pull (no empty-guard, unlike the funds `skip-not-zero`
+line right below it), so Dhan's 5 carried legs (openMtm **+7,130 → 0**) were silently wiped, blanking
+the `fnoLive` panel. **Fixed** (`a615819`): positions now get the same skip-not-zero guard — overwrite
+only when the pull has rows OR there were no prior positions. Two operational rules that follow:
+(1) **To refresh ONE broker after-hours, use `SYNC_ONLY=<broker> SYNC_SKIP_GIT=1`** — the full sync
+re-pulls every sleeve (and triggers a slow Fyers login) and would have hit the Dhan-empty quirk.
+(2) **The truly-live F&O MTM is the intraday tape** (`brokers.mjs` reads the token directly every ~10s →
+`fno-intraday.json` / KV), NOT the once-daily `broker-state.json` panel — when they disagree, the tape
+is the live one; a stale panel means that day's sync failed/was-skipped for that broker. Related:
+[[Durable-data jobs fail SILENTLY]] — same "don't trust a single live read; the durable store self-heals".
+
 ### The Trading Journal glance shows NO intraday curve — pills only; the curve lives in DayPanel
 The glance (net realised / charges / live MTM pills) does NOT render an intraday P&L curve in ANY
 view. The SOLE intraday curve is the Day view's `DayPanel` (day-picker driven: ‹ › nav + that day's
