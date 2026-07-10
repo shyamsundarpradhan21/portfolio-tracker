@@ -1,10 +1,10 @@
 {
-  "syncedAt": "2026-07-10T18:46:09+05:30",
+  "syncedAt": "2026-07-10T23:30:14+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
-      "ok": false,
-      "note": "fetch failed"
+      "ok": true,
+      "note": ""
     },
     "dhan": {
       "ok": true,
@@ -242,7 +242,7 @@
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-09T18:30:02+05:30",
+      "syncedAt": "2026-07-10T23:30:14+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL290PE",
@@ -253,7 +253,7 @@
           "netQty": 2500,
           "avg": 2.85,
           "realized": 0,
-          "unrealized": -4000
+          "unrealized": -4625
         },
         {
           "sym": "ANGELONE26AUGFUT",
@@ -264,7 +264,7 @@
           "netQty": 2500,
           "avg": 346.45,
           "realized": 0,
-          "unrealized": -11875
+          "unrealized": -1125
         }
       ]
     },
@@ -283,8 +283,8 @@
       "utilized": 422818
     },
     "upstox": {
-      "available": 23685.39,
-      "utilized": 141815.88
+      "available": 25266.01,
+      "utilized": 163360.25
     }
   }
 }
