@@ -411,7 +411,17 @@ for (const [name, fn] of [['upstox', pullUpstox], ['dhan', pullDhan], ['fyers', 
       } else throw e;
     }
     if (r.swing) state.holdings.SWING = r.swing;
-    if (r.fno) state.positions[`${name.toUpperCase()}_FNO`] = r.fno;
+    // skip-not-zero (same guard as funds below): a positions pull that came back EMPTY
+    // must NOT clobber carried legs. Dhan's /v2/positions returns an empty array after EOD
+    // settlement (the book resets overnight) even while legs are still open — a genuinely
+    // flat account instead returns CLOSED rows (netQty 0), never []. So only overwrite when
+    // the pull has rows, or when we had no prior positions for this broker.
+    if (r.fno) {
+      const key = `${name.toUpperCase()}_FNO`;
+      const priorRows = Array.isArray(state.positions[key]?.rows) ? state.positions[key].rows.length : 0;
+      if (r.fno.rows.length > 0 || priorRows === 0) state.positions[key] = r.fno;
+      else log.push(`  ${name}: 0 positions returned — kept previous ${priorRows} (after-hours empty book)`);
+    }
     // skip-not-zero: a funds fetch that came back all-null (EOD / funds-window) must NOT
     // clobber the last good values — keep the prior funds unless the new read has a real one.
     if (r.funds && (r.funds.available != null || r.funds.utilized != null || !state.funds[name])) {
