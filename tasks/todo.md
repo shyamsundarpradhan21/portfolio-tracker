@@ -68,8 +68,33 @@ visible within one cadence instead of 3 weeks.
       DailyBrokerSync ("logins kept to keep MCP warm"). Assess whether mint-on-demand makes the two
       login tasks droppable. Operational (laptop-side) — deferred.
 
+### 4. Alerting — turn the health check from pull → push (closes loophole #1)
+- [x] **Shared manifest** — `scripts/lib/scheduleHealth.mjs` (JOB_META + `classify` + fingerprint
+      extractors) so the CLI and the cloud alerter can't drift on cadences. CLI refactored to consume
+      it; behavior re-verified identical (live 7 ok · +10d 7 stale/exit 1 · +3d 3 daily stale).
+- [x] **Channel-agnostic sender** — `app/lib/alert.js` `sendAlert()` (Telegram), env-guarded no-op
+      without `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`. 8/8 unit tests (no-op + POST paths).
+- [x] **Cloud watch** — folded into the nightly `/api/snapshot` cron (the only always-on cloud tick;
+      no new cron, respects Hobby limit): reads the committed fingerprints of the laptop CRITICAL jobs,
+      pushes ONE deduped alert on a fresh STALE. Fully gated on `alertConfigured()` → zero behavior
+      change until env is set. Verified: stale-set logic picks the right jobs; route parses; guard proven.
+- [ ] **ACTIVATION (user):** create a bot via @BotFather → set `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`
+      in Vercel env → redeploy. Until then it's a silent no-op.
+- [ ] **Optional hardening:** the cron can't watch ITSELF (dead-man's-switch) — a free healthchecks.io
+      ping closes the "what if the alerter is down" loop. Deferred.
+- [ ] **Optional:** a fast laptop-side alert (piggyback `DaemonWatchdog`) for same-day breaks while the
+      laptop is on — the cloud nightly already covers laptop-off. Deferred.
+
 ## Review
-(to fill in as steps land)
+Applied the project's minimalism motive — "fold the multiples into one" — across the whole scheduled-task
+layer: one freshness surface (`schedule-health.mjs`) replacing N reactive silent-failure patches; the FII
+derivative capture, the 14 UA copies, and the schedule-health manifest each collapsed to a single home;
+doc-vs-reality drift reconciled (`SCHEDULE.md`, the missing register script); F&O ownership made explicit
+(cloud primary / laptop fallback) and snapshot's two-tier deliberately preserved. Finally turned the health
+check from pull → push: a guarded, deduped, cloud-side Telegram alert folded into the nightly cron, no-op
+until the user sets two env vars. Everything verified without the toolchain (behavioral stubs + syntax +
+guard proofs); the KV write and live Telegram send are prod-verified per the repo's documented pattern.
+Remaining, all user/laptop-gated: activate Telegram, version the 3 routine prompts, the token-minting fold.
 
 ---
 

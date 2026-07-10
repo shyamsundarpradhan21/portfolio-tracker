@@ -19,7 +19,11 @@ import { pullCmpfDayChange } from '../../../scripts/lib/cmpf.mjs';
 import { upsertGrowth } from '../../../scripts/lib/intraday.mjs';
 import { kvGetJSON, kvSetJSON, kvConfigured } from '../../../scripts/lib/kv.mjs';
 import { captureFiiDiiTrail } from '../../lib/fiidiiTrail';
+import { JOB_META, classify, maxDateKey, maxRowDate, isoDate } from '../../../scripts/lib/scheduleHealth.mjs';
+import { sendAlert, alertConfigured } from '../../lib/alert';
 import brokerState from '../../../data/broker-state.json';
+import snapshotSleeves from '../../../data/snapshot-sleeves.json';
+import fnoLedger from '../../../data/fno-ledger.json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -79,9 +83,36 @@ export async function GET(req) {
   let fiidii = null;
   try { const r = await captureFiiDiiTrail(); fiidii = r.trail ? r.trail.length : (r.fiidii?.stale ? 'stale' : null); } catch { /* NSE unreachable → skip */ }
 
+  // ── Health watch ── This nightly cron is the only always-on cloud tick, so it's where a
+  // laptop-side freeze becomes visible. Read the committed fingerprints of the laptop-side
+  // CRITICAL jobs; on a FRESH stale (deduped on the stale-set so it doesn't nag nightly)
+  // push one alert. No-op until TELEGRAM_* is set — same graceful pattern as KV. Note the
+  // cron can't check ITSELF (if it didn't fire, nothing runs) — that's a dead-man's-switch
+  // job for an external pinger (healthchecks.io). Must NEVER break the snapshot.
+  let health = alertConfigured() ? 'wired' : 'off';
+  if (alertConfigured()) {
+    try {
+      const today = new Date(now + 5.5 * 3600 * 1000).toISOString().slice(0, 10); // IST today
+      const fp = {
+        'daily-networth-snapshot': maxDateKey(snapshotSleeves),
+        'daily-broker-sync': isoDate(brokerState?.syncedAt),
+        'fno-realised': maxRowDate(fnoLedger?.rows),
+      };
+      const stale = JOB_META.filter((j) => j.critical && j.id in fp && classify(fp[j.id], j.maxAgeDays, today) === 'STALE');
+      const sig = stale.map((s) => `${s.id}:${fp[s.id]}`).join('|');
+      const prev = kvConfigured() ? await kvGetJSON('health:alertSig') : null;
+      if (stale.length && sig !== prev) {
+        const lines = stale.map((s) => `⚠ ${s.label} — last ${fp[s.id] || 'never'} (expected ${s.cadence})`);
+        await sendAlert(`portfolio-tracker · schedule health (${today})\n${lines.join('\n')}`);
+      }
+      if (sig !== prev && kvConfigured()) await kvSetJSON('health:alertSig', sig, GROWTH_TTL);
+      health = stale.length ? `stale:${stale.length}` : 'ok';
+    } catch { health = 'error'; /* alerting must never break the snapshot */ }
+  }
+
   const captured = ['eq', 'us', 'fd', 'mf', 'cmpf'].filter((k) => partial[k]);
   return Response.json(
-    { ok: true, date, captured, kv, privSource: priv ? 'kv' : 'file', fiidiiTrail: fiidii },
+    { ok: true, date, captured, kv, privSource: priv ? 'kv' : 'file', fiidiiTrail: fiidii, health },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

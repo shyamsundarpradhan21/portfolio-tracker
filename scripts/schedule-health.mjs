@@ -6,82 +6,55 @@
 // a `syncedAt`, an `updatedAt`. This reads those and reports, per job, whether the
 // newest thing it produced is within its expected cadence. No new infra, no monitoring
 // stack — just the fingerprints that already exist. Turns a silent 3-week freeze into a
-// one-glance STALE.
+// one-glance STALE. The JOB manifest + classifier are shared with the cloud alerter
+// (app/api/snapshot) via scripts/lib/scheduleHealth.mjs — one manifest, no cadence drift.
 //
 // Blind spots are reported HONESTLY as `unknown` (never a false `ok`): the gitignored
 // laptop-local files (gmail-state / fno-overlay) and the KV-only premarket trail aren't
 // visible from the committed repo, so this check can't see them from a fresh clone.
 //
 //   node scripts/schedule-health.mjs          # table + summary; exit 1 if any critical STALE
-//   node scripts/schedule-health.mjs --json    # machine-readable (for the future app strip)
+//   node scripts/schedule-health.mjs --json    # machine-readable (for the app strip / alerter)
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { JOB_META, classify, ageDays, DATE_RE, maxDateKey, maxRowDate, isoDate, firstDate } from './lib/scheduleHealth.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-// ── fingerprint helpers ──────────────────────────────────────────────────────
 const readJson = (rel) => {
   try { return JSON.parse(readFileSync(join(ROOT, rel), 'utf8')); }
   catch { return null; }                       // missing / gitignored / unparseable → null
-};
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const maxDateKey = (obj) => obj ? Object.keys(obj).filter((k) => DATE_RE.test(k)).sort().at(-1) ?? null : null;
-const maxRowDate = (rows) => Array.isArray(rows)
-  ? rows.map((r) => r?.date).filter((d) => DATE_RE.test(d)).sort().at(-1) ?? null : null;
-const isoDate = (ts) => (typeof ts === 'string' && DATE_RE.test(ts.slice(0, 10))) ? ts.slice(0, 10) : null;
-const firstDate = (obj, keys) => {                // first parseable date across candidate keys
-  if (!obj) return null;
-  for (const k of keys) { const d = isoDate(obj[k]); if (d) return d; }
-  return null;
 };
 
 // today (UTC) as the staleness reference; printed in the header so the basis is transparent.
 // HEALTH_TODAY=YYYY-MM-DD overrides it — for testing the STALE path and for "what was stale as of date X".
 const TODAY = DATE_RE.test(process.env.HEALTH_TODAY || '') ? process.env.HEALTH_TODAY : new Date().toISOString().slice(0, 10);
-const ageDays = (d) => d ? Math.max(0, Math.round((Date.parse(TODAY) - Date.parse(d)) / 86_400_000)) : null;
 
-// ── the job manifest (this IS the machine-checkable schedule inventory) ───────
-// maxAgeDays: daily jobs run 7d/wk → 2; market-gated jobs skip weekends/holidays → 4 (covers a long weekend).
-const JOBS = [
-  { label: '/api/snapshot · growth cron',        where: 'Vercel',      cadence: 'daily 03:00 IST',        maxAgeDays: 2, critical: true,
-    fp: () => maxDateKey(readJson('data/growth.json')?.days) },
-  { label: 'DailyNetworthSnapshot',              where: 'laptop',      cadence: 'daily 07:00 IST',        maxAgeDays: 2, critical: true,
-    fp: () => maxDateKey(readJson('data/snapshot-sleeves.json')) },
-  { label: 'DailyBrokerSync · holdings',         where: 'laptop',      cadence: 'daily 06:00 IST',        maxAgeDays: 2, critical: true,
-    fp: () => isoDate(readJson('data/broker-state.json')?.syncedAt) },
-  { label: 'F&O realised · evening + cloud',     where: 'laptop+cloud',cadence: 'weekdays 18:30 IST',     maxAgeDays: 4, critical: true,
-    fp: () => maxRowDate(readJson('data/fno-ledger.json')?.rows) },
-  { label: 'CaptureIntradayIndia · F&O tape',    where: 'laptop',      cadence: 'market days 09:13–15:32', maxAgeDays: 4, critical: false,
-    fp: () => isoDate(readJson('data/fno-intraday.json')?.updatedAt) },
-  { label: 'CaptureIntradayIndia · equity tape', where: 'laptop',      cadence: 'market days 09:13–15:32', maxAgeDays: 4, critical: false,
-    fp: () => isoDate(readJson('data/eq-intraday.json')?.updatedAt) },
-  { label: 'CaptureIntradayUS · US tape',        where: 'laptop',      cadence: 'market days 18:45→02:30', maxAgeDays: 4, critical: false,
-    fp: () => isoDate(readJson('data/us-intraday.json')?.updatedAt) },
-  // ── honest blind spots: not visible from the committed repo ──
-  { label: 'IngestDaemon · Gmail → notes',       where: 'laptop',      cadence: 'always-on',              maxAgeDays: 7, critical: false,
-    note: 'gitignored (laptop-local) — resolves only on the laptop',
-    fp: () => firstDate(readJson('data/gmail-state.json'), ['lastProcessedAt', 'lastProcessed', 'updatedAt', 'ts']) },
-  { label: '/api/premarket · FII/DII trail',     where: 'Vercel',      cadence: 'daily 00:30 UTC',        maxAgeDays: 3, critical: false,
-    note: 'route exists but NO cron in vercel.json — trail lives in KV, not repo (drift, see todo #3)',
-    fp: () => null },
-];
+// fingerprint extractors keyed by job id (local-file reads; the shared manifest is metadata-only).
+const FP = {
+  'vercel-snapshot': () => maxDateKey(readJson('data/growth.json')?.days),
+  'daily-networth-snapshot': () => maxDateKey(readJson('data/snapshot-sleeves.json')),
+  'daily-broker-sync': () => isoDate(readJson('data/broker-state.json')?.syncedAt),
+  'fno-realised': () => maxRowDate(readJson('data/fno-ledger.json')?.rows),
+  'capture-in-fno': () => isoDate(readJson('data/fno-intraday.json')?.updatedAt),
+  'capture-in-eq': () => isoDate(readJson('data/eq-intraday.json')?.updatedAt),
+  'capture-us': () => isoDate(readJson('data/us-intraday.json')?.updatedAt),
+  'ingest-daemon': () => firstDate(readJson('data/gmail-state.json'), ['lastProcessedAt', 'lastProcessed', 'updatedAt', 'ts']),
+  'premarket-trail': () => null,
+};
 
 // ── evaluate ─────────────────────────────────────────────────────────────────
-const rows = JOBS.map((j) => {
-  const last = j.fp();
-  const age = ageDays(last);
-  const status = last == null ? 'unknown' : (age <= j.maxAgeDays ? 'ok' : 'STALE');
-  return { ...j, last, age, status };
+const rows = JOB_META.map((j) => {
+  const last = (FP[j.id] || (() => null))();
+  return { ...j, last, age: ageDays(last, TODAY), status: classify(last, j.maxAgeDays, TODAY) };
 });
 
 const counts = rows.reduce((a, r) => ((a[r.status] = (a[r.status] || 0) + 1), a), {});
 const failed = rows.some((r) => r.critical && r.status === 'STALE');
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ today: TODAY, ok: failed ? false : true, counts,
-    jobs: rows.map(({ fp, ...r }) => r) }, null, 2));
+  console.log(JSON.stringify({ today: TODAY, ok: !failed, counts, jobs: rows }, null, 2));
   process.exit(failed ? 1 : 0);
 }
 
