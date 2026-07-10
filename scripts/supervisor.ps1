@@ -1,32 +1,31 @@
-# Daemon liveness watchdog -- the self-heal layer for the long-running .mjs daemons.
+# Supervisor -- the ONE self-heal task for the whole pipeline (registered by
+# register-supervisor.ps1). Two responsibilities, one 5-min tick:
+#   (A) EVERY run  -- daemon liveness: keep the long-running .mjs daemons alive.
+#   (B) HOURLY     -- daily-job freshness: hand off to scripts\daily-check.mjs (gated by
+#                     an IST-hour stamp so the heavy check runs ~1/hour, not every tick).
+# Short-lived and stateless, so Task Scheduler's timer IS the durable heartbeat -- nothing
+# has to watch the supervisor (a long-running one would just reintroduce the "who restarts
+# it when it dies" problem this exists to solve).
 #
-# Task Scheduler runs THIS every 5 min, 24/7 (see register-daemon-watchdog.ps1). It
-# is short-lived and stateless, so Task Scheduler's timer IS the durable heartbeat --
-# nothing has to watch the watcher (a long-running watcher would just reintroduce the
-# "who restarts it when it dies" problem this exists to solve).
-#
-# For each daemon: if it SHOULD be running now but no live process matches, re-trigger
+# (A) For each daemon: if it SHOULD be running now but no live process matches, re-trigger
 # its OWN scheduled task (Start-ScheduledTask reuses that task's full hardened launch:
 # working dir, log redirect, WakeToRun/battery settings, MultipleInstances IgnoreNew).
-#
-# Why needed: IngestDaemon (at-logon) and CaptureIntradayUS/India (fire-once timed) have
-# NO mid-session relaunch -- a process death inside its window is unrecovered until the
-# next logon / next day. (2026-07-10: US capture died ~18:45 after 1 tick; window ran to
-# 02:30 but stayed dark ~4h.)
-#
+# Why: IngestDaemon (at-logon) and CaptureIntradayUS/India (fire-once timed) have NO
+# mid-session relaunch -- a process death inside its window is unrecovered until the next
+# logon / next day. (2026-07-10: US capture died ~18:45 after 1 tick; window stayed dark ~4h.)
 # Window logic is NEVER re-encoded here: scripts\market-state.mjs is the single DST-aware
 # source of truth (marketHours.mjs). We heal ONLY on the real OPEN window, never on 'pre'
 # (marketState is 'pre' for ALL of 00:00-09:13, so an early relaunch would idle for hours
-# holding keep-awake -- the exact trap the register scripts warn about). The primary timed
-# tasks still own the on-time launch; this only heals mid-window deaths.
+# holding keep-awake). The primary timed tasks still own the on-time launch; this heals
+# mid-window deaths.
 #
 # ASCII-ONLY on purpose: PowerShell 5.1 reads .ps1 as ANSI, so a stray non-ASCII byte
 # (em-dash, arrow) corrupts parsing. Keep it plain.
 
 $ErrorActionPreference = 'Stop'
 $repo      = Split-Path -Parent $PSScriptRoot        # ...\portfolio-tracker
-$eventLog  = Join-Path $PSScriptRoot 'daemon-watchdog.log'    # append: restart/failure EVENTS only
-$stateFile = Join-Path $PSScriptRoot 'daemon-watchdog.state'  # overwrite: last-check heartbeat (never grows)
+$eventLog  = Join-Path $PSScriptRoot 'supervisor.log'    # append: daemon restart/failure EVENTS only
+$stateFile = Join-Path $PSScriptRoot 'supervisor.state'  # overwrite: last-check heartbeat (never grows)
 
 function Write-Event($msg) {
   Add-Content -Path $eventLog -Value ('{0} {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $msg) -Encoding utf8
@@ -82,3 +81,16 @@ Set-Content -Path $stateFile -Encoding utf8 -Value (
   '{0}  IST {1}  us={2} in={3}  [{4}]  restarts={5}' -f `
     (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $state.t, $state.us, $state.'in', ($status -join ' '), $restarts
 )
+
+# (B) Daily-job freshness -- gated to ~1/hour so the 5-min daemon tick doesn't run the heavy
+# check 12x/hour. Stamp = current IST clock-hour (yyyy-MM-dd-HH); run daily-check.mjs only when
+# it changes. daily-check.mjs owns the freshness logic + its own checker log (daily-check.log)
+# and per-day rerun cap, so a stale daily job is re-run and every check is recorded there.
+$stamp    = Join-Path $PSScriptRoot 'daily-check.stamp'
+$nowHour  = ((Get-Date).ToUniversalTime().AddHours(5.5)).ToString('yyyy-MM-dd-HH')   # IST hour
+$lastHour = if (Test-Path $stamp) { (Get-Content $stamp -Raw).Trim() } else { '' }
+if ($nowHour -ne $lastHour) {
+  Set-Content -Path $stamp -Encoding ascii -Value $nowHour
+  $line = & node (Join-Path $PSScriptRoot 'daily-check.mjs')
+  if ($line) { Add-Content -Path (Join-Path $PSScriptRoot 'daily-check.log') -Value $line -Encoding utf8 }
+}

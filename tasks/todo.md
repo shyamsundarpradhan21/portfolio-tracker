@@ -225,6 +225,14 @@ browser-dependent, so its 07:00 trigger evaporates when the laptop's asleep — 
 this by re-running when the user is present. A cleaner root fix (add an at-logon trigger to the
 snapshot task) is noted but not done.
 
+**Consolidated 2026-07-11 (one task to rule the watchers):** merged `DaemonWatchdog` +
+`DailyJobCheck` into a single `Supervisor` task (5-min tick: daemon liveness every run;
+daily-check gated to ~1/hour via an IST-hour stamp). `daemon-watchdog.ps1`→`supervisor.ps1`;
+`daily-check.mjs` unchanged (invoked by the supervisor, still writes the `daily-check.log`
+checker log); removed `daily-check.cmd` + the two old register scripts. The 9 WORKER tasks stay
+separate (different lifetimes/triggers — an always-on daemon can't be one periodic task with a
+07:00 browser snapshot). Watcher tasks: 2 → 1.
+
 ---
 
 # Review — Daemon liveness watchdog
