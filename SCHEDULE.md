@@ -16,7 +16,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 | `/api/premarket` (FII/DII trail → KV) | 00:30 UTC daily | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
 | **UpstoxDailyLogin** (mint Upstox token) | 06:20 IST daily | this laptop, headless | Windows Task Scheduler |
-| **daily-networth-snapshot** | 06:00 IST daily | Claude cloud (Remote) | Claude Routines panel |
+| **DailyNetworthSnapshot** (durable growth + NW/value → `growth.json` / `SNAPSHOT.md` / `snapshot-sleeves.json`) | 07:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, 09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler |
@@ -123,25 +123,40 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 - **Manage:** `Get-ScheduledTask -TaskName UpstoxDailyLogin`;
   `Start-ScheduledTask -TaskName UpstoxDailyLogin` to run now.
 
-## 4. daily-networth-snapshot — daily NW + per-sleeve history (Claude routine, Remote)
+## 4. DailyNetworthSnapshot — daily durable growth + NW/value history (Windows task)
 
-- **Schedule:** daily 06:00 IST, **Remote** (Claude cloud workspace).
-- **Command:** `node scripts/record-snapshot.mjs`.
-- **What:** boots the app headless (puppeteer), lets it compute net worth with its
-  own live math, harvests the day's snapshot, and writes two committed artifacts:
-  - `data/SNAPSHOT.md` — the NW/assets/invested row (human-readable)
-  - `data/snapshot-sleeves.json` — per-sleeve `{v,i}` breakdown keyed by date
-  then `git add + commit + push`. `historicalSnapshots()` merges the sidecar back
-  so the gain-attribution waffles fill in for week/month/year as rows accrue.
-- **Deps:** node, puppeteer/Chromium, network (Yahoo quotes), **git push auth**.
+- **Schedule:** daily **07:00 IST**, this laptop, headless, `-StartWhenAvailable`
+  (a missed slot runs at next logon; the rolling 7-day backfill self-heals up to a
+  week off). Registered by `scripts/register-snapshot-daily.ps1`; wrapper
+  `scripts/snapshot-daily.cmd`; log `scripts/snapshot-daily.log`.
+- **What:** three durable git-committed artifacts, ONE commit+push:
+  1. `node scripts/backfill-growth.mjs 7` — recomputes the last 7 days' per-sleeve
+     day-change into `data/growth.json` (+ best-effort KV) from Yahoo/AMFI closes +
+     deterministic fd/cmpf, the SAME `computeDayChange` the cron uses. Self-contained
+     (no broker tokens); doesn't depend on whether the Vercel cron fired.
+  2. `SNAPSHOT_SKIP_GIT=1 node scripts/record-snapshot.mjs` — boots the app headless
+     (puppeteer), harvests today's NW + per-sleeve VALUE snapshot → `data/SNAPSHOT.md`
+     (NW/assets/invested row) + `data/snapshot-sleeves.json` (`{v,i}` per sleeve). No
+     internal commit — the wrapper owns the single commit. `historicalSnapshots()`
+     merges the sidecar so the gain-attribution waffles fill week/month/year windows.
+  3. One `git add + commit + push` (`chore: daily snapshot <date>`) covering all three;
+     `git pull --rebase --autostash` first so a concurrent broker-sync push can't reject it.
+- **Why local (not Remote):** the old `daily-networth-snapshot` Claude **Remote** routine
+  (06:00 IST, `node scripts/record-snapshot.mjs`) **silently died after one run on
+  2026-06-19** — the ephemeral cloud workspace can't `git push` / run puppeteer, exactly
+  as its own ⚠️ open-question feared. `data/growth.json` froze at 2026-06-25 and the
+  sidecars at 2026-06-19. This local task is that pre-authorised fallback (same pattern
+  as `FyersDailyLogin`). Runs AFTER `DailyBrokerSync` (06:00) so `broker-state.json` is
+  fresh, and after the prior day is fully closed (India 15:30 + US ~02:00 IST + NAV).
+- **Deps:** node, puppeteer/Chromium (installed — verified via the dry-run), network
+  (Yahoo/AMFI), **git push auth** (cached HTTPS creds — the sync tasks push fine).
   Local dry-run: `SNAPSHOT_SKIP_GIT=1 node scripts/record-snapshot.mjs`.
 - **Verify:** a `chore: daily snapshot <YYYY-MM-DD>` commit on `origin/main` each
-  morning, and a new date key in `data/snapshot-sleeves.json`.
-- **⚠️ Open question (as of 2026-06-19):** the recorder was only just fixed to
-  commit+push (was silently dropping rows in the ephemeral cloud workspace). It is
-  **unconfirmed** whether the Remote env can `git push` / run puppeteer. If a daily
-  commit doesn't appear, switch this to a **local Windows task** running the same
-  command (proven to work on the laptop) — same pattern as FyersDailyLogin.
+  morning; new date keys in both `data/growth.json` and `data/snapshot-sleeves.json`.
+- **Vercel cron stays:** `app/api/snapshot/route.js` (03:00 IST) keeps feeding KV
+  `growth:<date>` as the live serving copy; this task is the durable git backstop that
+  survives the 35-day KV TTL and fresh clones. (The cron drops ~35% of nights, so the
+  archive must not depend on it — hence the recompute, not a KV-fold.)
 - **Note:** distinct from the app's per-browser `localStorage` snapshots
   (`getSnapshots`), which only record on the days you open the app.
 
