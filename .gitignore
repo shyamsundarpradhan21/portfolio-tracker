@@ -100,8 +100,9 @@ next-env.d.ts
 # script run logs (machine-specific output: sync, capture daemons, etc.)
 /scripts/*.log
 
-# daemon-watchdog heartbeat (rewritten every 5 min — runtime state, not source)
+# supervisor/checker runtime state (rewritten each tick — not source)
 /scripts/*.state
+/scripts/*.stamp
 
 # python (mcp servers under mcp/)
 __pycache__/

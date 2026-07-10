@@ -278,7 +278,77 @@ would just reintroduce the same "who restarts it" problem).
       kill-and-heal smoke test PASSED — killed capture-us PID 12848, watcher logged
       `RESTARTED CaptureIntradayUS`, fresh PID 19180 came up and resumed the tape.
 
+---
+
+# Plan — Daily-job checker (catch silent misses of syncs + snapshot) — 2026-07-10
+
+## Why
+The one-shot daily jobs miss/fail SILENTLY. Found 2026-07-10: `DailyNetworthSnapshot`
+has NEVER run (Result 0x41303, no log) — it's `LogonType Interactive` + needs a headless
+browser, so a 07:00 trigger while the laptop's asleep just evaporates; `DailyBrokerSync`
+exited 1 on a git-rebase conflict; `BrokerSyncEvening` returned success while Upstox fetch
+failed inside it. `snapshot-sleeves.json` is down to 2 entries. History is NOT lost
+(`growth.json` self-heals via `backfill-growth.mjs 7`, 380 entries, no gaps) — so NO backfill
+(user: "don't recover it"). The ask: a checker + log so a miss can't stay silent / recur.
+
+## Design (verify OUTCOMES, not trust the scheduler)
+`scripts/daily-check.mjs` — reads each job's OUTPUT freshness, re-runs a stale+due one
+(once/day, via its own scheduled task = same launch Task Scheduler uses), appends one status
+line to `scripts/daily-check.log` every run (the "checker log"). State file caps re-runs at
+1/day/job so a persistently-down job is logged STALE without spamming heavy re-runs.
+- **snapshot**    — `snapshot-sleeves.json` latest date == today? (daily, due 07:30) → `DailyNetworthSnapshot`
+- **broker-sync** — `broker-state.json` syncedAt == today AND upstox+dhan `ok`? (weekdays, due 18:40) → `BrokerSyncEvening`
+  (the `ok` check also catches today's Upstox-fetch-failed class, not just total misses)
+`scripts/daily-check.cmd` wrapper + `scripts/register-daily-check.ps1` (task `DailyJobCheck`,
+hourly + at-logon; short exec limit; IgnoreNew). Complements `DaemonWatchdog` (daemons); this
+covers the one-shot dailies.
+
+## Steps
+- [x] `daily-check.mjs` (+ `CHECK_DRY=1` to log-without-triggering for testing)
+- [x] `daily-check.cmd` + `register-daily-check.ps1`; `/scripts/*.state` already gitignored
+- [x] Register `DailyJobCheck`; dry run verified: fresh→`ok`, simulated stale broker-state→
+      `STALE(2026-07-09) would-rerun BrokerSyncEvening`, dry never writes state/triggers
+- [x] Hourly repetition confirmed stuck (PT1H / P3650D + logon); scheduled run wrote the log
+      (`LastTaskResult 0`); left running to catch the next real miss
+
 ## Review
+Shipped `daily-check` — a checker for the one-shot daily jobs (complements `DaemonWatchdog`,
+which covers the long-running daemons). It verifies each job's OUTPUT is fresh for today
+(`snapshot-sleeves.json` latest == today; `broker-state.json` syncedAt == today AND upstox+dhan
+`ok`), re-runs a stale+due one via its own scheduled task (max 1/day via `daily-check.state`),
+and appends one status line to `daily-check.log` every hourly run — so a miss can't stay silent.
+The broker `ok` check catches the per-broker-fetch-failed class (today's Upstox), not just total
+misses. No backfill (history is intact in `growth.json`, which self-heals via `backfill-growth.mjs`).
+Verified end-to-end incl. the STALE→would-rerun branch and the scheduled-path log write.
+Latent root cause left as-is per scope: `DailyNetworthSnapshot` is `LogonType Interactive` +
+browser-dependent, so its 07:00 trigger evaporates when the laptop's asleep — the checker heals
+this by re-running when the user is present. A cleaner root fix (add an at-logon trigger to the
+snapshot task) is noted but not done.
+
+**Consolidated 2026-07-11 (one task to rule the watchers):** merged `DaemonWatchdog` +
+`DailyJobCheck` into a single `Supervisor` task (5-min tick: daemon liveness every run;
+daily-check gated to ~1/hour via an IST-hour stamp). `daemon-watchdog.ps1`→`supervisor.ps1`;
+removed `daily-check.cmd` + the two old register scripts. The 9 WORKER tasks stay
+separate (different lifetimes/triggers — an always-on daemon can't be one periodic task with a
+07:00 browser snapshot). Watcher tasks: 2 → 1.
+
+**Latched 2026-07-11 (behaves daily, not hourly):** a daily job doesn't need hourly
+verification — the frequent check is only cheap resilience (catch a miss whenever the box is
+on, since it reboots). Made `daily-check.mjs` latch: it acts/logs ONLY on a transition
+(pending → CONFIRMED / re-ran / STILL-STALE), then goes silent for the rest of the day, and the
+re-run stays capped 1/day. So the check still runs ~hourly as a cheap safety net (2 file-reads
+when fine) but reads as ~one line per job per day in the checker log — the hourly noise is gone.
+
+---
+
+# Review — Daemon liveness watchdog
+
+Shipped a stateless liveness watchdog for the long-running `.mjs` daemons. Three files:
+
+---
+
+# Review — Daemon liveness watchdog
+
 Shipped a stateless liveness watchdog for the long-running `.mjs` daemons. Three files:
 `market-state.mjs` (JSON CLI over `marketHours.mjs` — the ONE DST-aware window source),
 `daemon-watchdog.ps1` (snapshot live node cmdlines; restart any daemon that should be up but
