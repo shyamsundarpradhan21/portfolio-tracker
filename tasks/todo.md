@@ -50,11 +50,21 @@ visible within one cadence instead of 3 weeks.
       - Verified: 8/8 behavioral checks (stubbed fetch) — moved fn parses CSV → bearish/divergence,
         cron path now fetches participant-OI, persistTrail no-ops w/o KV. `next build`/KV write
         deferred to prod (no toolchain/KV in this clone — repo's documented KV-verify pattern).
+- [x] Point `SCHEDULE.md` at the `schedule-health.mjs` manifest as the machine-checkable inventory
+      (intro now says "run `node scripts/schedule-health.mjs`"; the manifest mirrors the table).
 - [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`. ← needs the routine prompts pasted
-- [ ] Point `SCHEDULE.md` at the `schedule-health.mjs` manifest as the machine-checkable inventory.
-### 3. Retire genuine redundancy (loopholes 4/5) — SEPARATE, after step 2
-- [ ] Pick primary + proven-fallback for dual F&O capture and dual snapshot; demote/delete the rest,
-      health check proves the survivor.
+### 3. Retire genuine redundancy / fold multiples into one (loopholes 4/5)
+- [x] **UA string** — 14 identical `const UA` copies across API routes + libs folded into one
+      `app/lib/ua.js`; all 14 import it. Verified: 0 leftovers, 14 imports, all parse ESM, none unused.
+- [x] **F&O realised dual-capture → primary/fallback (deliberately NOT collapsed).** Cloud
+      `CloudFnoCapture` = primary for Dhan/Fyers (laptop-off); laptop `BrokerSyncEvening` = fallback
+      for them + sole path for Upstox. Redundancy kept on purpose (Remote routines die silently) and
+      made safe by the `fno-ledger` freshness check in `schedule-health.mjs`. Documented SCHEDULE.md §4c.
+- [x] **Snapshot cron + local recompute = NOT a fold** — deliberate two-tier (KV serving copy vs
+      durable git archive); collapsing would re-blind the durable tier (loophole #1). Left as-is.
+- [ ] **Token minting (3 paths)** — FyersDailyLogin + UpstoxDailyLogin + mint-on-demand in
+      DailyBrokerSync ("logins kept to keep MCP warm"). Assess whether mint-on-demand makes the two
+      login tasks droppable. Operational (laptop-side) — deferred.
 
 ## Review
 (to fill in as steps land)

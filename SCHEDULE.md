@@ -5,6 +5,12 @@ The actual schedule definitions live in **three different systems** (only the
 Vercel cron is in this repo), so this file is where they're written down together
 — check here first when something that "should be automatic" isn't.
 
+> **See at a glance what's actually running:** `node scripts/schedule-health.mjs`
+> reads the dated fingerprint each job commits (growth day key, `broker-state.syncedAt`,
+> `fno-ledger` rows, intraday `updatedAt`, …) and flags anything past its cadence as
+> STALE. Its `JOBS` manifest is the machine-checkable mirror of the table below — keep the
+> two in step when a job is added or retired.
+
 > Timezones: the Vercel cron is **UTC**; the Windows task and the Claude routines
 > are **local time (IST)**. SEBI has the broker refresh-token APIs disabled, so
 > broker tokens are daily-only — see [mcp/fyers/README.md](mcp/fyers/README.md).
@@ -247,9 +253,14 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   the verified prior-FY block, roll `labels`, reset the next `fy2627` seed to 0 with a
   new `seedThrough`, and archive the ledger. (Charges snap from `est.` to exact here.)
 - **Sleeve map:** Dhan/Zerodha → **S01**, Upstox/Fyers → **S02**.
-- **Laptop-off coverage:** **Dhan (S01) + Fyers (S02) are captured laptop-off** by the
-  cloud routine `CloudFnoCapture` (§4d), so this task is now mostly a redundant fallback
-  for them plus the capture path for **Upstox** (the one broker with no cloud path).
+- **Ownership — primary / fallback (2026-07-10):** the cloud routine `CloudFnoCapture`
+  (§4d) is the **primary** capturer for **Dhan (S01) + Fyers (S02)** — it runs laptop-off.
+  This evening task is their **fallback** (belt-and-suspenders on laptop-on days) and the
+  **sole** path for **Upstox** (no cloud path). The redundancy is deliberate, not a
+  cleanup miss: a Claude Remote routine can die silently (see the record-snapshot incident,
+  §4), so the laptop fallback stays — and it's cheap now that `schedule-health.mjs` guards
+  the combined output: if the cloud primary dies and the laptop isn't covering, the
+  `fno-ledger.json` freshness check flags STALE instead of the gap going unnoticed.
   Trades are all-source: the trades REST endpoint returns app/algo-placed fills too
   (unlike broker order-webhooks, which only fire for API-key-placed orders — which is why
   webhooks were ruled out). An Upstox-only laptop-off day is recovered from the Upstox
