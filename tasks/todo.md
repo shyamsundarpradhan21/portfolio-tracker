@@ -1,3 +1,50 @@
+# Plan — Minimalism across all scheduled tasks (close the resilience loopholes) — 2026-07-10
+
+## Why
+The "Scheduled Tasks & Resilience" artifact surfaced glaring loopholes. Traced to source
+(`SCHEDULE.md`, `tasks/resilience-benchmark.md`) + verified against the wired reality:
+1. **Accretion is the anti-minimalism** — ~12 jobs across 3 scheduling systems, each a
+   reactive patch (token-rot→mint, mint-miss→retry, snapshot-freeze→local task, daemon-death
+   →watchdog). "Heaviest mechanism, one patch at a time."
+2. **Silent failure with no surfaced health signal** — all 3 past incidents (`feedback.md`)
+   were "found by a manual check, not any alert." Nothing reports *a job didn't run*.
+3. **Doc ≠ reality** (the drift the SoT doc exists to prevent): `SCHEDULE.md §1` headlines a
+   `/api/premarket` cron that is **NOT in `vercel.json`** (route exists, cron gone); no
+   `register-*.ps1` for `DailyBrokerSync` / the login tasks; 3 Claude-routine prompts unversioned.
+4. **Redundancy without a clear owner** — dual F&O-realised capture (evening + CloudFnoCapture),
+   dual snapshot (Vercel cron `growth:<date>` drops ~35% + local recompute).
+5. **Remote routines known-unreliable but still load-bearing** (record-snapshot died after 1 run).
+
+## The minimalism thesis
+Not a 13th mechanism (monitoring stack). The one cross-cutting thing that would have caught
+ALL 3 past incidents at once: a **freshness surface computed from the dated fingerprint each
+job already leaves** (a committed date key / `syncedAt` / `updatedAt`). One check replaces N
+reactive patches; zero new infra; readable anywhere (CLI now, app strip later).
+NOT solving the laptop-SPOF by going cloud — `resilience-benchmark.md` already ruled that HIGH
+lift + breaks the PAN-stays-local posture. Laptop stays primary; the check makes any freeze
+visible within one cadence instead of 3 weeks.
+
+## Steps
+### 1. Schedule-health surface (keystone — closes loophole 2)
+- [ ] `scripts/schedule-health.mjs` — data-driven JOB manifest; each job → newest committed
+      fingerprint date vs a per-job `maxAgeDays`; prints `ok / STALE / unknown` table + summary;
+      `--json`; exit 1 on any critical STALE (so it can gate).
+- [ ] Honest blind spots: `gmail-state.json` / `fno-overlay.json` (gitignored) + `/api/premarket`
+      (KV) report `unknown` with a note, never a false `ok`. Premarket row flags the §3 drift.
+- [ ] Verify: run it here (all fresh 2026-07-10 → ok); confirm STALE fires by probing an old date.
+### 2. Collapse doc-vs-reality to one source (loophole 3) — SEPARATE, after step 1 lands
+- [ ] Reconcile `SCHEDULE.md` ↔ `vercel.json` (decide premarket: restore cron or drop the claim).
+- [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`.
+- [ ] Point `SCHEDULE.md` at the manifest as the machine-checkable inventory.
+### 3. Retire genuine redundancy (loopholes 4/5) — SEPARATE, after step 2
+- [ ] Pick primary + proven-fallback for dual F&O capture and dual snapshot; demote/delete the rest,
+      health check proves the survivor.
+
+## Review
+(to fill in as steps land)
+
+---
+
 # Plan — 2025 Dhan contract-note adapter (text-line parser) — PROPOSED 2026-07-10
 
 ## Why
