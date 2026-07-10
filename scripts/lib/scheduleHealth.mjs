@@ -1,9 +1,13 @@
 // Shared schedule-health core — the job manifest (metadata) + a pure staleness classifier
-// and fingerprint extractors. Imported by BOTH:
-//   - scripts/schedule-health.mjs (the CLI, reads fingerprints from local files), and
-//   - app/api/snapshot/route.js (the nightly cloud cron, reads the committed fingerprints
-//     via static import and pushes an alert on a critical STALE).
-// One manifest so the CLI and the cloud alerter can never drift on cadences.
+// and fingerprint extractors. THREE consumers share this one source of "how a job's
+// freshness is read", so none of them can drift on it:
+//   - scripts/schedule-health.mjs — the CLI freshness surface (reads local files).
+//   - app/api/snapshot/route.js   — the nightly cloud cron: NOTIFY (Telegram) on a critical
+//                                   STALE; covers the laptop being OFF.
+//   - scripts/daily-check.mjs     — the laptop-side SELF-HEAL: re-runs a stale one-shot task;
+//                                   covers the laptop being ON. Shares the extractors but keeps
+//                                   its own strict-same-day policy (it re-triggers today's run,
+//                                   so a cadence tolerance would be wrong for it).
 
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

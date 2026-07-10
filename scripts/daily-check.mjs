@@ -19,12 +19,21 @@
 //
 //   node scripts/daily-check.mjs              # check + heal; prints a line only on a transition
 //   CHECK_DRY=1 node scripts/daily-check.mjs  # print what it WOULD do; never triggers/latches
+//
+// Freshness source: reads the SAME committed fingerprints via the SAME extractors as the
+// cloud alerter (scripts/lib/scheduleHealth.mjs -> maxDateKey/isoDate), so "how a job's
+// freshness is read" lives in one place. The two are complementary, NOT redundant: THIS is
+// the laptop-side SELF-HEAL (re-runs a stale task; needs the laptop on); the /api/snapshot
+// watch is the cloud-side NOTIFY (Telegram; covers laptop-OFF). Only the extractors are
+// shared -- the POLICY differs on purpose: daily-check wants strict same-day (to re-trigger
+// today's run), the alerter uses a multi-day cadence tolerance (to page you).
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { istParts } from './lib/marketHours.mjs';
+import { maxDateKey, isoDate } from './lib/scheduleHealth.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const readJSON = (p, fb = null) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return fb; } };
@@ -41,10 +50,10 @@ const mark = (k) => (state[k] ||= {});
 
 // Freshness signals — each is the ACTUAL artifact the job is supposed to produce today.
 const sleeves = readJSON(join(ROOT, 'data', 'snapshot-sleeves.json'), {});
-const snapLatest = Object.keys(sleeves).sort().pop() || '(none)';
+const snapLatest = maxDateKey(sleeves) || '(none)';
 
 const bs = readJSON(join(ROOT, 'data', 'broker-state.json'), {});
-const bsDate = String(bs.syncedAt || '').slice(0, 10);
+const bsDate = isoDate(bs.syncedAt) || '';
 const brokersOk = !!(bs.brokers?.upstox?.ok && bs.brokers?.dhan?.ok);   // Fyers parked / Kite hand-maintained → excluded
 
 const jobs = [

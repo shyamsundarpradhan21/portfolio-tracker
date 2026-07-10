@@ -82,8 +82,10 @@ visible within one cadence instead of 3 weeks.
       in Vercel env → redeploy. Until then it's a silent no-op.
 - [ ] **Optional hardening:** the cron can't watch ITSELF (dead-man's-switch) — a free healthchecks.io
       ping closes the "what if the alerter is down" loop. Deferred.
-- [ ] **Optional:** a fast laptop-side alert (piggyback `DaemonWatchdog`) for same-day breaks while the
-      laptop is on — the cloud nightly already covers laptop-off. Deferred.
+- [ ] **Optional:** laptop-side same-day detection + self-heal ALREADY exists (`daily-check.mjs` via the
+      `Supervisor` task; folded onto the shared manifest 2026-07-11). The only add would be a Telegram push
+      on its STILL-STALE branch, so a failed self-heal pages you same-day (the cloud nightly already covers
+      laptop-off). Deferred.
 
 ## Review
 Applied the project's minimalism motive — "fold the multiples into one" — across the whole scheduled-task
