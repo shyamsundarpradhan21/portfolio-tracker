@@ -228,10 +228,16 @@ snapshot task) is noted but not done.
 **Consolidated 2026-07-11 (one task to rule the watchers):** merged `DaemonWatchdog` +
 `DailyJobCheck` into a single `Supervisor` task (5-min tick: daemon liveness every run;
 daily-check gated to ~1/hour via an IST-hour stamp). `daemon-watchdog.ps1`→`supervisor.ps1`;
-`daily-check.mjs` unchanged (invoked by the supervisor, still writes the `daily-check.log`
-checker log); removed `daily-check.cmd` + the two old register scripts. The 9 WORKER tasks stay
+removed `daily-check.cmd` + the two old register scripts. The 9 WORKER tasks stay
 separate (different lifetimes/triggers — an always-on daemon can't be one periodic task with a
 07:00 browser snapshot). Watcher tasks: 2 → 1.
+
+**Latched 2026-07-11 (behaves daily, not hourly):** a daily job doesn't need hourly
+verification — the frequent check is only cheap resilience (catch a miss whenever the box is
+on, since it reboots). Made `daily-check.mjs` latch: it acts/logs ONLY on a transition
+(pending → CONFIRMED / re-ran / STILL-STALE), then goes silent for the rest of the day, and the
+re-run stays capped 1/day. So the check still runs ~hourly as a cheap safety net (2 file-reads
+when fine) but reads as ~one line per job per day in the checker log — the hourly noise is gone.
 
 ---
 
