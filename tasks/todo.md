@@ -54,7 +54,9 @@ visible within one cadence instead of 3 weeks.
       (intro now says "run `node scripts/schedule-health.mjs`"; the manifest mirrors the table).
 - [x] Add missing `register-*.ps1` (DailyBrokerSync) → `scripts/register-broker-sync.ps1`
       (mirrors `register-snapshot-daily.ps1` structurally; ASCII-clean; laptop-verify only — no pwsh here).
-- [ ] Capture the 3 Claude-routine prompts into `tasks/`. ← needs the routine prompts pasted
+- [~] Capture the 3 Claude-routine prompts into `tasks/routines.md` — `CloudFnoCapture` fully versioned
+      (command + env); the weekly-Dhan + monthly-stratzy prompts stubbed with a paste slot (they live only
+      in the Routines UI). SCHEDULE.md §5/§6 point at it. ← paste the 2 prompts to finish.
 ### 3. Retire genuine redundancy / fold multiples into one (loopholes 4/5)
 - [x] **UA string** — 14 identical `const UA` copies across API routes + libs folded into one
       `app/lib/ua.js`; all 14 import it. Verified: 0 leftovers, 14 imports, all parse ESM, none unused.
@@ -64,9 +66,11 @@ visible within one cadence instead of 3 weeks.
       made safe by the `fno-ledger` freshness check in `schedule-health.mjs`. Documented SCHEDULE.md §4c.
 - [x] **Snapshot cron + local recompute = NOT a fold** — deliberate two-tier (KV serving copy vs
       durable git archive); collapsing would re-blind the durable tier (loophole #1). Left as-is.
-- [ ] **Token minting (3 paths)** — FyersDailyLogin + UpstoxDailyLogin + mint-on-demand in
-      DailyBrokerSync ("logins kept to keep MCP warm"). Assess whether mint-on-demand makes the two
-      login tasks droppable. Operational (laptop-side) — deferred.
+- [x] **Token minting / morning-cluster merge (4 → 2).** Verified the Upstox + Fyers MCPs just READ
+      `.token.json` (Dhan self-mints), so `UpstoxDailyLogin` is redundant — the sync mints it on demand
+      each morning → RETIRED. Chained `DailyBrokerSync` + `DailyNetworthSnapshot` into one `DailyMorning`
+      task (07:00, sync→snapshot; `morning.cmd` + `register-morning.ps1`; `daily-check` heal target →
+      `DailyMorning`). `FyersDailyLogin` stays (headed mint, can't chain). Laptop-apply: run `register-morning.ps1`.
 
 ### 4. Alerting — turn the health check from pull → push (closes loophole #1)
 - [x] **Shared manifest** — `scripts/lib/scheduleHealth.mjs` (JOB_META + `classify` + fingerprint
@@ -80,8 +84,9 @@ visible within one cadence instead of 3 weeks.
       change until env is set. Verified: stale-set logic picks the right jobs; route parses; guard proven.
 - [ ] **ACTIVATION (user):** create a bot via @BotFather → set `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`
       in Vercel env → redeploy. Until then it's a silent no-op.
-- [ ] **Optional hardening:** the cron can't watch ITSELF (dead-man's-switch) — a free healthchecks.io
-      ping closes the "what if the alerter is down" loop. Deferred.
+- [x] **Dead-man's-switch** — the cron pings `HEALTHCHECK_URL` on a successful run (`app/lib/alert.js`
+      `pingHealthcheck`, wired into `/api/snapshot`); an external monitor (healthchecks.io) pages you if the
+      ping stops — the only thing that watches the watcher. Guarded no-op. Activate: set `HEALTHCHECK_URL` in Vercel env.
 - [ ] **Optional:** laptop-side same-day detection + self-heal ALREADY exists (`daily-check.mjs` via the
       `Supervisor` task; folded onto the shared manifest 2026-07-11). The only add would be a Telegram push
       on its STILL-STALE branch, so a failed self-heal pages you same-day (the cloud nightly already covers

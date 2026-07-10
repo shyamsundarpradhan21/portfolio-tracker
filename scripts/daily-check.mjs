@@ -58,9 +58,9 @@ const brokersOk = !!(bs.brokers?.upstox?.ok && bs.brokers?.dhan?.ok);   // Fyers
 
 const jobs = [
   {
-    key: 'snapshot', task: 'DailyNetworthSnapshot',
-    skip: false,
-    due: mins >= 7 * 60 + 30,                 // 07:30, every day (snapshots are daily)
+    key: 'snapshot', task: 'DailyMorning',      // sync+snapshot merged into DailyMorning (07:00);
+    skip: false,                                // re-running it re-does BOTH halves, so this one
+    due: mins >= 7 * 60 + 30,                   // check heals a whole-morning miss. Due 07:30.
     fresh: snapLatest === today,
     detail: snapLatest,
   },

@@ -21,9 +21,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 |---|---|---|---|
 | `/api/snapshot` (growth day-change + FII/DII trail → KV) | 21:30 UTC daily (03:00 IST) | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
-| **UpstoxDailyLogin** (mint Upstox token) | 06:20 IST daily | this laptop, headless | Windows Task Scheduler |
-| **DailyNetworthSnapshot** (durable growth + NW/value → `growth.json` / `SNAPSHOT.md` / `snapshot-sleeves.json`) | 07:00 IST daily | this laptop, headless | Windows Task Scheduler |
-| **DailyBrokerSync** (broker holdings → `broker-state.json`) | 06:00 IST daily | this laptop, headless | Windows Task Scheduler |
+| **DailyMorning** (broker holdings sync → durable snapshot, chained) → `broker-state.json` + `growth.json` / `snapshot-sleeves.json` | 07:00 IST daily | this laptop, headless | Windows Task Scheduler |
 | **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, 09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayUS** (US equity day-change in ₹ → KV + `us-intraday.json`) | one long-running process, 18:40 IST → 02:30 IST (overnight) weekdays | this laptop, headless | Windows Task Scheduler |
@@ -126,6 +124,10 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 
 ## 3. UpstoxDailyLogin — daily Upstox token mint (Windows Task Scheduler)
 
+> **RETIRED 2026-07-11** — redundant with the sync's mint-on-demand: the Upstox MCP just
+> *reads* `.token.json`, and `DailyMorning`'s sync mints it fresh each morning (verified).
+> Unregistered by `register-morning.ps1`. Kept below for reference / if you ever re-add it.
+
 - **Schedule:** daily 06:20 IST, **headless**, "run only when logged on"
   (`StartWhenAvailable`). 06:20 is after the token's ~03:30 expiry and Upstox's
   funds-API maintenance window (00:00–05:30 IST).
@@ -143,6 +145,11 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   `Start-ScheduledTask -TaskName UpstoxDailyLogin` to run now.
 
 ## 4. DailyNetworthSnapshot — daily durable growth + NW/value history (Windows task)
+
+> **MERGED 2026-07-11 into `DailyMorning`** — now the *second half* of the chained 07:00
+> sync→snapshot task (`morning.cmd`, registered by `register-morning.ps1`). Chaining it
+> after the sync guarantees fresh `broker-state`, killing the old 06:00/07:00 timing gamble.
+> Everything below still describes the snapshot half; only the task wrapper changed.
 
 - **Schedule:** daily **07:00 IST**, this laptop, headless, `-StartWhenAvailable`
   (a missed slot runs at next logon; the rolling 7-day backfill self-heals up to a
@@ -180,6 +187,11 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   (`getSnapshots`), which only record on the days you open the app.
 
 ## 4b. DailyBrokerSync — live broker holdings → `data/broker-state.json` (Windows task)
+
+> **MERGED 2026-07-11 into `DailyMorning`** — now the *first half* of the chained 07:00 task
+> (moved 06:00 → 07:00; holdings are slow-moving and mint-on-demand handles tokens, so the
+> shift is inconsequential — the F&O-critical capture is the separate evening task). Details
+> below still apply to the sync half; `register-broker-sync.ps1` is superseded by `register-morning.ps1`.
 
 - **Schedule:** daily **06:00 IST**, `-StartWhenAvailable` (so a missed slot runs on
   your first logon after 06:00). **Headless** — no terminal, no Claude. Registered once via
@@ -315,16 +327,16 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 ## 5. Weekly Dhan US sleeve review (Claude routine, Remote)
 
 - **Schedule:** Saturdays 09:00 IST, Remote.
-- **What:** a weekly review of the Dhan US (GIFT City) sleeve. Full prompt lives in
-  the **Claude Routines panel** (not in this repo) — portfolio context in
-  [tasks/dhan-portfolio.md](tasks/dhan-portfolio.md).
+- **What:** a weekly review of the Dhan US (GIFT City) sleeve. Schedule + context now
+  versioned in [tasks/routines.md](tasks/routines.md) (the prompt itself has a paste slot
+  there); portfolio context in [tasks/dhan-portfolio.md](tasks/dhan-portfolio.md).
 
 ## 6. Monthly stratzy algo briefing (Claude routine, Local)
 
 - **Schedule:** ~day 26 of each month, 09:00 IST, **Local** (only runs while the
   computer is awake).
-- **What:** a monthly briefing on the trading/algo sleeve. Full prompt lives in the
-  Claude Routines panel (not in this repo).
+- **What:** a monthly briefing on the trading/algo sleeve. Schedule now versioned in
+  [tasks/routines.md](tasks/routines.md) (the prompt has a paste slot there).
 
 ---
 
