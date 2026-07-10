@@ -25,13 +25,15 @@ lift + breaks the PAN-stays-local posture. Laptop stays primary; the check makes
 visible within one cadence instead of 3 weeks.
 
 ## Steps
-### 1. Schedule-health surface (keystone — closes loophole 2)
-- [ ] `scripts/schedule-health.mjs` — data-driven JOB manifest; each job → newest committed
+### 1. Schedule-health surface (keystone — closes loophole 2) — DONE 2026-07-10
+- [x] `scripts/schedule-health.mjs` — data-driven JOB manifest; each job → newest committed
       fingerprint date vs a per-job `maxAgeDays`; prints `ok / STALE / unknown` table + summary;
-      `--json`; exit 1 on any critical STALE (so it can gate).
-- [ ] Honest blind spots: `gmail-state.json` / `fno-overlay.json` (gitignored) + `/api/premarket`
+      `--json`; exit 1 on any critical STALE (so it can gate). `HEALTH_TODAY=` override for testing.
+- [x] Honest blind spots: `gmail-state.json` / `fno-overlay.json` (gitignored) + `/api/premarket`
       (KV) report `unknown` with a note, never a false `ok`. Premarket row flags the §3 drift.
-- [ ] Verify: run it here (all fresh 2026-07-10 → ok); confirm STALE fires by probing an old date.
+- [x] Verify: live run 7 ok · 2 unknown · exit 0; `HEALTH_TODAY=+10d` → 7 STALE · exit 1 (gates);
+      `+3d` → only the 3 daily jobs (maxAge 2) STALE, weekday jobs (maxAge 4) still ok (weekend
+      tolerance discriminates correctly).
 ### 2. Collapse doc-vs-reality to one source (loophole 3) — SEPARATE, after step 1 lands
 - [ ] Reconcile `SCHEDULE.md` ↔ `vercel.json` (decide premarket: restore cron or drop the claim).
 - [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`.
