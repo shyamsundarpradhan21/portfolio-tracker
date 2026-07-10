@@ -378,6 +378,27 @@ full use of the knowledge graph everywhere:
   `capture-in.log`. Still-open hardening (not yet built): a real alert when an enabled
   broker drops out mid-session, so this never again waits on a manual check.
 
+### Durable-data jobs fail SILENTLY — the durable tier must self-heal, not trust the live tier
+Third instance of the unattended-job-dies-quietly class (after broker token rot + the
+morning-mint miss). Caught 2026-07-10 while checking "is the daily per-sleeve accruing":
+the two git-committed durability tiers had been frozen for ~3 weeks with zero signal —
+`data/growth.json` at its 2026-06-25 creation, `data/SNAPSHOT.md`/`snapshot-sleeves.json`
+at 2026-06-19. Root cause: `scripts/record-snapshot.mjs` was a Claude **Remote** routine
+that ran ONCE then died — the ephemeral cloud workspace can't `git push`/puppeteer (its own
+SCHEDULE.md §4 open-question had flagged exactly this, unresolved). **Lessons/how to apply:**
+(a) a git-committing job belongs on the **laptop Windows task** (proven push + puppeteer),
+NOT a Remote routine — same fallback the other tasks use; now `DailyNetworthSnapshot`
+(07:00 IST, `scripts/snapshot-daily.cmd`). (b) The **Vercel `/api/snapshot` Hobby cron
+drops ~35% of nights** (verified: KV missing 5 of 14 gap days) — so the durable archive
+must **recompute from historical sources** (`backfill-growth.mjs`, rolling window,
+self-heals) NOT KV-fold the flaky cron's `growth:<date>` (a fold bakes the cron's holes
+into the archive permanently). (c) KV `growth:<date>` has a **35-day TTL** — anything not
+folded to the committed archive within 35 days is lost; a frozen archive + rolling KV
+floor opens a permanent curve gap (~2026-07-30 here). Any KV-served-with-committed-fallback
+datum needs a scheduled fold/recompute or it silently rots. Pairs with "morning mint must
+fail LOUD" — unattended jobs need a surfaced check, and durable tiers must not depend on a
+best-effort live tier.
+
 ### Deployment (Vercel) — API routes must NOT server-side self-fetch a sibling route
 A server-side `fetch(\`${origin}/api/other\`)` from inside one API route carries NO auth
 cookie, so Vercel **Deployment Protection** (SSO/SAML on previews, any protected deployment)
