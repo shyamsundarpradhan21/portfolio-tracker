@@ -324,19 +324,22 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   cloud-Fyers pauses until the next laptop login re-mints it (Dhan is unaffected —
   30-day self-mint). Any gap is trued up at the annual ITR pass.
 
-## 5. Weekly Dhan US sleeve review (Claude routine, Remote)
+## 5. Weekly portfolio review (Claude routine, Local)
 
-- **Schedule:** Saturdays 09:00 IST, Remote.
-- **What:** a weekly review of the Dhan US (GIFT City) sleeve. Schedule + context now
-  versioned in [tasks/routines.md](tasks/routines.md) (the prompt itself has a paste slot
-  there); portfolio context in [tasks/dhan-portfolio.md](tasks/dhan-portfolio.md).
+- **Schedule:** Saturdays 09:00 IST, **Local** (the algo/Stratzy data is browser-harvested
+  laptop-side, so it can't run Remote).
+- **What:** weekly Dhan US (GIFT City) sleeve review, folding in the monthly algo briefing on the
+  last Saturday of the month (this **merged** the former separate weekly-Dhan + monthly-stratzy
+  routines — see §6). Full prompt + context versioned in [tasks/routines.md](tasks/routines.md).
+  Portfolio context: [tasks/dhan-portfolio.md](tasks/dhan-portfolio.md) — **currently stranded
+  off-origin** (see the warning in routines.md; restore + push it).
 
-## 6. Monthly stratzy algo briefing (Claude routine, Local)
+## 6. Monthly stratzy algo briefing — FOLDED into §5 (2026-07-11)
 
-- **Schedule:** ~day 26 of each month, 09:00 IST, **Local** (only runs while the
-  computer is awake).
-- **What:** a monthly briefing on the trading/algo sleeve. Schedule now versioned in
-  [tasks/routines.md](tasks/routines.md) (the prompt has a paste slot there).
+> Merged into the §5 "Weekly portfolio review" routine: the algo briefing now runs as its
+> month-end (last-Saturday) branch. Only the cadence differed, and both need the laptop (Stratzy
+> is browser-harvested), so one Local weekly routine covers both. Prompt in
+> [tasks/routines.md](tasks/routines.md).
 
 ---
 
