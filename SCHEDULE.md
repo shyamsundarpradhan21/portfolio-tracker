@@ -182,7 +182,8 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 ## 4b. DailyBrokerSync — live broker holdings → `data/broker-state.json` (Windows task)
 
 - **Schedule:** daily **06:00 IST**, `-StartWhenAvailable` (so a missed slot runs on
-  your first logon after 06:00). **Headless** — no terminal, no Claude.
+  your first logon after 06:00). **Headless** — no terminal, no Claude. Registered once via
+  [scripts/register-broker-sync.ps1](scripts/register-broker-sync.ps1).
 - **Chain:** task → [scripts/sync.cmd](scripts/sync.cmd) → `node scripts/sync-brokers.mjs`
   (logs to `scripts/sync.log`). The same Node engine the evening task uses.
 - **What it does:**

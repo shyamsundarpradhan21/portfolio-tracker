@@ -52,7 +52,9 @@ visible within one cadence instead of 3 weeks.
         deferred to prod (no toolchain/KV in this clone — repo's documented KV-verify pattern).
 - [x] Point `SCHEDULE.md` at the `schedule-health.mjs` manifest as the machine-checkable inventory
       (intro now says "run `node scripts/schedule-health.mjs`"; the manifest mirrors the table).
-- [ ] Add missing `register-*.ps1` (DailyBrokerSync); capture the 3 Claude-routine prompts into `tasks/`. ← needs the routine prompts pasted
+- [x] Add missing `register-*.ps1` (DailyBrokerSync) → `scripts/register-broker-sync.ps1`
+      (mirrors `register-snapshot-daily.ps1` structurally; ASCII-clean; laptop-verify only — no pwsh here).
+- [ ] Capture the 3 Claude-routine prompts into `tasks/`. ← needs the routine prompts pasted
 ### 3. Retire genuine redundancy / fold multiples into one (loopholes 4/5)
 - [x] **UA string** — 14 identical `const UA` copies across API routes + libs folded into one
       `app/lib/ua.js`; all 14 import it. Verified: 0 leftovers, 14 imports, all parse ESM, none unused.
