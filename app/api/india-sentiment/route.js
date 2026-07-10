@@ -11,16 +11,13 @@
 // Keyless: Yahoo for ^INDIAVIX / ^NSEI; FII/DII history read from the KV trail the
 // premarket cron already maintains. Server-only (no keys, nothing bundled). Each signal
 // degrades to { stale } independently — never a fabricated reading.
+import { UA } from '../../lib/ua';
 import { vixLogZ, fiiFlowScore, absorptionGap, indiaHeadline, percentileRank } from '../../lib/indiaSentiment';
 import { maMomentum, momentumScore, sma, scoreLabel, isNum } from '../../lib/usSentiment';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const YH_HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
 // Daily close series + latest price for a symbol (range=1y → ~250 sessions).

@@ -5,6 +5,7 @@
 //
 // Returns: { "AAPL": { price, prevClose, change, pct, state, currency }, ... }
 
+import { UA } from '../../lib/ua';
 import { deriveMarketState } from '../../lib/market';
 
 export const runtime = 'nodejs';
@@ -16,9 +17,6 @@ const HOSTS = [
 ];
 
 // A browser-like UA keeps Yahoo from rate-limiting/blocking the request.
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 async function fetchOne(symbol) {
   const path =

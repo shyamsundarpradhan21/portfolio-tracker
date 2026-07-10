@@ -6,6 +6,7 @@
 // Returns: { rates: { "2026-04-27": 94.83, ... } } — one close per trading
 // day from `start` to today. Callers map a date to the nearest prior close.
 
+import { UA } from '../../lib/ua';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,6 @@ const HOSTS = [
   'https://query1.finance.yahoo.com',
   'https://query2.finance.yahoo.com',
 ];
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);

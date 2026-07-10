@@ -5,16 +5,13 @@
 // and content-farm clickbait for ETFs. Funds (ETF/Bond/Commodity) are skipped —
 // they have no company-specific news. Region-tagged + sentiment-shaded, deduped,
 // newest-first. Keyless. { stale } only when nothing resolves.
+import { UA } from '../../lib/ua';
 import { loadPortfolio } from '../../lib/serverPortfolio';
 import { parseRss, sentiment, ago } from '../../lib/news';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // Funds carry no company-specific news — only ETF/index clickbait, so skip them.
 const FUND_CATS = new Set(['ETF', 'Bond', 'Commodity']);

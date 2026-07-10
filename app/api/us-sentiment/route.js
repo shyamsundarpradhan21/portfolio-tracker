@@ -15,15 +15,12 @@
 //     composite anchor. Needs browser-like headers or it 418s. Best-effort: every
 //     source degrades to { stale } independently so a dead feed never fakes a 0.
 
+import { UA } from '../../lib/ua';
 import { vixTermStructure, hyOasScore, putCallScore, maMomentum, momentumScore, sma, isNum } from '../../lib/usSentiment';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // ── Yahoo v8 chart (keyless) ─────────────────────────────────────────────────
 const YH_HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];

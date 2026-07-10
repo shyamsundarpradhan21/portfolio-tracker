@@ -13,6 +13,7 @@
 // explicit { stale:true, error } so the UI renders an honest "unavailable"
 // cell instead of a stale or fabricated number.
 
+import { UA } from '../../lib/ua';
 import { deriveMarketState } from '../../lib/market';
 import { mapAllIndices, mapYahooIndices, YH_INDEX_SYMS } from '../../lib/wrapIndices';
 // FII/DII cash + derivative-positioning capture is shared with /api/snapshot (the daily
@@ -23,10 +24,6 @@ import { nseCookie, fetchFiiDii, persistTrail, fetchParticipantStats } from '../
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // The session's open/closed state is NOT computed here from a wall clock — it's
 // derived client-side from the live index quotes (holiday-aware Yahoo marketState,

@@ -6,16 +6,13 @@
 // Every cell is { value, pos, pctile, lo, hi, tone, asOf, unit, source } or
 // { stale, source } — a failed series renders as an unavailable slider, never a
 // fabricated reading.
+import { UA } from '../../lib/ua';
 import https from 'node:https';
 import { MACRO_GROUPS, boardCell, yoy, yoyQ, mom } from '../../lib/macroBoard';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // FRED data via the official FRED API (windowed JSON) → ascending [{date,v}].
 // FRED's keyless fredgraph.csv is IP-blocked from Vercel (times out), so we use

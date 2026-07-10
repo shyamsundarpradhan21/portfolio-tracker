@@ -5,10 +5,7 @@
 // trail building even when no browser is open). Without a KV store it's a graceful no-op
 // and the client's localStorage trail (lib/fiidii.js) is the source of truth.
 
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
-
+import { UA } from './ua';
 // NSE gates its JSON behind a cookie set on the home page. Bootstrap it ONCE and reuse
 // for every NSE endpoint (indices + FII/DII + participant OI). Returns '' on failure.
 export async function nseCookie() {

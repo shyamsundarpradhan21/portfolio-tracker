@@ -2,15 +2,12 @@
 // (global + India), merged, sentiment-tagged, newest first. Some Indian sources
 // may be unreachable from Vercel (like NSE/FRED); we merge whatever resolves and
 // return { stale } only if everything fails — never a fabricated headline.
+import { UA } from '../../lib/ua';
 import { parseRss, sentiment, ago } from '../../lib/news';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 // Curated market feeds + locale-tuned Google News RSS, each tagged by region so the
 // Wrap can filter the ticker by India/Global cleanly (vs guessing from the source name).

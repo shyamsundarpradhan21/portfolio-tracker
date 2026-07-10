@@ -10,6 +10,7 @@
 // (same contract as /api/quotes); a failed symbol is dropped, never faked, so a
 // partial Yahoo outage still yields an honest heatmap of whatever resolved.
 
+import { UA } from '../../lib/ua';
 import { NIFTY50, NIFTY50_ASOF } from '../../../data/nifty50';
 
 export const runtime = 'nodejs';
@@ -17,9 +18,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 const HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 async function fetchOne(c) {
   const path = `/v8/finance/chart/${encodeURIComponent(c.sym + '.NS')}?interval=1d&range=2d`;

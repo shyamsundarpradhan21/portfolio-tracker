@@ -6,15 +6,13 @@
 //     dates — no free India feed exists.
 // Graceful: if ForexFactory is unreachable the US side reports `unavailable`
 // (never faked); India is always available. Shape-validated.
+import { UA } from '../../lib/ua';
 import { indiaReleases, mapForexFactory } from '../../lib/econCalendar';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
 
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const FF = [
   'https://nfs.faireconomy.media/ff_calendar_thisweek.json',
   'https://nfs.faireconomy.media/ff_calendar_nextweek.json',

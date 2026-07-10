@@ -4,10 +4,8 @@
 // URL carries no auth cookie, so Vercel Deployment Protection blocks it at the edge (the
 // benchmark closes silently vanish on a protected deployment). One impl, no fork.
 
+import { UA } from './ua';
 const HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const isoDay = (sec) => new Date(sec * 1000).toISOString().slice(0, 10);
 
 // One symbol → { symbol, closes:[{date,close}], latest, latestDate } | { symbol, error }.

@@ -11,6 +11,7 @@
 // partial Yahoo outage still yields an honest heatmap of whatever resolved. US
 // tickers are used as-is (no exchange suffix).
 
+import { UA } from '../../lib/ua';
 import { NASDAQ100, NASDAQ100_ASOF } from '../../../data/nasdaq100';
 
 export const runtime = 'nodejs';
@@ -18,9 +19,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 const HOSTS = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 async function fetchOne(c) {
   const path = `/v8/finance/chart/${encodeURIComponent(c.sym)}?interval=1d&range=2d`;
