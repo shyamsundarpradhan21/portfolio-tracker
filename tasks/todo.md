@@ -1,3 +1,55 @@
+# Plan — session-0 the background scheduler tasks (kill the every-5-min flicker) + window-aware Supervisor — 2026-07-11
+
+## Context
+`Supervisor` runs every 5 min, 24/7 under `LogonType Interactive`, so each tick briefly draws a
+PowerShell/node console (despite `-WindowStyle Hidden`) over whatever is on screen — the flicker the
+user sees over Netflix. It's the ONLY task that re-pops a window; the capture/ingest daemons launch
+once and then run persistently hidden. Fix: move the background tasks into **session 0** (no desktop,
+nothing can draw), and make `Supervisor`'s cadence **window-aware** per the user's request.
+
+Constraint found: session 0 has two flavours. **S4U** (no stored password) can't decrypt the
+DPAPI-bound HTTPS credential, so any task that `git push`es breaks. **Password logon** (stores the
+Windows password, LSA-encrypted) keeps credential access. `capture-daemon.mjs:61,74` pushes the
+archive at close → captures need Password logon; `Supervisor` + `IngestDaemon` are push-free → S4U.
+
+## Decisions (from the user)
+- Session 0 for: `Supervisor`, `IngestDaemon` (+ `IngestWeeklyReport`), `CaptureIntradayUS/India`.
+- Captures → `LogonType Password` (user types pw; stored LSA-encrypted) so the close push still works.
+- `Supervisor` + Ingest → S4U (push-free, no password needed).
+- Stay Interactive (git push + puppeteer/browser): `DailyMorning`, `BrokerSyncEvening`.
+- `Supervisor` cadence: 5 min during India (09:10–15:35) + US (18:40–02:35) windows; **2 h** otherwise.
+
+## Steps
+- [x] `register-supervisor.ps1`: principal → S4U; triggers → 2 h base + India 5-min window + US 5-min window + at-logon; refreshed comments/desc.
+- [x] `register-ingest-daemon.ps1`: principal → S4U (covers `IngestDaemon` + `IngestWeeklyReport`); noted why S4U-safe.
+- [x] `register-capture-daemons.ps1`: `Get-Credential` prompt; register with `-User`/`-Password` (Password logon).
+- [x] Validated building blocks non-destructively: `.Repetition`-on-Weekly builds (PT5M/PT6H25M, Mon–Fri); `Register-ScheduledTask -User/-Password/-RunLevel` is a real param combo; `S4U` is a valid LogonType.
+- [!] BLOCKED — apply needs ELEVATION. Re-registering to S4U/Password grants a batch-logon right → Access denied (0x80070005) from a non-elevated shell, and I can't answer UAC. Confirmed Supervisor left intact/unchanged after the denied attempt.
+- [x] **USER (elevated PowerShell)**: ran all three register scripts (captures prompted for the Windows pw) — confirmed working.
+- [x] **USER**: restarted `IngestDaemon` (stop→start); Supervisor picks up S4U on its next tick.
+- [x] Verify: user confirmed the elevated run succeeded (S4U on Supervisor/Ingest, Password on captures, heartbeat fresh).
+- [ ] Deferred verify: captures still push at next close (India ~15:32 / US ~02:30) — `capture-*.log` shows "archive pushed". (Can only be observed at the next real close.)
+- [x] Commit + push the three edited register scripts after the elevated run was confirmed.
+
+## Review
+Root cause of the Netflix flicker: `Supervisor` was the only task that *re-popped* a window (every 5
+min, `LogonType Interactive`); despite `-WindowStyle Hidden`, an interactive-session console draws for
+~200 ms before it hides. The persistent daemons (capture/ingest) launch once and never re-pop, so they
+were never the cause. Fix = move the background tasks into **session 0** (no desktop → nothing draws):
+`Supervisor` + `IngestDaemon`(+report) via **S4U** (push-free, no password), captures via **Password
+logon** (they `git push` the archive at close, and S4U can't decrypt the DPAPI-bound HTTPS credential —
+the one non-obvious constraint that made a blanket S4U move wrong). Left `DailyMorning` /
+`BrokerSyncEvening` Interactive (git push + puppeteer). Also made `Supervisor` window-aware per request:
+5-min ticks only inside the India (09:10–15:35) + US (18:40–02:35) capture windows, a 2-h backstop
+otherwise (keeps IngestDaemon alive for overnight mail + the hourly daily-check) — fast heal only where
+a mid-window daemon death costs intraday data, avoiding the ~55-min blind spot a flat 1-h would create.
+All three register scripts (the versioned source of truth) updated + committed. Applying required an
+elevated shell (S4U/Password grant a batch-logon right → UAC), so the user ran them; I validated the
+non-obvious building blocks (`.Repetition`-on-Weekly, the `-User/-Password/-RunLevel` param set, S4U
+enum) beforehand. Only the close-time archive push remains to observe at the next market close.
+
+---
+
 # Plan — Minimalism across all scheduled tasks (close the resilience loopholes) — 2026-07-10
 
 ## Why

@@ -21,8 +21,12 @@ $daemonSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -Hidden `
   -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
   -ExecutionTimeLimit ([TimeSpan]::Zero) `
   -MultipleInstances IgnoreNew
+# S4U -- session 0 (no desktop). The daemon is push-free + browser-free (Gmail API + Pub/Sub
+# pull; writes to KV + a local manifest; the fno-overlay rebuild it spawns is a KV write, not a
+# git push), so it needs no credential store. Bonus: session 0 survives a logoff, so the
+# overnight document mail is still ingested if the interactive session ends.
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-  -LogonType Interactive -RunLevel Limited
+  -LogonType S4U -RunLevel Limited
 
 Register-ScheduledTask -TaskName 'IngestDaemon' `
   -Action $daemonAction -Trigger $daemonTrigger -Settings $daemonSettings -Principal $principal `

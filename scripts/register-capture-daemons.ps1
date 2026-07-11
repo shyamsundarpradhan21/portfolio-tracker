@@ -17,6 +17,19 @@
 $repo = Split-Path -Parent $PSScriptRoot                 # ...\portfolio-tracker
 $cmd  = Join-Path $PSScriptRoot 'capture.cmd'
 
+# SESSION 0 with a STORED PASSWORD (LogonType Password), not S4U: capture-daemon.mjs pushes its
+# archive to origin/main at session close (commitArchive -> git push), and that push needs the
+# DPAPI-bound HTTPS credential -- which S4U CANNOT decrypt but a full password logon can. So the
+# task runs off the interactive desktop (no console flashes) AND keeps the close push working.
+# The password is prompted once, interactively, and handed straight to Task Scheduler's
+# LSA-protected store -- it is NEVER written to disk or this repo. (Microsoft-account setups: use
+# your Microsoft-account password; if a task later shows result 0x8007052E "bad username or
+# password", re-run this and re-enter it.) This is why the script must be RUN BY YOU, not headless.
+$cred = Get-Credential -UserName $env:USERNAME `
+  -Message 'Windows password to store for CaptureIntraday* (session 0, invisible; needed so the close-time archive push keeps working)'
+$script:CapturePw = $cred.GetNetworkCredential().Password
+if ([string]::IsNullOrEmpty($script:CapturePw)) { throw 'No password entered -- aborting (captures need a stored password for their close-time git push).' }
+
 function Register-CaptureTask {
   param(
     [string] $TaskName,
@@ -48,10 +61,11 @@ function Register-CaptureTask {
     -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -ExecutionTimeLimit (New-TimeSpan -Hours $LimitHours) `
     -MultipleInstances IgnoreNew
-  $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-    -LogonType Interactive -RunLevel Limited
+  # -User + -Password (no -Principal) => LogonType Password: run whether logged on or not, in
+  # session 0, with the stored credential so the close-time git push still authenticates.
   Register-ScheduledTask -TaskName $TaskName `
-    -Action $action -Trigger $triggers -Settings $settings -Principal $principal `
+    -Action $action -Trigger $triggers -Settings $settings `
+    -User $env:USERNAME -Password $script:CapturePw -RunLevel Limited `
     -Description $Description -Force | Out-Null
 }
 
