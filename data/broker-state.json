@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-11T04:44:25+05:30",
+  "syncedAt": "2026-07-11T07:00:01+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -12,7 +12,7 @@
     },
     "fyers": {
       "ok": false,
-      "note": "funds: {\"code\":-99,\"message\":\"Something went wrong. Please contact support\",\"s\":\"error\"}"
+      "note": "funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"}"
     },
     "kite": {
       "ok": true,
@@ -22,12 +22,17 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-07-11T04:44:39+05:30",
+      "syncedAt": "2026-07-11T07:00:02+05:30",
       "rows": [
         {
           "sym": "BANKBARODA",
           "qty": 28,
           "avg": 291.8
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43
         },
         {
           "sym": "HAPPSTMNDS",
@@ -43,11 +48,6 @@
           "sym": "LAURUSLABS",
           "qty": 8,
           "avg": 986.86
-        },
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
         }
       ]
     },
@@ -181,7 +181,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-07-11T04:44:39+05:30",
+      "syncedAt": "2026-07-11T07:00:02+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jul2026-23800-PE",
@@ -231,7 +231,7 @@
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-11T04:44:39+05:30",
+      "syncedAt": "2026-07-11T07:00:02+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL290PE",
@@ -268,12 +268,12 @@
       "available": 0
     },
     "dhan": {
-      "available": 359921.1,
-      "utilized": 413828
+      "available": 367396.1,
+      "utilized": 406353
     },
     "upstox": {
-      "available": 25266.01,
-      "utilized": 163360.25
+      "available": 199876.27,
+      "utilized": 0
     }
   }
 }
