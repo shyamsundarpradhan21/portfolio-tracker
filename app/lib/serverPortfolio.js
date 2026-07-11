@@ -100,6 +100,31 @@ export async function loadFnoOverlay() {
   }
 }
 
+// The note-derived F&O realised (per-contract FIFO over the durable contract notes), gap-filled
+// onto the ledger by applyFnoRealised. Prod source = KV `ledger:fno:realised`; local dev falls back
+// to the gitignored data/fno-realised-notes.json (both written by scripts/derive-fno-realised.mjs
+// --write) — same pattern as loadFnoOverlay. Null from both → the caller keeps the broker rows as-is.
+export async function loadFnoRealised() {
+  const creds = kvCreds();
+  if (creds) {
+    try {
+      const r = await fetch(creds.url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(['GET', 'ledger:fno:realised']),
+        cache: 'no-store',
+      });
+      const j = await r.json();
+      if (j?.result) return JSON.parse(j.result);
+    } catch { /* fall through to the local file */ }
+  }
+  try {
+    return JSON.parse(await readFile(join(process.cwd(), 'data', 'fno-realised-notes.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 // Latest local data/algo-monthly[/<sub>]/<YYYY-MM>.json (gitignored, derived). Shared by
 // the monthly reco + review loaders below.
 async function latestMonthly(...sub) {

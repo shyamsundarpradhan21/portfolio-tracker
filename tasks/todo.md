@@ -34,10 +34,22 @@ is real but a minority (Dhan/older layouts split one fill across rows: `OPTSTK S
 - [x] Persisted dormant artifact: KV `ledger:fno:realised` + gitignored `data/fno-realised-notes.json`
 - [x] Updated the schedule-resilience artifact (realised now note-derivable)
 - [x] Commit
-- [ ] HELD (gated, NOT in this pass): wire note-realised into the live app / eod-book (changes
-      displayed financials → needs the value-recheck sign-off, per CLAUDE.md ledger-edit rule).
-- [ ] Follow-up (separate): reassemble the 125 fragmented Dhan-2024 / Upstox-2025 split-row notes at
-      the PARSER level (engine.py) so their fills carry a complete key — recovers the excluded history.
+- [x] WIRED into the live view (user go-ahead): `app/lib/fnoRealised.js` `applyFnoRealised` gap-fills
+      the note-derived realised onto the charge-overlaid ledger in `app/api/portfolio/route.js`
+      (`loadFnoRealised` mirrors `loadFnoOverlay`). SAFE/additive: never overrides a captured broker
+      row; only fills a genuine gap or upgrades a charge-only day; scoped to `NOTE_REALISED_FROM =
+      2026-04-01` (verified-complete window). Verified end-to-end: `/api/portfolio` HTTP 200,
+      `_noteRealisedApplied {added:0,upgraded:1}` — 2026-07-07 Dhan gap day recovered from the note.
+      5 unit tests + 276 regression tests green.
+
+## Pending (user-owned) — 2024-25 Dhan CSV
+- [ ] **USER: add the 2024-25 Dhan CSV** to complete note→realised for the fragmented FY24-25 Dhan
+      history (the 125 excluded split-row notes) so it's "to the dot". Then: ingest → `ledger:cn:*`,
+      re-run `scripts/derive-fno-realised.mjs --write`, confirm fragmented/residual counts drop, and
+      LOWER `NOTE_REALISED_FROM` (app/lib/fnoRealised.js) to cover the recovered history.
+      → **REMINDER set:** memory `pending-dhan-2024-25-csv` surfaces this on any status request.
+- [ ] Alt/also: reassemble the 125 fragmented notes at the PARSER level (engine.py) so their fills
+      carry a complete key — recovers the excluded history without a manual CSV.
 
 ## Review
 Built the note→realised derivation, dormant and verified. Three pieces:
@@ -50,8 +62,11 @@ Built the note→realised derivation, dormant and verified. Three pieces:
   note reconstruction reproduces the broker to **−₹114 on ₹3.2L** and FY24-25 Fyers to **₹0** — proving
   the notes independently recover realised. Where the note history is incomplete (Fyers/Upstox residual
   lots) or the layout is split (125 fragmented Dhan-2024/Upstox-2025 notes) it FLAGS rather than fudges.
-Kept DORMANT (KV `ledger:fno:realised` + gitignored mirror; nothing live reads it) — the resilience
-gap is closed at the derivation level; wiring displayed realised is the value-recheck-gated follow-on.
+Then WIRED it into the live view (user go-ahead): a SAFE additive gap-fill (`applyFnoRealised`) that
+recovers realised the broker missed (verified: 2026-07-07 Dhan gap day now served) without ever
+overriding a captured broker row, scoped to the verified-complete FY26-27 window. The pre-2026
+fragmented history stays on the broker rows until the user's 2024-25 Dhan CSV lands (reminder set via
+the `pending-dhan-2024-25-csv` memory). KV `ledger:fno:realised` + gitignored mirror; graceful when absent.
 
 ---
 

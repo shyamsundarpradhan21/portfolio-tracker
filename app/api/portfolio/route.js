@@ -3,8 +3,9 @@
 // scripts/seed-portfolio-kv.mjs); local dev falls back to the gitignored
 // data/portfolio.private.json. Never cached (private).
 
-import { loadPortfolio, loadFnoOverlay, loadEodBook } from '../../lib/serverPortfolio';
+import { loadPortfolio, loadFnoOverlay, loadFnoRealised, loadEodBook } from '../../lib/serverPortfolio';
 import { applyFnoOverlay } from '../../lib/fnoOverlay';
+import { applyFnoRealised } from '../../lib/fnoRealised';
 // Committed app JSONs are server-imported here (server bundle only) and served to
 // the client, so they no longer ship in the client JS bundle. They stay committed
 // (the sync pipeline writes broker-state/fno-ledger); freshness tracks redeploys
@@ -30,9 +31,12 @@ export async function GET() {
   if (!data) {
     return Response.json({ error: 'portfolio data unavailable (KV unseeded + no local file)' }, { status: 503 });
   }
-  // Phase 2c: overlay real NCLFO charges (KV ledger:fno:overlay) onto the committed fno-ledger base.
-  // Graceful: if the overlay key is missing/unreachable, applyFnoOverlay returns the committed ledger as-is.
-  const fnoLedgerReal = applyFnoOverlay(fnoLedger, await loadFnoOverlay());
+  // Phase 2c: overlay real NCLFO charges (KV ledger:fno:overlay) onto the committed fno-ledger base,
+  // THEN gap-fill note-derived realised (KV ledger:fno:realised) for laptop-off days the broker missed.
+  // Both graceful: a missing/unreachable key leaves the committed broker rows unchanged. Order matters —
+  // charges first so applyFnoRealised can upgrade the opening-only (charge-only) days it creates.
+  const [overlay, noteRealised] = await Promise.all([loadFnoOverlay(), loadFnoRealised()]);
+  const fnoLedgerReal = applyFnoRealised(applyFnoOverlay(fnoLedger, overlay), noteRealised);
   // eodBook: the durable per-holding close (serving copy). DORMANT — served but not yet
   // consumed by the client (Sub-step B hero close-fallback is held). Graceful null.
   const eodBook = await loadEodBook();
