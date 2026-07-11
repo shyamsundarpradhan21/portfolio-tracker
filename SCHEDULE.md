@@ -21,9 +21,9 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 |---|---|---|---|
 | `/api/snapshot` (growth day-change + FII/DII trail → KV) | 21:30 UTC daily (03:00 IST) | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
-| **DailyMorning** (broker holdings sync → durable snapshot, chained) → `broker-state.json` + `growth.json` / `snapshot-sleeves.json` | 07:00 IST daily | this laptop, headless | Windows Task Scheduler |
-| **BrokerSyncEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:30 IST weekdays | this laptop, headless | Windows Task Scheduler |
-| **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, 09:10→15:33 IST weekdays | this laptop, headless | Windows Task Scheduler |
+| **DailyMorning** (broker holdings sync → durable snapshot, chained; SOLE morning token minter) → `broker-state.json` + `growth.json` / `snapshot-sleeves.json` | 08:55 IST daily | this laptop, headless | Windows Task Scheduler |
+| **DailyEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:40 IST weekdays | this laptop, headless | Windows Task Scheduler |
+| **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, launch 08:55, captures 09:13→15:32 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayUS** (US equity day-change in ₹ → KV + `us-intraday.json`) | one long-running process, 18:40 IST → 02:30 IST (overnight) weekdays | this laptop, headless | Windows Task Scheduler |
 | **CloudFnoCapture** (Dhan S01 + Fyers S02 F&O realised, laptop-off) | ~18:45 IST daily | Claude cloud (Remote) | Claude Routines panel |
 | **Weekly Dhan US sleeve review** | Sat 09:00 IST | Claude cloud (Remote) | Claude Routines panel |
@@ -236,17 +236,24 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   `Start-ScheduledTask -TaskName DailyBrokerSync` to run now.
 - Zero broker tokens/passwords leave the laptop; only derived qty/value/MTM is committed.
 
-## 4c. BrokerSyncEvening — daily realised F&O capture → `data/fno-ledger.json` (Windows task)
+## 4c. DailyEvening — daily realised F&O capture → `data/fno-ledger.json` (Windows task)
 
-- **Schedule:** **18:30 IST, weekdays**, `-StartWhenAvailable`, headless (no terminal,
+> **RENAMED 2026-07-11** from `BrokerSyncEvening` → `DailyEvening`, and moved 18:30 → **18:40** to
+> co-time with `CaptureIntradayUS` (18:40) so the evening mirrors the morning (DailyMorning +
+> CaptureIntradayIndia share 08:55). Rebuilt in DailyMorning's chained shape:
+> `evening.cmd` → `sync-evening.cmd`, registered by `register-evening.ps1` (retires BrokerSyncEvening).
+> No mint race at 18:40 — the US capture is token-free (keyless Yahoo).
+
+- **Schedule:** **18:40 IST, weekdays**, `-StartWhenAvailable`, headless (no terminal,
   no Claude, no Kite). Registered once via
-  [scripts/register-evening-sync.ps1](scripts/register-evening-sync.ps1).
+  [scripts/register-evening.ps1](scripts/register-evening.ps1).
 - **Why a separate evening run:** broker `get_trades` / positions / `realizedProfit`
-  reset at the next trading day's pre-open. The 06:00 morning sync is too late to
+  reset at the next trading day's pre-open. The morning sync is too late to
   see *yesterday's* intraday F&O. So this fires the **same evening** (well before the
   next-day reset) to capture today's realised before it's wiped. Holdings (which
   persist) stay on the morning run.
-- **Chain:** task → [scripts/sync-evening.cmd](scripts/sync-evening.cmd) →
+- **Chain:** task → [scripts/evening.cmd](scripts/evening.cmd) →
+  [scripts/sync-evening.cmd](scripts/sync-evening.cmd) →
   `node scripts/sync-brokers.mjs` (commits + pushes; logs to `scripts/sync-evening.log`).
 - **What it captures, per zero-touch broker (Dhan/Upstox/Fyers):**
   1. Today's fills → `data/trades-log.json` (durable tradebook, append + dedupe).
@@ -278,8 +285,8 @@ Vercel cron is in this repo), so this file is where they're written down togethe
   (unlike broker order-webhooks, which only fire for API-key-placed orders — which is why
   webhooks were ruled out). An Upstox-only laptop-off day is recovered from the Upstox
   console or trued up at ITR.
-- **Manage:** `Start-ScheduledTask -TaskName BrokerSyncEvening` to run now;
-  `Get-ScheduledTask -TaskName BrokerSyncEvening`. Log: `scripts/sync-evening.log`.
+- **Manage:** `Start-ScheduledTask -TaskName DailyEvening` to run now;
+  `Get-ScheduledTask -TaskName DailyEvening`. Log: `scripts/sync-evening.log`.
 
 ## 4d. CloudFnoCapture — Dhan S01 + Fyers S02 F&O realised, laptop-off (Claude routine, Remote)
 
@@ -297,7 +304,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
     cloud can't provide (Analytics Token investigation, tasks/todo.md). Not the active
     F&O book anyway.
   - **Kite** is delivery (no daily reset, irrelevant to F&O).
-- **Schedule:** daily **~18:45 IST**, Remote — a touch after the laptop's 18:30 so on
+- **Schedule:** daily **~18:45 IST**, Remote — a touch after the laptop's 18:40 so on
   laptop-on days the laptop commits first and the cloud is a near-no-op; on laptop-off
   days the cloud is the sole capturer.
 - **Command:** `SYNC_ONLY=dhan,fyers SYNC_NO_BROWSER=1 node scripts/sync-brokers.mjs`.

@@ -1,3 +1,7 @@
+# SUPERSEDED 2026-07-11 by scripts\register-evening.ps1 (DailyEvening, weekday 18:40, chained
+# evening.cmd shape mirroring DailyMorning). DO NOT RUN this — it would recreate the retired
+# BrokerSyncEvening (18:30). Kept for reference only.
+#
 # Registers BrokerSyncEvening — the weekday 18:30 IST headless F&O realised
 # capture. Run ONCE in PowerShell:  powershell -ExecutionPolicy Bypass -File scripts\register-evening-sync.ps1
 #

@@ -58,16 +58,16 @@ const brokersOk = !!(bs.brokers?.upstox?.ok && bs.brokers?.dhan?.ok);   // Fyers
 
 const jobs = [
   {
-    key: 'snapshot', task: 'DailyMorning',      // sync+snapshot merged into DailyMorning (07:00);
+    key: 'snapshot', task: 'DailyMorning',      // sync+snapshot merged into DailyMorning (08:55);
     skip: false,                                // re-running it re-does BOTH halves, so this one
-    due: mins >= 7 * 60 + 30,                   // check heals a whole-morning miss. Due 07:30.
-    fresh: snapLatest === today,
-    detail: snapLatest,
+    due: mins >= 9 * 60 + 30,                   // check heals a whole-morning miss. Due 09:30 —
+    fresh: snapLatest === today,                // AFTER the 08:55 start (+exec slack), else a tick
+    detail: snapLatest,                         // between 07:30 and 08:55 would re-run it early.
   },
   {
-    key: 'brokerSync', task: 'BrokerSyncEvening',
+    key: 'brokerSync', task: 'DailyEvening',    // renamed from BrokerSyncEvening (now 18:40)
     skip: !isWeekday,                          // weekend: no broker sync is expected
-    due: mins >= 18 * 60 + 40,                 // 18:40, after the evening sync
+    due: mins >= 19 * 60,                       // 19:00, after the 18:40 evening sync completes
     fresh: bsDate === today && brokersOk,
     detail: `${bsDate}${brokersOk ? '' : ' upstox/dhan!ok'}`,
   },

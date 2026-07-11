@@ -13,7 +13,7 @@ you open the app from a beach.* What's live, what's stale, what self-heals.
 | `IngestWeeklyReport` (completeness/gap report) | **LAPTOP** | Task Scheduler, Sun 10:00 |
 | `contract-parser/run.py` (the parse) | **LAPTOP** | invoked by the ingest daemon; **Python** |
 | `CaptureIntraday*` (10s realised/price tapes) | **LAPTOP** | Task Scheduler, market hours |
-| `BrokerSyncEvening` (18:30 realised ledger) | **LAPTOP** | Task Scheduler, 18:30 |
+| `DailyEvening` (18:40 realised ledger) | **LAPTOP** | Task Scheduler, 18:40 |
 | **`/api/snapshot` (growth day-change)** | **CLOUD** (Vercel cron) | `vercel.json` `30 21 * * *` (03:00 IST) — the **only** cloud cron |
 | **`/api/quotes`, `/api/mf-nav`, `/api/portfolio`** | **CLOUD** (Vercel serverless) | per request |
 

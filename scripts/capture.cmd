@@ -6,26 +6,18 @@ REM closes, so the OS task only needs to launch it on time.
 REM
 REM Args:  %1 = session name (in | us). Defaults to 'in' (India F&O + equity).
 REM
+REM Broker tokens are NOT minted here — both sessions just launch the daemon (India
+REM now mirrors US). The daemon reads whatever daily tokens are on disk and skips a
+REM broker whose token is missing/stale for that tick. The morning DailyMorning sync
+REM (sync.cmd -> sync-brokers.mjs) is the SOLE morning minter: it refreshes
+REM mcp/{dhan,upstox,fyers}/.token.json well before the 09:13 India open (it starts
+REM 08:55 alongside this task; the daemon idles until 09:13, by which time the tokens
+REM are fresh). The US session needs no broker token at all (keyless Yahoo).
+REM
 REM Logs:  scripts\capture-in.log  /  scripts\capture-us.log
 REM
 cd /d "%~dp0.."
 set SESSION=%1
 if "%SESSION%"=="" set SESSION=in
-
-REM ── Refresh broker tokens before the India F&O window ────────────────────────
-REM SEBI invalidates access tokens at the daily pre-open cycle, so a token minted
-REM the evening before is dead by morning. Mint HERE (repo-relative — can't rot like
-REM the absolute-path DhanDailyLogin/UpstoxDailyLogin tasks did after the repo moved).
-REM Non-fatal: the daemon skips any broker whose token is missing, so a mint failure
-REM degrades to one sleeve, never a crash. India session only (US has no F&O).
-set DHANPY=mcp\dhan\.venv\Scripts\python.exe
-if not exist "%DHANPY%" set DHANPY=python
-set UPSTOXPY=mcp\upstox\.venv\Scripts\python.exe
-if not exist "%UPSTOXPY%" set UPSTOXPY=python
-if /I "%SESSION%"=="in" (
-  echo [capture] %DATE% %TIME% refreshing broker tokens ^(dhan + upstox^)>> "%~dp0capture-%SESSION%.log"
-  call "%DHANPY%" mcp\dhan\mint.py >> "%~dp0capture-%SESSION%.log" 2>&1
-  call "%UPSTOXPY%" mcp\upstox\login.py >> "%~dp0capture-%SESSION%.log" 2>&1
-)
 
 node scripts\capture-daemon.mjs >> "%~dp0capture-%SESSION%.log" 2>&1

@@ -33,9 +33,9 @@ export const classify = (d, maxAgeDays, today) => d == null ? 'unknown' : (ageDa
 // weekends/holidays → 4 (covers a long weekend). ──
 export const JOB_META = [
   { id: 'vercel-snapshot',         label: '/api/snapshot · growth cron',        where: 'Vercel',       cadence: 'daily 03:00 IST',          maxAgeDays: 2, critical: true },
-  { id: 'daily-networth-snapshot', label: 'DailyNetworthSnapshot',              where: 'laptop',       cadence: 'daily 07:00 IST',          maxAgeDays: 2, critical: true },
-  { id: 'daily-broker-sync',       label: 'DailyBrokerSync · holdings',         where: 'laptop',       cadence: 'daily 06:00 IST',          maxAgeDays: 2, critical: true },
-  { id: 'fno-realised',            label: 'F&O realised · evening + cloud',     where: 'laptop+cloud', cadence: 'weekdays 18:30 IST',       maxAgeDays: 4, critical: true },
+  { id: 'daily-networth-snapshot', label: 'DailyMorning · snapshot',            where: 'laptop',       cadence: 'daily 08:55 IST',          maxAgeDays: 2, critical: true },
+  { id: 'daily-broker-sync',       label: 'DailyMorning · holdings',            where: 'laptop',       cadence: 'daily 08:55 IST',          maxAgeDays: 2, critical: true },
+  { id: 'fno-realised',            label: 'DailyEvening + cloud · F&O realised', where: 'laptop+cloud', cadence: 'weekdays 18:40 IST',       maxAgeDays: 4, critical: true },
   { id: 'capture-in-fno',          label: 'CaptureIntradayIndia · F&O tape',    where: 'laptop',       cadence: 'market days 09:13–15:32',  maxAgeDays: 4, critical: false },
   { id: 'capture-in-eq',           label: 'CaptureIntradayIndia · equity tape', where: 'laptop',       cadence: 'market days 09:13–15:32',  maxAgeDays: 4, critical: false },
   { id: 'capture-us',              label: 'CaptureIntradayUS · US tape',        where: 'laptop',       cadence: 'market days 18:45→02:30',   maxAgeDays: 4, critical: false },

@@ -65,7 +65,7 @@ $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
 
 Register-ScheduledTask -TaskName 'Supervisor' `
   -Action $action -Trigger @($base, $inWin, $usWin, $logon) -Settings $settings -Principal $principal `
-  -Description 'One self-heal task for the pipeline, in session 0 (S4U, invisible). Every 5 min DURING the India (09:10-15:35) + US (18:40-02:35) capture windows, every 2h otherwise: keeps the .mjs daemons alive (IngestDaemon / CaptureIntradayUS / CaptureIntradayIndia). Hourly: verifies the daily jobs (DailyMorning, BrokerSyncEvening) produced fresh output and re-runs a stale one. Logs: scripts\supervisor.log (+ .state heartbeat), scripts\daily-check.log (the checker log).' `
+  -Description 'One self-heal task for the pipeline, in session 0 (S4U, invisible). Every 5 min DURING the India (09:10-15:35) + US (18:40-02:35) capture windows, every 2h otherwise: keeps the .mjs daemons alive (IngestDaemon / CaptureIntradayUS / CaptureIntradayIndia). Hourly: verifies the daily jobs (DailyMorning, DailyEvening) produced fresh output and re-runs a stale one. Logs: scripts\supervisor.log (+ .state heartbeat), scripts\daily-check.log (the checker log).' `
   -Force | Out-Null
 
 Write-Host "Registered Supervisor (session 0 / S4U; 5-min in market windows, 2h otherwise + at logon)." -ForegroundColor Green

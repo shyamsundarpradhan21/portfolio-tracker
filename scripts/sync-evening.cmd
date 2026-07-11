@@ -6,8 +6,8 @@ REM before the broker APIs reset at next-day pre-open. No Claude, no Kite, no
 REM interactive terminal — just the Node engine, which commits + pushes so the
 REM deployed app rebuilds with the new realised numbers.
 REM
-REM Registered as the Windows task BrokerSyncEvening (weekday 18:30 IST) by
-REM scripts/register-evening-sync.ps1. Tokens minted that morning are still valid
-REM at 18:30; Dhan self-mints if needed.
+REM Invoked by evening.cmd, which is the Windows task DailyEvening (weekday 18:40 IST),
+REM registered by scripts/register-evening.ps1. Tokens minted that morning are still valid
+REM at 18:40; Dhan self-mints if needed.
 cd /d "%~dp0.."
 node scripts\sync-brokers.mjs >> "%~dp0sync-evening.log" 2>&1

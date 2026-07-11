@@ -1,5 +1,5 @@
 # Registers the two intraday capture-daemon Task Scheduler jobs:
-#   CaptureIntradayIndia — weekdays 09:10 IST, F&O (10s) + India equity (60s)
+#   CaptureIntradayIndia — weekdays 08:55 IST, F&O (10s) + India equity (60s)
 #                          + at-logon trigger (mid-session reboot resumes capture)
 #   CaptureIntradayUS    — weekdays 18:40 IST, US equity (60s) overnight to ~02:30
 #
@@ -8,7 +8,10 @@
 #
 # The daemon (scripts/capture-daemon.mjs) gates on the IST clock itself, so each
 # task just needs to launch on time; the daemon self-exits when its session
-# window closes. ExecutionTimeLimit is a safety net well above each window's
+# window closes. Neither session mints broker tokens (capture.cmd just launches the
+# daemon) — India launches at 08:55 alongside DailyMorning, which is the sole morning
+# minter; the daemon idles until the 09:13 open by which time the tokens are fresh on
+# disk. So the India launch time is only a warm-up; the CAPTURE window is still 09:13-15:32. ExecutionTimeLimit is a safety net well above each window's
 # real length (India ~6h, US ~8h overnight including the past-midnight tail).
 # -StartWhenAvailable means a missed launch (laptop asleep at the trigger time)
 # fires at next logon — useful before the open, harmless once the window has
@@ -71,9 +74,11 @@ function Register-CaptureTask {
 
 # India limit is 16h (not window+slack): a logon-resumed instance can start as early as a
 # midnight logon and must survive to the 15:32 close; the limit is only a hung-zombie backstop.
+# Launch 08:55 (was 09:10) — just before the open, alongside DailyMorning; the daemon idles until
+# its 09:13 market gate opens (capture window unchanged), so the earlier launch is only a warm-up.
 Register-CaptureTask -TaskName 'CaptureIntradayIndia' -SessionArg 'in' `
-  -TriggerAt 9:10AM -LimitHours 16 -ResumeAtLogon `
-  -Description 'Intraday capture daemon — India session (09:13-15:32 IST). F&O P&L (10s) + India equity day-change (60s). Publishes to KV intraday:<date> + intraday:eq:<date>; commits archives once at close. Also relaunches at logon so a mid-session reboot resumes capture.'
+  -TriggerAt 8:55AM -LimitHours 16 -ResumeAtLogon `
+  -Description 'Intraday capture daemon — India session (launch 08:55; captures 09:13-15:32 IST). F&O P&L (10s) + India equity day-change (60s). Publishes to KV intraday:<date> + intraday:eq:<date>; commits archives once at close. No token mint (DailyMorning owns it). Also relaunches at logon so a mid-session reboot resumes capture.'
 
 Register-CaptureTask -TaskName 'CaptureIntradayUS' -SessionArg 'us' `
   -TriggerAt 6:40PM -LimitHours 10 `

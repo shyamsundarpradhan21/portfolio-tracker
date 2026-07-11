@@ -1,3 +1,64 @@
+# Plan — retime morning to 08:55 + symmetric DailyEvening — 2026-07-11
+
+## Requested
+Shift `DailyMorning` 07:00 → 08:55; make `CaptureIntradayIndia` launch at 08:55 and "start like
+intraday US" (no inline token mint); "build a daily evening just like daily morning".
+
+## Decisions (from the user)
+- Both morning tasks at **08:55** exactly; **drop `capture.cmd`'s own Dhan+Upstox mint** — mint is
+  now owned solely by `DailyMorning`'s sync. Safe because the daemon idles until the 09:13 open, so
+  the sync (starting 08:55, done in a few min) has refreshed the token files on disk first.
+- India intraday "starts like US" = wrapper just launches the daemon; no mint step.
+- New `DailyEvening` built like `DailyMorning` (chained `.cmd` + `register-*.ps1`), replacing
+  `BrokerSyncEvening`. **Timing: 18:40 weekdays** — co-timed with `CaptureIntradayUS` (18:40) so the
+  evening mirrors the morning (both morning tasks share 08:55). No mint race: US capture is
+  token-free (keyless Yahoo), so the two fire together cleanly.
+
+## Correctness linchpin (verified)
+`capture-daemon.mjs` → `lib/brokers.mjs` reads `mcp/{dhan,upstox,fyers}/.token.json`. `DailyMorning`'s
+`sync-brokers.mjs` refreshes exactly those: `dhanToken()` self-mints + writes Dhan (line 121-122);
+Upstox mint-on-demand runs `login.py`; Fyers from `FyersDailyLogin` (08:15). Cold late-logon: capture
+skips a broker for a tick or two until the sync finishes, then self-heals — the accepted coupling.
+
+## Steps
+- [x] `register-morning.ps1`: 7:00AM → 8:55AM (+ comments/desc)
+- [x] `register-capture-daemons.ps1`: India trigger 9:10AM → 8:55AM (+ comments/desc)
+- [x] `capture.cmd`: remove the India token-mint block → both sessions just launch the daemon
+- [x] `scripts/evening.cmd`: new thin chainer → `sync-evening.cmd`
+- [x] `scripts/register-evening.ps1`: register `DailyEvening` (weekday 18:40), retire `BrokerSyncEvening`
+- [x] `daily-check.mjs`: heal target BrokerSyncEvening→DailyEvening; snapshot `due` 07:30→09:30 (past the 08:55 start); brokerSync `due`→19:00
+- [x] `SCHEDULE.md` + `realised-design.md` + `resilience-benchmark.md` + legacy script banners: BrokerSyncEvening→DailyEvening + times
+- [x] `scripts/lib/scheduleHealth.mjs`: JOB_META labels + cadence (morning → 08:55, evening → 18:40)
+- [x] Apply live: DailyMorning → 08:55 (Set-ScheduledTask); DailyEvening registered + BrokerSyncEvening retired
+- [!] CaptureIntradayIndia live retiming BLOCKED — LogonType Password rejects modification without the
+      stored Windows pw (same elevation constraint as the session-0 move). USER must run the updated
+      `register-capture-daemons.ps1` (elevated; re-prompts for the pw) to move it 09:10 → 08:55.
+- [x] Verify: schedule-health 7 ok · 0 stale; daily-check dry-run clean; DailyMorning/DailyEvening triggers confirmed
+- [x] Commit
+
+## Review
+Retimed the morning cluster to 08:55 and built a symmetric `DailyEvening`, mirroring `DailyMorning`.
+
+- **`DailyMorning` 07:00 → 08:55** (live, applied via `Set-ScheduledTask`). It is now the SOLE morning
+  token minter.
+- **`CaptureIntradayIndia` "starts like US"**: stripped the Dhan+Upstox mint out of `capture.cmd` so
+  both sessions just launch the daemon. Safe because the daemon idles until the 09:13 open, by which
+  time `DailyMorning`'s sync (08:55) has refreshed `mcp/{dhan,upstox,fyers}/.token.json` — the exact
+  files `lib/brokers.mjs` reads. Cold late-logon self-heals (skip a broker a tick or two). The task
+  trigger move to 08:55 is edited in the source-of-truth register script but its LIVE apply is blocked
+  on the stored password (see above) — until the user re-runs the register script it launches at 09:10,
+  which is harmless (daemon idles to 09:13 either way; only the warm-up differs).
+- **`DailyEvening` 18:40 weekdays** (live), replacing `BrokerSyncEvening`. Co-timed with
+  `CaptureIntradayUS` (18:40) so evening mirrors morning; NO mint race because US capture is token-free.
+  `evening.cmd` → `sync-evening.cmd`, `register-evening.ps1` (retires BrokerSyncEvening).
+- **Follow-on correctness fix**: `daily-check.mjs` snapshot `due` moved 07:30 → 09:30 — otherwise a
+  self-heal tick between 07:30 and 08:55 would re-run `DailyMorning` early and defeat the retiming; and
+  its evening heal target renamed to `DailyEvening`.
+- Verified: `schedule-health.mjs` 7 ok · 0 stale (new labels/cadences), `daily-check` dry-run clean,
+  live triggers confirmed (DailyMorning daily 08:55; DailyEvening weekly Mon–Fri 18:40).
+
+---
+
 # Plan — session-0 the background scheduler tasks (kill the every-5-min flicker) + window-aware Supervisor — 2026-07-11
 
 ## Context

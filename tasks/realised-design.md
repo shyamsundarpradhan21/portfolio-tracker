@@ -8,11 +8,11 @@ to the realised-P&L *flow* instead of the composition *snapshot*.
 - **F&O realised *value* = broker sync.** `sync-brokers.mjs` reads broker positions
   `realizedProfit` / `realised` / `realized_profit` (`brokers.mjs:106/130/154`) → writes
   `grossRealised` into `data/fno-ledger.json` (+ `broker-state.positions.realized`). Cadence:
-  **BrokerSyncEvening, weekday 18:30 IST**. 18:30 because the broker resets `realisedProfit` the
-  next day — 18:30 captures today's before the reset.
+  **DailyEvening, weekday 18:40 IST** (renamed from BrokerSyncEvening 18:30 on 2026-07-11). Evening
+  because the broker resets `realisedProfit` the next day — it captures today's before the reset.
 - **App reads the DAILY ledger** (not live): `deriveFY` / `pnlDaily.js` / `fnoLedger.js` sum
-  `grossRealised`; `fnoLive().realisedToday` (`brokerState.js:49`) reads the 18:30
-  `broker-state.json` snapshot. → the realised figure updates **once/day at 18:30**.
+  `grossRealised`; `fnoLive().realisedToday` (`brokerState.js:49`) reads the evening
+  `broker-state.json` snapshot. → the realised figure updates **once/day at 18:40**.
 - **NOT gmail-gated.** `applyFnoOverlay` (`fnoOverlay.js:13`) overrides only
   `estCharges`→`realCharge` and recomputes `net = grossRealised − realCharge`. **`grossRealised`
   is never touched by a note** — realised value never waits on gmail.
@@ -51,7 +51,7 @@ a small fraction of gross, so **net realised is ~99%+ accurate instantly**.
 | **Durable — book of record** | 18:30 `fno-ledger.json` `grossRealised` | **laptop** (see confirmation ↓) |
 
 ### CONFIRMATION — is the durable anchor laptop-independent? **No.**
-BrokerSyncEvening (18:30) is a **Windows Task Scheduler job on the laptop**, *not* a cloud cron.
+DailyEvening (18:40) is a **Windows Task Scheduler job on the laptop**, *not* a cloud cron.
 F&O realised **cannot** trivially move to a Vercel cron: the broker poll needs the auth tokens in
 `mcp/*/.token.json`, minted by interactive laptop logins and kept **laptop-local by design**. The
 `/api/snapshot` cloud cron explicitly **excludes F&O** for exactly this reason ("business income —
