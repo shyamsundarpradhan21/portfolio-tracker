@@ -1,3 +1,60 @@
+# Plan — note→realised F&O derivation (laptop-independent realised) — 2026-07-11
+
+## Why
+The `fno-ledger` realised (`grossRealised`) is sourced from the broker's daily `realizedProfit`
+(evening capture), which the broker WIPES at next pre-open. Laptop off ⇒ that evening capture
+never runs ⇒ that day's broker-sourced realised is gone. But every trade's CONTRACT NOTE sits
+permanently in Gmail → parsed into `ledger:cn:*`. Charges already reconstruct from notes
+(`ledger:fno:overlay`); realised did NOT — it was deferred (needed cross-note FIFO). This builds it.
+
+## Feasibility (verified against real KV, 2026-07-11)
+830 notes / 756 self / 677 F&O / 7,286 F&O fills (2023→2026). ~81% of fills have a COMPLETE,
+stable contract key after `normContractKey` (e.g. `OPTSTKHDFCLIFE28MAR24620.00CE`,
+`FUTSTKASHOKLEYLND26JUN25`). The same contract → same key across notes, so cross-note FIFO keys on
+the normalized instrument string — NO underlying/expiry parsing. The truncation the todo warned of
+is real but a minority (Dhan/older layouts split one fill across rows: `OPTSTK SHRIRAMFIN` + `105 CE`)
+→ detect via `isCompleteContract`, flag the note, exclude from FIFO (surfaces as residual open lots).
+
+## Design (DORMANT artifact — matches the charge-overlay pattern; nothing live reads it yet)
+- `scripts/lib/fnoFifo.mjs` — pure per-contract FIFO: books realised on each close at the ORIGINAL
+  entry price (identical algo to `backfill-fno-realised.mjs`, which is broker-trades-sourced). Plus
+  `normContractKey` + `isCompleteContract`. Unit-tested.
+- `scripts/derive-fno-realised.mjs` — reads `ledger:cn:*` (self, F&O), keys+sorts fills per broker,
+  runs the FIFO, aggregates realised per (date,broker). Reconciles per-FY×broker vs `fno-ledger`
+  grossRealised; reports fragmented notes + residual open lots (incompleteness). DRY by default;
+  `--write` → `data/fno-realised-notes.json` (gitignored mirror) + KV `ledger:fno:realised`.
+
+## Steps
+- [x] `scripts/lib/fnoFifo.mjs` (FIFO + key helpers)
+- [x] `scripts/lib/fnoFifo.test.mjs` — 10/10 green (carried long/short, partial-FIFO order, same-day,
+      residual lots, distinct contracts, rounding + normContractKey + isCompleteContract)
+- [x] `scripts/derive-fno-realised.mjs` (note-sourced FIFO + reconciliation, dry-run/--write)
+- [x] Verify: dry-run reconciled vs broker `fno-ledger` — FY26-27 Dhan Δ **−₹114 on ₹3.2L** (0.04%),
+      FY24-25 Fyers Δ **₹0**; incompleteness surfaced (residual lots per broker; 125 fragmented notes)
+- [x] Persisted dormant artifact: KV `ledger:fno:realised` + gitignored `data/fno-realised-notes.json`
+- [x] Updated the schedule-resilience artifact (realised now note-derivable)
+- [x] Commit
+- [ ] HELD (gated, NOT in this pass): wire note-realised into the live app / eod-book (changes
+      displayed financials → needs the value-recheck sign-off, per CLAUDE.md ledger-edit rule).
+- [ ] Follow-up (separate): reassemble the 125 fragmented Dhan-2024 / Upstox-2025 split-row notes at
+      the PARSER level (engine.py) so their fills carry a complete key — recovers the excluded history.
+
+## Review
+Built the note→realised derivation, dormant and verified. Three pieces:
+- `scripts/lib/fnoFifo.mjs` — the per-contract FIFO factored out of `backfill-fno-realised.mjs` (which
+  runs it over the Dhan trade-history); books realised on each close at the ORIGINAL entry price, plus
+  `normContractKey` / `isCompleteContract`. Source-agnostic + unit-tested (10/10).
+- `scripts/derive-fno-realised.mjs` — feeds the durable contract-note fills (`ledger:cn:*`, self, F&O)
+  through that engine and reconciles per FY×broker against the committed broker-sourced ledger.
+- Verified against REAL KV (830 notes / 677 F&O / 5,437 FIFO fills): on the current-format year the
+  note reconstruction reproduces the broker to **−₹114 on ₹3.2L** and FY24-25 Fyers to **₹0** — proving
+  the notes independently recover realised. Where the note history is incomplete (Fyers/Upstox residual
+  lots) or the layout is split (125 fragmented Dhan-2024/Upstox-2025 notes) it FLAGS rather than fudges.
+Kept DORMANT (KV `ledger:fno:realised` + gitignored mirror; nothing live reads it) — the resilience
+gap is closed at the derivation level; wiring displayed realised is the value-recheck-gated follow-on.
+
+---
+
 # Plan — retime morning to 08:55 + symmetric DailyEvening — 2026-07-11
 
 ## Requested
