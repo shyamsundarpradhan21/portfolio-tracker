@@ -1,6 +1,6 @@
 {
   "note": "Intraday US-equity day-change tape in INR (Σ qty×(price−prevClose)×USD/INR). Written by SESSION=us scripts/capture-daemon.mjs during US hours (overnight IST) via keyless Yahoo. Non-personal aggregate; safe to commit.",
-  "updatedAt": "2026-07-11T02:30:14+05:30",
+  "updatedAt": "2026-07-14T02:30:06+05:30",
   "days": {
     "2026-06-24": [
       {
@@ -63493,6 +63493,68 @@
       {
         "t": "02:30",
         "net": -1835.08,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      }
+    ],
+    "2026-07-13": [
+      {
+        "t": "02:27",
+        "net": -6625.31,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "02:28",
+        "net": -6625.31,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "02:29",
+        "net": -6625.31,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "02:30",
+        "net": -6625.31,
         "realised": null,
         "mtm": null,
         "dhan": null,
