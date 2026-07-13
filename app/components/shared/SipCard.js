@@ -20,11 +20,13 @@ import { smoothPath } from '../../lib/smoothPath';
 // are planned. Clicking a month shows its composition; the FY chip shows the
 // year's aggregate.
 
-// Fixed per-stream palette from the base tokens — deliberately NOT --acc
-// (changes per tab) and NOT --grn (means profit everywhere else).
-// Each stream wears its own tab's accent: MF violet, IND sapphire, US cyan,
-// FD gold — uniform with the rest of the dashboard.
-const STREAM_COLORS = { MF: 'var(--pur)', US: 'var(--cyn)', IND: 'var(--blu)', FD: 'var(--gld)', CMPF: 'var(--grn)' };
+// Per-stream palette resolved through the canonical --tab-* sleeve tokens — the SAME
+// source of truth the rest of the app uses (cf. PortfolioLiveCurve), so each stream
+// wears its REAL tab accent and auto-tracks any future accent reshuffle. NOT --acc
+// (that's only the CURRENT tab's accent, a single colour); each sleeve needs its own
+// identity colour. CMPF is overridden to CMPF_HATCH at render (pension: hatched, last),
+// so its entry here is inert.
+const STREAM_COLORS = { MF: 'var(--tab-mf)', US: 'var(--tab-us)', IND: 'var(--tab-indian)', FD: 'var(--tab-fd)', CMPF: 'var(--grn)' };
 
 // Lazy lookups — built on first access (post-hydration), since PAYSLIPS /
 // CMPF_CONTRIBUTIONS are empty at module-eval now that data hydrates at runtime.
