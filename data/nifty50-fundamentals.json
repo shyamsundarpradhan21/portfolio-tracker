@@ -1,0 +1,203 @@
+{
+  "note": "Slow-moving Nifty-50 fundamentals (shares-outstanding + name) for the heatmap deep-dive. Seeded via scripts/seed-nifty-fundamentals.mjs (Yahoo quoteSummary, crumb-gated → laptop-only). Market cap is computed LIVE at runtime = price × sharesOut; re-seed on reconstitution/buybacks.",
+  "asOf": "2026-07-13",
+  "source": "Yahoo quoteSummary defaultKeyStatistics (sharesOutstanding)",
+  "stocks": {
+    "RELIANCE": {
+      "sharesOut": 13532472634,
+      "name": "Reliance Industries Limited"
+    },
+    "HDFCBANK": {
+      "sharesOut": 15401207156,
+      "name": "HDFC Bank Limited"
+    },
+    "ICICIBANK": {
+      "sharesOut": 7173031233,
+      "name": "ICICI Bank Limited"
+    },
+    "INFY": {
+      "sharesOut": 4048927919,
+      "name": "Infosys Limited"
+    },
+    "TCS": {
+      "sharesOut": 3618087518,
+      "name": "Tata Consultancy Services Limited"
+    },
+    "ITC": {
+      "sharesOut": 12529468231,
+      "name": "ITC Limited"
+    },
+    "LT": {
+      "sharesOut": 1375729178,
+      "name": "Larsen & Toubro Limited"
+    },
+    "BHARTIARTL": {
+      "sharesOut": 6237547426,
+      "name": "Bharti Airtel Limited"
+    },
+    "SBIN": {
+      "sharesOut": 9230617586,
+      "name": "State Bank of India"
+    },
+    "AXISBANK": {
+      "sharesOut": 3110915678,
+      "name": "Axis Bank Limited"
+    },
+    "KOTAKBANK": {
+      "sharesOut": 9946464950,
+      "name": "Kotak Mahindra Bank Limited"
+    },
+    "HINDUNILVR": {
+      "sharesOut": 2349591262,
+      "name": "Hindustan Unilever Limited"
+    },
+    "BAJFINANCE": {
+      "sharesOut": 6217876336,
+      "name": "Bajaj Finance Limited"
+    },
+    "HCLTECH": {
+      "sharesOut": 2705766714,
+      "name": "HCL Technologies Limited"
+    },
+    "MARUTI": {
+      "sharesOut": 314402574,
+      "name": "Maruti Suzuki India Limited"
+    },
+    "SUNPHARMA": {
+      "sharesOut": 2399334970,
+      "name": "Sun Pharmaceutical Industries Limited"
+    },
+    "M&M": {
+      "sharesOut": 1200762264,
+      "name": "Mahindra & Mahindra Limited"
+    },
+    "NTPC": {
+      "sharesOut": 9696666134,
+      "name": "NTPC Limited"
+    },
+    "TITAN": {
+      "sharesOut": 887045260,
+      "name": "Titan Company Limited"
+    },
+    "ULTRACEMCO": {
+      "sharesOut": 294169635,
+      "name": "UltraTech Cement Limited"
+    },
+    "ASIANPAINT": {
+      "sharesOut": 958644295,
+      "name": "Asian Paints Limited"
+    },
+    "POWERGRID": {
+      "sharesOut": 9300603819,
+      "name": "Power Grid Corporation of India Limited"
+    },
+    "ADANIENT": {
+      "sharesOut": 1352949234,
+      "name": "Adani Enterprises Limited"
+    },
+    "ADANIPORTS": {
+      "sharesOut": 2303959098,
+      "name": "Adani Ports and Special Economic Zone Limited"
+    },
+    "WIPRO": {
+      "sharesOut": 9891978167,
+      "name": "Wipro Limited"
+    },
+    "ONGC": {
+      "sharesOut": 12580279206,
+      "name": "Oil and Natural Gas Corporation Limited"
+    },
+    "COALINDIA": {
+      "sharesOut": 6162728327,
+      "name": "Coal India Limited"
+    },
+    "NESTLEIND": {
+      "sharesOut": 1928314320,
+      "name": "Nestlé India Limited"
+    },
+    "JSWSTEEL": {
+      "sharesOut": 2440826972,
+      "name": "JSW Steel Limited"
+    },
+    "TATASTEEL": {
+      "sharesOut": 12471847611,
+      "name": "Tata Steel Limited"
+    },
+    "BAJAJFINSV": {
+      "sharesOut": 1598733368,
+      "name": "Bajaj Finserv Ltd."
+    },
+    "GRASIM": {
+      "sharesOut": 678114605,
+      "name": "Grasim Industries Limited"
+    },
+    "TECHM": {
+      "sharesOut": 885822329,
+      "name": "Tech Mahindra Limited"
+    },
+    "HINDALCO": {
+      "sharesOut": 2219837078,
+      "name": "Hindalco Industries Limited"
+    },
+    "CIPLA": {
+      "sharesOut": 807845316,
+      "name": "Cipla Limited"
+    },
+    "DRREDDY": {
+      "sharesOut": 832710225,
+      "name": "Dr. Reddy's Laboratories Limited"
+    },
+    "BRITANNIA": {
+      "sharesOut": 240868296,
+      "name": "Britannia Industries Limited"
+    },
+    "EICHERMOT": {
+      "sharesOut": 274497530,
+      "name": "Eicher Motors Limited"
+    },
+    "APOLLOHOSP": {
+      "sharesOut": 143784657,
+      "name": "Apollo Hospitals Enterprise Limited"
+    },
+    "BPCL": {
+      "sharesOut": 4272584874,
+      "name": "Bharat Petroleum Corporation Limited"
+    },
+    "HEROMOTOCO": {
+      "sharesOut": 200092938,
+      "name": "Hero MotoCorp Limited"
+    },
+    "INDUSINDBK": {
+      "sharesOut": 779132752,
+      "name": "IndusInd Bank Limited"
+    },
+    "BAJAJ-AUTO": {
+      "sharesOut": 279271733,
+      "name": "Bajaj Auto Limited"
+    },
+    "TATACONSUM": {
+      "sharesOut": 989651958,
+      "name": "Tata Consumer Products Limited"
+    },
+    "SBILIFE": {
+      "sharesOut": 1003261050,
+      "name": "SBI Life Insurance Company Limited"
+    },
+    "HDFCLIFE": {
+      "sharesOut": 2171935147,
+      "name": "HDFC Life Insurance Company Limited"
+    },
+    "SHRIRAMFIN": {
+      "sharesOut": 2352948439,
+      "name": "Shriram Finance Limited"
+    },
+    "TRENT": {
+      "sharesOut": 533232301,
+      "name": "Trent Limited"
+    },
+    "JIOFIN": {
+      "sharesOut": 6603141623,
+      "name": "Jio Financial Services Limited"
+    }
+  }
+}

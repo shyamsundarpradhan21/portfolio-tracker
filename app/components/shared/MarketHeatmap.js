@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HEATMAP_META as NIFTY_META, HEATMAP_FALLBACK as NIFTY_FALLBACK } from '../../../data/nifty50-heatmap';
+import FUND from '../../../data/nifty50-fundamentals.json';
 
 const CANVAS_H = 452;
 
@@ -62,6 +63,32 @@ function tileBg(pct) {
   return `color-mix(in srgb, ${col} ${op}%, transparent)`;
 }
 const pctTxt = (p) => (p == null || !isFinite(p) ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(2)}%`);
+
+// ── hover/deep-dive helpers ──
+const clr = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
+const money = (n) => (n == null || !isFinite(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }));
+// Live market cap (₹ from shares×price) → compact crore. Yahoo won't give mcap keyless,
+// so shares-outstanding is committed (data/nifty50-fundamentals.json) and price is live.
+const crTxt = (rupees) => {
+  if (rupees == null || !isFinite(rupees)) return '—';
+  const cr = rupees / 1e7; // ₹ → crore
+  if (cr >= 1e5) return '₹' + (cr / 1e5).toFixed(2) + 'L Cr';
+  if (cr >= 1e3) return '₹' + (cr / 1e3).toFixed(2) + 'K Cr';
+  return '₹' + Math.round(cr).toLocaleString('en-IN') + ' Cr';
+};
+const MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dmy = (iso) => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${+d} ${MON3[+m - 1]} '${y.slice(2)}`; };
+const fundOf = (sym) => FUND.stocks?.[sym];
+const mcapOf = (s) => { const f = fundOf(s.sym); return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
+
+// Ticker logo — committed SVG at /logos/<SYM>.svg when present, else a monogram badge.
+function Logo({ sym, size = 30 }) {
+  const [broken, setBroken] = useState(false);
+  const r = Math.round(size * 0.27);
+  if (broken) return <span className="nhx-logo-badge" style={{ width: size, height: size, borderRadius: r, fontSize: Math.round(size * 0.42) }}>{sym.slice(0, 1)}</span>;
+  return <img src={`/logos/${sym}.svg`} alt="" width={size} height={size} onError={() => setBroken(true)}
+    style={{ borderRadius: r, objectFit: 'contain', background: '#fff', flexShrink: 0, display: 'block' }} />;
+}
 
 // Build sector → industry → stock tree from enriched rows. Single-industry
 // sectors are flattened (no redundant sub-header), matching the mock.
@@ -138,12 +165,28 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
   const tree = useMemo(() => {
     const rows = (stocks || [])
       .filter((s) => s && s.sym && s.pct != null && isFinite(s.pct))
-      .map((s) => { const m = meta[s.sym] || fallback; return { sym: s.sym, name: s.name || s.sym, pct: s.pct, ...m }; });
+      .map((s) => { const m = meta[s.sym] || fallback; return { sym: s.sym, name: s.name || s.sym, pct: s.pct, price: s.price ?? null, ...m }; });
     return buildTree(rows);
   }, [stocks, meta, fallback]);
 
   // If a drilled sector vanishes from a later feed, fall back to the overview.
   useEffect(() => { if (drill && !tree.some((s) => s.name === drill)) setDrill(null); }, [drill, tree]);
+
+  // Deep-dive detail (perf / 52-wk / dividends) — lazy, CDN-cached daily server-side.
+  const [detail, setDetail] = useState(null);
+  useEffect(() => {
+    let on = true;
+    fetch('/api/nifty50-detail').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setDetail(j.stocks || {}); }).catch(() => {});
+    return () => { on = false; };
+  }, []);
+  const [hov, setHov] = useState(null); // { s, x, y } — hovered tile + cursor (viewport coords)
+  const [sel, setSel] = useState(null); // selected stock → deep-dive panel
+  useEffect(() => { // Esc closes the deep-dive
+    if (!sel) return;
+    const onKey = (e) => { if (e.key === 'Escape') setSel(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sel]);
 
   const H = CANVAS_H;
   const { boxes, tiles } = useMemo(() => (w > 10 && tree.length ? layout(tree, drill, w, H) : { boxes: [], tiles: [] }), [tree, drill, w, H]);
@@ -204,8 +247,13 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
           const showTk = r.w > 26 && r.h > 16, showPc = r.h > 30 && r.w > 40;
           const tkSize = t.big ? Math.max(9, Math.min(15, r.w / 6.5)) : Math.max(8, Math.min(11.5, r.w / 4.5));
           return (
-            <div key={'t:' + s.sym} style={{ position: 'absolute', boxSizing: 'border-box', left: pxpc(r.x, w), top: pxpc(r.y, H), width: pxpc(r.w, w), height: pxpc(r.h, H), padding: 1 }}>
-              <div title={`${s.name} · ${s.industry} · ${pctTxt(s.pct)} · ${s.cap.toFixed(1)}% wt`}
+            <div key={'t:' + s.sym}
+              onMouseEnter={(e) => setHov({ s, x: e.clientX, y: e.clientY })}
+              onMouseMove={(e) => setHov({ s, x: e.clientX, y: e.clientY })}
+              onMouseLeave={() => setHov((h) => (h && h.s.sym === s.sym ? null : h))}
+              onClick={() => { setSel(s); setHov(null); }}
+              style={{ position: 'absolute', boxSizing: 'border-box', left: pxpc(r.x, w), top: pxpc(r.y, H), width: pxpc(r.w, w), height: pxpc(r.h, H), padding: 1, cursor: 'pointer' }}>
+              <div
                 style={{
                   width: '100%', height: '100%', borderRadius: 2, overflow: 'hidden',
                   display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
@@ -224,6 +272,71 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
           );
         })}
       </div>
+
+      {hov && !sel && (() => {
+        const s = hov.s;
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        return (
+          <div className="nhx-hov" style={{ left: Math.min(hov.x + 16, vw - 224), top: Math.min(hov.y + 16, vh - 118) }}>
+            <div className="nhx-hov-top">
+              <Logo sym={s.sym} size={26} />
+              <b className="mono">{s.sym}</b>
+              <div className="nhx-hov-px">
+                <span className="mono">{money(s.price)}</span>
+                <em className={'mono ' + clr(s.pct)}>{pctTxt(s.pct)}</em>
+              </div>
+            </div>
+            <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{crTxt(mcapOf(s))}</b></div>
+            <div className="nhx-hov-hint">click for details</div>
+          </div>
+        );
+      })()}
+
+      {sel && (() => {
+        const s = sel, d = detail?.[s.sym];
+        const dy = d?.ttmDiv && s.price ? (d.ttmDiv / s.price) * 100 : null;
+        const p = d?.perf || {};
+        const P = [['1W', p.w1], ['1M', p.m1], ['3M', p.m3], ['6M', p.m6], ['YTD', p.ytd], ['1Y', p.y1]];
+        return (
+          <div className="nhx-dd-ov" onClick={() => setSel(null)}>
+            <div className="nhx-dd" onClick={(e) => e.stopPropagation()}>
+              <button className="nhx-dd-x" onClick={() => setSel(null)} aria-label="Close">×</button>
+              <div className="nhx-dd-hd">
+                <Logo sym={s.sym} size={40} />
+                <div className="nhx-dd-id">
+                  <div className="nhx-dd-tk mono">{s.sym}</div>
+                  <div className="nhx-dd-nm">{fundOf(s.sym)?.name || s.name} · {s.sector} · {s.industry}</div>
+                </div>
+                <div className="nhx-dd-px">
+                  <div className="nhx-dd-cmp mono">{money(s.price)}</div>
+                  <div className={'nhx-dd-1d mono ' + clr(s.pct)}>{pctTxt(s.pct)}</div>
+                </div>
+              </div>
+              <div className="nhx-dd-stats">
+                <div><div className="nhx-k">Mkt Cap</div><div className="nhx-v mono">{crTxt(mcapOf(s))}</div></div>
+                <div><div className="nhx-k">Div Yield</div><div className="nhx-v mono">{dy != null ? dy.toFixed(2) + '%' : '—'}</div></div>
+                <div><div className="nhx-k">Last Div</div><div className="nhx-v mono">{d?.lastDivAmt != null ? money(d.lastDivAmt) + ' · ' + dmy(d.lastDivDate) : '—'}</div></div>
+                <div><div className="nhx-k">52-wk High</div><div className="nhx-v mono">{money(d?.hi52)}</div></div>
+                <div><div className="nhx-k">52-wk Low</div><div className="nhx-v mono">{money(d?.lo52)}</div></div>
+                <div><div className="nhx-k">Idx Weight</div><div className="nhx-v mono">{s.cap != null ? s.cap.toFixed(1) + '%' : '—'}</div></div>
+              </div>
+              <div className="nhx-dd-perf">
+                <div className="nhx-k" style={{ marginBottom: 8 }}>Performance{!detail && ' · loading…'}</div>
+                <div className="nhx-perf-row">
+                  {P.map(([k, v]) => (
+                    <div key={k} className={'nhx-perf-cell ' + (v == null ? '' : v >= 0 ? 'up' : 'dn')}>
+                      <div className="nhx-pk">{k}</div>
+                      <div className={'nhx-pv mono ' + clr(v)}>{v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'}</div>
+                      <div className="nhx-bar" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', flexWrap: 'wrap' }}>
         <span>size = market-cap weight</span>

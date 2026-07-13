@@ -794,6 +794,47 @@ body::before {
 .nhx-pill b { color: var(--txt2); font-weight: 700; }
 .nhx-back { color: var(--acc); cursor: pointer; }
 .nhx-back:hover { text-decoration: underline; }
+/* ── heatmap hover tooltip + click deep-dive (MarketHeatmap) ─────────────────── */
+.nhx-logo-badge { display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono);
+  font-weight: 800; color: #fff; background: linear-gradient(135deg, color-mix(in srgb, var(--acc) 82%, #000), var(--acc)); }
+.nhx-hov { position: fixed; z-index: 60; width: 208px; pointer-events: none;
+  background: color-mix(in srgb, var(--txt2) 8%, var(--bg)); border: .5px solid var(--brd); border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.42); backdrop-filter: blur(12px); padding: 10px 11px; }
+.nhx-hov-top { display: flex; align-items: center; gap: 8px; }
+.nhx-hov-top > b { font-size: var(--fs-sm); }
+.nhx-hov-px { margin-left: auto; text-align: right; line-height: 1.25; }
+.nhx-hov-px span { font-weight: 700; font-size: var(--fs-xs); display: block; }
+.nhx-hov-px em { font-style: normal; font-size: var(--fs-2xs); }
+.nhx-hov-mc { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; padding-top: 8px; border-top: .5px solid var(--brd2); }
+.nhx-hov-mc span { color: var(--txt3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: 9.5px; }
+.nhx-hov-mc b { font-size: var(--fs-xs); font-weight: 600; }
+.nhx-hov-hint { margin-top: 8px; font-size: 9.5px; color: var(--txt3); text-align: center; letter-spacing: .03em; }
+.nhx-dd-ov { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.42); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; padding: 20px; }
+.nhx-dd { position: relative; width: 340px; max-width: 100%; background: color-mix(in srgb, var(--txt2) 8%, var(--bg));
+  border: .5px solid var(--brd); border-radius: 14px; box-shadow: 0 18px 44px rgba(0,0,0,.5); overflow: hidden; }
+.nhx-dd-x { position: absolute; top: 8px; right: 9px; z-index: 2; width: 24px; height: 24px; border-radius: 6px; border: 0;
+  background: transparent; color: var(--txt3); font-size: 19px; line-height: 1; cursor: pointer; }
+.nhx-dd-x:hover { color: var(--txt); background: var(--sur2); }
+.nhx-dd-hd { display: flex; align-items: center; gap: 11px; padding: 14px 15px 12px; }
+.nhx-dd-id { flex: 1; min-width: 0; }
+.nhx-dd-tk { font-weight: 800; font-size: var(--fs-lg); letter-spacing: .01em; }
+.nhx-dd-nm { font-size: var(--fs-2xs); color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.nhx-dd-px { text-align: right; flex-shrink: 0; padding-right: 22px; }
+.nhx-dd-cmp { font-weight: 800; font-size: var(--fs-xl); }
+.nhx-dd-1d { font-size: var(--fs-xs); margin-top: 1px; }
+.nhx-dd-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--brd2); border-top: .5px solid var(--brd); border-bottom: .5px solid var(--brd); }
+.nhx-dd-stats > div { background: color-mix(in srgb, var(--txt2) 8%, var(--bg)); padding: 9px 11px; }
+.nhx-k { font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
+.nhx-v { font-size: var(--fs-xs); font-weight: 600; margin-top: 3px; color: var(--txt); }
+.nhx-dd-perf { padding: 11px 12px 13px; }
+.nhx-perf-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.nhx-perf-cell { text-align: center; }
+.nhx-pk { font-size: 9px; color: var(--txt3); font-weight: 600; }
+.nhx-pv { font-size: 11.5px; font-weight: 600; margin-top: 3px; }
+.nhx-bar { height: 2px; border-radius: 2px; margin-top: 5px; background: var(--brd); }
+.nhx-perf-cell.up .nhx-bar { background: var(--grn); }
+.nhx-perf-cell.dn .nhx-bar { background: var(--red); }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
 .gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); margin-top: 4px; }
 .gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }
