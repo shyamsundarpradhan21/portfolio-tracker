@@ -9,7 +9,7 @@
 // Direction is colour-only (no +/− glyph), per repo rule.
 import { useMemo, useState } from 'react';
 import { APP } from '../../lib/appData';
-import { cl, SInrF, SInrC, numC } from '../../lib/fmt';
+import { cl, SInrF, SInrC, sFull } from '../../lib/fmt';
 import { fyOf } from '../../lib/pnlDaily';
 
 // Per-FY (and per-broker-within-FY) realised aggregation: gross, charges (real contract-note
@@ -110,7 +110,7 @@ function FnoRealisedPanel({ rows }) {
           const up = f.net >= 0;
           const cls = 'rz-col' + (sel === i ? ' sel' : '') + (sel != null && sel !== i ? ' dim' : '');
           return (
-            <div key={f.fy} className={cls} title={`${f.fy} · net ${f.net >= 0 ? '' : '−'}₹${Math.abs(Math.round(f.net)).toLocaleString('en-IN')}`}
+            <div key={f.fy} className={cls} title={`${f.fy} · net ${f.net >= 0 ? '' : '−'}${sFull(f.net)}`}
               onClick={() => setSel(sel === i ? null : i)}>
               <div className="rz-half t"><div className="rz-up" style={{ height: up ? h : 0 }} /></div>
               <div className="rz-zero" />
@@ -187,15 +187,15 @@ export function FnoPositionsLive({ fno }) {
                   <td style={{ color: 'var(--txt)', fontWeight: 500 }}>{b.name}</td>
                   <td className="mut">{b.sleeve}</td>
                   <td className={'ra mono ' + (b.open.length ? cl(b.openMtm) : '')}>{b.open.length ? inr(b.openMtm) : '—'}</td>
-                  <td className="ra mono">{b.funds ? numC(Number(b.funds.utilized) || 0) : '—'}</td>
-                  <td className="ra mono">{b.funds ? numC(Number(b.funds.available) || 0) : '—'}</td>
+                  <td className="ra mono">{b.funds ? <SInrF n={Number(b.funds.utilized) || 0} /> : '—'}</td>
+                  <td className="ra mono">{b.funds ? <SInrF n={Number(b.funds.available) || 0} /> : '—'}</td>
                 </tr>
               ))}
               <tr className="tot">
                 <td>Total</td><td></td>
                 <td className={'ra ' + cl(fno.netOpenMtm)}>{inr(fno.netOpenMtm)}</td>
-                <td className="ra mono">{numC(usedTot)}</td>
-                <td className="ra mono">{numC(availTot)}</td>
+                <td className="ra mono"><SInrF n={usedTot} /></td>
+                <td className="ra mono"><SInrF n={availTot} /></td>
               </tr>
             </tbody>
           </table>

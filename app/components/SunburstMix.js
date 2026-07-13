@@ -1,16 +1,21 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { useDisplayCurrency } from '../lib/fmt';
 
 // Dual-ring sunburst for the Sector & Cap Mix card. Outer ring = sectors,
 // inner ring = cap mix, both proportional by live value. The centre shows total
 // deployed and swaps to the hovered slice's name · weight · value; siblings dim.
 // Hand-rolled SVG arcs (no D3) so it stays dependency-free and on-theme.
 
-const fmtFor = (currency) => (n) => {
+// `native` = the currency the slice values are already in (₹ for Indian/MF, $ for US).
+// `mode`/`fx` = the LIVE display toggle, so the centre readout flips like the rest of the app;
+// convert native→display before compacting.
+const fmtFor = (native, mode, fx) => (n) => {
   if (n == null) return '—';
-  if (currency === 'usd') return n >= 1000 ? '$' + (n / 1000).toFixed(1) + 'k' : '$' + Math.round(n);
-  return n >= 1e5 ? '₹' + (n / 1e5).toFixed(2) + 'L' : '₹' + (n / 1e3).toFixed(1) + 'K';
+  const v = native === mode ? n : native === 'inr' ? n / fx : n * fx;
+  if (mode === 'usd') return v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'k' : '$' + Math.round(v);
+  return v >= 1e5 ? '₹' + (v / 1e5).toFixed(2) + 'L' : '₹' + (v / 1e3).toFixed(1) + 'K';
 };
 
 // Arc wedge between two radii; angles in radians, 0 at top, clockwise.
@@ -39,7 +44,8 @@ function ring(items, total, pad) {
 export default function SunburstMix({ sectors, caps, total, secColors, capColor, currency = 'inr', othersColor = 'var(--txt3)', innerTitle = 'Cap', innerSuffix = ' cap' }) {
   const [hov, setHov] = useState(null);
   const W = 260, cx = 130, cy = 130;
-  const fmtAmt = fmtFor(currency);
+  const { mode, fx } = useDisplayCurrency();
+  const fmtAmt = fmtFor(currency, mode, fx);
 
   // CSS repeating-gradient fills (the CMPF hatch) can't paint SVG paths —
   // map them to the diagonal-stripe <pattern> below. Legend swatches are

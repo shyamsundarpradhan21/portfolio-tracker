@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { RsText, inrFull } from '../../lib/fmt';
+import { RsText, inrFull, displayCurrency, displayFx } from '../../lib/fmt';
 import { TRANSACTIONS, MF_CASHFLOWS, fdFlows, fdRedemptions, PAYSLIPS, CMPF_CONTRIBUTIONS, CMPF_HATCH } from '../../portfolio';
 import { APP } from '../../lib/appData';
 import { usBuyLedger } from '../../lib/deposits';
@@ -169,7 +169,12 @@ function SavingsSparkline({ months }) {
   );
 }
 const monthKey = (d) => d.slice(0, 7);
-const fK = (n) => n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
+// Compact deployed-capital label for the calendar cells — currency-aware off the module
+// mirror (same channel inrFull uses) so it flips to $ on toggle, keeping the ₹ format identical.
+const fK = (n) => {
+  if (displayCurrency() === 'usd') { const v = n / displayFx(); return v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'K' : '$' + Math.round(v); }
+  return n >= 100000 ? '₹' + (n / 100000).toFixed(2) + 'L' : '₹' + Math.round(n / 1000) + 'K';
+};
 // Indian FY: Apr–Mar. fyOf('2026-02-…') → 2025 (i.e. FY 25-26).
 const fyOf = (iso) => +iso.slice(0, 4) - (+iso.slice(5, 7) < 4 ? 1 : 0);
 const fyLabel = (y) => `FY ${String(y).slice(2)}–${String(y + 1).slice(2)}`;

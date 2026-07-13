@@ -9,11 +9,11 @@
 // Direction = colour only (cl(): grn/red, glyph-free via pctS). Figures derive from the
 // payload; sizes via tier classes; ₹ next to mono via .rs. Both themes via tokens.
 import { useState, useMemo } from 'react';
-import { cl, pctS, inrCd } from '../../lib/fmt';
+import { cl, pctS, SInrC } from '../../lib/fmt';
 import { allocateConviction, labelBook } from '../../lib/algoAllocate.mjs';
 
 const RS = () => <span className="rs">₹</span>;
-const Rup = ({ v }) => (v == null ? <span className="mut">·</span> : <span><RS />{inrCd(Math.abs(v))}</span>);
+const Rup = ({ v }) => (v == null ? <span className="mut">·</span> : <SInrC n={v} />);
 const PC = ({ v }) => (v == null ? <span className="mut">·</span> : <span className={cl(v)}>{pctS(v)}</span>);
 const N2 = ({ v }) => (v == null ? <span className="mut">·</span> : <span>{Number(v).toFixed(2)}</span>);
 const shortLive = (c) => !!c && c.confidence && c.confidence !== 'ok'; // liveDays ≤ 180

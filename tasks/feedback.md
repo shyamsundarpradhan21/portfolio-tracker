@@ -71,6 +71,31 @@ direction glyph. (Caught in the Analytics revamp: shipped unsigned ticks first, 
 as garbage across zero → reverted to signed; card values + the Returns table stay strictly
 glyph-free.)
 
+### Currency toggle (₹↔$): every money figure must render through a currency-AWARE helper
+The app has a global ₹/$ topbar toggle (`CurrencyProvider` → `CurrencyCtx` + module mirror
+`_CUR/_FX`, all in `app/lib/fmt.js`) that flips EVERY displayed money figure. A figure only flips
+if it goes through a currency-aware path:
+- **Components:** `<InrC/InrF/SInrC/SInrF>` (base-₹, ÷fx→$) and `<UsdF>` (base-$, ×fx→₹).
+- **Strings** (titles/tooltips/pre-formatted `val`): `inrC/inrFull/usd/sFull` (read the module mirror).
+- **Charts:** `compactMoney(vInr, mode, fx)`.
+
+BUG (won't flip) = a money value via the raw ₹ cores `inrCd/inrFd/numC` or a hardcoded
+`₹`/`<Rs/>`/`'₹'+…`. **`numC` is DELIBERATELY ₹-native + glyph-free — never use it for a figure that
+should flip** (use `<SInrF>`). Two structural traps: (a) `CFMemo` renders pre-formatted `val` strings
+via `RsText`, which only STYLES the ₹ glyph (no conversion) — the CALLER must build `val` with
+`inrFull`/`sFull`; a component that SHADOWS the imported `sFull` with a local `'₹'+…` (OverviewTab
+did) freezes it. (b) `SunburstMix` took a fixed `currency` PROP — that prop is the values' NATIVE
+currency; the component must ALSO read the live toggle (`useDisplayCurrency`) and convert native→display.
+
+LEAVE ₹-native (do NOT flip): FII/DII crore flows (market data — NSE reports in crore), the USD/INR
+rate quote itself, statutory thresholds in prose (₹40K Sec-194A TDS, ₹1.25L Sec-112A exemption), a
+literal `₹0` placeholder. RESIDUAL: seed-data prose (`data/fno-verified.json` `*Note`/`*Sub`) embeds
+pre-formatted ₹ figures → stuck; fixing needs the seed to store numbers + compose the note in-component.
+Audit method: grep components for `inrCd(`/`inrFd(`/`numC(`/`<Rs`, and per hit ask "is this a portfolio
+money figure that should flip?". Certify BOTH modes (`CURRENCY=usd node audit/responsive/certify.mjs`)
+— $ vs ₹ string lengths differ. (Caught 2026-07-13: "few carry-forward cards not showing $ on toggle
+and vice versa" → **31 figures across 11 components**, all ₹-stuck except one $-stuck SunburstMix.)
+
 ### Hover/tooltip labels use the TAB (sleeve) accent colour — always
 On any curve hover/tooltip that breaks a point into per-sleeve rows, colour each
 sleeve's LABEL by that sleeve's **tab accent** (Indian-tab accent for the India

@@ -251,8 +251,8 @@ export default function IndianTab({
         title="Equity Tax — FY24-25 Capital Gains"
         lead="Last filed year's equity capital gains in this account (ITR):"
         rows={[
-          { label: 'FY24-25 LTCG (Sec 112A)', val: '₹2,789', color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
-          { label: 'FY24-25 STCG (equity MF)', val: '₹1,083', color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
+          { label: 'FY24-25 LTCG (Sec 112A)', val: sFull(2789), color: 'var(--grn)', sub: 'equity shares held >12m · within ₹1.25L exemption → nil tax' },
+          { label: 'FY24-25 STCG (equity MF)', val: sFull(1083), color: 'var(--red)', sub: 'short-term loss, set off against LTCG' },
         ]}
         foot="Equity LTCG up to ₹1.25L/yr is exempt (Sec 112A) — booking gains within the limit each FY resets cost basis tax-free."
       />

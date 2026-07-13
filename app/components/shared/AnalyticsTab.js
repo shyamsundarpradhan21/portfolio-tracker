@@ -8,7 +8,7 @@
 // Direction is colour-only; sizes via --fs-* tokens; holds in both themes.
 import { useState, useEffect, useMemo } from 'react';
 import { APP } from '../../lib/appData';
-import { cl, pct1, inrCd, MON } from '../../lib/fmt';
+import { cl, pct1, SInrC, MON } from '../../lib/fmt';
 import { smoothPath } from '../../lib/smoothPath';
 import {
   seriesByStrategy, summaryStats, returnsPct, cagr, volatility, sharpe, sortino,
@@ -344,13 +344,13 @@ export default function AnalyticsTab({ ALGO }) {
             <div className="an-tblwrap"><table className="tbl an-tbl">
               <thead><tr><th>Metric</th><th className="an-num">S01</th><th className="an-num">S02</th><th className="an-num">Overall</th></tr></thead>
               <tbody>
-                <tr><td>Net P&amp;L (overlaid)</td>{COLS.map(([n, m]) => cell(n, <span><span className="rs">₹</span>{inrCd(Math.abs(m.net))}</span>, cl(m.net)))}</tr>
+                <tr><td>Net P&amp;L (overlaid)</td>{COLS.map(([n, m]) => cell(n, <SInrC n={m.net} />, cl(m.net)))}</tr>
                 <tr><td>Profit Factor</td>{COLS.map(([n, m]) => cell(n, sNum(m.pf)))}</tr>
                 <tr><td>Win / Loss days</td>{COLS.map(([n, m]) => cell(n, `${m.win}/${m.loss}`))}</tr>
                 <tr><td>Success Ratio</td>{COLS.map(([n, m]) => cell(n, (m.st.winPct || 0) + '%', 'grn'))}</tr>
                 <tr><td>Risk-o-meter</td>{COLS.map(([n, m]) => <td key={n} className="an-num"><span className="badge" style={riskChip(m.risk)}>{m.risk}</span></td>)}</tr>
-                <tr><td>Avg Profit / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.win ? <span><span className="rs">₹</span>{inrCd(m.st.winSum / m.win)}</span> : '—', 'grn'))}</tr>
-                <tr><td>Avg Loss / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.loss ? <span><span className="rs">₹</span>{inrCd(Math.abs(m.st.lossSum / m.loss))}</span> : '—', 'red'))}</tr>
+                <tr><td>Avg Profit / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.win ? <SInrC n={m.st.winSum / m.win} /> : '—', 'grn'))}</tr>
+                <tr><td>Avg Loss / Trade-day</td>{COLS.map(([n, m]) => cell(n, m.loss ? <SInrC n={m.st.lossSum / m.loss} /> : '—', 'red'))}</tr>
                 <tr><td>Max Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'maxDD'))}</tr>
                 <tr><td>Avg Drawdown</td>{COLS.map(([n, m]) => sCellPct(m, 'avgDD'))}</tr>
                 <tr><td>Volatility (ann.)</td>{COLS.map(([n, m]) => cell(n, pct1(m.vol)))}</tr>

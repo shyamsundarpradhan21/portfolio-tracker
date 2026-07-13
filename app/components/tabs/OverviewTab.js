@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { inrFull, inrC } from '../../lib/fmt';
+import { inrFull, inrC, sFull } from '../../lib/fmt';
 import AnalysisCard from '../shared/AnalysisCard';
 import CFMemo from '../shared/CFMemo';
 import ProjectionTab from '../ProjectionTab';
@@ -14,7 +14,6 @@ export default function OverviewTab({
   dayGain, sleeveBasis,
   cmpsPension, cmpsService, cmpsRetirement, cmpsVested, cmpsVestYear,
 }) {
-  const sFull = (n) => '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
   // Scrubbing the projection reports the drifted allocation here so the
   // sunburst follows the timeline; null = back to live values.
   const [drift, setDrift] = useState(null);

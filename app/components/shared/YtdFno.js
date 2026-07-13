@@ -1,5 +1,5 @@
 'use client';
-import { cl, SInrF, numC } from '../../lib/fmt';
+import { cl, SInrF } from '../../lib/fmt';
 
 export default function YtdFno({ label, data, extra, liveMtm }) {
   return (
@@ -8,7 +8,7 @@ export default function YtdFno({ label, data, extra, liveMtm }) {
       <div className="fxc"><span style={{ color: 'var(--txt2)' }}>Gross</span><span className={'mono ' + cl(data.gross)}><SInrF n={data.gross} /></span></div>
       <div className="fxc" style={{ marginTop: 3 }}>
         <span style={{ color: 'var(--txt2)' }}>Charges{data.auto && !data.chargesReal && <span style={{ color: 'var(--txt3)', fontSize: 'var(--fs-2xs)' }}> est.</span>}</span>
-        <span className="mono mut">{numC(data.charges)}</span>
+        <span className="mono mut"><SInrF n={data.charges} /></span>
       </div>
       <div className="fxc" style={{ marginTop: 3 }}><span style={{ color: 'var(--txt2)' }}>Net realised</span><span className={'mono ' + cl(data.net)}><SInrF n={data.net} /></span></div>
       {liveMtm != null && liveMtm !== 0 && (

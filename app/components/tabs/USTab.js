@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, pct1, Rs, UsdF, useDisplayCurrency } from '../../lib/fmt';
+import { cl, pctS, pct1, Rs, UsdF, inrFull, useDisplayCurrency } from '../../lib/fmt';
 import { LiveUsdF } from '../shared/Live';
 import BenchmarkBars from '../shared/BenchmarkBars';
 import { SECTOR_PALETTE, OTHERS_COLOR, US_COLS } from '../../lib/constants';
@@ -204,8 +204,8 @@ export default function USTab({
       <CFMemo
         title={`Foreign Equity Tax — ${FY.labels.verified} Capital Gains`}
         rows={[
-          { label: `${FY.labels.verified} foreign STCG`, val: '+₹' + FY.cf.cgVerified.foreignStcg.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.cgVerified.foreignStcgNote },
-          { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
+          { label: `${FY.labels.verified} foreign STCG`, val: '+' + inrFull(FY.cf.cgVerified.foreignStcg), color: 'var(--grn)', sub: FY.cf.cgVerified.foreignStcgNote },
+          { label: `STCG loss carried into ${FY.labels.current}`, val: inrFull(FY.cf.stcgCarried), color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
         foot="Foreign equity gains are taxed at slab (STCG <24m) or 12.5% (LTCG ≥24m) — no Sec 112A exemption; US withholding on dividends is creditable via DTAA."
       />

@@ -1,5 +1,5 @@
 'use client';
-import { cl, pctS, Pct, InrC, InrF, SInrF, Rs, inrFull } from '../../lib/fmt';
+import { cl, pctS, Pct, InrC, InrF, SInrF, inrFull } from '../../lib/fmt';
 import { LiveInrF, LiveInrC } from '../shared/Live';
 import { MF_CASHFLOWS, MF_SIP } from '../../portfolio';
 import AnalysisCard from '../shared/AnalysisCard';
@@ -201,9 +201,9 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
             const unlock = elss ? dmy(`${+elss.bought.slice(0, 4) + MF_SIP.elssLockYears}${elss.bought.slice(4)}`, true) : null;
             return (
               <>
-                {MF_SIP.platform}: <Rs />{Math.round(MF_SIP.monthly / 1000)}K/mo SIP active
+                {MF_SIP.platform}: <InrC n={MF_SIP.monthly} />/mo SIP active
                 {seeds.length > 0 && <> — seeded {seeds.map((c, i) => (
-                  <span key={c.date}>{i > 0 && ' + '}<Rs />{Math.round(-c.amount / 1000)}K ({dmy(c.date)})</span>
+                  <span key={c.date}>{i > 0 && ' + '}<InrC n={-c.amount} /> ({dmy(c.date)})</span>
                 ))}</>}.
                 {elss && <> Zerodha ELSS: {MF_SIP.elssLockYears}-yr lock-in, unlocks {unlock}.</>}
               </>
@@ -215,8 +215,8 @@ export default function MFTab({ mf, mfx, mfBench = [], mfSorted, mfSort, sortMf,
       <CFMemo
         title={`MF Redemption Tax — ${FY.labels.verified} Capital Gains`}
         rows={[
-          { label: `${FY.labels.verified} MF redemptions`, val: FY.cf.cgVerified.mfStcg === 0 ? 'Nil' : '+₹' + FY.cf.cgVerified.mfStcg.toLocaleString('en-IN'), color: 'var(--txt2)', sub: FY.cf.cgVerified.mfStcgNote },
-          { label: `STCG loss carried into ${FY.labels.current}`, val: '₹' + FY.cf.stcgCarried.toLocaleString('en-IN'), color: 'var(--grn)', sub: FY.cf.stcgNote },
+          { label: `${FY.labels.verified} MF redemptions`, val: FY.cf.cgVerified.mfStcg === 0 ? 'Nil' : '+' + inrFull(FY.cf.cgVerified.mfStcg), color: 'var(--txt2)', sub: FY.cf.cgVerified.mfStcgNote },
+          { label: `STCG loss carried into ${FY.labels.current}`, val: inrFull(FY.cf.stcgCarried), color: 'var(--grn)', sub: FY.cf.stcgNote },
         ]}
         foot={`${FY.cf.cgVerified.mfStcg === 0 ? `No redemptions in ${FY.labels.verified} — no MF capital-gains event.` : `${FY.labels.verified} redemptions taxed as capital gains.`} ELSS units stay locked ${MF_SIP.elssLockYears} years from each SIP date; gains crystallise only on redemption.`}
       />
