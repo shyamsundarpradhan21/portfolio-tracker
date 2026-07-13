@@ -21,7 +21,7 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 |---|---|---|---|
 | `/api/snapshot` (growth day-change + FII/DII trail → KV) | 21:30 UTC daily (03:00 IST) | Vercel | `vercel.json` (repo) |
 | **FyersDailyLogin** (mint Fyers token) | 08:15 IST daily | this laptop, headed | Windows Task Scheduler |
-| **DailyMorning** (broker holdings sync → durable snapshot, chained; SOLE morning token minter) → `broker-state.json` + `growth.json` / `snapshot-sleeves.json` | 08:55 IST daily | this laptop, headless | Windows Task Scheduler |
+| **DailyMorning** (broker holdings sync → durable snapshot, chained; primary morning token minter — Supervisor's `ensure-tokens.mjs` backstops a missed/late morning) → `broker-state.json` + `growth.json` / `snapshot-sleeves.json` | 08:55 IST daily | this laptop, headless | Windows Task Scheduler |
 | **DailyEvening** (Fyers/Upstox F&O realised → `fno-ledger.json`) | 18:40 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayIndia** (F&O P&L + India equity → KV + `fno-intraday.json` / `eq-intraday.json`) | one long-running process, launch 08:55, captures 09:13→15:32 IST weekdays | this laptop, headless | Windows Task Scheduler |
 | **CaptureIntradayUS** (US equity day-change in ₹ → KV + `us-intraday.json`) | one long-running process, 18:40 IST → 02:30 IST (overnight) weekdays | this laptop, headless | Windows Task Scheduler |
@@ -38,7 +38,15 @@ Vercel cron is in this repo), so this file is where they're written down togethe
 > Scheduler at each session's open and gates on the IST clock itself; it self-exits
 > when the window closes, so it's relaunched fresh each day. It reads daily broker
 > tokens off disk and **never mints** (no browser, no rate-limit risk); a broker
-> without a token is skipped for that tick (not zeroed). Each tick republishes the
+> without a token is skipped for that tick (not zeroed). Token *freshness* is a
+> separate self-heal: the **Supervisor** (5-min in-window tick, market-aware) runs
+> `scripts/ensure-tokens.mjs`, which force-mints any broker whose token predates
+> today's 08:45 IST pre-open cycle (Dhan pure-API, Upstox headless; Fyers parked) and
+> no-ops when fresh. This is what lets a laptop opened mid-session (e.g. 11:30)
+> recover within one tick — the daemon reads the new token on its next poll — instead
+> of reading the dead evening token all day. `DailyMorning` (08:55) stays the primary
+> pre-open mint; `ensure-tokens` is the backstop for a missed/asleep/late morning.
+> Each tick republishes the
 > day's tape to KV (`intraday:<kind>:<date>`, 3-day TTL) so the deployed app reads
 > it near-live via `/api/intraday` with NO redeploy. Git is touched exactly ONCE
 > per session — a single archive commit+push at close (`--autostash`, so an

@@ -75,6 +75,24 @@ $status   = foreach ($d in $daemons) {
   }
 }
 
+# (A2) Broker-token freshness -- the ONLY fixed minter is DailyMorning (08:55); if the laptop
+# was asleep then, or the SEBI pre-open cycle killed the evening token before the daemon
+# relaunched at 09:13, the F&O tape reads dead tokens ALL day with no recovery. ensure-tokens.mjs
+# closes that: in-window + stale -> force-mint (dhan pure-API, upstox headless), idempotent when
+# fresh. The daemon reads the new token on its next ~10s poll, so no restart is needed. We only
+# probe inside the India window; ensure-tokens re-checks the precise 08:45 IST boundary itself.
+# No 2>&1 (PS 5.1 wraps native stderr as errors); ensure-tokens prints its status to stdout.
+if ($state.'in' -eq 'open' -or $state.'in' -eq 'pre') {
+  try {
+    $tokOut = & node (Join-Path $PSScriptRoot 'ensure-tokens.mjs')
+    foreach ($l in @($tokOut)) {
+      if ($l -match 'MINTED|MINT-FAIL|MINT-SKIP') { Write-Event ('tokens: {0}' -f $l) }
+    }
+  } catch {
+    Write-Event ('tokens: ensure-tokens probe FAILED -- {0}' -f $_.Exception.Message)
+  }
+}
+
 # Heartbeat: always-current one-liner (overwritten, so it never grows). The event log stays
 # quiet unless something actually needed healing.
 Set-Content -Path $stateFile -Encoding utf8 -Value (

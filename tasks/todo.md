@@ -1,3 +1,35 @@
+# Plan — broker-token freshness self-heals on the open window (late laptop-open) — 2026-07-13
+
+## Why
+The only fixed token minter is `DailyMorning` (08:55). If the laptop is asleep at 08:55 — or the
+SEBI pre-open cycle kills the evening token before the daemon relaunches at 09:13 — the F&O capture
+reads dead tokens and logs `F&O no-tokens` all session, with no recovery. Happened 2026-07-13: opened
+late, F&O tape blank 09:13→manual-mint. Equity was fine (keyless Yahoo). The Supervisor healed dead
+*daemons* every 5 min but never refreshed *tokens*.
+
+## Approach (confirmed with user: Supervisor home + "minted since today's pre-open" freshness)
+- [x] `scripts/ensure-tokens.mjs` — in-window (`open`, or `pre`≥08:45 IST) + stale (token mtime <
+      today 08:45 IST; ignores Dhan's lying `expiryTs`) → force-mint (Dhan `mint.py` pure-API, Upstox
+      `login.py` headless; Fyers parked/skipped). Idempotent when fresh; per-broker degradation so
+      Dhan always heals. `--force` for manual recovery.
+- [x] Wire into `scripts/supervisor.ps1` — probe each in-window tick (`in` = open|pre), log
+      MINTED/MINT-FAIL events. No task re-registration (Task Scheduler re-reads the .ps1).
+- [x] `DailyMorning` 08:55 unchanged — primary pre-open mint; `ensure-tokens` is the backstop.
+- [x] Docs: `SCHEDULE.md` (daemon blockquote + table row) + `tasks/feedback.md` lesson.
+- [x] Verify: no-op skip (post-market) ✓; `--force` mints both brokers + redacts + logs ✓;
+      supervisor.ps1 parses ✓ and runs clean with the token block correctly guarded off on `post` ✓.
+
+## Review
+Root cause was a fixed-clock dependency, not a code bug. Fix makes token freshness a self-heal keyed
+on the OPEN window (Supervisor 5-min tick + AtLogOn), so opening the laptop any time the market is
+open recovers within ≤1 tick and the daemon reads the new token on its next ~10s poll — zero
+dependence on the 08:55 task having fired. Minimal surface: one new ~70-line script + ~12 lines of PS;
+reuses the existing mint scripts and the Supervisor's established "delegate to a node helper" pattern.
+Live end-to-end (in-window stale→mint) will confirm itself on the next morning the laptop opens late;
+the branch is exercised by `--force` today. Fyers intentionally out of scope (parked, needs a desktop).
+
+---
+
 # Plan — note→realised F&O derivation (laptop-independent realised) — 2026-07-11
 
 ## Why

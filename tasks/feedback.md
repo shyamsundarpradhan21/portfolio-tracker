@@ -393,6 +393,23 @@ full use of the knowledge graph everywhere:
   with the `[dhan-mint]`/`[upstox-login]` lines and the `dhan+upstox` broker list in
   `capture-in.log`. Still-open hardening (not yet built): a real alert when an enabled
   broker drops out mid-session, so this never again waits on a manual check.
+- **A laptop opened AFTER the fixed morning mint must still get live tokens — freshness is a
+  SELF-HEAL on the OPEN window, not a fixed-clock task.** (2026-07-13) The only fixed minter
+  was `DailyMorning` 08:55 (`sync.cmd`); the Supervisor healed dead *daemons* but never
+  refreshed *tokens*, and the daemon reads disk + logs `F&O no-tokens` forever. So a laptop
+  opened at 11:30 ran a live daemon reading the SEBI-killed Sat token ALL session (equity kept
+  working — keyless Yahoo, no auth). Fix: `scripts/ensure-tokens.mjs` — in-window (`open`, or
+  `pre` ≥ 08:45 IST) + stale (token `.json` mtime < today 08:45 IST; **IGNORE Dhan's mint+24h
+  `expiryTs` — it lies**, reports a dead morning token as valid) → force-mint (Dhan `mint.py`
+  pure-API, Upstox `login.py` headless; **Fyers parked/skipped**), idempotent when fresh, with
+  per-broker degradation so Dhan (primary F&O) always heals even if Upstox fails. Wired into the
+  **Supervisor** (5-min in-window tick + `AtLogOn`), so recovery lands within one tick of opening
+  the laptop and the daemon picks up the new token on its next ~10s poll (no restart). Editing
+  `supervisor.ps1` needs NO re-registration (Task Scheduler re-reads the file each tick).
+  `DailyMorning` stays the PRIMARY pre-open mint; `ensure-tokens` is the backstop. 4th instance of
+  the unattended-job-fails-silently class (after token rot + morning-mint miss + [[Durable-data
+  jobs fail SILENTLY]]): a healing tier must RECONSTRUCT freshness itself, never trust a fixed
+  launch time to have fired.
 
 ### Durable-data jobs fail SILENTLY — the durable tier must self-heal, not trust the live tier
 Third instance of the unattended-job-dies-quietly class (after broker token rot + the
