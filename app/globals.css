@@ -1488,6 +1488,32 @@ body { padding: 0; }
 .hdr-toggle.loading { opacity: .5; pointer-events: none; }
 .ai-toggle { width: auto; padding: 0 10px; font-size: var(--fs-2xs); font-weight: 800; letter-spacing: .06em; }
 .ai-toggle.on { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 55%, var(--brd2)); background: color-mix(in srgb, var(--acc) 14%, var(--sur2)); }
+/* Currency ₹/$ knob toggle — an accent-coloured knob carries the ACTIVE glyph and slides between
+   sides; the inactive currency ghosts faint on the far side. Recolours with the live tab --acc so
+   it reads on every tab + theme. Behaviour (onClick/aria-pressed/title) unchanged from the old glyph
+   button; only the presentation is the sliding knob (variant 2 of the toggle mocks). */
+.cur-knob {
+  position: relative; width: 56px; height: 30px; border-radius: 15px; padding: 0; flex-shrink: 0;
+  background: var(--sur2); border: .5px solid var(--brd2); cursor: pointer; transition: border-color .25s;
+}
+.cur-knob:hover { border-color: color-mix(in srgb, var(--acc) 40%, var(--brd2)); }
+.cur-knob .ck-ghost {
+  position: absolute; top: 0; height: 30px; width: 28px; display: inline-flex; align-items: center;
+  justify-content: center; font-size: var(--fs-2xs); color: var(--txt3); opacity: .5;
+  pointer-events: none; transition: opacity .2s;
+}
+.cur-knob .ck-ghost.l { left: 2px; }
+.cur-knob .ck-ghost.r { right: 2px; }
+.cur-knob[data-cur="inr"] .ck-ghost.l,
+.cur-knob[data-cur="usd"] .ck-ghost.r { opacity: 0; }
+.cur-knob .ck-knob {
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--fs-xs); font-weight: 800; color: var(--bg); background: var(--acc);
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--acc) 45%, transparent);
+  transition: transform .3s cubic-bezier(.34, 1.4, .5, 1), background .25s;
+}
+.cur-knob[data-cur="usd"] .ck-knob { transform: translateX(26px); }
 /* AI "analysing…" ticker — shown in the header only while a real insights call
    is in flight (cache hits are instant, so it never flashes for those) */
 .ai-status { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .04em; color: var(--acc); white-space: nowrap; animation: aiPulse 1.1s ease-in-out infinite; }

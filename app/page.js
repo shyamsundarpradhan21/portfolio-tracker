@@ -1258,8 +1258,12 @@ function Dashboard() {
               <span className="topbar-status"><span className={pulseCls} /><span className="status-txt">{status.msg}</span></span>
               <button className={'hdr-toggle ai-toggle' + (insightsOn ? ' on' : '')} onClick={toggleInsights} aria-pressed={insightsOn}
                 title={insightsOn ? 'AI analysis ON — click to hide the cards' : 'AI analysis OFF — click to show the cards'}>AI</button>
-              <button className={'hdr-toggle' + (currency === 'inr' ? ' on' : '')} onClick={toggleCurrency} aria-pressed={currency === 'inr'}
-                title={currency === 'inr' ? 'US figures in ₹ (converted at live USD/INR) — click for $' : 'US figures in $ (native) — click for ₹'}>{currency === 'inr' ? '₹' : '$'}</button>
+              <button className="cur-knob" data-cur={currency === 'inr' ? 'inr' : 'usd'} onClick={toggleCurrency} aria-pressed={currency === 'inr'}
+                title={currency === 'inr' ? 'US figures in ₹ (converted at live USD/INR) — click for $' : 'US figures in $ (native) — click for ₹'}>
+                <span className="ck-ghost l" aria-hidden="true">₹</span>
+                <span className="ck-ghost r" aria-hidden="true">$</span>
+                <span className="ck-knob" aria-hidden="true">{currency === 'inr' ? '₹' : '$'}</span>
+              </button>
               <button className="hdr-toggle" onClick={cycleTheme} title={`Theme: ${themeMode} (follows sunrise/sunset)`}>{themeMode === 'auto' ? '🌗' : themeMode === 'day' ? '☀️' : '🌙'}</button>
             </div>
           </div>
