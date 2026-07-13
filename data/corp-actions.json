@@ -1,0 +1,5 @@
+{
+  "note": "Upcoming NSE dividends (market-wide corporate-actions calendar). Written by scripts/capture-corp-actions.mjs on the laptop (residential IP reaches NSE) → KV marketwrap:corpactions. /api/dividends filters this to YOUR holdings at serve time (private, force-dynamic), so this committed file is non-personal public market data. EMPTY placeholder until the first real laptop capture — never fabricated.",
+  "capturedAt": null,
+  "dividends": []
+}

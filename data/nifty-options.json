@@ -1,0 +1,5 @@
+{
+  "note": "NIFTY option-chain read (PCR / ATM IV / max pain / nearest-expiry) for the Nifty 50 Overview 'Options analysis' block. Written by scripts/capture-nifty-options.mjs on the laptop (residential IP reaches NSE) → also mirrored to KV marketwrap:options. Vercel's datacenter IP is blocked from NSE, so /api/premarket serves KV first, then this committed snapshot, then a best-effort live NSE try. Public market data — safe to commit. This checked-in copy is an EMPTY placeholder (options:null) so the block stays honestly hidden until the first real laptop capture writes it — never an invented number.",
+  "capturedAt": null,
+  "options": null
+}

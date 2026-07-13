@@ -628,6 +628,21 @@ research agent, or ask the user (who knows their own account) — or explicitly 
 "unconfirmed." Repeated confident-but-wrong claims erode trust and cause churn.
 (Pairs with "Check for the easy/official path".)
 
+**Yahoo v8 chart carries only PAST dividends — upcoming India ex-dates need NSE corp-actions
+(laptop).** (2026-07-13, Market-Wrap dividends inclusion.) I framed "portfolio dividends = Yahoo,
+reliable" — WRONG. The app's only keyless Yahoo path is the **v8 chart** (`/v8/finance/chart`), which
+returns historical dividend EVENTS, not the next ex-date; there is no crumb/quoteSummary
+(`/v10/.../calendarEvents`) infra here, and v10 needs a rotating crumb + has thin/unverifiable India
+coverage. So **upcoming dividend ex-dates + amounts for Indian equities come from NSE corporate-actions**
+(`/api/corporates-corporateActions?index=equities`) — datacenter-blocked on Vercel, so laptop-captured
+(residential IP) → KV + committed calendar, filtered to holdings in the route (private → force-dynamic),
+exactly like the wrap's other NSE feeds (indices, FII/DII, option chain). Same pattern for the **NIFTY
+option chain** (PCR/ATM IV/max pain): NSE-only, laptop-captured, route tries live + falls back to the
+snapshot. Committed seeds ship EMPTY (`options:null` / `dividends:[]`) so no invented number is served
+pre-capture (the "live or honestly blank" rule). Lesson: before promising an external feed "reliable,"
+name the EXACT endpoint and confirm it carries the field you need — Yahoo v8 ≠ Yahoo v10, and "Yahoo has
+dividends" (past) ≠ "Yahoo has the next ex-date" (not keyless). Pairs with [[Re-plan on surprise]].
+
 ### Fyers is PARKED — no unattended auth exists; don't re-automate it
 Fyers has **no** headless/unattended auth path (refresh-token API SEBI-disabled, AND
 the browser login is Cloudflare-blocked as of 2026-06-25). It is parked:

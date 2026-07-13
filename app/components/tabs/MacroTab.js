@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
 import MarketHeatmap from '../shared/MarketHeatmap';
+import NiftyOverview from '../shared/NiftyOverview';
+import UpcomingDividends from '../shared/UpcomingDividends';
+import { dailyReturns, trendWindows } from '../../lib/niftyTrend';
 import { HEATMAP_META as NASDAQ_META, HEATMAP_FALLBACK as NASDAQ_FALLBACK } from '../../../data/nasdaq100-heatmap';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
@@ -398,7 +401,7 @@ function SliderBoard({ board, region = 'india' }) {
   );
 }
 
-export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, nifty50Loading, nasdaq, nasdaqLoading, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
+export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro, macroBoard, nifty50, nifty50Loading, nasdaq, nasdaqLoading, niftyDaily, dividends, portfolioNews, marketNews, fiidiiTrail, regime, markets, insights, insightsOn, insightsFirstLoad, insightsLoading, insightsTs, onRefresh, aiReady }) {
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
@@ -459,6 +462,17 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const usSectors = (premarket?.usSectors || []).map((s) => ({ name: s.label, pct: s.pct })).sort((a, b) => (b.pct ?? -99) - (a.pct ?? -99));
   const niftyPct = c.nifty?.pct;
   const breadthPct = ind.breadthAD?.pctUp;
+
+  // Nifty 50 Overview inputs (India view): hero quote from the live cue; daily
+  // returns, trend windows and the hero sparkline from the ^NSEI daily closes;
+  // options + pivots from the premarket feed. Each sub-block hides when absent.
+  const niftyCloses = niftyDaily?.closes || [];
+  const niftyQuote = c.nifty?.price != null
+    ? { last: c.nifty.price, pct: c.nifty.pct, change: c.nifty.change }
+    : (niftyDaily?.latest != null ? { last: niftyDaily.latest, pct: null, change: null } : null);
+  const niftyReturns = dailyReturns(niftyCloses, 5);
+  const niftyTrendW = trendWindows(niftyCloses, niftyDaily?.latest, niftyDaily?.latestDate);
+  const niftySpark = niftyCloses.slice(-32).map((p) => ({ c: p.close }));
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII renders as its own full-width card below (India only); also shown
@@ -512,6 +526,23 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         <div className={`swotrow${showIN && showUS && insights?.indian_swot && insights?.us_swot ? ' two-up' : ''}`}>
           {showIN && insights?.indian_swot && <SwotCard swot={insights.indian_swot} title="India — SWOT" loading={insightsLoading} accent="var(--blu)" />}
           {showUS && insights?.us_swot && <SwotCard swot={insights.us_swot} title="US — SWOT" loading={insightsLoading} accent="var(--cyn)" />}
+        </div>
+      )}
+
+      {/* Nifty 50 Overview + your upcoming dividends — India view only (both are
+          NSE-specific). Index level/returns/options/S&R/trend, then the personalised
+          dividend calendar for held stocks. */}
+      {showIN && (
+        <div className="nov-block">
+          <NiftyOverview
+            quote={niftyQuote}
+            spark={niftySpark}
+            returns={niftyReturns}
+            trend={niftyTrendW}
+            options={premarket?.options}
+            levels={premarket?.levels?.nifty}
+          />
+          <UpcomingDividends items={dividends?.items} loading={dividends == null} />
         </div>
       )}
 

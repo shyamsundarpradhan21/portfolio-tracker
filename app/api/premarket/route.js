@@ -20,6 +20,14 @@ import { mapAllIndices, mapYahooIndices, YH_INDEX_SYMS } from '../../lib/wrapInd
 // cron) — one copy, in lib/fiidiiTrail. This route persists on-demand; the cron builds it
 // with no browser open.
 import { nseCookie, fetchFiiDii, persistTrail, fetchParticipantStats } from '../../lib/fiidiiTrail';
+// Nifty 50 Overview inputs: classic pivot S/R (computed from the prior session's
+// OHLC) and the option-chain read (PCR/ATM IV/max pain/expiry). The options snapshot
+// is laptop-captured (residential IP reaches NSE) into KV + a committed seed; the
+// route also tries NSE live, so a datacenter block degrades to the last snapshot,
+// never a blank — same NSE→fallback discipline as the index board above.
+import { computePivots, pivotSourceBar } from '../../lib/pivots';
+import { mapOptionChain, expiryInDays } from '../../lib/niftyOptions';
+import niftyOptionsSeed from '../../../data/nifty-options.json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -256,11 +264,103 @@ async function fetchIndices(cookie) {
 // lib/fiidiiTrail.js — shared with /api/snapshot's daily cron. The Wrap still persists
 // on-demand here when the page loads; the cron keeps it building with no browser open.
 
+// ── Nifty pivot S/R (classic levels) ─────────────────────────────────────────
+// Daily ^NSEI bars → the last COMPLETED session's H/L/C → classic pivot ladder.
+// When the market is live the latest bar is the partial session, so pivotSourceBar
+// drops it (levels are for the CURRENT session, off yesterday's close).
+async function fetchNiftyLevels() {
+  const path = `/v8/finance/chart/${encodeURIComponent('^NSEI')}?interval=1d&range=5d`;
+  for (const host of YH_HOSTS) {
+    try {
+      const res = await fetch(host + path, {
+        headers: { 'User-Agent': UA, Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(7000),
+      });
+      if (!res.ok) continue;
+      const r = (await res.json())?.chart?.result?.[0];
+      const ts = r?.timestamp, q = r?.indicators?.quote?.[0], meta = r?.meta;
+      if (!Array.isArray(ts) || !q) continue;
+      const bars = ts
+        .map((t, i) => ({ date: new Date(t * 1000).toISOString().slice(0, 10), high: q.high?.[i], low: q.low?.[i], close: q.close?.[i] }))
+        .filter((b) => [b.high, b.low, b.close].every((x) => x != null && isFinite(x)));
+      const bar = pivotSourceBar(bars, deriveMarketState(meta) === 'REGULAR');
+      const lv = computePivots(bar);
+      if (lv) return { nifty: { ...lv, prevClose: bar.close, asOf: bar.date } };
+    } catch { /* try next host */ }
+  }
+  return { stale: true, error: 'fetch failed' };
+}
+
+// ── Nifty option-chain read (PCR / ATM IV / max pain / expiry) ────────────────
+// Serving order mirrors the index board: (1) NSE live, best-effort with a short
+// timeout — usually blocked on a datacenter IP but real when it gets through;
+// (2) the laptop-captured KV snapshot; (3) the committed seed. A snapshot's
+// expiry-in is recomputed against today, and a rolled/expired snapshot is hidden
+// (honest blank) rather than shown with a negative countdown.
+function kvCreds() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  return url && token ? { url, token } : null;
+}
+async function kvGetJSON(key) {
+  const creds = kvCreds();
+  if (!creds) return null;
+  try {
+    const r = await fetch(creds.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['GET', key]),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(6000),
+    });
+    const j = await r.json();
+    return j?.result ? JSON.parse(j.result) : null;
+  } catch { return null; }
+}
+// Refresh the expiry countdown against today; drop a snapshot whose nearest expiry
+// has already passed (it's stale until the next capture).
+function freshenOptions(o, todayISO) {
+  if (!o || !o.expiryDate) return null;
+  const eid = expiryInDays(o.expiryDate, todayISO);
+  if (eid == null || eid < 0) return null;
+  return { ...o, expiryInDays: eid };
+}
+async function fetchOptions(cookie, todayISO) {
+  // 1 — NSE live (short timeout so it can't stall the wrap; runs inside Promise.all)
+  try {
+    const res = await fetch('https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY', {
+      headers: {
+        'User-Agent': UA,
+        Accept: 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        Referer: 'https://www.nseindia.com/option-chain',
+        ...(cookie ? { Cookie: cookie } : {}),
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      const o = mapOptionChain(await res.json(), todayISO);
+      if (o) return { ...o, snapshot: false };
+    }
+  } catch { /* fall through to snapshot */ }
+  // 2 — laptop-captured KV snapshot
+  const kv = freshenOptions(await kvGetJSON('marketwrap:options'), todayISO);
+  if (kv) return { ...kv, snapshot: true };
+  // 3 — committed seed
+  const seed = freshenOptions(niftyOptionsSeed?.options, todayISO);
+  if (seed) return { ...seed, snapshot: true };
+  return null;
+}
+
 export async function GET() {
+  // Expiry-in / snapshot freshness are IST-calendar (the wrap is NSE-oriented).
+  const todayISO = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
   // One NSE cookie bootstrap, reused by both NSE endpoints (indices + FII/DII).
   const cookie = await nseCookie();
-  const [cues, sessions, usSectors, usMovers, usVix, fiidii, indices] = await Promise.all([
-    fetchCues(), fetchSessions(), fetchUsSectors(), fetchUsMovers(), yhQuote('^VIX', 'Yahoo ^VIX'), fetchFiiDii(cookie), fetchIndices(cookie),
+  const [cues, sessions, usSectors, usMovers, usVix, fiidii, indices, levels, options] = await Promise.all([
+    fetchCues(), fetchSessions(), fetchUsSectors(), fetchUsMovers(), yhQuote('^VIX', 'Yahoo ^VIX'), fetchFiiDii(cookie), fetchIndices(cookie), fetchNiftyLevels(), fetchOptions(cookie, todayISO),
   ]);
   // FII derivative positioning — keyed to the cash feed's authoritative session date.
   const fiiDerivs = await fetchParticipantStats(cookie, fiidii && !fiidii.stale ? fiidii.latest?.date : null);
@@ -279,6 +379,8 @@ export async function GET() {
       fiidii,
       fiiDerivs,
       indices,
+      levels,
+      options,
     },
     // Closes/levels move intraday; a short edge cache keeps refreshes cheap
     // without serving a number that's more than a minute or two old.
