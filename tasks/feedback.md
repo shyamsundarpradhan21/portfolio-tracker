@@ -508,6 +508,29 @@ created name (payslip wrapper now returns `meta.savedAs`); (c) take a backup of 
 test chain will rewrite BEFORE the test (the scratchpad `private-before.json` is what made
 recovery possible). Pairs with the harness rule "look at the target before deleting".
 
+### A broker report's FILENAME is its dispatch key — an FY-SLICE report REPLACES the ALL-TIME one and wipes other years
+Caught 2026-07-13. The user dropped a **FY24-25-only** Dhan tax export into `inbox/`. The
+`broker-tax` parser dispatches on filename (`base == "TAX_PNL_REPORT.xls"`) and, on PASS,
+`copyFileSync`s it into `data/reports/` under that SAME name (`newer download replaces`) then
+regenerates `data/broker-tax.json` from the WHOLE corpus. So the FY-slice file overwrote the
+existing **all-time** `TAX_PNL_REPORT.xls` and the regen dropped Dhan's F&O history OUTSIDE
+FY24-25 (FY23-24 -85,094 / FY25-26 +186,496 / FY26-27 +185,536 vanished; all-time +103,585 →
+-183,353). And it was a **no-op-plus-regression**: broker-tax ALREADY had FY24-25 = -183,353
+correct, so the drop added nothing and only deleted 3 FYs. **Why:** brokers export both an
+all-time report and per-FY/date-range slices under IDENTICAL default names, and the ingest
+keys on name, not content coverage. **How to apply:** (a) before ingesting a broker tax/P&L
+report, check whether it's a NARROW slice that collides with an existing all-time report of the
+same dispatch name — a shrinking `fno_daily` count or a broker's FY set going from many→one is
+the tell; (b) prefer the ALL-TIME export as the canonical `data/reports/` file (it already
+carries every FY, incl. the "fragmented" one, correctly); (c) after ANY broker-report ingest,
+diff `broker-tax.json` vs `HEAD~1` and confirm no broker LOST an FY before committing —
+`fno_realized.fy[].byBroker` per-FY is the check. Recovery here: restore the all-time report
+from Downloads, regenerate (app-facing sections came back byte-identical + fno_daily regained
+order counts), re-seed KV. NB the broker-tax *tax report* feeds `broker-tax.json`, NOT the
+**note→realised** path (`fno-realised-notes.json`, FIFO over contract-note PDFs) — those are
+different reconciliations; a tax report can't complete the note path. Pairs with [[render-verify
+any data-ledger edit]] and "Re-plan on surprise."
+
 ### Derive from the data the user pointed at — don't substitute a generic answer
 When the user says "go through X, run the numbers, build Y from it" (e.g. "go
 through the vests, run their return nos, come up with a portfolio"), the
