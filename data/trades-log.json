@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-07-10T18:46:13+05:30",
+  "updatedAt": "2026-07-13T10:02:21+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -1441,6 +1441,66 @@
       "qty": 195,
       "price": 114.15,
       "value": 22259.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "228986",
+      "sym": "NIFTY-Jul2026-24200-PE",
+      "date": "2026-07-13",
+      "side": "BUY",
+      "qty": 130,
+      "price": 214.3,
+      "value": 27859
+    },
+    {
+      "broker": "Dhan",
+      "id": "228987",
+      "sym": "NIFTY-Jul2026-24200-PE",
+      "date": "2026-07-13",
+      "side": "BUY",
+      "qty": 130,
+      "price": 214.3,
+      "value": 27859
+    },
+    {
+      "broker": "Dhan",
+      "id": "228988",
+      "sym": "NIFTY-Jul2026-24200-PE",
+      "date": "2026-07-13",
+      "side": "BUY",
+      "qty": 65,
+      "price": 214.35,
+      "value": 13932.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "235403",
+      "sym": "NIFTY-Jul2026-23800-PE",
+      "date": "2026-07-13",
+      "side": "SELL",
+      "qty": 65,
+      "price": 27.6,
+      "value": 1794
+    },
+    {
+      "broker": "Dhan",
+      "id": "235404",
+      "sym": "NIFTY-Jul2026-23800-PE",
+      "date": "2026-07-13",
+      "side": "SELL",
+      "qty": 130,
+      "price": 27.6,
+      "value": 3588
+    },
+    {
+      "broker": "Dhan",
+      "id": "235405",
+      "sym": "NIFTY-Jul2026-23800-PE",
+      "date": "2026-07-13",
+      "side": "SELL",
+      "qty": 130,
+      "price": 27.55,
+      "value": 3581.5
     }
   ]
 }
