@@ -82,6 +82,9 @@ const CUE_DEFS = [
   { key: 'gold',   sym: 'GC=F',   group: 'commodity',  label: 'Gold',        kind: 'commodity', unit: '$' },
   { key: 'silver', sym: 'SI=F',   group: 'commodity',  label: 'Silver',      kind: 'commodity', unit: '$' },
   { key: 'brent',  sym: 'BZ=F',   group: 'commodity',  label: 'Brent crude', kind: 'commodity', unit: '$' },
+  { key: 'natgas', sym: 'NG=F',   group: 'commodity',  label: 'Nat Gas',     kind: 'commodity', unit: '$' },
+  { key: 'btc',    sym: 'BTC-USD', group: 'crypto',    label: 'Bitcoin',     kind: 'crypto',    unit: '$' },
+  { key: 'eth',    sym: 'ETH-USD', group: 'crypto',    label: 'Ethereum',    kind: 'crypto',    unit: '$' },
   { key: 'usdinr', sym: 'INR=X',  group: 'fx',         label: 'USD/INR',    kind: 'fx' },
   { key: 'us10y',  sym: '^TNX',   group: 'fx',         label: 'US 10Y',     kind: 'yield' },
 ];

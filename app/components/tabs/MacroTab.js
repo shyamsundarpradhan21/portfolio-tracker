@@ -428,8 +428,9 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
     ...railRegion('Asia', q(c.nikkei), q(c.hangseng), q(c.kospi)),
   ];
   const fx = [
-    q(c.gold), q(c.silver), q(c.brent), q(c.usdinr), q(c.us10y),
+    q(c.gold), q(c.silver), q(c.brent), q(c.natgas), q(c.usdinr), q(c.us10y),
     dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
+    q(c.btc), q(c.eth),
   ].filter(Boolean);
   // News rail = market headlines (/api/news) + per-holding portfolio headlines
   // (/api/portfolio-news) merged into ONE region-aware rail. Portfolio items carry the
