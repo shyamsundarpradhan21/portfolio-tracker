@@ -87,7 +87,7 @@ function Section({ label, hint, children }) {
   );
 }
 
-export default function NiftyOverview({ quote, spark, returns, trend, options, levels }) {
+export default function NiftyOverview({ title = 'Nifty 50', onBack, quote, spark, returns, trend, options, levels }) {
   const last = quote?.last;
   const pct = quote?.pct;
   const change = quote?.change;
@@ -99,7 +99,10 @@ export default function NiftyOverview({ quote, spark, returns, trend, options, l
   return (
     <div className="card sec nov-panel">
       {/* hero */}
-      <div className="nov-lbl">Nifty 50</div>
+      <div className="nov-lbl">
+        {onBack && <span className="nov-back" role="button" tabIndex={0} onClick={onBack} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onBack(); }} title="Back to Nifty 50">‹</span>}
+        {title}
+      </div>
       <div className="nov-val">{n2(last)}</div>
       <div className={'nov-chg ' + cls(pct)}>
         {arr(pct)} {change != null && isFinite(change) ? Math.abs(change).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}

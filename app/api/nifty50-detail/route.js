@@ -58,6 +58,15 @@ function detailFrom(r) {
   const divs = r.events?.dividends ? Object.values(r.events.dividends).sort((a, b) => a.date - b.date) : [];
   const lastDiv = divs.length ? divs[divs.length - 1] : null;
   const ttm = divs.filter((d) => d.date * 1000 > now - 365 * DAY).reduce((s, d) => s + d.amount, 0);
+  // Extra series so the Nifty-Overview panel can render a SELECTED stock the same way it renders
+  // the index (reusing dailyReturns / computePivots client-side): recent daily closes (spark +
+  // last-5 returns) and the most-recent complete OHLC bar (classic pivots).
+  const recentCloses = pts.slice(-35).map(([t, c]) => ({ close: r2(c), date: new Date(t).toISOString().slice(0, 10) }));
+  const hi = r.indicators?.quote?.[0]?.high || [], lo = r.indicators?.quote?.[0]?.low || [];
+  let pivotBar = null;
+  for (let i = ts.length - 1; i >= 0; i--) {
+    if (hi[i] != null && lo[i] != null && closes[i] != null) { pivotBar = { high: r2(hi[i]), low: r2(lo[i]), close: r2(closes[i]), asOf: new Date(ts[i] * 1000).toISOString().slice(0, 10) }; break; }
+  }
   return {
     perf,
     hi52: r2(m.fiftyTwoWeekHigh ?? Math.max(...vals)),
@@ -65,6 +74,8 @@ function detailFrom(r) {
     lastDivAmt: lastDiv ? r2(lastDiv.amount) : null,
     lastDivDate: lastDiv ? new Date(lastDiv.date * 1000).toISOString().slice(0, 10) : null,
     ttmDiv: r2(ttm) || null,
+    closes: recentCloses,
+    pivotBar,
   };
 }
 
@@ -87,6 +98,6 @@ export async function GET() {
   const stocks = Object.fromEntries(rows.filter(Boolean));
   return Response.json(
     { fetchedAt: new Date().toISOString(), count: Object.keys(stocks).length, stocks },
-    { headers: { 'Cache-Control': 'public, s-maxage=21600, stale-while-revalidate=86400' } }, // 6h fresh, 1d SWR
+    { headers: { 'Cache-Control': 'public, max-age=0, s-maxage=21600, stale-while-revalidate=86400' } }, // browser revalidates; CDN 6h fresh, 1d SWR
   );
 }

@@ -6,6 +6,7 @@ import MarketHeatmap from '../shared/MarketHeatmap';
 import NiftyOverview from '../shared/NiftyOverview';
 import UpcomingDividends from '../shared/UpcomingDividends';
 import { dailyReturns, trendWindows } from '../../lib/niftyTrend';
+import { computePivots } from '../../lib/pivots';
 import { HEATMAP_META as NASDAQ_META, HEATMAP_FALLBACK as NASDAQ_FALLBACK } from '../../../data/nasdaq100-heatmap';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
@@ -405,6 +406,13 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   // India / Global / All filter (persisted).
   const [region, setRegion] = useState('india');
   useEffect(() => { try { const r = localStorage.getItem('nwTracker.wrapRegion'); const m = r === 'global' ? 'us' : r === 'all' ? 'india' : r; if (m === 'india' || m === 'us') setRegion(m); } catch {} }, []);
+  // Heatmap → detail panel: clicking a stock tile drives the NiftyOverview panel (its
+  // price/returns/trend/S&R), else the panel shows the Nifty index. Lazy-fetch the per-stock
+  // detail feed (CDN-cached) once; clear the selection when the region flips.
+  const [selSym, setSelSym] = useState(null);
+  const [nDetail, setNDetail] = useState(null);
+  useEffect(() => { let on = true; fetch('/api/nifty50-detail').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setNDetail(j.stocks || {}); }).catch(() => {}); return () => { on = false; }; }, []);
+  useEffect(() => { setSelSym(null); }, [region]);
   const pickRegion = (r) => { setRegion(r); try { localStorage.setItem('nwTracker.wrapRegion', r); } catch {} };
   const showIN = region === 'india';
   const showUS = region === 'us';
@@ -473,6 +481,23 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const niftyReturns = dailyReturns(niftyCloses, 5);
   const niftyTrendW = trendWindows(niftyCloses, niftyDaily?.latest, niftyDaily?.latestDate);
   const niftySpark = niftyCloses.slice(-32).map((p) => ({ c: p.close }));
+  // NiftyOverview shows the selected heatmap stock, else the Nifty index. Options (PCR/max-pain)
+  // is index-only → null for a stock, which auto-hides that block. Trend reuses my per-stock perf;
+  // spark/returns/S&R reuse the shared helpers over the stock's daily closes + prior-session bar.
+  const selStock = selSym ? (nifty50?.stocks || []).find((s) => s.sym === selSym) : null;
+  const selDet = selStock ? nDetail?.[selSym] : null;
+  const novProps = selStock
+    ? {
+        title: selStock.name || selSym,
+        quote: { last: selStock.price, pct: selStock.pct, change: selStock.change },
+        spark: (selDet?.closes || []).slice(-32).map((p) => ({ c: p.close })),
+        returns: dailyReturns(selDet?.closes || [], 5),
+        trend: selDet?.perf ? { '1W': selDet.perf.w1, '1M': selDet.perf.m1, '3M': selDet.perf.m3, '6M': selDet.perf.m6, YTD: selDet.perf.ytd, '1Y': selDet.perf.y1 } : null,
+        options: null,
+        levels: selDet?.pivotBar ? computePivots(selDet.pivotBar) : null,
+        onBack: () => setSelSym(null),
+      }
+    : { title: 'Nifty 50', quote: niftyQuote, spark: niftySpark, returns: niftyReturns, trend: niftyTrendW, options: premarket?.options, levels: premarket?.levels?.nifty };
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII renders as its own full-width card below (India only); also shown
@@ -568,7 +593,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
             <div className="wlabel">Nifty 50 · heatmap
               <span className="hint">sized by market cap · click a sector to drill in</span>
             </div>
-            <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
+            <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} onSelect={(s) => setSelSym((cur) => (cur === s.sym ? null : s.sym))} selected={selSym} />
           </div>
         ) : null}
         {showUS && (nasdaqLoading || nasdaq?.stocks?.length) ? (
@@ -580,14 +605,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
           </div>
         ) : null}
         {showIN && (
-          <NiftyOverview
-            quote={niftyQuote}
-            spark={niftySpark}
-            returns={niftyReturns}
-            trend={niftyTrendW}
-            options={premarket?.options}
-            levels={premarket?.levels?.nifty}
-          />
+          <NiftyOverview {...novProps} />
         )}
       </div>
 

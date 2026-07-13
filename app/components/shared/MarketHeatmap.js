@@ -76,8 +76,6 @@ const crTxt = (rupees) => {
   if (cr >= 1e3) return '₹' + (cr / 1e3).toFixed(2) + 'K Cr';
   return '₹' + Math.round(cr).toLocaleString('en-IN') + ' Cr';
 };
-const MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const dmy = (iso) => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${+d} ${MON3[+m - 1]} '${y.slice(2)}`; };
 const fundOf = (sym) => FUND.stocks?.[sym];
 const mcapOf = (s) => { const f = fundOf(s.sym); return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
 
@@ -141,7 +139,7 @@ const pxpc = (v, total) => (total > 0 ? (v / total) * 100 + '%' : '0%');
 
 // Market-agnostic: `meta`/`fallback` = the {sym → {sector, industry, cap}} taxonomy
 // (defaults to the Nifty-50 one for back-compat), `label` = the root-crumb name.
-export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fallback = NIFTY_FALLBACK, label = 'Nifty 50' }) {
+export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fallback = NIFTY_FALLBACK, label = 'Nifty 50', onSelect, selected }) {
   const [drill, setDrill] = useState(null);
   const [w, setW] = useState(0);
   const roRef = useRef(null);
@@ -172,21 +170,9 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
   // If a drilled sector vanishes from a later feed, fall back to the overview.
   useEffect(() => { if (drill && !tree.some((s) => s.name === drill)) setDrill(null); }, [drill, tree]);
 
-  // Deep-dive detail (perf / 52-wk / dividends) — lazy, CDN-cached daily server-side.
-  const [detail, setDetail] = useState(null);
-  useEffect(() => {
-    let on = true;
-    fetch('/api/nifty50-detail').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setDetail(j.stocks || {}); }).catch(() => {});
-    return () => { on = false; };
-  }, []);
+  // Hover tooltip only (light: logo · CMP · mkt-cap). A CLICK selects the stock and the
+  // parent drives the side detail panel (NiftyOverview) — no in-map modal.
   const [hov, setHov] = useState(null); // { s, x, y } — hovered tile + cursor (viewport coords)
-  const [sel, setSel] = useState(null); // selected stock → deep-dive panel
-  useEffect(() => { // Esc closes the deep-dive
-    if (!sel) return;
-    const onKey = (e) => { if (e.key === 'Escape') setSel(null); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [sel]);
 
   const H = CANVAS_H;
   const { boxes, tiles } = useMemo(() => (w > 10 && tree.length ? layout(tree, drill, w, H) : { boxes: [], tiles: [] }), [tree, drill, w, H]);
@@ -251,13 +237,14 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
               onMouseEnter={(e) => setHov({ s, x: e.clientX, y: e.clientY })}
               onMouseMove={(e) => setHov({ s, x: e.clientX, y: e.clientY })}
               onMouseLeave={() => setHov((h) => (h && h.s.sym === s.sym ? null : h))}
-              onClick={() => { setSel(s); setHov(null); }}
-              style={{ position: 'absolute', boxSizing: 'border-box', left: pxpc(r.x, w), top: pxpc(r.y, H), width: pxpc(r.w, w), height: pxpc(r.h, H), padding: 1, cursor: 'pointer' }}>
+              onClick={() => { onSelect && onSelect(s); setHov(null); }}
+              style={{ position: 'absolute', boxSizing: 'border-box', left: pxpc(r.x, w), top: pxpc(r.y, H), width: pxpc(r.w, w), height: pxpc(r.h, H), padding: 1, cursor: 'pointer', zIndex: selected === s.sym ? 3 : undefined }}>
               <div
                 style={{
                   width: '100%', height: '100%', borderRadius: 2, overflow: 'hidden',
                   display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
                   textAlign: 'center', lineHeight: 1.05, background: tileBg(s.pct), color: 'var(--txt)',
+                  ...(selected === s.sym ? { outline: '1.5px solid var(--acc)', outlineOffset: '-1.5px', borderRadius: 3 } : null),
                 }}>
                 {showTk && (
                   <div className="mono" style={{ fontSize: tkSize, fontWeight: 700, padding: '0 2px', maxWidth: '100%', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
@@ -273,7 +260,7 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
         })}
       </div>
 
-      {hov && !sel && (() => {
+      {hov && (() => {
         const s = hov.s;
         const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
         const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -289,51 +276,6 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
             </div>
             <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{crTxt(mcapOf(s))}</b></div>
             <div className="nhx-hov-hint">click for details</div>
-          </div>
-        );
-      })()}
-
-      {sel && (() => {
-        const s = sel, d = detail?.[s.sym];
-        const dy = d?.ttmDiv && s.price ? (d.ttmDiv / s.price) * 100 : null;
-        const p = d?.perf || {};
-        const P = [['1W', p.w1], ['1M', p.m1], ['3M', p.m3], ['6M', p.m6], ['YTD', p.ytd], ['1Y', p.y1]];
-        return (
-          <div className="nhx-dd-ov" onClick={() => setSel(null)}>
-            <div className="nhx-dd" onClick={(e) => e.stopPropagation()}>
-              <button className="nhx-dd-x" onClick={() => setSel(null)} aria-label="Close">×</button>
-              <div className="nhx-dd-hd">
-                <Logo sym={s.sym} size={40} />
-                <div className="nhx-dd-id">
-                  <div className="nhx-dd-tk mono">{s.sym}</div>
-                  <div className="nhx-dd-nm">{fundOf(s.sym)?.name || s.name} · {s.sector} · {s.industry}</div>
-                </div>
-                <div className="nhx-dd-px">
-                  <div className="nhx-dd-cmp mono">{money(s.price)}</div>
-                  <div className={'nhx-dd-1d mono ' + clr(s.pct)}>{pctTxt(s.pct)}</div>
-                </div>
-              </div>
-              <div className="nhx-dd-stats">
-                <div><div className="nhx-k">Mkt Cap</div><div className="nhx-v mono">{crTxt(mcapOf(s))}</div></div>
-                <div><div className="nhx-k">Div Yield</div><div className="nhx-v mono">{dy != null ? dy.toFixed(2) + '%' : '—'}</div></div>
-                <div><div className="nhx-k">Last Div</div><div className="nhx-v mono">{d?.lastDivAmt != null ? money(d.lastDivAmt) + ' · ' + dmy(d.lastDivDate) : '—'}</div></div>
-                <div><div className="nhx-k">52-wk High</div><div className="nhx-v mono">{money(d?.hi52)}</div></div>
-                <div><div className="nhx-k">52-wk Low</div><div className="nhx-v mono">{money(d?.lo52)}</div></div>
-                <div><div className="nhx-k">Idx Weight</div><div className="nhx-v mono">{s.cap != null ? s.cap.toFixed(1) + '%' : '—'}</div></div>
-              </div>
-              <div className="nhx-dd-perf">
-                <div className="nhx-k" style={{ marginBottom: 8 }}>Performance{!detail && ' · loading…'}</div>
-                <div className="nhx-perf-row">
-                  {P.map(([k, v]) => (
-                    <div key={k} className={'nhx-perf-cell ' + (v == null ? '' : v >= 0 ? 'up' : 'dn')}>
-                      <div className="nhx-pk">{k}</div>
-                      <div className={'nhx-pv mono ' + clr(v)}>{v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'}</div>
-                      <div className="nhx-bar" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         );
       })()}
