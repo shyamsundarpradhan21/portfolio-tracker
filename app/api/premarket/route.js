@@ -69,8 +69,12 @@ const CUE_DEFS = [
   { key: 'sp500',  sym: '^GSPC',  group: 'world',      label: 'S&P 500',    kind: 'index' },
   { key: 'dow',    sym: '^DJI',   group: 'world',      label: 'Dow Jones',  kind: 'index' },
   { key: 'nasdaq', sym: '^IXIC',  group: 'world',      label: 'Nasdaq',     kind: 'index' },
+  { key: 'ftse',   sym: '^FTSE',  group: 'world',      label: 'FTSE 100',   kind: 'index' },
+  { key: 'cac',    sym: '^FCHI',  group: 'world',      label: 'CAC 40',     kind: 'index' },
+  { key: 'dax',    sym: '^GDAXI', group: 'world',      label: 'DAX',        kind: 'index' },
   { key: 'nikkei', sym: '^N225',  group: 'world',      label: 'Nikkei 225', kind: 'index' },
   { key: 'hangseng', sym: '^HSI', group: 'world',      label: 'Hang Seng',  kind: 'index' },
+  { key: 'kospi',  sym: '^KS11',  group: 'world',      label: 'KOSPI',      kind: 'index' },
   // India reference — prior close, the base the pre-open auction moves from
   { key: 'nifty',  sym: '^NSEI',  group: 'india',      label: 'Nifty 50',   kind: 'index' },
   { key: 'sensex', sym: '^BSESN', group: 'india',      label: 'Sensex',     kind: 'index' },

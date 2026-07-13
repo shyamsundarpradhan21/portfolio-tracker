@@ -30,11 +30,13 @@ function TickerLine({ label, kind, items, anim }) {
       <div className="tkv">
         <div className={`tkrow ${anim}`}>
           {loop.map((it, i) => (
-            <span className="tki" key={i} aria-hidden={i >= half.length}>
-              {it.dot
-                ? <>{it.tag && <span className="tkpf">{it.tag}</span>}<i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
-                : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
-            </span>
+            it.div
+              ? <span className="tkdiv" key={i} aria-hidden={i >= half.length}><span>{it.div}</span></span>
+              : <span className="tki" key={i} aria-hidden={i >= half.length}>
+                  {it.dot
+                    ? <>{it.tag && <span className="tkpf">{it.tag}</span>}<i className={`tdot ${it.dot}`} /><span className={it.cls}>{it.text}</span></>
+                    : <><b>{it.name}</b> {it.val} <em className={it.cls}>{it.pct}</em></>}
+                </span>
           ))}
         </div>
       </div>
@@ -414,11 +416,17 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const q = (x, name) => (x && x.price != null ? { name: name || x.label, val: fmt(x.price), pct: apct(x.pct), cls: cls(x.pct) } : null);
   // Indices + Commod·FX rails are COMMON across regions (India + US shown together);
   // only the News rail below stays region-aware.
+  // Region-grouped rail: a divider marker { div } leads each region, included ONLY when that
+  // region has ≥1 live index (a dead feed drops the whole region — divider and all — never a
+  // stranded label). Order: India · US · Europe · Asia.
+  const railRegion = (div, ...items) => { const live = items.filter(Boolean); return live.length ? [{ div }, ...live] : []; };
   const idx = [
-    q(c.nifty), q(c.sensex),
-    ivix?.last != null ? { name: 'India VIX', val: fmt(ivix.last), pct: apct(ivix.pct), cls: cls(ivix.pct) } : null,
-    q(c.sp500), q(c.nasdaq), q(c.dow), q(c.nikkei), q(c.hangseng),
-  ].filter(Boolean);
+    ...railRegion('India', q(c.nifty), q(c.sensex),
+      ivix?.last != null ? { name: 'India VIX', val: fmt(ivix.last), pct: apct(ivix.pct), cls: cls(ivix.pct) } : null),
+    ...railRegion('US', q(c.sp500), q(c.nasdaq), q(c.dow)),
+    ...railRegion('Europe', q(c.ftse), q(c.cac), q(c.dax)),
+    ...railRegion('Asia', q(c.nikkei), q(c.hangseng), q(c.kospi)),
+  ];
   const fx = [
     q(c.gold), q(c.silver), q(c.brent), q(c.usdinr), q(c.us10y),
     dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
