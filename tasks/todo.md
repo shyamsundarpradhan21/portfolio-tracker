@@ -1,3 +1,36 @@
+# Plan — regional index rail in Market Wrap (add 4 indices + India/US/Europe/Asia dividers) — 2026-07-14
+
+## Where
+The rail = `<TickerLine label="Indices" items={idx} />` in `app/components/tabs/MacroTab.js` (~L473);
+`idx` (~L417) is hand-ordered from premarket cues `c.*`. Cues come from `CUE_DEFS` in
+`app/api/premarket/route.js` (keyless Yahoo). TickerLine is a looping marquee — dividers scroll +
+repeat each cycle (correct for a ticker).
+
+## Data — VERIFIED live against Yahoo (2026-07-14)
+FTSE 100 `^FTSE`, CAC 40 `^FCHI`, DAX `^GDAXI`, KOSPI `^KS11` → all return live data. **GIFT Nifty →
+NOT on Yahoo** (NSE IX / GIFT City; both candidate symbols 404). Needs a decision (drop / broker /
+proxy). Reordered regions: India (GIFT?·Nifty·Sensex·VIX) · US (S&P·Nasdaq·Dow) · Europe
+(FTSE·CAC·DAX) · Asia (Nikkei·HangSeng·KOSPI).
+
+## Steps (after approval + divider-style + GIFT decision)
+- [ ] `premarket/route.js` CUE_DEFS: add `ftse ^FTSE`, `cac ^FCHI`, `dax ^GDAXI`, `kospi ^KS11`
+      (group `world`, so PreMarketBriefing's World section keeps working); (+GIFT source if chosen).
+- [ ] `MacroTab.js`: rebuild `idx` with regional order + `{div:'India'|'US'|'Europe'|'Asia'}` markers;
+      extend TickerLine to render a `.tkdiv` for div items (chosen style A/B).
+- [ ] `globals.css`: add `.tkdiv` (style A accent chip OR B rule+label).
+- [ ] Verify: render the Market Wrap tab (rail shows all + dividers, live values); certify (rail is
+      inside `.tkv` overflow — masked scroll, but re-cert both themes).
+- [ ] Mock: `public/mock-index-rail.html` (untracked).
+
+## Review — SHIPPED 2026-07-14 (04edefd, 372455e)
+Chosen: divider style A (accent chip) · GIFT Nifty dropped (not on Yahoo). Wired FTSE/CAC/DAX/KOSPI
+via `railRegion()` + `.tkdiv`; render-verified live (EUROPE/ASIA chips + live values), certify green.
+Follow-on (same session): added **Nat Gas** `NG=F` (commodity) + **Bitcoin/Ethereum** `BTC-USD`/`ETH-USD`
+(group 'crypto' → wrap rail only) to the Commod·FX rail. All live-verified. `railRegion` collided with
+the existing `region` state var (build error) → renamed. Mocks untracked: `public/mock-index-rail.html`.
+
+---
+
 # Plan — FY24-25 Dhan realised from trade-history CSV (note→realised "to the dot") — 2026-07-13
 
 ## Context
