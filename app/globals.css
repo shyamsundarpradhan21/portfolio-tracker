@@ -2138,6 +2138,14 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
 .an-2.an-cols { align-items: stretch; }
 .an-col { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 .an-col.an-fill { justify-content: space-between; }
+/* The metrics (non-fill) column's card fills the stretched column and its table
+   distributes rows to fill that height — so its bottom edge meets the chart column's
+   bottom (the charts are width-scaled SVGs and often stack taller than the table). The
+   slack is spread BETWEEN rows, not pooled under the last row. Inert when the table is
+   naturally the taller column, and bypassed below 900px (grid collapses to one column). */
+.an-cols .an-col:not(.an-fill) > .card { flex: 1 1 auto; display: flex; flex-direction: column; }
+.an-cols .an-col:not(.an-fill) .an-tblwrap { flex: 1 1 auto; display: flex; }
+.an-cols .an-col:not(.an-fill) .an-tbl { flex: 1 1 auto; height: 100%; }
 /* wide metric tables scroll WITHIN their card on narrow widths (scroll, never clip) */
 .an-tblwrap { overflow-x: auto; }
 
