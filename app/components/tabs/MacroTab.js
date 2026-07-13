@@ -529,23 +529,6 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       )}
 
-      {/* Nifty 50 Overview + your upcoming dividends — India view only (both are
-          NSE-specific). Index level/returns/options/S&R/trend, then the personalised
-          dividend calendar for held stocks. */}
-      {showIN && (
-        <div className="nov-block">
-          <NiftyOverview
-            quote={niftyQuote}
-            spark={niftySpark}
-            returns={niftyReturns}
-            trend={niftyTrendW}
-            options={premarket?.options}
-            levels={premarket?.levels?.nifty}
-          />
-          <UpcomingDividends items={dividends?.items} loading={dividends == null} />
-        </div>
-      )}
-
       {/* Left: market insights (sentiment, leading/coincident expanded). Right: top
           movers (day gainers | draggers). Portfolio news now lives in the News rail
           above, tagged per-holding — no separate news card, no calendar here. */}
@@ -576,37 +559,53 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         </div>
       </div>
 
-      {/* FII/DII — its own full-width card below the internals + news row (India only) */}
-      {showFii && (
-        <div className="card fdcard">
-          <div className="wlabel">FII / DII · net flow
-            <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
-            <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
+      {/* Row A — the market-cap heatmap (Fyers-style nested treemap, drill into a
+          sector) beside the Nifty 50 Overview detail panel (India), ~4:1. On the US
+          view the Nasdaq-100 heatmap fills the row (no India panel beside it). */}
+      <div className="wrap-rowA">
+        {showIN && (nifty50Loading || nifty50?.stocks?.length) ? (
+          <div className="card fdcard heat-card">
+            <div className="wlabel">Nifty 50 · heatmap
+              <span className="hint">sized by market cap · click a sector to drill in</span>
+            </div>
+            <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
           </div>
-          <FiiDiiChart trail={fiidiiTrail} derivs={fiiDerivs} />
+        ) : null}
+        {showUS && (nasdaqLoading || nasdaq?.stocks?.length) ? (
+          <div className="card fdcard heat-card">
+            <div className="wlabel">Nasdaq 100 · heatmap
+              <span className="hint">sized by market cap · click a sector to drill in</span>
+            </div>
+            <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" />
+          </div>
+        ) : null}
+        {showIN && (
+          <NiftyOverview
+            quote={niftyQuote}
+            spark={niftySpark}
+            returns={niftyReturns}
+            trend={niftyTrendW}
+            options={premarket?.options}
+            levels={premarket?.levels?.nifty}
+          />
+        )}
+      </div>
+
+      {/* Row B — FII/DII net flow (left) + your upcoming dividends (right). India only. */}
+      {showIN && (
+        <div className="wrap-rowB">
+          {showFii && (
+            <div className="card fdcard fd-card">
+              <div className="wlabel">FII / DII · net flow
+                <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
+                <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
+              </div>
+              <FiiDiiChart trail={fiidiiTrail} derivs={fiiDerivs} />
+            </div>
+          )}
+          <UpcomingDividends items={dividends?.items} loading={dividends == null} />
         </div>
       )}
-
-      {/* Market heatmap — Fyers-style nested treemap (sector › industry › stock), sized
-          by market cap, drill into a sector. Full-width so the treemap has room. Nifty-50
-          on the India view, Nasdaq-100 on US. Same MarketHeatmap component, different
-          taxonomy + feed. */}
-      {showIN && (nifty50Loading || nifty50?.stocks?.length) ? (
-        <div className="card fdcard">
-          <div className="wlabel">Nifty 50 · heatmap
-            <span className="hint">sized by market cap · click a sector to drill in</span>
-          </div>
-          <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} />
-        </div>
-      ) : null}
-      {showUS && (nasdaqLoading || nasdaq?.stocks?.length) ? (
-        <div className="card fdcard">
-          <div className="wlabel">Nasdaq 100 · heatmap
-            <span className="hint">sized by market cap · click a sector to drill in</span>
-          </div>
-          <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" />
-        </div>
-      ) : null}
 
       {/* Macro percentile sliders */}
       <SliderBoard board={macroBoard} region={region} />

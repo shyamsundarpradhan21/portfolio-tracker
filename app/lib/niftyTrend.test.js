@@ -49,9 +49,17 @@ describe('trendWindows', () => {
     const t = trendWindows(closes, 126, '2026-07-13');
     expect(t['1W']).toBe(26); // 126 vs 100
   });
-  it('all-null when history is too short', () => {
+  it('YTD vs the prior calendar year-end close', () => {
+    const c = [
+      { date: '2025-12-31', close: 100 }, // prior year-end
+      { date: '2026-03-01', close: 110 },
+      { date: '2026-07-13', close: 130 },
+    ];
+    expect(trendWindows(c).YTD).toBe(30); // 130 vs 100
+  });
+  it('all-null (6 windows incl. YTD) when history is too short', () => {
     expect(trendWindows([{ date: '2026-07-13', close: 1 }])).toEqual({
-      '1W': null, '1M': null, '3M': null, '6M': null, '1Y': null,
+      '1W': null, '1M': null, '3M': null, '6M': null, YTD: null, '1Y': null,
     });
   });
 });

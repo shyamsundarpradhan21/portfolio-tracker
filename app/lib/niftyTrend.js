@@ -41,22 +41,27 @@ function closeAtOrBefore(rows, targetMs) {
 }
 
 /**
- * % change of the latest close vs the close ~1W/1M/3M/6M/1Y ago (calendar
- * lookback). Returns `{ '1W':pct|null, ... }`; a window with insufficient history
- * is null so the UI dashes it. `latest`/`latestDate` override the series tail when
- * the caller has a fresher live level than the last daily bar.
+ * % change of the latest close vs the close ~1W/1M/3M/6M/1Y ago (calendar lookback)
+ * plus YTD (vs the prior calendar year-end close). Returns
+ * `{ '1W':pct|null, '1M':…, '3M':…, '6M':…, YTD:…, '1Y':… }` in that order; a window
+ * with insufficient history is null so the UI dashes it. `latest`/`latestDate`
+ * override the series tail when the caller has a fresher live level than the last bar.
  * @param {Array<{date:string, close:number}>} closes  ascending
  */
 export function trendWindows(closes, latest = null, latestDate = null) {
   const rows = (Array.isArray(closes) ? closes : []).filter((c) => c && isFinite(+c.close) && c.date);
-  if (rows.length < 2) return Object.fromEntries(WINDOWS.map(([k]) => [k, null]));
+  const out = { '1W': null, '1M': null, '3M': null, '6M': null, YTD: null, '1Y': null };
+  if (rows.length < 2) return out;
   const lastClose = latest != null && isFinite(+latest) ? +latest : rows[rows.length - 1].close;
   const lastMs = Date.parse(latestDate || rows[rows.length - 1].date);
   const anchor = isFinite(lastMs) ? lastMs : Date.parse(rows[rows.length - 1].date);
-  const out = {};
   for (const [key, days] of WINDOWS) {
     const past = closeAtOrBefore(rows, anchor - days * 86400000);
-    out[key] = past == null ? null : r2(pctChange(past, lastClose));
+    if (past != null) out[key] = r2(pctChange(past, lastClose));
   }
+  // YTD — vs the last close of the PRIOR calendar year (the year-end level).
+  const yearStart = Date.UTC(new Date(anchor).getUTCFullYear(), 0, 1);
+  const ytdBase = closeAtOrBefore(rows, yearStart - 1);
+  if (ytdBase != null) out.YTD = r2(pctChange(ytdBase, lastClose));
   return out;
 }

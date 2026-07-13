@@ -84,3 +84,15 @@ render as honest empty/hidden; the price/returns/trend/S&R half is live immediat
 **Open for the user:** (a) confirm the dividends re-plan (laptop path) vs Yahoo-crumb best-effort vs drop;
 (b) the AskUserQuestion for both decisions failed to deliver mid-run — decisions were made per the analysis
 and are flagged here. Pre-existing unrelated test failure: `parsers.test.mjs` venv `.exe` path (Windows-only).
+
+## Layout iteration (user-requested, mock-approved)
+Re-laid the India Wrap view into two rows (mock approved before build):
+- **Row A** — Nifty 50 heatmap (flex 4) + Nifty Overview as a compact side panel (flex 1, width-capped),
+  ~4:1, equal-height. On US view the Nasdaq heatmap fills the row. `NiftyOverview` rewritten to the
+  narrow-panel form: hero, **last-5-sessions kept** (user asked), options 2-col, **vertical** S&R ladder
+  with the LTP row dropped into its slot (amber), trend 2-col.
+- **Row B** — FII/DII net flow (left) + Upcoming dividends (right); India only.
+- Trend footer is now **6 windows: 1W / 1M / 3M / 6M / YTD / 1Y** (YTD added to `niftyTrend`, vs the prior
+  calendar year-end close; unit-tested). Below ~900px the rows stack and the panel goes full-width.
+- Re-certified (macro surfaces, normal + stress: 001/002/004=0, docOverflow=0) + populated-panel overflow
+  probe CLEAN at all 6 widths × both themes, normal + stress. Render-verified both themes.
