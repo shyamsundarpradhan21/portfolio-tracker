@@ -1,3 +1,67 @@
+# Plan — FY24-25 Dhan realised from trade-history CSV (note→realised "to the dot") — 2026-07-13
+
+## Context
+User dropped `TRADE_HISTORY_CSV_1100893433_2024-04-01_2025-03-31_0_.csv` (Dhan FY24-25 trade
+history, 3184 fills). Ingest daemon parked it UNRECOGNIZED (no parser). This is the "2024-25 Dhan
+CSV" the note→realised system was WAITING for (`app/lib/fnoRealised.js` comment + memory): the
+FY24-25 Dhan realised was fragmented because ~125 split-row contract notes are excluded from FIFO,
+so the live gap-fill is scoped to `NOTE_REALISED_FROM='2026-04-01'`. The CSV bypasses the fragmented
+notes with actual fills. Goal (user-confirmed): reconstruct realised to the dot, F&O + equity.
+
+## Feasibility — VERIFIED against the real CSV + real fnoFifo engine (scratchpad)
+- **F&O: PASS.** 1394 fills, 0 unparsed, 0 incomplete keys, 426 contracts, `residualLots=0` (every
+  position opens+closes in-file). Reconstructed gross **−183,337 vs broker-tax −183,353 → diff ₹16**
+  (0.009%). Names normalise cleanly: `NIFTY 13 FEB 23500 CALL` → `NIFTY13FEB2523500CE` (expiry YEAR
+  inferred from trade date; CALL/PUT→CE/PE; all options, no futures).
+- **Equity: PARTIAL — cannot be "to the dot" from a single-FY file.** 1791 rows (880 buy/911 sell);
+  **27.4% of sell value (₹64.0L) references buys made BEFORE FY24-25** (cost basis absent) → in-file
+  FIFO −76,343 vs broker-tax truth −55,960 (~₹20k off). Needs full multi-year history OR FY24-25
+  opening holdings+cost to seed the books.
+
+## Phase 1 — F&O (build now; proven)
+- [ ] `scripts/import-dhan-tradehistory.mjs` — parse CSV → F&O fills → `fifoRealisedByDay` → per-day
+      (date, Dhan) realised; reconcile FY totals vs broker-tax (gate: within a small tolerance of
+      −183,353); DRY-RUN by default, `--write` to persist.
+- [ ] Merge FY24-25 Dhan rows into `data/fno-realised-notes.json` (+ KV `ledger:fno:realised`),
+      `source:'tradehistory-fifo'`. Additive; never override a broker-captured row.
+- [ ] Cutover so it DISPLAYS: make `applyFnoRealised` honour tradehistory rows below
+      `NOTE_REALISED_FROM` (per-source allow, or a per-broker/date floor) — Dhan FY24-25 only, so
+      other brokers' fragmented pre-2026 stays broker-sourced. Keep the additive gap-fill semantics.
+- [ ] Verify: reconcile print; render-verify the trading-journal FY24-25 Dhan daily curve appears;
+      confirm no change to FY26-27 (already covered) or other brokers.
+- [ ] Ingest hygiene: move the CSV out of `inbox/unrecognized/` into a tracked source location; add
+      a `trade-history` parser (or document the manual script) so a future drop doesn't silently park.
+
+## Phase 2 — Equity (DECIDE given the caveat; not to-the-dot from this file)
+Options: (a) SKIP realised reconstruction — broker-tax already gives FY24-25 Dhan equity total
+(−55,960) and ITR gives STCG/LTCG; (b) populate FY24-25 equity EXITS into `indian_exits.json`
+(sell events, no cost basis needed) for the deployment/withdrawal ledger, flagging per-trade
+realised as ~73% complete; (c) user provides full multi-year equity history / FY24-25 opening
+holdings → complete FIFO. AWAIT user's pick before building.
+
+## Review — RESOLVED as VALIDATION (no reconstruction built) 2026-07-13
+Mid-build discovery (re-plan on surprise): the FY24-25 Dhan realised was ALREADY complete and
+displayed. The tax report dropped earlier today flowed `parse-broker-tax.py` → `fno_daily` →
+`backfill-fno-ledger.mjs` → `data/fno-ledger.json` as 176 per-day `source:'report'` rows summing
+to −183,353 WITH real charges; `broker-tax.json` carries the same FY total. So Phase 1's premise
+("fix a visible gap / extend the daily curve") was already satisfied — building the merge+display
+cutover would change no displayed number and add no charges.
+- **Delivered instead:** the CSV→FIFO reconstruction (scratchpad feasibility) independently
+  VALIDATED the displayed figure to **₹16** (CSV gross −183,337 vs report −183,353, residualLots=0).
+  User chose "Done — validated." No repo code written.
+- **Equity:** SKIPPED per user (single-FY CSV is 27.4% short on cross-year cost basis; broker-tax
+  −55,960 + ITR STCG/LTCG already cover it).
+- **CSV filed** as source-of-record in gitignored `data/reports/` (safely ignored by
+  parse-broker-tax.py — verified broker-tax.json regenerates byte-identical). Preserved for a future
+  full-history equity reconstruction if ever wanted.
+- **Left as-is (optional):** the dormant note→realised backup (`fno-realised-notes.json`) stays
+  fragmented for FY24-25 Dhan (+19,658 from 42 partial notes); nothing displays it. The CSV could
+  complete it later for laptop-off resilience — reconstruction proven, not wired.
+- **Ingest gap noted:** a `TRADE_HISTORY_CSV_*.csv` drop parks as UNRECOGNIZED (no parser). If
+  trade-history drops become routine, add a recognizer so they don't silently park.
+
+---
+
 # Plan — broker-token freshness self-heals on the open window (late laptop-open) — 2026-07-13
 
 ## Why
