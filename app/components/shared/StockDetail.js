@@ -36,8 +36,8 @@ function compact(n, cur) {
   return a.toFixed(0);
 }
 const vol = (n) => (n == null || !isFinite(n) ? '—' : compact(n, 'USD')); // shares, no ccy
-const pctv = (n) => (n == null || !isFinite(n) ? '—' : Math.abs(n).toFixed(2) + ' %'); // magnitude; direction = colour
-const fracPct = (n) => (n == null || !isFinite(n) ? '—' : (n * 100).toFixed(2) + ' %'); // Yahoo yields/payout are fractions
+const pctv = (n) => (n == null || !isFinite(n) ? '—' : Math.abs(n).toFixed(2) + '%'); // magnitude; direction = colour
+const fracPct = (n) => (n == null || !isFinite(n) ? '—' : (n * 100).toFixed(2) + '%'); // Yahoo yields/payout are fractions
 const num = (n, d = 2) => (n == null || !isFinite(n) ? '—' : n.toFixed(d));
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dateLbl = (iso) => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? iso : `${MON[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`; };
