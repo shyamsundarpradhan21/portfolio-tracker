@@ -67,6 +67,14 @@ function chartDetail(r) {
   const lastDiv = divs.length ? divs[divs.length - 1] : null;
   const ttmDiv = divs.filter((d) => d.date * 1000 > now - 365 * DAY).reduce((s, d) => s + d.amount, 0);
   const m = r.meta || {};
+  // Recent daily closes + the most-recent complete OHLC bar — so an index/stock overview can
+  // reuse the shared helpers (dailyReturns for the last-5 strip, a sparkline, computePivots for S&R).
+  const hi = r.indicators?.quote?.[0]?.high || [], lo = r.indicators?.quote?.[0]?.low || [];
+  const recentCloses = pts.slice(-35).map(([t, c]) => ({ close: r2(c), date: new Date(t).toISOString().slice(0, 10) }));
+  let pivotBar = null;
+  for (let i = ts.length - 1; i >= 0; i--) {
+    if (hi[i] != null && lo[i] != null && closes[i] != null) { pivotBar = { high: r2(hi[i]), low: r2(lo[i]), close: r2(closes[i]), asOf: new Date(ts[i] * 1000).toISOString().slice(0, 10) }; break; }
+  }
   return {
     perf,
     chartDayLow: r2(m.regularMarketDayLow),
@@ -76,6 +84,8 @@ function chartDetail(r) {
     lastDivAmt: lastDiv ? r2(lastDiv.amount) : null,
     lastDivDate: lastDiv ? new Date(lastDiv.date * 1000).toISOString().slice(0, 10) : null,
     ttmDivChart: ttmDiv ? r2(ttmDiv) : null,
+    closes: recentCloses,
+    pivotBar,
   };
 }
 
@@ -107,6 +117,8 @@ export async function GET(request) {
     lastDividend: base.lastDividend ?? cd.lastDivAmt ?? null,
     exDividendDate: base.exDividendDate ?? null,
     lastDivDate: cd.lastDivDate ?? null,
+    closes: cd.closes || null,      // recent daily closes → sparkline + last-5 for an index overview
+    pivotBar: cd.pivotBar || null,  // prior-session OHLC → S&R pivots
     fundamentals: fundamentalsOk ? 'live' : 'unavailable',
     fundamentalsError: fundamentalsOk ? undefined : base._err || sumRes._err,
     fetchedAt: new Date().toISOString(),

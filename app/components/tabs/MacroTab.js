@@ -475,11 +475,11 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const nasdaqNovProps = {
     title: 'Nasdaq 100',
     quote: nq.price != null ? { last: nq.price, pct: nq.pct, change: nq.change } : null,
-    spark: null,
-    returns: [],
+    spark: (nasdaqIdx?.closes || []).slice(-32).map((p) => ({ c: p.close })),
+    returns: dailyReturns(nasdaqIdx?.closes || [], 5),
     trend: nasdaqIdx?.perf ? { '1W': nasdaqIdx.perf.w1, '1M': nasdaqIdx.perf.m1, '3M': nasdaqIdx.perf.m3, '6M': nasdaqIdx.perf.m6, YTD: nasdaqIdx.perf.ytd, '1Y': nasdaqIdx.perf.y1 } : null,
-    options: null,
-    levels: null,
+    options: null,      // US index options aren't sourced
+    levels: nasdaqIdx?.pivotBar ? computePivots(nasdaqIdx.pivotBar) : null,
   };
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-10);
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
