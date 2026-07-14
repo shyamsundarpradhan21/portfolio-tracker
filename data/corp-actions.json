@@ -1,120 +1,158 @@
 {
-  "note": "Upcoming NSE dividends (market-wide corporate-actions calendar). Written by scripts/capture-corp-actions.mjs on the laptop (residential IP reaches NSE) → KV marketwrap:corpactions. /api/dividends filters this to YOUR holdings at serve time (private, force-dynamic), so this committed file is non-personal public market data. EMPTY placeholder until the first real laptop capture — never fabricated.",
-  "capturedAt": "2026-07-14T05:06:24.326Z",
-  "dividends": [
+  "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
+  "capturedAt": "2026-07-14T13:08:40.106Z",
+  "actions": [
     {
       "sym": "IMPAL",
       "name": "India Motor Parts and Accessories Limited",
       "exDate": "14-Jul-2026",
-      "amount": 23
+      "type": "dividend",
+      "amount": 23,
+      "ratio": null
     },
     {
       "sym": "AEROFLEX",
       "name": "Aeroflex Industries Limited",
       "exDate": "14-Jul-2026",
-      "amount": 0.4
+      "type": "dividend",
+      "amount": 0.4,
+      "ratio": null
     },
     {
       "sym": "ABREL",
       "name": "Aditya Birla Real Estate Limited",
       "exDate": "14-Jul-2026",
-      "amount": 2.5
+      "type": "dividend",
+      "amount": 2.5,
+      "ratio": null
     },
     {
       "sym": "ULTRAMAR",
       "name": "Ultramarine & Pigments Limited",
       "exDate": "14-Jul-2026",
-      "amount": 6
+      "type": "dividend",
+      "amount": 6,
+      "ratio": null
     },
     {
       "sym": "UTIAMC",
       "name": "UTI Asset Management Company Limited",
       "exDate": "14-Jul-2026",
-      "amount": 40
+      "type": "dividend",
+      "amount": 40,
+      "ratio": null
     },
     {
       "sym": "KHAICHEM",
       "name": "Khaitan Chemicals & Fertilizers Limited",
       "exDate": "14-Jul-2026",
-      "amount": 0.05
+      "type": "dividend",
+      "amount": 0.05,
+      "ratio": null
     },
     {
       "sym": "MOTHERSON",
       "name": "Samvardhana Motherson International Limited",
       "exDate": "14-Jul-2026",
-      "amount": 0.25
+      "type": "dividend",
+      "amount": 0.25,
+      "ratio": null
     },
     {
       "sym": "MODISONLTD",
       "name": "MODISON LIMITED",
       "exDate": "14-Jul-2026",
-      "amount": 3
+      "type": "dividend",
+      "amount": 3,
+      "ratio": null
     },
     {
       "sym": "SPLPETRO",
       "name": "Supreme Petrochem Limited",
       "exDate": "14-Jul-2026",
-      "amount": 8
+      "type": "dividend",
+      "amount": 8,
+      "ratio": null
     },
     {
       "sym": "MSUMI",
       "name": "Motherson Sumi Wiring India Limited",
       "exDate": "14-Jul-2026",
-      "amount": null
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
     },
     {
       "sym": "PIXTRANS",
       "name": "Pix Transmissions Limited",
       "exDate": "14-Jul-2026",
-      "amount": 9
+      "type": "dividend",
+      "amount": 9,
+      "ratio": null
     },
     {
       "sym": "HESTERBIO",
       "name": "Hester Biosciences Limited",
       "exDate": "14-Jul-2026",
-      "amount": 11
+      "type": "dividend",
+      "amount": 11,
+      "ratio": null
     },
     {
       "sym": "BIMETAL",
       "name": "Bimetal Bearings Limited",
       "exDate": "14-Jul-2026",
-      "amount": 13.5
+      "type": "dividend",
+      "amount": 13.5,
+      "ratio": null
     },
     {
       "sym": "TCS",
       "name": "Tata Consultancy Services Limited",
       "exDate": "15-Jul-2026",
-      "amount": 12
+      "type": "dividend",
+      "amount": 12,
+      "ratio": null
     },
     {
       "sym": "KFINTECH",
       "name": "Kfin Technologies Limited",
       "exDate": "15-Jul-2026",
-      "amount": 12
+      "type": "dividend",
+      "amount": 12,
+      "ratio": null
     },
     {
       "sym": "HERITGFOOD",
       "name": "Heritage Foods Limited",
       "exDate": "15-Jul-2026",
-      "amount": 2.5
+      "type": "dividend",
+      "amount": 2.5,
+      "ratio": null
     },
     {
       "sym": "BBL",
       "name": "Bharat Bijlee Limited",
       "exDate": "15-Jul-2026",
-      "amount": 35
+      "type": "dividend",
+      "amount": 35,
+      "ratio": null
     },
     {
       "sym": "COROMANDEL",
       "name": "Coromandel International Limited",
       "exDate": "16-Jul-2026",
-      "amount": 2
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
     },
     {
       "sym": "ASPINWALL",
       "name": "Aspinwall and Company Limited",
       "exDate": "16-Jul-2026",
-      "amount": 6.5
+      "type": "dividend",
+      "amount": 6.5,
+      "ratio": null
     }
   ]
 }

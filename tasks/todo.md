@@ -1,3 +1,40 @@
+# DONE — daily corp-actions scan (IND + US) → evening schedule
+
+**Shipped (full build A–D):** India NSE capture widened to dividend/bonus/split/rights (typed +
+ratio, 11 unit tests green); new `capture-corp-actions-us.mjs` (Yahoo calendarEvents → announced
+upcoming ex-dates + chart last-payout, 3/50 in-window: MSFT/TMO/TSM); both folded into
+`DailyEvening` (18:40) via `corp-actions.cmd` (KV live + committed JSON, commit+push); `/api/dividends`
+merges IND+US filtered to holdings with `type`+`market`; card renamed "Upcoming corp actions" with
+IN/US badge + $/₹ per market. Live-verified (MSFT [US] $0.91/share showing); certify normal+stress green.
+Caveat: US coverage partial by design (only announced future ex-dates; ETFs/splits not sourced).
+
+---
+
+# (original plan) — daily corp-actions scan (IND + US) → evening schedule
+
+**Goal:** daily post-close scan of upcoming corp actions (dividend / bonus / split / other)
+for BOTH Indian (INDIAN+SWING) and US holdings, folded into **DailyEvening** (18:40 IST),
+feeding the "Upcoming dividends" card (→ "Upcoming corp actions").
+
+**Found:** India capture is dividends-only (`corpActions.isDividend` drops bonus/split) and
+**not scheduled**. US has no auto corp-action fetch (`US_DIVIDENDS` is hand-maintained; 50 US
+holdings). Evening entry = `DailyEvening` → `scripts/evening.cmd` (F&O capture) — a `.cmd`
+chain I can extend, no new Task Scheduler entry needed.
+
+- [ ] **A. India — widen capture** (`corpActions.mjs classify()` → dividend|bonus|split|rights|other
+      + ratio parse; `mapCorpActions` emits all types; capture writes them to KV/committed).
+- [ ] **B. US — new fetch** (`capture-corp-actions-us.mjs`: Yahoo quoteSummary `calendarEvents`
+      per US holding → next ex-div + amount, crumb-gated laptop-side like seed-nifty-fundamentals;
+      splits best-effort via chart events=split). Gate: verify calendarEvents coverage first.
+- [ ] **C. Schedule** — append both captures to `scripts/evening.cmd` (daily 18:40, post-close).
+- [ ] **D. UI** — `/api/dividends` merges IND+US, adds `type`+market; `UpcomingDividends` shows
+      type (Dividend ₹X · Bonus 1:1 · Split) + IN/US badge; rename "Upcoming corp actions". certify.
+
+**Open decisions:** (1) full A–D now vs scan-only A–C (UI later); (2) US splits are spottier than
+dividends on Yahoo (dividends solid, splits best-effort).
+
+---
+
 ## Prior shipped — regional index rail + Commod·FX additions (04edefd, 372455e, 15ac084 · 2026-07-14)
 Divider style A (accent chip) · GIFT Nifty dropped (not on Yahoo). Wired FTSE/CAC/DAX/KOSPI via
 `railRegion()` + `.tkdiv`; added **Nat Gas** `NG=F` + **Bitcoin/Ethereum** `BTC-USD`/`ETH-USD`

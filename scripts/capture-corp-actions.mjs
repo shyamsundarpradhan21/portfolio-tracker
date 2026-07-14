@@ -65,25 +65,25 @@ try {
   }
 }
 
-const dividends = mapCorpActions(json, { todayISO, horizonDays: HORIZON });
-console.log(`[corp-actions] ${dividends.length} upcoming dividends (≤${HORIZON}d)`);
+const actions = mapCorpActions(json, { todayISO, horizonDays: HORIZON });
+const tally = actions.reduce((a, r) => ((a[r.type] = (a[r.type] || 0) + 1), a), {});
+console.log(`[corp-actions] ${actions.length} upcoming (≤${HORIZON}d): ${JSON.stringify(tally)}`);
 
 if (!WRITE) {
   console.log('[corp-actions] dry-run — pass --write to commit KV + data/corp-actions.json');
   process.exit(0);
 }
 
-const prev = (() => { try { return JSON.parse(readFileSync(OUT, 'utf8')); } catch { return {}; } })();
 const out = {
-  note: prev.note || 'Upcoming NSE dividends (market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.',
+  note: 'Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.',
   capturedAt: new Date().toISOString(),
-  dividends,
+  actions,
 };
 writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
 console.log('[corp-actions] wrote', OUT);
 
 if (kvConfigured()) {
-  const ok = await kvSetJSON(KEY, dividends, KV_TTL);
+  const ok = await kvSetJSON(KEY, actions, KV_TTL);
   console.log('[corp-actions] KV', KEY, ok ? 'ok' : 'FAILED');
 } else {
   console.log('[corp-actions] KV not configured — committed JSON only');

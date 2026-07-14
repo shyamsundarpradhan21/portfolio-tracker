@@ -10,3 +10,5 @@ REM two fire together with no mint race.
 REM Registered as the Windows task DailyEvening (weekday 18:40 IST) by scripts\register-evening.ps1.
 REM Replaces BrokerSyncEvening. Log: scripts\sync-evening.log (owned by sync-evening.cmd).
 call "%~dp0sync-evening.cmd"
+REM Step 2 — upcoming corp-actions scan (India NSE + US Yahoo) for the Wrap card. Log: corp-actions.log.
+call "%~dp0corp-actions.cmd"
