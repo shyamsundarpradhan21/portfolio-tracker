@@ -795,8 +795,6 @@ body::before {
 .nhx-back { color: var(--acc); cursor: pointer; }
 .nhx-back:hover { text-decoration: underline; }
 /* ── heatmap hover tooltip + click deep-dive (MarketHeatmap) ─────────────────── */
-.nhx-logo-badge { display: inline-flex; align-items: center; justify-content: center; font-family: var(--mono);
-  font-weight: 800; color: #fff; background: linear-gradient(135deg, color-mix(in srgb, var(--acc) 82%, #000), var(--acc)); }
 .nhx-hov { position: fixed; z-index: 60; width: 208px; pointer-events: none;
   background: color-mix(in srgb, var(--txt2) 8%, var(--bg)); border: .5px solid var(--brd); border-radius: 10px;
   box-shadow: 0 10px 26px rgba(0,0,0,.42); backdrop-filter: blur(12px); padding: 10px 11px; }
@@ -808,6 +806,7 @@ body::before {
 .nhx-hov-mc { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; padding-top: 8px; border-top: .5px solid var(--brd2); }
 .nhx-hov-mc span { color: var(--txt3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: 9.5px; }
 .nhx-hov-mc b { font-size: var(--fs-xs); font-weight: 600; }
+.nhx-hov .rs { display: inline; font-size: 1em; font-weight: inherit; }  /* ₹ flush + inline with mono digits (the .nhx-hov-px span{display:block} would otherwise block-wrap it) */
 .nhx-hov-hint { margin-top: 8px; font-size: 9.5px; color: var(--txt3); text-align: center; letter-spacing: .03em; }
 .nhx-dd-ov { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.42); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center; padding: 20px; }
