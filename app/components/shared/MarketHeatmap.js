@@ -80,9 +80,11 @@ const crTxt = (rupees) => {
 const fundOf = (sym) => FUND.stocks?.[sym];
 const mcapOf = (s) => { const f = fundOf(s.sym); return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
 
-// Ticker logo — a committed SVG at /logos/<SYM>.svg covers a per-ticker monogram badge when
-// present; until real logos are dropped in, the badge shows cleanly (no broken-image square).
+// Ticker logo — a committed favicon at /logos/<slug>.png (scripts/fetch-nifty-logos.mjs)
+// covers a per-ticker monogram badge when present; the ~18% of tickers with no committed
+// logo fall back to the badge cleanly (img hides on error, no broken-image square).
 // Badge hue is a deterministic hash of the ticker, so each stock reads distinct.
+const logoSlug = (s) => String(s).replace(/[^A-Za-z0-9]/g, ''); // must match fetch-nifty-logos.mjs
 const hueOf = (sym) => { let h = 7; for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) % 360; return h; };
 function Logo({ sym, size = 30 }) {
   const [ok, setOk] = useState(false);
@@ -91,7 +93,7 @@ function Logo({ sym, size = 30 }) {
     <span style={{ position: 'relative', width: size, height: size, flexShrink: 0, display: 'inline-block' }}>
       <span className="nhx-logo-badge" style={{ position: 'absolute', inset: 0, borderRadius: r, fontSize: Math.round(size * 0.4),
         background: `linear-gradient(135deg, hsl(${h} 52% 34%), hsl(${h} 58% 50%))`, opacity: ok ? 0 : 1 }}>{sym.slice(0, 2)}</span>
-      <img src={`/logos/${sym}.svg`} alt="" width={size} height={size} onLoad={() => setOk(true)} onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+      <img src={`/logos/${logoSlug(sym)}.png`} alt="" width={size} height={size} onLoad={() => setOk(true)} onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
         style={{ position: 'absolute', inset: 0, borderRadius: r, objectFit: 'contain', background: ok ? '#fff' : 'transparent' }} />
     </span>
   );
