@@ -1,8 +1,8 @@
 'use client';
 
 // Stock detail RAIL — the heatmap click-through panel. Replaces the NiftyOverview panel in
-// the side rail (and appears beside the Nasdaq map) when a stock tile is clicked; a ‹ back
-// control returns to the index overview. Replicates the provided snapshot (header · day/52wk
+// the side rail (and appears beside the Nasdaq map) when a stock tile is clicked; clicking the
+// selected tile again returns to the index overview. Replicates the provided snapshot (header · day/52wk
 // ranges · key-stats grid · dividends donut · income statement annual/quarterly · performance)
 // for ANY symbol, India or US. Fed by /api/stock?symbol=. House rules: direction = COLOUR only
 // (no +/− glyph) · --fs-* tiers · theme tokens · both themes. AI key-facts blurb deferred (v1).
@@ -103,6 +103,7 @@ function RangeBar({ label, lo, hi, at, cur }) {
 // Rail panel. `onClose` = back-to-index (‹). Matches the NiftyOverview rail slot (.nov-panel).
 export default function StockDetail({ stock, live, loading, onClose }) {
   const [period, setPeriod] = useState('annual');
+  const [statsOpen, setStatsOpen] = useState(false);
   const s = stock || {};
   const cur = s.currency || (live && live.cur) || 'USD';
   const px = (live && live.price != null) ? live.price : s.price;
@@ -125,8 +126,8 @@ export default function StockDetail({ stock, live, loading, onClose }) {
 
   return (
     <div className="card sec nov-panel sd-rail">
+      <div className="sd-scroll">
       <div className="sd-head">
-        {onClose && <span className="nov-back" role="button" tabIndex={0} onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }} title="Back to index">‹</span>}
         <div className="sd-logo">{(s.symbol || '?').slice(0, 2)}</div>
         <div style={{ minWidth: 0 }}>
           <div className="sd-tk">{s.symbol}{s.exchange && <span className="sd-exch">{s.exchange}</span>}</div>
@@ -148,10 +149,15 @@ export default function StockDetail({ stock, live, loading, onClose }) {
 
       <div className="sd-sec-h">Key stats</div>
       <div className="sd-kv-list">
-        {stats.map(([k, v]) => (
+        {(statsOpen ? stats : stats.slice(0, 5)).map(([k, v]) => (
           <div className="sd-kv" key={k}><span className="k">{k}</span><span className="v">{v}</span></div>
         ))}
       </div>
+      {stats.length > 5 && (
+        <button type="button" className="sd-kv-more" onClick={() => setStatsOpen((o) => !o)} aria-expanded={statsOpen}>
+          {statsOpen ? 'Show less' : `Show ${stats.length - 5} more`}<span className={'sd-chev' + (statsOpen ? ' up' : '')} aria-hidden>▾</span>
+        </button>
+      )}
 
       <div className="sd-sec-h">Dividends</div>
       <div className="sd-div-wrap">
@@ -191,6 +197,7 @@ export default function StockDetail({ stock, live, loading, onClose }) {
       </div>
 
       {s.fundamentals === 'unavailable' && <div className="sd-hint" style={{ marginTop: 10 }}>Fundamentals feed unavailable this load — price, ranges and performance are live.</div>}
+      </div>
     </div>
   );
 }

@@ -455,6 +455,22 @@ function ProjectionTab({ nw, loan = 0, fx, sleeves = [], onDrift, baseYear, inve
       if (!ref) return { key: r.key, chg: null, pct: null };
       const chg = (liveNw - (ref.nw ?? 0)) - (liveInv - (ref.invested ?? 0));
       const pct = ref.nw > 0 ? (chg / ref.nw) * 100 : 0;
+      // TEMP DIAGNOSTIC (remove after confirming 1M anchor drift) — compares the card's
+      // floating `ref` anchor against the chart's server-windowed start. See chat trace.
+      if (r.key === '1M') {
+        const isoOfMs = (t) => new Date(t).toISOString().slice(0, 10);
+        const realInWindow = hist.filter((s) => !s.synth && ms(s.d) >= cutoff).map((s) => s.d);
+        // eslint-disable-next-line no-console
+        console.log('[1M-anchor-trace]', {
+          refDate: ref.d,
+          refMoneyMade: (ref.nw ?? 0) - (ref.invested ?? 0),
+          cutoffDate: isoOfMs(cutoff),
+          lastDate: last.d,
+          liveNw, liveInv,
+          chg, pct: +pct.toFixed(2),
+          realSnapshotsFromCutoff: realInWindow,
+        });
+      }
       return { key: r.key, chg, pct };
     });
   }, [hist, nw, invested0, dayGain, totalGains]);
