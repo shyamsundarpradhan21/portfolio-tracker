@@ -97,6 +97,7 @@ export default function NiftyOverview({ title = 'Nifty 50', onBack, quote, spark
 
   return (
     <div className="card sec nov-panel">
+      <div className="nov-scroll">
       {/* hero */}
       <div className="nov-lbl">
         {onBack && <span className="nov-back" role="button" tabIndex={0} onClick={onBack} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onBack(); }} title="Back to Nifty 50">‹</span>}
@@ -142,19 +143,17 @@ export default function NiftyOverview({ title = 'Nifty 50', onBack, quote, spark
         </Section>
       )}
 
-      {/* trend */}
+      {/* performance — same strip as the stock detail (.sd-perf grid) */}
       {trendRows.length > 0 && (
-        <Section label="Trend">
-          <div className="nov-trend2">
+        <Section label="Performance">
+          <div className="sd-perf">
             {trendRows.map(([k, v]) => (
-              <div className="nov-tw" key={k}>
-                <span className="nov-tk">{k}</span>
-                <span className={'nov-tv ' + cls(v)}>{apct(v)}</span>
-              </div>
+              <div className="cell" key={k}><div className={'p ' + cls(v)}>{apct(v)}</div><div className="w">{k}</div></div>
             ))}
           </div>
         </Section>
       )}
+      </div>
     </div>
   );
 }

@@ -844,9 +844,13 @@ body::before {
    stretch), the rail matches it, and this layer scrolls internally. When the row wraps to a
    stacked column (≤900px) it falls back to natural flow so the rail isn't collapsed. */
 .sd-scroll { display: flex; flex-direction: column; padding: var(--pad); }
+/* Same inner-scroll treatment for the Nifty/Nasdaq overview panel (scoped via :has to the
+   nov-panels that carry a .nov-scroll, so it doesn't touch the .sd-rail stock detail). */
+.nov-panel:has(> .nov-scroll) { padding: 0; }
+.nov-scroll { display: flex; flex-direction: column; padding: var(--pad); }
 @media (min-width: 901px) {
-  .sd-rail { position: relative; overflow: hidden; }
-  .sd-rail > .sd-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .sd-rail, .nov-panel:has(> .nov-scroll) { position: relative; overflow: hidden; }
+  .sd-rail > .sd-scroll, .nov-panel > .nov-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
 }
 /* Key-stats expander — collapses to the first 5, reveals the rest. */
 .sd-kv-more { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 4px;
