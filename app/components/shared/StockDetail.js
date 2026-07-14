@@ -56,7 +56,7 @@ function Donut({ payout }) {
       <circle cx="36" cy="36" r={R} fill="none" stroke="var(--sur2)" strokeWidth="10" />
       <circle cx="36" cy="36" r={R} fill="none" stroke="var(--grn)" strokeWidth="10"
         strokeDasharray={`${paid} ${C - paid}`} transform="rotate(-90 36 36)" strokeLinecap="round" />
-      <text x="36" y="40" textAnchor="middle" className="mono" fontSize="12" fill="var(--acc)">
+      <text x="36" y="39.5" textAnchor="middle" className="mono" fontSize="10" fill="var(--acc)">
         {payout == null ? '—' : (p * 100).toFixed(2) + '%'}
       </text>
     </svg>
