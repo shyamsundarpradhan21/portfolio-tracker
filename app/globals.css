@@ -896,9 +896,9 @@ body::before {
 .sd-is-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
 .sd-is-svg { display: block; }
 .sd-perf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.sd-perf .cell { background: var(--sur2); border: .5px solid var(--brd2); border-radius: 9px; padding: 9px 8px; }
-.sd-perf .cell .p { font-size: var(--fs-sm); font-weight: 750; font-family: var(--mono); }
-.sd-perf .cell .w { font-size: 10px; color: var(--txt3); margin-top: 2px; letter-spacing: .04em; }
+.sd-perf .cell { background: var(--sur2); border: .5px solid var(--brd2); border-radius: 9px; padding: 7px 6px; }
+.sd-perf .cell .p { font-size: var(--fs-xs); font-weight: 750; font-family: var(--mono); white-space: nowrap; }
+.sd-perf .cell .w { font-size: 9.5px; color: var(--txt3); margin-top: 1px; letter-spacing: .04em; white-space: nowrap; }
 .sd-hint { font-size: var(--fs-2xs); color: var(--txt3); }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
 .gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); margin-top: 4px; }

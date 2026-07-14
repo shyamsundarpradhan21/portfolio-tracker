@@ -183,7 +183,7 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
         <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-xs)', color: 'var(--txt3)', fontFamily: 'var(--mono)' }}>
           {drill
             ? <><span className="nhx-back" role="button" tabIndex={0} onClick={() => setDrill(null)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDrill(null); }}>‹ {label}</span> / {drill}</>
-            : 'click a sector to dig in'}
+            : null}
         </span>
       </div>
 
@@ -284,7 +284,6 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
           <i style={{ width: 11, height: 11, borderRadius: 2, background: tileBg(0), marginLeft: 6 }} /> flat
           <i style={{ width: 11, height: 11, borderRadius: 2, background: tileBg(3), marginLeft: 6 }} /> up
         </span>
-        <span style={{ marginLeft: 'auto' }}>weights approximate · colour = today’s move</span>
       </div>
     </div>
   );

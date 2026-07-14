@@ -128,7 +128,6 @@ export default function StockDetail({ stock, live, loading, onClose }) {
     <div className="card sec nov-panel sd-rail">
       <div className="sd-scroll">
       <div className="sd-head">
-        <div className="sd-logo">{(s.symbol || '?').slice(0, 2)}</div>
         <div style={{ minWidth: 0 }}>
           <div className="sd-tk">{s.symbol}{s.exchange && <span className="sd-exch">{s.exchange}</span>}</div>
           <div className="sd-nm">{s.name || (loading ? 'Loading…' : s.symbol)}</div>
