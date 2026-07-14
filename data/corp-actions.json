@@ -1,6 +1,6 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-14T13:08:40.106Z",
+  "capturedAt": "2026-07-14T16:15:35.668Z",
   "actions": [
     {
       "sym": "IMPAL",
