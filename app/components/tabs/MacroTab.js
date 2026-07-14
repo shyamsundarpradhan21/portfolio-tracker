@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import SwotCard from '../shared/SwotCard';
 import AnimatedNumber from '../shared/AnimatedNumber';
 import MarketHeatmap from '../shared/MarketHeatmap';
+import StockDetail from '../shared/StockDetail';
 import NiftyOverview from '../shared/NiftyOverview';
 import UpcomingDividends from '../shared/UpcomingDividends';
 import { dailyReturns, trendWindows } from '../../lib/niftyTrend';
@@ -352,6 +353,29 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const [nDetail, setNDetail] = useState(null);
   useEffect(() => { let on = true; fetch('/api/nifty50-detail').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setNDetail(j.stocks || {}); }).catch(() => {}); return () => { on = false; }; }, []);
   useEffect(() => { setSelSym(null); }, [region]);
+
+  // Stock click-through RAIL (full snapshot) — clicking a tile in EITHER map replaces the side
+  // rail (NiftyOverview on India; a new rail beside the Nasdaq map on US) with the StockDetail
+  // panel; ‹ back returns to the index. onSelect passes the tile's live {sym, price, pct}; we
+  // lazy-fetch /api/stock?symbol= for fundamentals + income + multi-window perf, and pass the
+  // tile tick as the live headline override. India ticker → .NS.
+  const [panelSym, setPanelSym] = useState(null);
+  const [panelData, setPanelData] = useState(null);
+  const [panelLoading, setPanelLoading] = useState(false);
+  const [panelLive, setPanelLive] = useState(null);
+  const openStock = (s, market) => {
+    if (!s || !s.sym) return;
+    const ysym = market === 'us' ? s.sym : s.sym + '.NS';
+    setPanelSym(s.sym);
+    setPanelLive({ price: s.price, pct: s.pct, change: s.change, cur: market === 'us' ? 'USD' : 'INR' });
+    setPanelData(null); setPanelLoading(true);
+    fetch('/api/stock?symbol=' + encodeURIComponent(ysym))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { setPanelData(j); setPanelLoading(false); })
+      .catch(() => setPanelLoading(false));
+  };
+  const closeStock = () => { setPanelSym(null); setPanelData(null); setPanelLive(null); };
+  useEffect(() => { closeStock(); }, [region]);
   const pickRegion = (r) => { setRegion(r); try { localStorage.setItem('nwTracker.wrapRegion', r); } catch {} };
   const showIN = region === 'india';
   const showUS = region === 'us';
@@ -531,7 +555,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
             <div className="wlabel">Nifty 50 · heatmap
               <span className="hint">sized by market cap · click a sector to drill in</span>
             </div>
-            <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} onSelect={(s) => setSelSym((cur) => (cur === s.sym ? null : s.sym))} selected={selSym} />
+            <MarketHeatmap stocks={nifty50?.stocks} loading={nifty50Loading} onSelect={(s) => openStock(s, 'india')} selected={panelSym} />
           </div>
         ) : null}
         {showUS && (nasdaqLoading || nasdaq?.stocks?.length) ? (
@@ -539,11 +563,14 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
             <div className="wlabel">Nasdaq 100 · heatmap
               <span className="hint">sized by market cap · click a sector to drill in</span>
             </div>
-            <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" />
+            <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" onSelect={(s) => openStock(s, 'us')} selected={panelSym} />
           </div>
         ) : null}
-        {showIN && (
-          <NiftyOverview {...novProps} />
+        {showIN && (panelSym
+          ? <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} />
+          : <NiftyOverview {...novProps} />)}
+        {showUS && panelSym && (
+          <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} />
         )}
       </div>
 

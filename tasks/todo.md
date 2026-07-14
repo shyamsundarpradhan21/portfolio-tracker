@@ -1,3 +1,59 @@
+# PLAN (PROPOSED — awaiting approval) — heatmap stock click → full snapshot detail panel
+
+**Goal:** clicking a stock tile in the market heatmap opens a detail panel replicating the
+provided snapshot (Google-Finance-style): header (name/exchange/sector · price · change ·
+market state), day range + 52-wk range bars, key-stats grid, dividends donut, income
+statement (annual/quarterly), performance bars, optional AI key-facts blurb. Works for BOTH
+India (Nifty-50) and US (Nasdaq-100).
+
+**Existing (half-built) — REUSE, don't rebuild:**
+- `MarketHeatmap.js` — market-agnostic treemap (sector→industry→stock drill, `onSelect`/`selected`).
+- India wired: `MacroTab.js:534` fires `setSelSym`; `NiftyOverview` = detail panel; `/api/nifty50-detail`
+  (perf 1W/1M/3M/6M/YTD/1Y, 52wk, dividends, keyless) + `nifty50-fundamentals.json` (mcap).
+- US GAP: `MacroTab.js:542` renders Nasdaq map but NO `onSelect`/`selected`, no detail feed, no fundamentals.
+
+**Decisions locked (2026-07):** drill-down (already exists) · FULL replica · metrics via quoteSummary
+in a **LIVE `/api/stock` route** (user chose live over laptop-capture — always-fresh) · **BOTH** India +
+US · **AI key-facts blurb DEFERRED** to a follow-up.
+**Live-route de-risking (mandatory given the choice):** crumb+cookie fetch with `AbortSignal.timeout`,
+CDN cache (`s-maxage`+SWR, fundamentals are slow-moving), and a **graceful fallback to committed
+`*-fundamentals.json`** so a crumb failure blanks ONE field, never breaks the panel. Do NOT server-side
+self-fetch a sibling route (feedback.md: protection blocks it) — call Yahoo directly via a shared lib.
+**House rules to honor:** direction = COLOUR only (no +/− glyph, unlike the snapshot) · `--fs-*`
+type tiers · theme tokens (no hex) · both themes · certify green.
+
+- [ ] **P3a. Panel render-mock (FIRST — approval gate).** Standalone HTML mock of the full snapshot
+      panel (NVDA + an Indian example), day+night, house-styled (direction=colour, --fs tiers, tokens).
+      Get approval BEFORE any app code.
+- [ ] **P0. quoteSummary spike (de-risk).** Confirm crumb+cookie flow returns the needed modules
+      (summaryDetail, defaultKeyStatistics, calendarEvents, financialData, price,
+      incomeStatementHistory{,Quarterly}) for NVDA + RELIANCE. GATE the route build on this.
+- [ ] **P1. Live `/api/stock?symbol=` route.** Shared `lib/yahooSummary.js` (crumb+cookie, timeout,
+      shape-validate, optional-chain). Returns normalized: header (name/exch/sector, price, prevClose,
+      state, currency), ranges (dayHi/Lo, 52wHi/Lo), key stats (nextEarnings, volume, avgVol30, marketCap,
+      divYieldInd, peTTM, basicEpsTTM, sharesFloat, beta1y), dividends (yieldTTM, lastAmt, lastDate,
+      exDate, payDate, payoutRatio), income statement (annual+quarterly: revenue, netIncome, netMargin).
+      Cache s-maxage+SWR; **fallback to committed `*-fundamentals.json`** on crumb failure.
+- [ ] **P2. Fundamentals fallback JSON.** Extend `nifty50-fundamentals.json` + add
+      `nasdaq100-fundamentals.json` (laptop capture) so the live route degrades gracefully, not blank.
+- [ ] **P3b. Panel UI (build the approved mock).** New shared `StockDetail` (or grow `NiftyOverview`):
+      header, range bars, key-stats grid, dividends donut, income-statement annual/quarterly chart,
+      performance bars. Theme-tokened, type-tiered, direction=colour. Serves both markets.
+- [ ] **P4. Wire selection (both maps).** India already fires `setSelSym`; add `onSelect`/`selected`
+      for the Nasdaq map (`MacroTab.js:542`); route the shared panel off `/api/stock?symbol=` per active
+      market. Keep the keyless `/api/nifty50-detail` for the fast perf/dividend bits if cheaper.
+- [ ] **P5. Verify.** certify.mjs green (macro surfaces, normal+stress, both themes, 001/002/004=0,
+      docOverflow=0) · render-verify both themes · commit to main (laptop-side; sandbox git mangles CRLF).
+
+**STATUS (code-complete, verification pending on laptop):** P0 spike PASSED both markets (crumb
+works). Built: `app/lib/yahooSummary.mjs`, `app/api/stock/route.js`, `app/components/shared/StockDetail.js`
+(+`.sd-*` CSS), wired both maps in `MacroTab.js`. **Correction applied:** the panel is an in-RAIL
+replacement of the side tab (not a modal — user clarified) — reuses `.nov-panel` flex; ‹ back returns to
+index; US now gets a rail beside its map. Remaining: user runs dev render (both themes) + certify + commits.
+P2 committed-fundamentals fallback still deferred (live path passed the spike).
+
+---
+
 # DONE — daily corp-actions scan (IND + US) → evening schedule
 
 **Shipped (full build A–D):** India NSE capture widened to dividend/bonus/split/rights (typed +

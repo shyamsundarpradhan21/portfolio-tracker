@@ -834,6 +834,56 @@ body::before {
 .nhx-bar { height: 2px; border-radius: 2px; margin-top: 5px; background: var(--brd); }
 .nhx-perf-cell.up .nhx-bar { background: var(--grn); }
 .nhx-perf-cell.dn .nhx-bar { background: var(--red); }
+
+/* ── StockDetail rail (heatmap click-through, app/components/shared/StockDetail.js) ──
+   Replaces the NiftyOverview panel in the side rail (reuses .nov-panel flex sizing) when a
+   stock tile is clicked; a ‹ back control returns to the index. Replicates the snapshot.
+   Direction = colour (no +/− glyph). No overflow added → certify-safe. */
+.sd-rail { gap: 0; }
+.sd-head { display: flex; align-items: flex-start; gap: 10px; }
+.sd-head .nov-back { align-self: center; font-size: var(--fs-lg); }
+.sd-logo { width: 30px; height: 30px; border-radius: 8px; background: var(--acc-bg); color: var(--acc);
+  display: grid; place-items: center; font-weight: 800; font-size: var(--fs-2xs); flex: none; }
+.sd-tk { font-weight: 800; font-size: var(--fs-md); letter-spacing: .02em; }
+.sd-exch { font-size: 10px; color: var(--txt3); border: .5px solid var(--brd); border-radius: 5px; padding: 1px 5px; margin-left: 6px; white-space: nowrap; }
+.sd-nm { font-size: var(--fs-xs); color: var(--txt2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-sect { font-size: var(--fs-2xs); color: var(--txt3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-px-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.sd-px { font-size: var(--fs-xl); font-weight: 750; letter-spacing: -.5px; }
+.sd-chg { font-size: var(--fs-sm); font-weight: 650; }
+.sd-state { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); color: var(--txt2); margin-top: 6px; }
+.sd-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--txt3); display: inline-block; }
+.sd-state i.on { background: var(--grn); }
+.sd-rng { margin-top: 14px; }
+.sd-rng-lbl { font-size: 10px; color: var(--txt3); letter-spacing: .06em; text-transform: uppercase; }
+.sd-rng-track { height: 5px; border-radius: 3px; margin: 6px 0 4px; position: relative;
+  background: linear-gradient(90deg, var(--red), var(--txt3) 50%, var(--grn)); opacity: .55; }
+.sd-rng-mark { position: absolute; top: -3px; width: 3px; height: 11px; border-radius: 2px; background: var(--txt); transform: translateX(-50%); }
+.sd-rng-ends { display: flex; justify-content: space-between; font-size: var(--fs-2xs); color: var(--txt2); }
+.sd-rng-ends .mono { font-weight: 600; }
+.sd-rng-ends .rs { display: inline; font-size: 1em; font-weight: inherit; }
+.sd-sec-h { font-size: var(--fs-sm); font-weight: 750; margin: 18px 0 8px; }
+.sd-kv-list { display: flex; flex-direction: column; }
+.sd-kv { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: .5px solid var(--brd2); font-size: var(--fs-xs); }
+.sd-kv-list .sd-kv:first-child { border-top: none; }
+.sd-kv .k { color: var(--txt2); }
+.sd-kv .v { font-weight: 650; font-family: var(--mono); text-align: right; white-space: nowrap; }
+.sd-kv .v .rs { display: inline; font-size: 1em; font-weight: inherit; }
+.sd-div-wrap { display: flex; gap: 14px; align-items: center; }
+.sd-donut-lab { font-size: var(--fs-2xs); color: var(--txt2); display: flex; flex-direction: column; gap: 6px; }
+.sd-donut-lab i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+.sd-is-head { display: flex; align-items: center; margin: 18px 0 4px; gap: 8px; }
+.sd-is-toggle { display: inline-flex; margin-left: auto; border: .5px solid var(--brd); border-radius: 7px; overflow: hidden; }
+.sd-is-toggle button { border: 0; background: transparent; color: var(--txt3); padding: 3px 10px; cursor: pointer; font-weight: 600; font-size: 10px; }
+.sd-is-toggle button.on { background: var(--acc-bg); color: var(--acc); }
+.sd-is-legend { display: flex; gap: 12px; font-size: 10px; color: var(--txt2); margin: 6px 0 2px; flex-wrap: wrap; }
+.sd-is-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+.sd-is-svg { display: block; }
+.sd-perf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.sd-perf .cell { background: var(--sur2); border: .5px solid var(--brd2); border-radius: 9px; padding: 9px 8px; }
+.sd-perf .cell .p { font-size: var(--fs-sm); font-weight: 750; font-family: var(--mono); }
+.sd-perf .cell .w { font-size: 10px; color: var(--txt3); margin-top: 2px; letter-spacing: .04em; }
+.sd-hint { font-size: var(--fs-2xs); color: var(--txt3); }
 .sentwrap { display: flex; flex-direction: column; justify-content: center; flex: 1; }
 .gbar { position: relative; height: 7px; border-radius: 5px; background: linear-gradient(90deg, var(--red), var(--sc-opt) 50%, var(--grn)); margin-top: 4px; }
 .gneedle { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--txt); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--sur2); }
