@@ -1056,7 +1056,7 @@ function Dashboard() {
     { key: 'mf',     label: 'Mutual Funds',   value: mf.totVal,       color: ALLOC_COLORS.mf     },
     // Trading business equity (book-valued, at close) — a slice so the donut total ties
     // to the headline. Own class in AllocBar (personal Equity/Debt stay pure). CMPF still last.
-    { key: 'trading', label: 'Trading business', value: ov.tradingEquity || 0, color: ALLOC_COLORS.algo },
+    { key: 'trading', label: 'Trading', value: ov.tradingEquity || 0, color: ALLOC_COLORS.algo },
     { key: 'pf',     label: 'CMPF',           value: ov.pfValue || 0, color: ALLOC_COLORS.pf     },
   ];
 
@@ -1340,7 +1340,7 @@ function Dashboard() {
                   {ov.tradingEquity ? (
                     <span style={{ whiteSpace: 'nowrap' }}
                       title={`Trading business equity ${inrFull(ov.tradingEquity)} = account value + open MTM (Dhan ledger-reconciled + Upstox sync-trusted; 100% owner). Book-valued at close — ${inrFull(Math.round(ov.personalNw))} personal sleeves + this = net worth ${inrFull(Math.round(ov.nw))}.`}>
-                      Trading business <strong style={{ color: 'var(--acc)' }}><InrC n={ov.tradingEquity} /></strong>
+                      Trading <strong style={{ color: 'var(--acc)' }}><InrC n={ov.tradingEquity} /></strong>
                     </span>
                   ) : 'excl. trading'}
                   {' · '}

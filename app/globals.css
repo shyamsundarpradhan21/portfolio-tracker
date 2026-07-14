@@ -2108,7 +2108,7 @@ body { transition: background-color 400ms cubic-bezier(0.23,1,0.32,1),
    Flex with wrap so tablet/phone stack; the Nifty panel is width-capped so it stays
    a readable rail (and doesn't stretch when the heatmap is still loading). ─────── */
 .wrap-rowA, .wrap-rowB { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; margin-bottom: 12px; }
-.wrap-rowA .heat-card { flex: 4 1 460px; min-width: 0; }
+.wrap-rowA .heat-card { flex: 4 1 460px; min-width: 0; margin-bottom: 0; }  /* the .fdcard 12px margin would push the row height 12px past the rail → misaligned bottoms */
 .wrap-rowA .nov-panel { flex: 1 1 240px; max-width: 380px; }
 .wrap-rowB .fd-card { flex: 3 1 380px; min-width: 0; }
 .wrap-rowB .updv { flex: 2 1 300px; min-width: 0; }
