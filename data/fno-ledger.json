@@ -8152,17 +8152,6 @@
       "turnover": 0,
       "orders": 0,
       "source": "positions"
-    },
-    {
-      "date": "2026-07-14",
-      "broker": "Dhan",
-      "sleeve": "S01",
-      "grossRealised": -30813.25,
-      "estCharges": 0,
-      "net": -30813.25,
-      "turnover": 0,
-      "orders": 0,
-      "source": "positions"
     }
   ]
 }

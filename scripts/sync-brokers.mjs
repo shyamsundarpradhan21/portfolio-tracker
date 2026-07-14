@@ -468,7 +468,13 @@ for (const [name, label, fn] of [['upstox', 'Upstox', tradesUpstox], ['dhan', 'D
     const fno = (fills || []).filter((f) => isFno(f.sym));
     let gross = null, source = 'fills';
     if (name === 'dhan') { // corrected entry→exit realised (dhanRealised, set at pull time) — includes carried/settlement P&L
-      const native = (state.positions.DHAN_FNO?.rows || []).reduce((a, p) => a + (Number(p.realized) || 0), 0);
+      // ONLY from a snapshot pulled TODAY. When the live pull is empty (new day, all flat), the
+      // line ~421 "don't overwrite with an empty pull" guard RETAINS yesterday's closed legs — summing
+      // those would re-book a prior day's realised onto today (the −30,813.25-every-day dup bug).
+      // Stale snapshot → skip; today's realised then falls back to fresh fills (closedNet), ~0 when flat.
+      const pos = state.positions.DHAN_FNO;
+      const freshToday = pos?.syncedAt && String(pos.syncedAt).slice(0, 10) === ts.slice(0, 10);
+      const native = freshToday ? (pos.rows || []).reduce((a, p) => a + (Number(p.realized) || 0), 0) : 0;
       if (native) { gross = native; source = 'positions'; }
     }
     if (gross == null) gross = closedNet(fno);
