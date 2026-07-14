@@ -266,13 +266,10 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
           <div className="nhx-hov" style={{ left: Math.min(hov.x + 16, vw - 224), top: Math.min(hov.y + 16, vh - 118) }}>
             <div className="nhx-hov-top">
               <b className="mono">{s.sym}</b>
-              <div className="nhx-hov-px">
-                <span className="mono">{money(s.price) == null ? '—' : <><Rs />{money(s.price)}</>}</span>
-                <em className={'mono ' + clr(s.pct)}>{pctTxt(s.pct)}</em>
-              </div>
+              <span className="mono nhx-hov-cmp">{money(s.price) == null ? '—' : <><Rs />{money(s.price)}</>}</span>
+              <em className={'mono ' + clr(s.pct)}>{pctTxt(s.pct)}</em>
             </div>
             <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{crTxt(mcapOf(s)) == null ? '—' : <><Rs />{crTxt(mcapOf(s))}</>}</b></div>
-            <div className="nhx-hov-hint">click for details</div>
           </div>
         ), document.body);
       })()}

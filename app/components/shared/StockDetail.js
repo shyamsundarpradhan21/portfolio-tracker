@@ -63,31 +63,6 @@ function Donut({ payout }) {
   );
 }
 
-function IncomeChart({ series }) {
-  if (!series || !series.length) return <div className="sd-hint">Income statement unavailable.</div>;
-  const W = 300, H = 116, PADX = 16, PADB = 22, n = series.length;
-  const maxV = Math.max(1, ...series.map((r) => Math.max(r.revenue || 0, r.netIncome || 0)));
-  const maxM = Math.max(10, ...series.map((r) => Math.abs(r.netMargin || 0)));
-  const bw = ((W - PADX * 2) / n) * 0.3;
-  const bars = [], pts = [];
-  series.forEach((r, i) => {
-    const cx = PADX + ((i + 0.5) / n) * (W - PADX * 2);
-    const hR = ((r.revenue || 0) / maxV) * (H - PADB - 6);
-    const hN = ((r.netIncome || 0) / maxV) * (H - PADB - 6);
-    bars.push(<rect key={'r' + i} x={cx - bw - 1} y={H - PADB - hR} width={bw} height={hR} rx="1.5" fill="var(--acc)" opacity="0.5" />);
-    bars.push(<rect key={'n' + i} x={cx + 1} y={H - PADB - hN} width={bw} height={hN} rx="1.5" fill="var(--grn)" opacity="0.8" />);
-    const my = H - PADB - ((r.netMargin || 0) / maxM) * (H - PADB - 6);
-    pts.push([cx, my]);
-    bars.push(<text key={'t' + i} x={cx} y={H - 6} textAnchor="middle" fontSize="8.5" fill="var(--txt3)">{(r.date || '').slice(2)}</text>);
-  });
-  return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="sd-is-svg">
-      {bars}
-      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="var(--gld)" strokeWidth="1.5" />
-      {pts.map((p, i) => <circle key={'d' + i} cx={p[0]} cy={p[1]} r="2" fill="var(--gld)" />)}
-    </svg>
-  );
-}
 
 function RangeBar({ label, lo, hi, at, cur }) {
   const pos = lo != null && hi != null && hi > lo && at != null ? Math.max(0, Math.min(1, (at - lo) / (hi - lo))) : null;
@@ -101,15 +76,13 @@ function RangeBar({ label, lo, hi, at, cur }) {
 }
 
 // Rail panel. `onClose` = back-to-index (‹). Matches the NiftyOverview rail slot (.nov-panel).
-export default function StockDetail({ stock, live, loading, onClose }) {
-  const [period, setPeriod] = useState('annual');
+export default function StockDetail({ stock, live, loading, onClose, backLabel }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const s = stock || {};
   const cur = s.currency || (live && live.cur) || 'USD';
   const px = (live && live.price != null) ? live.price : s.price;
   const chgPct = (live && live.pct != null) ? live.pct : s.changePct;
   const chg = (live && live.change != null) ? live.change : s.change;
-  const series = period === 'annual' ? s.incomeAnnual : s.incomeQuarterly;
   const nd = inDays(s.nextEarnings);
 
   const stats = [
@@ -127,6 +100,7 @@ export default function StockDetail({ stock, live, loading, onClose }) {
   return (
     <div className="card sec nov-panel sd-rail">
       <div className="sd-scroll">
+      {onClose && <button type="button" className="sd-back" onClick={onClose}>‹ {backLabel || 'Overview'}</button>}
       <div className="sd-head">
         <div style={{ minWidth: 0 }}>
           <div className="sd-tk">{s.symbol}{s.exchange && <span className="sd-exch">{s.exchange}</span>}</div>
@@ -172,20 +146,6 @@ export default function StockDetail({ stock, live, loading, onClose }) {
         <div className="sd-kv"><span className="k">Last ex-dividend date</span><span className="v">{dateLbl(s.exDividendDate || s.lastDivDate)}</span></div>
         <div className="sd-kv"><span className="k">Last payment date</span><span className="v">{dateLbl(s.dividendPayDate)}</span></div>
       </div>
-
-      <div className="sd-is-head">
-        <span className="sd-sec-h" style={{ margin: 0 }}>Income statement</span>
-        <span className="sd-is-toggle">
-          <button className={period === 'annual' ? 'on' : ''} onClick={() => setPeriod('annual')}>Annual</button>
-          <button className={period === 'quarterly' ? 'on' : ''} onClick={() => setPeriod('quarterly')}>Quarterly</button>
-        </span>
-      </div>
-      <div className="sd-is-legend">
-        <span><i style={{ background: 'var(--acc)', opacity: 0.5 }} />Revenue</span>
-        <span><i style={{ background: 'var(--grn)' }} />Net income</span>
-        <span><i style={{ background: 'var(--gld)' }} />Net margin %</span>
-      </div>
-      <IncomeChart series={series} />
 
       <div className="sd-sec-h">Performance</div>
       <div className="sd-perf">

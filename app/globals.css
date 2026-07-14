@@ -798,16 +798,15 @@ body::before {
 .nhx-hov { position: fixed; z-index: 60; width: 208px; pointer-events: none;
   background: color-mix(in srgb, var(--txt2) 8%, var(--bg)); border: .5px solid var(--brd); border-radius: 10px;
   box-shadow: 0 10px 26px rgba(0,0,0,.42); backdrop-filter: blur(12px); padding: 10px 11px; }
-.nhx-hov-top { display: flex; align-items: center; gap: 8px; }
+/* ticker · CMP · 1D% on one line (ticker left; CMP + % pushed right) */
+.nhx-hov-top { display: flex; align-items: baseline; gap: 6px; }
 .nhx-hov-top > b { font-size: var(--fs-sm); }
-.nhx-hov-px { margin-left: auto; text-align: right; line-height: 1.25; }
-.nhx-hov-px span { font-weight: 700; font-size: var(--fs-xs); display: block; }
-.nhx-hov-px em { font-style: normal; font-size: var(--fs-2xs); }
-.nhx-hov-mc { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; padding-top: 8px; border-top: .5px solid var(--brd2); }
+.nhx-hov-cmp { margin-left: auto; font-weight: 700; font-size: var(--fs-xs); }
+.nhx-hov-top em { font-style: normal; font-size: var(--fs-2xs); }
+.nhx-hov-mc { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: .5px solid var(--brd2); }
 .nhx-hov-mc span { color: var(--txt3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; font-size: 9.5px; }
 .nhx-hov-mc b { font-size: var(--fs-xs); font-weight: 600; }
-.nhx-hov .rs { display: inline; font-size: 1em; font-weight: inherit; }  /* ₹ flush + inline with mono digits (the .nhx-hov-px span{display:block} would otherwise block-wrap it) */
-.nhx-hov-hint { margin-top: 8px; font-size: 9.5px; color: var(--txt3); text-align: center; letter-spacing: .03em; }
+.nhx-hov .rs { display: inline; font-size: 1em; font-weight: inherit; }  /* ₹ flush + inline with the mono digits */
 .nhx-dd-ov { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.42); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center; padding: 20px; }
 .nhx-dd { position: relative; width: 340px; max-width: 100%; background: color-mix(in srgb, var(--txt2) 8%, var(--bg));
@@ -856,6 +855,10 @@ body::before {
 .sd-kv-more:hover { color: var(--acc); }
 .sd-chev { display: inline-block; font-size: .8em; transition: transform .15s ease; }
 .sd-chev.up { transform: rotate(180deg); }
+/* Back-to-index control on a stock detail — returns to the Nifty 50 / Nasdaq 100 overview. */
+.sd-back { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; background: none; border: none;
+  color: var(--txt2); font-size: var(--fs-xs); font-weight: 650; cursor: pointer; padding: 0; margin-bottom: 10px; }
+.sd-back:hover { color: var(--acc); }
 .sd-head { display: flex; align-items: flex-start; gap: 10px; }
 .sd-head .nov-back { align-self: center; font-size: var(--fs-lg); }
 .sd-logo { width: 30px; height: 30px; border-radius: 8px; background: var(--acc-bg); color: var(--acc);

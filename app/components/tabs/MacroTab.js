@@ -404,7 +404,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const fx = [
     q(c.gold), q(c.silver), q(c.brent), q(c.natgas), q(c.usdinr), q(c.us10y),
     dxy ? { name: 'DXY', val: fmt(dxy.value), pct: apct(dxy.prev ? (dxy.change / dxy.prev) * 100 : null), cls: cls(dxy.change) } : null,
-    q(c.btc), q(c.eth),
+    q(c.btc, 'BTC'), q(c.eth, 'ETH'),
   ].filter(Boolean);
   // News rail = market headlines (/api/news) + per-holding portfolio headlines
   // (/api/portfolio-news) merged into ONE region-aware rail. Portfolio items carry the
@@ -437,6 +437,15 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   // Nifty 50 Overview inputs (India view): hero quote from the live cue; daily
   // returns, trend windows and the hero sparkline from the ^NSEI daily closes;
   // options + pivots from the premarket feed. Each sub-block hides when absent.
+  // US index overview (Nasdaq) — the rail's default on the US view. Quote from the premarket cue;
+  // trend from /api/stock (^IXIC). Sparkline / S&R / options aren't sourced for the index → hidden.
+  const [nasdaqIdx, setNasdaqIdx] = useState(null);
+  useEffect(() => {
+    if (!showUS || nasdaqIdx) return;
+    let on = true;
+    fetch('/api/stock?symbol=%5EIXIC').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setNasdaqIdx(j); }).catch(() => {});
+    return () => { on = false; };
+  }, [showUS, nasdaqIdx]);
   const niftyCloses = niftyDaily?.closes || [];
   const niftyQuote = c.nifty?.price != null
     ? { last: c.nifty.price, pct: c.nifty.pct, change: c.nifty.change }
@@ -461,6 +470,17 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         onBack: () => setSelSym(null),
       }
     : { title: 'Nifty 50', quote: niftyQuote, spark: niftySpark, returns: niftyReturns, trend: niftyTrendW, options: premarket?.options, levels: premarket?.levels?.nifty };
+  // Nasdaq index overview (US rail default) — mirrors NiftyOverview; index has no spark/S&R/options → hidden.
+  const nq = c.nasdaq || {};
+  const nasdaqNovProps = {
+    title: 'Nasdaq 100',
+    quote: nq.price != null ? { last: nq.price, pct: nq.pct, change: nq.change } : null,
+    spark: null,
+    returns: [],
+    trend: nasdaqIdx?.perf ? { '1W': nasdaqIdx.perf.w1, '1M': nasdaqIdx.perf.m1, '3M': nasdaqIdx.perf.m3, '6M': nasdaqIdx.perf.m6, YTD: nasdaqIdx.perf.ytd, '1Y': nasdaqIdx.perf.y1 } : null,
+    options: null,
+    levels: null,
+  };
   const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-10);
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII renders as its own full-width card below (India only); also shown
@@ -567,11 +587,11 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
           </div>
         ) : null}
         {showIN && (panelSym
-          ? <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} />
+          ? <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} backLabel="Nifty 50" />
           : <NiftyOverview {...novProps} />)}
-        {showUS && panelSym && (
-          <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} />
-        )}
+        {showUS && (panelSym
+          ? <StockDetail stock={panelData} live={panelLive} loading={panelLoading} onClose={closeStock} backLabel="Nasdaq 100" />
+          : <NiftyOverview {...nasdaqNovProps} />)}
       </div>
 
       {/* Row B — FII/DII net flow (left) + your upcoming dividends (right). India only. */}

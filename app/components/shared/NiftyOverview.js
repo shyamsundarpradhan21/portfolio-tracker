@@ -135,10 +135,12 @@ export default function NiftyOverview({ title = 'Nifty 50', onBack, quote, spark
         </Section>
       )}
 
-      {/* support & resistance */}
-      <Section label="Support / resistance" hint={levels?.asOf && !levels.stale ? dayLbl(levels.asOf) : null}>
-        <Ladder lv={levels} last={last} />
-      </Section>
+      {/* support & resistance — hidden when no levels are supplied (e.g. the Nasdaq overview) */}
+      {levels && (
+        <Section label="Support / resistance" hint={levels?.asOf && !levels.stale ? dayLbl(levels.asOf) : null}>
+          <Ladder lv={levels} last={last} />
+        </Section>
+      )}
 
       {/* trend */}
       {trendRows.length > 0 && (
