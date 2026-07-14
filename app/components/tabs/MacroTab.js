@@ -14,7 +14,7 @@ import { smoothPath } from '../../lib/smoothPath';
 
 // ── tiny formatters (mockup style: ▲/▼ glyph + grn/red/mut colour) ───────────
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
-const apct = (p) => (p == null || !isFinite(p) ? '·—' : `${p > 0 ? '▲' : p < 0 ? '▼' : '·'}${Math.abs(p).toFixed(2)}%`);
+const apct = (p) => (p == null || !isFinite(p) ? '—' : `${Math.abs(p).toFixed(2)}%`); // direction = colour, no ▲/▼ glyph
 const fmt = (n) => (n == null || !isFinite(n) ? '—' : n.toLocaleString('en-IN', { maximumFractionDigits: 2 }));
 const sdot = (s) => (s > 0 ? 'g' : s < 0 ? 'r' : 'n');
 const TONE = { calm: 'calm', warn: 'warn', stress: 'stress' };
@@ -498,7 +498,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
         onBack: () => setSelSym(null),
       }
     : { title: 'Nifty 50', quote: niftyQuote, spark: niftySpark, returns: niftyReturns, trend: niftyTrendW, options: premarket?.options, levels: premarket?.levels?.nifty };
-  const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
+  const fdTrail = (fiidiiTrail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii))).slice(-10);
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII renders as its own full-width card below (India only); also shown
   // whenever FII derivative positioning is available.
@@ -618,7 +618,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
                 <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
                 <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
               </div>
-              <FiiDiiChart trail={fiidiiTrail} derivs={fiiDerivs} />
+              <FiiDiiChart trail={fdTrail} derivs={fiiDerivs} />
             </div>
           )}
           <UpcomingDividends items={dividends?.items} loading={dividends == null} />

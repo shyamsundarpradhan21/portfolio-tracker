@@ -10,13 +10,12 @@
 //     dropped into its slot
 //   • trend: 1W / 1M / 3M / 6M / 1Y (2-col)
 // Every block is live or honestly hidden — nothing fabricated. Direction is carried
-// by COLOUR + a ▲/▼ arrow, never a +/− glyph (house rule).
+// by COLOUR only — never a +/− or ▲/▼ glyph (house rule).
 
 import { smoothPath } from '../../lib/smoothPath';
 
 const cls = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
-const arr = (p) => (p == null || !isFinite(p) ? '·' : p > 0 ? '▲' : p < 0 ? '▼' : '·');
-const apct = (p) => (p == null || !isFinite(p) ? '—' : `${arr(p)}${Math.abs(p).toFixed(2)}%`);
+const apct = (p) => (p == null || !isFinite(p) ? '—' : `${Math.abs(p).toFixed(2)}%`); // direction = colour, no ▲/▼ glyph
 const n2 = (v) => (v == null || !isFinite(v) ? '—' : v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const n0 = (v) => (v == null || !isFinite(v) ? '—' : v.toLocaleString('en-IN', { maximumFractionDigits: 0 }));
 const dayLbl = (d) => { const t = new Date(d); return isNaN(t) ? d : t.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
@@ -105,7 +104,7 @@ export default function NiftyOverview({ title = 'Nifty 50', onBack, quote, spark
       </div>
       <div className="nov-val">{n2(last)}</div>
       <div className={'nov-chg ' + cls(pct)}>
-        {arr(pct)} {change != null && isFinite(change) ? Math.abs(change).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}
+        {change != null && isFinite(change) ? Math.abs(change).toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '—'}
         <span className="mut"> · </span>{pct != null && isFinite(pct) ? Math.abs(pct).toFixed(2) + '%' : '—'}
       </div>
       <Spark points={spark} up={pct == null || pct >= 0} />

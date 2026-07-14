@@ -30,7 +30,7 @@ function XirrChart({ port, bench, delta, extra = [], minis = [] }) {
         <div className="ctitle">XIRR vs Benchmarks</div>
         {delta != null && (
           <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: delta >= 0 ? 'var(--grn)' : 'var(--red)' }}>
-            {delta >= 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} pts vs Nifty 50
+            {Math.abs(delta).toFixed(1)} pts vs Nifty 50
           </span>
         )}
       </div>

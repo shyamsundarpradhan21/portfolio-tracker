@@ -757,7 +757,7 @@ body::before {
 .fdstats.only-d { grid-template-columns: repeat(2, 1fr); grid-template-areas: "cr cr" "idx stk"; }
 .fdstat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .fdstat .k { font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: var(--txt3); font-weight: 700; }
-.fdstat b { font-family: var(--mono); font-size: var(--fs-xl); }
+.fdstat b { font-family: var(--mono); font-size: var(--fs-lg); }
 .fdstat .dw { font-size: var(--fs-sm); font-weight: 600; } /* long/short word — colour inherits from the value */
 /* group captions — restore the context the two separate footer blocks carried */
 .fdcap { font-size: var(--fs-2xs); letter-spacing: .08em; text-transform: uppercase; color: var(--txt3); font-weight: 700; text-align: center; padding-bottom: 2px; align-self: end; }

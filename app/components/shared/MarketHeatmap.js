@@ -14,6 +14,7 @@
 // place of it — this is the drill-down instrument, that one is the glance.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HEATMAP_META as NIFTY_META, HEATMAP_FALLBACK as NIFTY_FALLBACK } from '../../../data/nifty50-heatmap';
 import FUND from '../../../data/nifty50-fundamentals.json';
 
@@ -79,13 +80,21 @@ const crTxt = (rupees) => {
 const fundOf = (sym) => FUND.stocks?.[sym];
 const mcapOf = (s) => { const f = fundOf(s.sym); return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
 
-// Ticker logo — committed SVG at /logos/<SYM>.svg when present, else a monogram badge.
+// Ticker logo — a committed SVG at /logos/<SYM>.svg covers a per-ticker monogram badge when
+// present; until real logos are dropped in, the badge shows cleanly (no broken-image square).
+// Badge hue is a deterministic hash of the ticker, so each stock reads distinct.
+const hueOf = (sym) => { let h = 7; for (let i = 0; i < sym.length; i++) h = (h * 31 + sym.charCodeAt(i)) % 360; return h; };
 function Logo({ sym, size = 30 }) {
-  const [broken, setBroken] = useState(false);
-  const r = Math.round(size * 0.27);
-  if (broken) return <span className="nhx-logo-badge" style={{ width: size, height: size, borderRadius: r, fontSize: Math.round(size * 0.42) }}>{sym.slice(0, 1)}</span>;
-  return <img src={`/logos/${sym}.svg`} alt="" width={size} height={size} onError={() => setBroken(true)}
-    style={{ borderRadius: r, objectFit: 'contain', background: '#fff', flexShrink: 0, display: 'block' }} />;
+  const [ok, setOk] = useState(false);
+  const r = Math.round(size * 0.27), h = hueOf(sym);
+  return (
+    <span style={{ position: 'relative', width: size, height: size, flexShrink: 0, display: 'inline-block' }}>
+      <span className="nhx-logo-badge" style={{ position: 'absolute', inset: 0, borderRadius: r, fontSize: Math.round(size * 0.4),
+        background: `linear-gradient(135deg, hsl(${h} 52% 34%), hsl(${h} 58% 50%))`, opacity: ok ? 0 : 1 }}>{sym.slice(0, 2)}</span>
+      <img src={`/logos/${sym}.svg`} alt="" width={size} height={size} onLoad={() => setOk(true)} onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+        style={{ position: 'absolute', inset: 0, borderRadius: r, objectFit: 'contain', background: ok ? '#fff' : 'transparent' }} />
+    </span>
+  );
 }
 
 // Build sector → industry → stock tree from enriched rows. Single-industry
@@ -264,7 +273,10 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
         const s = hov.s;
         const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
         const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-        return (
+        if (typeof document === 'undefined') return null;
+        // Portal to <body>: .card's backdrop-filter is a containing block, which would
+        // otherwise make position:fixed resolve to the card (offsetting the viewport coords).
+        return createPortal((
           <div className="nhx-hov" style={{ left: Math.min(hov.x + 16, vw - 224), top: Math.min(hov.y + 16, vh - 118) }}>
             <div className="nhx-hov-top">
               <Logo sym={s.sym} size={26} />
@@ -277,7 +289,7 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
             <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{crTxt(mcapOf(s))}</b></div>
             <div className="nhx-hov-hint">click for details</div>
           </div>
-        );
+        ), document.body);
       })()}
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8, fontSize: 'var(--fs-2xs)', color: 'var(--txt3)', flexWrap: 'wrap' }}>

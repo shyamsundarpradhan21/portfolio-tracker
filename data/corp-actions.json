@@ -1,5 +1,120 @@
 {
   "note": "Upcoming NSE dividends (market-wide corporate-actions calendar). Written by scripts/capture-corp-actions.mjs on the laptop (residential IP reaches NSE) → KV marketwrap:corpactions. /api/dividends filters this to YOUR holdings at serve time (private, force-dynamic), so this committed file is non-personal public market data. EMPTY placeholder until the first real laptop capture — never fabricated.",
-  "capturedAt": null,
-  "dividends": []
+  "capturedAt": "2026-07-14T05:06:24.326Z",
+  "dividends": [
+    {
+      "sym": "IMPAL",
+      "name": "India Motor Parts and Accessories Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 23
+    },
+    {
+      "sym": "AEROFLEX",
+      "name": "Aeroflex Industries Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 0.4
+    },
+    {
+      "sym": "ABREL",
+      "name": "Aditya Birla Real Estate Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 2.5
+    },
+    {
+      "sym": "ULTRAMAR",
+      "name": "Ultramarine & Pigments Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 6
+    },
+    {
+      "sym": "UTIAMC",
+      "name": "UTI Asset Management Company Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 40
+    },
+    {
+      "sym": "KHAICHEM",
+      "name": "Khaitan Chemicals & Fertilizers Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 0.05
+    },
+    {
+      "sym": "MOTHERSON",
+      "name": "Samvardhana Motherson International Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 0.25
+    },
+    {
+      "sym": "MODISONLTD",
+      "name": "MODISON LIMITED",
+      "exDate": "14-Jul-2026",
+      "amount": 3
+    },
+    {
+      "sym": "SPLPETRO",
+      "name": "Supreme Petrochem Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 8
+    },
+    {
+      "sym": "MSUMI",
+      "name": "Motherson Sumi Wiring India Limited",
+      "exDate": "14-Jul-2026",
+      "amount": null
+    },
+    {
+      "sym": "PIXTRANS",
+      "name": "Pix Transmissions Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 9
+    },
+    {
+      "sym": "HESTERBIO",
+      "name": "Hester Biosciences Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 11
+    },
+    {
+      "sym": "BIMETAL",
+      "name": "Bimetal Bearings Limited",
+      "exDate": "14-Jul-2026",
+      "amount": 13.5
+    },
+    {
+      "sym": "TCS",
+      "name": "Tata Consultancy Services Limited",
+      "exDate": "15-Jul-2026",
+      "amount": 12
+    },
+    {
+      "sym": "KFINTECH",
+      "name": "Kfin Technologies Limited",
+      "exDate": "15-Jul-2026",
+      "amount": 12
+    },
+    {
+      "sym": "HERITGFOOD",
+      "name": "Heritage Foods Limited",
+      "exDate": "15-Jul-2026",
+      "amount": 2.5
+    },
+    {
+      "sym": "BBL",
+      "name": "Bharat Bijlee Limited",
+      "exDate": "15-Jul-2026",
+      "amount": 35
+    },
+    {
+      "sym": "COROMANDEL",
+      "name": "Coromandel International Limited",
+      "exDate": "16-Jul-2026",
+      "amount": 2
+    },
+    {
+      "sym": "ASPINWALL",
+      "name": "Aspinwall and Company Limited",
+      "exDate": "16-Jul-2026",
+      "amount": 6.5
+    }
+  ]
 }
