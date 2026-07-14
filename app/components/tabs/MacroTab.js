@@ -108,7 +108,7 @@ function FiiDiiChart({ trail }) {
       </svg>
       <div className="fdstats">
         {cur && [['FII', cur.fii], ['DII', cur.dii], ['net', net(cur)]].map(([k, v]) => (
-          <div className={`fdstat fdcell-${k.toLowerCase()}`} key={k}><span className="k">{k}</span><b className={cls(v)}>{d3(v)}</b></div>
+          <div className="fdstat" key={k}><span className="k">{k}</span><b className={cls(v)}>{d3(v)}</b></div>
         ))}
       </div>
     </>
