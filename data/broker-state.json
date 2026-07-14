@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-14T08:55:02+05:30",
+  "syncedAt": "2026-07-14T18:45:35+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,52 +181,8 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-07-13T18:46:13+05:30",
+      "syncedAt": "2026-07-14T18:45:38+05:30",
       "rows": [
-        {
-          "sym": "NIFTY-Jul2026-23800-PE",
-          "type": "PUT",
-          "strike": 23800,
-          "expiry": "2026-07-14",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 14.25,
-          "realized": 2886,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Jul2026-24200-CE",
-          "type": "CALL",
-          "strike": 24200,
-          "expiry": "2026-07-14",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 101.5,
-          "realized": 1820,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Jul2026-24200-PE",
-          "type": "PUT",
-          "strike": 24200,
-          "expiry": "2026-07-14",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 214.31,
-          "realized": -32828.25,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Jul2026-24600-CE",
-          "type": "CALL",
-          "strike": 24600,
-          "expiry": "2026-07-14",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 7.4,
-          "realized": -1209,
-          "unrealized": 0
-        },
         {
           "sym": "NIFTY-Jul2026-24500-CE",
           "type": "CALL",
@@ -234,8 +190,8 @@
           "expiry": "2026-07-14",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 5.15,
-          "realized": 572,
+          "avg": 1.05,
+          "realized": -91,
           "unrealized": 0
         },
         {
@@ -245,19 +201,41 @@
           "expiry": "2026-07-14",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 126.05,
-          "realized": -11592.75,
+          "avg": 10.05,
+          "realized": 3692,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Jul2026-24100-CE",
-          "type": "CALL",
+          "sym": "NIFTY-Jul2026-23700-PE",
+          "type": "PUT",
+          "strike": 23700,
+          "expiry": "2026-07-14",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 1.65,
+          "realized": -263.25,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jul2026-24100-PE",
+          "type": "PUT",
           "strike": 24100,
           "expiry": "2026-07-14",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 95.35,
-          "realized": 9538.75,
+          "avg": 85.75,
+          "realized": -4446,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Jul2026-24100-PE",
+          "type": "PUT",
+          "strike": 24100,
+          "expiry": "2026-07-14",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 66,
+          "realized": -3038.75,
           "unrealized": 0
         }
       ]
@@ -301,8 +279,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 739575.25,
-      "utilized": 334
+      "available": 735038.8,
+      "utilized": 288
     },
     "upstox": {
       "available": 25267.89,
