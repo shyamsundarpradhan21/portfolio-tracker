@@ -1,0 +1,411 @@
+{
+  "note": "Slow-moving Nasdaq-100 fundamentals (shares-outstanding + name) for the heatmap hover market cap. Seeded via scripts/seed-nasdaq100-fundamentals.mjs (Yahoo quoteSummary, crumb-gated → laptop-only). Market cap is computed LIVE at runtime = price × sharesOut; re-seed on reconstitution/buybacks.",
+  "asOf": "2026-07-14",
+  "source": "Yahoo quoteSummary defaultKeyStatistics (sharesOutstanding)",
+  "stocks": {
+    "NVDA": {
+      "sharesOut": 24221000000,
+      "name": "NVIDIA Corporation"
+    },
+    "MSFT": {
+      "sharesOut": 7428434704,
+      "name": "Microsoft Corporation"
+    },
+    "AAPL": {
+      "sharesOut": 14687356000,
+      "name": "Apple Inc."
+    },
+    "AMZN": {
+      "sharesOut": 10757109436,
+      "name": "Amazon.com, Inc."
+    },
+    "AVGO": {
+      "sharesOut": 4757580198,
+      "name": "Broadcom Inc."
+    },
+    "META": {
+      "sharesOut": 2196045588,
+      "name": "Meta Platforms, Inc."
+    },
+    "GOOGL": {
+      "sharesOut": 5867155790,
+      "name": "Alphabet Inc."
+    },
+    "GOOG": {
+      "sharesOut": 5499638298,
+      "name": "Alphabet Inc."
+    },
+    "TSLA": {
+      "sharesOut": 3755723871,
+      "name": "Tesla, Inc."
+    },
+    "COST": {
+      "sharesOut": 443478804,
+      "name": "Costco Wholesale Corporation"
+    },
+    "NFLX": {
+      "sharesOut": 4210798528,
+      "name": "Netflix, Inc."
+    },
+    "PLTR": {
+      "sharesOut": 2296071334,
+      "name": "Palantir Technologies Inc."
+    },
+    "TMUS": {
+      "sharesOut": 1082204717,
+      "name": "T-Mobile US, Inc."
+    },
+    "AMD": {
+      "sharesOut": 1630600639,
+      "name": "Advanced Micro Devices, Inc."
+    },
+    "CSCO": {
+      "sharesOut": 3941434665,
+      "name": "Cisco Systems, Inc."
+    },
+    "PEP": {
+      "sharesOut": 1366000000,
+      "name": "PepsiCo, Inc."
+    },
+    "LIN": {
+      "sharesOut": 462347310,
+      "name": "Linde plc"
+    },
+    "INTU": {
+      "sharesOut": 273537000,
+      "name": "Intuit Inc."
+    },
+    "ISRG": {
+      "sharesOut": 354162842,
+      "name": "Intuitive Surgical, Inc."
+    },
+    "BKNG": {
+      "sharesOut": 774878436,
+      "name": "Booking Holdings Inc."
+    },
+    "QCOM": {
+      "sharesOut": 1054000000,
+      "name": "QUALCOMM Incorporated"
+    },
+    "TXN": {
+      "sharesOut": 910092791,
+      "name": "Texas Instruments Incorporated"
+    },
+    "AMGN": {
+      "sharesOut": 539708274,
+      "name": "Amgen Inc."
+    },
+    "ADBE": {
+      "sharesOut": 397500000,
+      "name": "Adobe Inc."
+    },
+    "AMAT": {
+      "sharesOut": 793959430,
+      "name": "Applied Materials, Inc."
+    },
+    "APP": {
+      "sharesOut": 305732000,
+      "name": "AppLovin Corporation"
+    },
+    "MU": {
+      "sharesOut": 1129393151,
+      "name": "Micron Technology, Inc."
+    },
+    "HON": {
+      "sharesOut": 316826559,
+      "name": "Honeywell International Inc."
+    },
+    "PANW": {
+      "sharesOut": 815000000,
+      "name": "Palo Alto Networks, Inc."
+    },
+    "ADP": {
+      "sharesOut": 399734282,
+      "name": "Automatic Data Processing, Inc."
+    },
+    "LRCX": {
+      "sharesOut": 1250571000,
+      "name": "Lam Research Corporation"
+    },
+    "CMCSA": {
+      "sharesOut": 3562784182,
+      "name": "Comcast Corporation"
+    },
+    "GILD": {
+      "sharesOut": 1241569874,
+      "name": "Gilead Sciences, Inc."
+    },
+    "VRTX": {
+      "sharesOut": 253805417,
+      "name": "Vertex Pharmaceuticals Incorporated"
+    },
+    "KLAC": {
+      "sharesOut": 1306275210,
+      "name": "KLA Corporation"
+    },
+    "CEG": {
+      "sharesOut": 357102017,
+      "name": "Constellation Energy Corporation"
+    },
+    "MELI": {
+      "sharesOut": 50697182,
+      "name": "MercadoLibre, Inc."
+    },
+    "CRWD": {
+      "sharesOut": 1018259280,
+      "name": "CrowdStrike Holdings, Inc."
+    },
+    "SHOP": {
+      "sharesOut": 1219581025,
+      "name": "Shopify Inc."
+    },
+    "MSTR": {
+      "sharesOut": 342947057,
+      "name": "Strategy Inc"
+    },
+    "SBUX": {
+      "sharesOut": 1139700000,
+      "name": "Starbucks Corporation"
+    },
+    "ADI": {
+      "sharesOut": 487087040,
+      "name": "Analog Devices, Inc."
+    },
+    "INTC": {
+      "sharesOut": 5026000000,
+      "name": "Intel Corporation"
+    },
+    "CDNS": {
+      "sharesOut": 275816000,
+      "name": "Cadence Design Systems, Inc."
+    },
+    "DASH": {
+      "sharesOut": 411336610,
+      "name": "DoorDash, Inc."
+    },
+    "ARM": {
+      "sharesOut": 1068078760,
+      "name": "Arm Holdings plc"
+    },
+    "SNPS": {
+      "sharesOut": 191479325,
+      "name": "Synopsys, Inc."
+    },
+    "ORLY": {
+      "sharesOut": 828715079,
+      "name": "O'Reilly Automotive, Inc."
+    },
+    "CTAS": {
+      "sharesOut": 400136881,
+      "name": "Cintas Corporation"
+    },
+    "PDD": {
+      "sharesOut": 1423396462,
+      "name": "PDD Holdings Inc."
+    },
+    "MRVL": {
+      "sharesOut": 875766423,
+      "name": "Marvell Technology, Inc."
+    },
+    "FTNT": {
+      "sharesOut": 732648391,
+      "name": "Fortinet, Inc."
+    },
+    "ABNB": {
+      "sharesOut": 417930233,
+      "name": "Airbnb, Inc."
+    },
+    "MDLZ": {
+      "sharesOut": 1283649766,
+      "name": "Mondelez International, Inc."
+    },
+    "PYPL": {
+      "sharesOut": 882105493,
+      "name": "PayPal Holdings, Inc."
+    },
+    "MAR": {
+      "sharesOut": 263688623,
+      "name": "Marriott International, Inc."
+    },
+    "ROP": {
+      "sharesOut": 100917359,
+      "name": "Roper Technologies, Inc."
+    },
+    "AXON": {
+      "sharesOut": 80602077,
+      "name": "Axon Enterprise, Inc."
+    },
+    "ASML": {
+      "sharesOut": 385417665,
+      "name": "ASML Holding N.V."
+    },
+    "WMT": {
+      "sharesOut": 7958079155,
+      "name": "Walmart Inc."
+    },
+    "REGN": {
+      "sharesOut": 103021886,
+      "name": "Regeneron Pharmaceuticals, Inc."
+    },
+    "NXPI": {
+      "sharesOut": 252471079,
+      "name": "NXP Semiconductors N.V."
+    },
+    "WDAY": {
+      "sharesOut": 201000000,
+      "name": "Workday, Inc."
+    },
+    "ADSK": {
+      "sharesOut": 211145251,
+      "name": "Autodesk, Inc."
+    },
+    "CSX": {
+      "sharesOut": 1858138856,
+      "name": "CSX Corporation"
+    },
+    "DDOG": {
+      "sharesOut": 330825798,
+      "name": "Datadog, Inc."
+    },
+    "PAYX": {
+      "sharesOut": 355600000,
+      "name": "Paychex, Inc."
+    },
+    "AEP": {
+      "sharesOut": 544105032,
+      "name": "American Electric Power Company, Inc."
+    },
+    "FANG": {
+      "sharesOut": 281313297,
+      "name": "Diamondback Energy, Inc."
+    },
+    "MNST": {
+      "sharesOut": 978008110,
+      "name": "Monster Beverage Corporation"
+    },
+    "PCAR": {
+      "sharesOut": 526286229,
+      "name": "PACCAR Inc"
+    },
+    "TTWO": {
+      "sharesOut": 185666663,
+      "name": "Take-Two Interactive Software, Inc."
+    },
+    "ODFL": {
+      "sharesOut": 207968283,
+      "name": "Old Dominion Freight Line, Inc."
+    },
+    "EXC": {
+      "sharesOut": 1023208142,
+      "name": "Exelon Corporation"
+    },
+    "ROST": {
+      "sharesOut": 320781076,
+      "name": "Ross Stores, Inc."
+    },
+    "KDP": {
+      "sharesOut": 1360559471,
+      "name": "Keurig Dr Pepper Inc."
+    },
+    "FAST": {
+      "sharesOut": 1148035061,
+      "name": "Fastenal Company"
+    },
+    "GEHC": {
+      "sharesOut": 454891786,
+      "name": "GE HealthCare Technologies Inc."
+    },
+    "CPRT": {
+      "sharesOut": 925811482,
+      "name": "Copart, Inc."
+    },
+    "XEL": {
+      "sharesOut": 624269560,
+      "name": "Xcel Energy Inc."
+    },
+    "BKR": {
+      "sharesOut": 992068697,
+      "name": "Baker Hughes Company"
+    },
+    "IDXX": {
+      "sharesOut": 78882997,
+      "name": "IDEXX Laboratories, Inc."
+    },
+    "DXCM": {
+      "sharesOut": 385872977,
+      "name": "DexCom, Inc."
+    },
+    "EA": {
+      "sharesOut": 250751484,
+      "name": "Electronic Arts Inc."
+    },
+    "MCHP": {
+      "sharesOut": 543008370,
+      "name": "Microchip Technology Incorporated"
+    },
+    "WBD": {
+      "sharesOut": 2507136702,
+      "name": "Warner Bros. Discovery, Inc."
+    },
+    "TRI": {
+      "sharesOut": 436538837,
+      "name": "Thomson Reuters Corporation"
+    },
+    "CRWV": {
+      "sharesOut": 447573939,
+      "name": "CoreWeave, Inc."
+    },
+    "CCEP": {
+      "sharesOut": 442777049,
+      "name": "Coca-Cola Europacific Partners PLC"
+    },
+    "TER": {
+      "sharesOut": 156542162,
+      "name": "Teradyne, Inc."
+    },
+    "KHC": {
+      "sharesOut": 1185777638,
+      "name": "The Kraft Heinz Company"
+    },
+    "MPWR": {
+      "sharesOut": 49130000,
+      "name": "Monolithic Power Systems, Inc."
+    },
+    "FER": {
+      "sharesOut": 715636287,
+      "name": "Ferrovial N.V."
+    },
+    "ALNY": {
+      "sharesOut": 133512573,
+      "name": "Alnylam Pharmaceuticals, Inc."
+    },
+    "NBIS": {
+      "sharesOut": 220406311,
+      "name": "Nebius Group N.V."
+    },
+    "RKLB": {
+      "sharesOut": 578867475,
+      "name": "Rocket Lab Corporation"
+    },
+    "ALAB": {
+      "sharesOut": 171407939,
+      "name": "Astera Labs, Inc."
+    },
+    "SNDK": {
+      "sharesOut": 148089758,
+      "name": "Sandisk Corporation"
+    },
+    "STX": {
+      "sharesOut": 226252116,
+      "name": "Seagate Technology Holdings plc"
+    },
+    "WDC": {
+      "sharesOut": 344682131,
+      "name": "Western Digital Corporation"
+    },
+    "LITE": {
+      "sharesOut": 77800000,
+      "name": "Lumentum Holdings Inc."
+    }
+  }
+}

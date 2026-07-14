@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HEATMAP_META as NIFTY_META, HEATMAP_FALLBACK as NIFTY_FALLBACK } from '../../../data/nifty50-heatmap';
-import FUND from '../../../data/nifty50-fundamentals.json';
+import NIFTY_FUND from '../../../data/nifty50-fundamentals.json';
 import { Rs } from '../../lib/fmt';
 
 const CANVAS_H = 452;
@@ -68,20 +68,25 @@ const pctTxt = (p) => (p == null || !isFinite(p) ? '—' : `${p > 0 ? '+' : ''}$
 
 // ── hover/deep-dive helpers ──
 const clr = (p) => (p == null || !isFinite(p) ? 'mut' : p > 0 ? 'grn' : p < 0 ? 'red' : 'mut');
-// Price/mcap render the digits in mono but the ₹ via the global <Rs/> (.rs) glyph —
-// the mono face renders ₹ oversized, so the body-font glyph sits flush with the figures.
-const money = (n) => (n == null || !isFinite(n) ? null : Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 }));
-// Live market cap (₹ from shares×price) → compact crore. Yahoo won't give mcap keyless,
-// so shares-outstanding is committed (data/nifty50-fundamentals.json) and price is live.
-const crTxt = (rupees) => {
-  if (rupees == null || !isFinite(rupees)) return null;
-  const cr = rupees / 1e7; // ₹ → crore
+// Price/mcap render the digits in mono; the currency glyph (₹ / $) comes via a body-font .rs
+// span (the mono face renders ₹ oversized). Currency-aware: India = ₹ + crore, US = $ + T/B/M.
+const money = (n, usd) => (n == null || !isFinite(n) ? null : Number(n).toLocaleString(usd ? 'en-US' : 'en-IN', { maximumFractionDigits: 2 }));
+// Live market cap (shares × live price) → compact. Yahoo won't give mcap keyless, so shares-
+// outstanding is committed (nifty50-/nasdaq100-fundamentals.json) and price is live.
+const capTxt = (v, usd) => {
+  if (v == null || !isFinite(v)) return null;
+  if (usd) {
+    if (v >= 1e12) return (v / 1e12).toFixed(2) + 'T';
+    if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+    return Math.round(v).toLocaleString('en-US');
+  }
+  const cr = v / 1e7; // ₹ → crore
   if (cr >= 1e5) return (cr / 1e5).toFixed(2) + 'L Cr';
   if (cr >= 1e3) return (cr / 1e3).toFixed(2) + 'K Cr';
   return Math.round(cr).toLocaleString('en-IN') + ' Cr';
 };
-const fundOf = (sym) => FUND.stocks?.[sym];
-const mcapOf = (s) => { const f = fundOf(s.sym); return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
+const mcapOf = (s, fund) => { const f = fund?.stocks?.[s.sym]; return f?.sharesOut && s.price ? f.sharesOut * s.price : null; };
 
 // Build sector → industry → stock tree from enriched rows. Single-industry
 // sectors are flattened (no redundant sub-header), matching the mock.
@@ -134,7 +139,9 @@ const pxpc = (v, total) => (total > 0 ? (v / total) * 100 + '%' : '0%');
 
 // Market-agnostic: `meta`/`fallback` = the {sym → {sector, industry, cap}} taxonomy
 // (defaults to the Nifty-50 one for back-compat), `label` = the root-crumb name.
-export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fallback = NIFTY_FALLBACK, label = 'Nifty 50', onSelect, selected }) {
+export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fallback = NIFTY_FALLBACK, fund = NIFTY_FUND, currency = 'INR', label = 'Nifty 50', onSelect, selected }) {
+  const usd = currency === 'USD';
+  const Cur = () => (usd ? <span className="rs">$</span> : <Rs />);
   const [drill, setDrill] = useState(null);
   const [w, setW] = useState(0);
   const roRef = useRef(null);
@@ -266,10 +273,10 @@ export default function MarketHeatmap({ stocks, loading, meta = NIFTY_META, fall
           <div className="nhx-hov" style={{ left: Math.min(hov.x + 16, vw - 224), top: Math.min(hov.y + 16, vh - 118) }}>
             <div className="nhx-hov-top">
               <b className="mono">{s.sym}</b>
-              <span className="mono nhx-hov-cmp">{money(s.price) == null ? '—' : <><Rs />{money(s.price)}</>}</span>
+              <span className="mono nhx-hov-cmp">{money(s.price, usd) == null ? '—' : <><Cur />{money(s.price, usd)}</>}</span>
               <em className={'mono ' + clr(s.pct)}>{pctTxt(s.pct)}</em>
             </div>
-            <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{crTxt(mcapOf(s)) == null ? '—' : <><Rs />{crTxt(mcapOf(s))}</>}</b></div>
+            <div className="nhx-hov-mc"><span>Mkt Cap</span><b className="mono">{capTxt(mcapOf(s, fund), usd) == null ? '—' : <><Cur />{capTxt(mcapOf(s, fund), usd)}</>}</b></div>
           </div>
         ), document.body);
       })()}

@@ -9,6 +9,7 @@ import UpcomingDividends from '../shared/UpcomingDividends';
 import { dailyReturns, trendWindows } from '../../lib/niftyTrend';
 import { computePivots } from '../../lib/pivots';
 import { HEATMAP_META as NASDAQ_META, HEATMAP_FALLBACK as NASDAQ_FALLBACK } from '../../../data/nasdaq100-heatmap';
+import NASDAQ_FUND from '../../../data/nasdaq100-fundamentals.json';
 import { isNum, scoreLabel } from '../../lib/usSentiment';
 import { Rs, agoShort } from '../../lib/fmt';
 import { smoothPath } from '../../lib/smoothPath';
@@ -443,7 +444,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   useEffect(() => {
     if (!showUS || nasdaqIdx) return;
     let on = true;
-    fetch('/api/stock?symbol=%5EIXIC').then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setNasdaqIdx(j); }).catch(() => {});
+    fetch('/api/stock?symbol=%5EIXIC', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (on && j) setNasdaqIdx(j); }).catch(() => {});
     return () => { on = false; };
   }, [showUS, nasdaqIdx]);
   const niftyCloses = niftyDaily?.closes || [];
@@ -583,7 +584,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
             <div className="wlabel">Nasdaq 100 · heatmap
               <span className="hint">sized by market cap · click a sector to drill in</span>
             </div>
-            <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} label="Nasdaq 100" onSelect={(s) => openStock(s, 'us')} selected={panelSym} />
+            <MarketHeatmap stocks={nasdaq?.stocks} loading={nasdaqLoading} meta={NASDAQ_META} fallback={NASDAQ_FALLBACK} fund={NASDAQ_FUND} currency="USD" label="Nasdaq 100" onSelect={(s) => openStock(s, 'us')} selected={panelSym} />
           </div>
         ) : null}
         {showIN && (panelSym
