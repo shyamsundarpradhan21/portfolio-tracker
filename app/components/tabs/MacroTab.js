@@ -53,62 +53,12 @@ function TickerLine({ label, kind, items, anim }) {
 // bought/sold; a dotted net line (net = FII+DII) with a green-above / red-below
 // shaded area rides on top to read the net inflow/outflow trend at a glance. No
 // buy/sell or date axis labels. Hover a session to spotlight it + read the net.
-function FiiDiiChart({ trail, derivs }) {
+function FiiDiiChart({ trail }) {
   const pts = (trail || []).filter((p) => p && (isFinite(p.fii) || isFinite(p.dii)));
   const [hi, setHi] = useState(-1);
 
-  // FII derivative positioning shares the SAME footer strip as the cash FII/DII/net
-  // values (one strip), and — like the cash values — is read PER SESSION from the
-  // trail (point.der), captured each session by recordFiiDii / persistTrail.
-  // Contracts (lakhs); direction by colour + long/short word, no +/- glyph.
-  const L = (v) => (v == null || !isFinite(v) ? '—' : `${(Math.abs(v) / 1e5).toFixed(2)}L`);
-  const dword = (v) => (v > 0 ? 'long' : v < 0 ? 'short' : 'flat');
-  const dc = (v) => (v > 0 ? 'grn' : v < 0 ? 'red' : 'mut'); // long = green, short = red
-  const shortDate = (s) => { const m = /^(\d{2})-([A-Za-z]{3})/.exec(String(s || '')); return m ? `${m[1]} ${m[2]}` : null; };
-  // Live positioning for the latest session, flattened to the SAME shape stored on
-  // each trail point — so the strip reads identically from live feed or capture.
-  const liveDer = derivs && !derivs.stale && derivs.fii
-    ? { ...derivs.fii, stance: derivs.stance, divergence: derivs.divergence, rIdxFut: derivs.retail?.idxFut }
-    : null;
-  // Show the derivative half when the feed is live OR any session has been captured,
-  // so the layout stays put while hovering across sessions (older, pre-capture
-  // sessions simply dash their positioning columns).
-  const featureOn = !!liveDer || pts.some((p) => p && p.der);
-  const derCol = (label, v, cls2) => (
-    <div className={`fdstat ${cls2}`}>
-      <span className="k">{label}</span>
-      {v != null && isFinite(v) ? <b className={dc(v)}>{L(v)} <span className="dw">{dword(v)}</span></b> : <b className="mut">—</b>}
-    </div>
-  );
-  const derivCols = (dp) => (
-    <>
-      {derCol('Idx Fut', dp?.idxFut, 'sep fdcell-idx')}
-      {derCol('Stk Fut', dp?.stkFut, 'fdcell-stk')}
-    </>
-  );
-  const readLine = (dp, dstr) => {
-    if (!dp) return null;
-    const ds = shortDate(dstr);
-    const opt = [
-      dp.idxCall > 0 ? 'long calls' : dp.idxCall < 0 ? 'short calls' : null,
-      dp.idxPut > 0 ? 'long puts' : dp.idxPut < 0 ? 'short puts' : null,
-    ].filter(Boolean).join(' · ');
-    const stanceCls = dp.stance === 'bearish' ? 'red' : dp.stance === 'bullish' ? 'grn' : 'mut';
-    return (
-      <div className="fdderiv-read">
-        {ds && <><span className="mut">as of {ds}</span> · </>}
-        {opt && <>{opt} → </>}<b className={stanceCls}>FII {dp.stance}</b>
-        {dp.divergence && dp.rIdxFut != null && <> · <span className="mut">retail {dword(dp.rIdxFut)} index futures — divergence</span></>}
-      </div>
-    );
-  };
-
   if (pts.length < 2) return (
-    <>
-      <div className="na">FII/DII flow trail builds forward — needs a few more sessions.</div>
-      {featureOn && <div className="fdstats only-d"><div className="fdcap fdcap-r">FII open interest · contracts</div>{derivCols(liveDer)}</div>}
-      {readLine(liveDer, derivs?.asOf)}
-    </>
+    <div className="na">FII/DII flow trail builds forward — needs a few more sessions.</div>
   );
 
   const W = 560, H = 120, PAD_L = 12, PAD_R = 12, zero = 62, half = 46, n = pts.length;
@@ -122,9 +72,6 @@ function FiiDiiChart({ trail, derivs }) {
   const nyOf = (p) => zero - net(p) * sc;
   const d3 = (v) => (v == null || !isFinite(v) ? '—' : <><Rs />{Math.abs(Math.round(v)).toLocaleString('en-IN')} Cr</>);
   const cur = hi >= 0 ? pts[hi] : pts[pts.length - 1];
-  // Per-session positioning: the hovered point's captured der, falling back to the
-  // live feed only for the latest session (before today's capture lands).
-  const dp = cur?.der || (cur === pts[pts.length - 1] ? liveDer : null);
 
   // Net sparkline geometry: a dotted polyline through the net points, and a
   // closed area down to the zero line, clipped into a green (above) and red
@@ -159,19 +106,11 @@ function FiiDiiChart({ trail, derivs }) {
         <path className="fd-spark" d={linePath} />
         {pts.map((p, i) => <circle key={i} className={`fd-dot ${net(p) >= 0 ? 'g' : 'r'}`} cx={cxOf(i)} cy={nyOf(p)} r="2.6" />)}
       </svg>
-      <div className={`fdstats${featureOn ? ' has-d' : ''}`}>
-        {featureOn && (
-          <>
-            <div className="fdcap fdcap-l">net flow · ₹ Cr</div>
-            <div className="fdcap fdcap-r sep">FII open interest · contracts</div>
-          </>
-        )}
+      <div className="fdstats">
         {cur && [['FII', cur.fii], ['DII', cur.dii], ['net', net(cur)]].map(([k, v]) => (
           <div className={`fdstat fdcell-${k.toLowerCase()}`} key={k}><span className="k">{k}</span><b className={cls(v)}>{d3(v)}</b></div>
         ))}
-        {featureOn && derivCols(dp)}
       </div>
-      {readLine(dp, cur?.d)}
     </>
   );
 }
@@ -502,8 +441,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
   const fiiNet = fdTrail.length ? (fdTrail[fdTrail.length - 1].fii || 0) + (fdTrail[fdTrail.length - 1].dii || 0) : null;
   // FII/DII renders as its own full-width card below (India only); also shown
   // whenever FII derivative positioning is available.
-  const fiiDerivs = premarket?.fiiDerivs;
-  const showFii = showIN && (ind.breadthAD || fdTrail.length >= 2 || (fiiDerivs && !fiiDerivs.stale));
+  const showFii = showIN && (ind.breadthAD || fdTrail.length >= 2);
   // US-side sentiment inputs (Global view mirrors India minus FII/DII): sector
   // breadth (% of SPDR sectors green), US VIX, S&P 500 day move + day movers.
   const usSecLive = usSectors.filter((s) => s.pct != null);
@@ -618,7 +556,7 @@ export default function MacroTab({ premarket, usSentiment, indiaSentiment, macro
                 <span className="hint">{fdTrail.length >= 2 ? `NSE · last ${fdTrail.length} sessions` : 'NSE'}</span>
                 <span className="fdleg"><i className="lf" />FII<i className="ld" />DII<i className="ln" />net</span>
               </div>
-              <FiiDiiChart trail={fdTrail} derivs={fiiDerivs} />
+              <FiiDiiChart trail={fdTrail} />
             </div>
           )}
           <UpcomingDividends items={dividends?.items} loading={dividends == null} />
