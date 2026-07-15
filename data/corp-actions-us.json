@@ -1,6 +1,6 @@
 {
   "note": "Upcoming US dividends (announced ex-dates), from Yahoo. Written by scripts/capture-corp-actions-us.mjs. /api/dividends filters to your US holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-14T16:15:56.807Z",
+  "capturedAt": "2026-07-15T13:13:00.830Z",
   "actions": [
     {
       "sym": "MSFT",
