@@ -7,8 +7,8 @@
       "note": ""
     },
     "dhan": {
-      "ok": false,
-      "note": "mint failed: Token can be generated once every 2 minutes."
+      "ok": true,
+      "note": ""
     },
     "fyers": {
       "ok": false,
@@ -25,9 +25,9 @@
       "syncedAt": "2026-07-16T22:18:50+05:30",
       "rows": [
         {
-          "sym": "AVANTEL",
-          "qty": 52,
-          "avg": 153.04
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86
         },
         {
           "sym": "BANKBARODA",
@@ -35,19 +35,19 @@
           "avg": 291.8
         },
         {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
-        },
-        {
           "sym": "HAPPSTMNDS",
           "qty": 20,
           "avg": 393.5
         },
         {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43
         }
       ]
     },
@@ -181,7 +181,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-07-16T18:46:20+05:30",
+      "syncedAt": "2026-07-16T22:18:51+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jul2026-24100-CE",
