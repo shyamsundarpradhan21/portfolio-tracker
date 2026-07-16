@@ -1,39 +1,7 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-15T13:12:39.970Z",
+  "capturedAt": "2026-07-16T16:51:03.245Z",
   "actions": [
-    {
-      "sym": "TCS",
-      "name": "Tata Consultancy Services Limited",
-      "exDate": "15-Jul-2026",
-      "type": "dividend",
-      "amount": 12,
-      "ratio": null
-    },
-    {
-      "sym": "KFINTECH",
-      "name": "Kfin Technologies Limited",
-      "exDate": "15-Jul-2026",
-      "type": "dividend",
-      "amount": 12,
-      "ratio": null
-    },
-    {
-      "sym": "HERITGFOOD",
-      "name": "Heritage Foods Limited",
-      "exDate": "15-Jul-2026",
-      "type": "dividend",
-      "amount": 2.5,
-      "ratio": null
-    },
-    {
-      "sym": "BBL",
-      "name": "Bharat Bijlee Limited",
-      "exDate": "15-Jul-2026",
-      "type": "dividend",
-      "amount": 35,
-      "ratio": null
-    },
     {
       "sym": "COROMANDEL",
       "name": "Coromandel International Limited",
@@ -104,6 +72,46 @@
       "exDate": "17-Jul-2026",
       "type": "dividend",
       "amount": 18,
+      "ratio": null
+    },
+    {
+      "sym": "PUNJABCHEM",
+      "name": "Punjab Chemicals & Crop Protection Limited",
+      "exDate": "17-Jul-2026",
+      "type": "dividend",
+      "amount": 3,
+      "ratio": null
+    },
+    {
+      "sym": "JKLAKSHMI",
+      "name": "JK Lakshmi Cement Limited",
+      "exDate": "17-Jul-2026",
+      "type": "dividend",
+      "amount": 6.5,
+      "ratio": null
+    },
+    {
+      "sym": "PFIZER",
+      "name": "Pfizer Limited",
+      "exDate": "17-Jul-2026",
+      "type": "dividend",
+      "amount": 75,
+      "ratio": null
+    },
+    {
+      "sym": "HONAUT",
+      "name": "Honeywell Automation India Limited",
+      "exDate": "17-Jul-2026",
+      "type": "dividend",
+      "amount": 110,
+      "ratio": null
+    },
+    {
+      "sym": "TCI",
+      "name": "Transport Corporation of India Limited",
+      "exDate": "17-Jul-2026",
+      "type": "dividend",
+      "amount": null,
       "ratio": null
     },
     {
