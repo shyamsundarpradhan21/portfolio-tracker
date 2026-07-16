@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-16T18:46:05+05:30",
+  "syncedAt": "2026-07-16T22:18:29+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,8 +7,8 @@
       "note": ""
     },
     "dhan": {
-      "ok": true,
-      "note": ""
+      "ok": false,
+      "note": "mint failed: Token can be generated once every 2 minutes."
     },
     "fyers": {
       "ok": false,
@@ -22,13 +22,8 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-07-15T18:40:02+05:30",
+      "syncedAt": "2026-07-16T22:18:50+05:30",
       "rows": [
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
-        },
         {
           "sym": "AVANTEL",
           "qty": 52,
@@ -40,14 +35,19 @@
           "avg": 291.8
         },
         {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43
         },
         {
           "sym": "HAPPSTMNDS",
           "qty": 20,
           "avg": 393.5
+        },
+        {
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86
         }
       ]
     },
@@ -242,7 +242,7 @@
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-15T18:40:02+05:30",
+      "syncedAt": "2026-07-16T22:18:50+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL290PE",
@@ -253,7 +253,7 @@
           "netQty": 2500,
           "avg": 2.85,
           "realized": 0,
-          "unrealized": -4375
+          "unrealized": -5250
         },
         {
           "sym": "ANGELONE26AUGFUT",
@@ -264,7 +264,7 @@
           "netQty": 2500,
           "avg": 346.45,
           "realized": 0,
-          "unrealized": -7125
+          "unrealized": -27375
         }
       ]
     },
@@ -283,8 +283,8 @@
       "utilized": 557
     },
     "upstox": {
-      "available": 24749.76,
-      "utilized": 143626.5
+      "available": 6837.01,
+      "utilized": 184789.25
     }
   }
 }
