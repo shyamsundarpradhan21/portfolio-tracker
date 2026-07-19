@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-17T18:45:46+05:30",
+  "syncedAt": "2026-07-19T22:18:06+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -7,12 +7,12 @@
       "note": ""
     },
     "dhan": {
-      "ok": true,
-      "note": ""
+      "ok": false,
+      "note": "fetch failed"
     },
     "fyers": {
       "ok": false,
-      "note": "mint failed (funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"})"
+      "note": "fetch failed"
     },
     "kite": {
       "ok": true,
@@ -22,12 +22,12 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-07-16T22:18:50+05:30",
+      "syncedAt": "2026-07-19T22:18:33+05:30",
       "rows": [
         {
-          "sym": "LAURUSLABS",
-          "qty": 8,
-          "avg": 986.86
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43
         },
         {
           "sym": "BANKBARODA",
@@ -45,9 +45,9 @@
           "avg": 153.04
         },
         {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
+          "sym": "LAURUSLABS",
+          "qty": 8,
+          "avg": 986.86
         }
       ]
     },
@@ -220,7 +220,7 @@
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-16T22:18:50+05:30",
+      "syncedAt": "2026-07-19T22:18:33+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL290PE",
@@ -242,7 +242,7 @@
           "netQty": 2500,
           "avg": 346.45,
           "realized": 0,
-          "unrealized": -27375
+          "unrealized": -44625
         }
       ]
     },
@@ -261,8 +261,8 @@
       "utilized": 430
     },
     "upstox": {
-      "available": 6837.01,
-      "utilized": 184789.25
+      "available": 24380.26,
+      "utilized": 132496
     }
   }
 }
