@@ -32,18 +32,34 @@ not a trade) is now folded into the reconciliation obligation.
 per-segment residual 0.0**. 293/293 unit tests pass (11 new). On other historical carry notes,
 `fills + carry` matches the note's own PAY-IN/PAY-OUT obligation line to the paisa (carry is exact).
 
-**Blast radius:** 3 more quarantined Upstox notes fully reconcile now. NO regression (every affected
-note was already in inbox/failed; nothing that previously PASSed changed).
+**Blast radius (carry fix):** 3 more quarantined Upstox notes fully reconcile. NO regression (every
+affected note was already in inbox/failed; nothing that previously PASSed changed).
 
-**Separate pre-existing bug REVEALED (out of scope — flagged, not fixed):** ~30 older Upstox F&O
-notes still fail by a small residual (−₹35.40 / −₹23.60 / …). Root cause is unrelated to carry: a
-`Brokerage Charges 30.00` + its `IGST 5.40` line isn't captured (`brokerage` missing from net_total)
-in certain older Upstox layouts (brokerage rendered as a pseudo-fill row in the detail table). Deserves
-its own propose-verify cycle.
+---
 
-**Operational follow-through (NOT done — needs user OK, writes to KV):** the note is still in
-inbox/failed/. The pipeline doesn't rescan failed/; dedup anchors on PASS rows only, so re-dropping
-the file into the inbox root re-parses it → PASS → KV push (+ a manifest PASS row). Offered to the user.
+## Follow-on (APPROVED) — split-charges-block brokerage-capture bug + re-ingest
+
+**Bug:** older Upstox F&O layout — pdfplumber splits ONE ruled charges block into two consecutive
+fragments sharing the identical `<blank>|FO-EQ|TOTAL` header: fragment A = PAY-IN + Brokerage +
+IGST-on-brokerage, fragment B = remaining levies + Net Amount. Fragment A isn't recognised as a
+charges table (no Net-Amount row, <3 charge rows), so **brokerage + its IGST are dropped** →
+residual == brokerage + its GST (−₹35.40 etc.). Distinct from carry.
+
+**Fix (engine.py):**
+- `_merge_split_charge_tables()` concatenates adjacent charge fragments with an identical header so
+  the split rows rejoin ONE table — within-table accumulation then SUMS the two IGST lines and no
+  charge is lost. Anchor must carry a real charge row, so a pay-in/net-amount-ONLY obligation table
+  is never pulled in (keeps the fills+carry path for non-split notes untouched).
+- Rejoining also captures the note's own PAY-IN obligation, so `checksum()`/`per_segment_checksum()`
+  now **gate the carry term to pay_in-absent** (pay_in already includes the carry → no double-count).
+
+**Verification:** 304/304 tests (11 new split/gate). Yesterday's note stays OK (residual 0.0, uses the
+fills+carry path — its obligation table is pay-in-only, not merged). Upstox FON backlog: **30/36 unique
+notes now reconcile** (was ~0). Remaining 6 are `N/A` (resid None) — a *different* 2023-era layout where
+`net_amount` itself isn't extracted; unchanged by this fix. Full inbox/failed dry-run tally: 57 OK +
+5 CARRY (inert) + 17 REFUSED (mostly other brokers) + 2 SKIP, from ~all-REFUSED before.
+
+**Re-ingest yesterday's note:** DONE (see below) — moved back to inbox root, live ingest → PASS → KV.
 
 ---
 

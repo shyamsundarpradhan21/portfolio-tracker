@@ -1045,5 +1045,69 @@ check("carry: excluded from CHARGE_KEYS (not a cost)", "carry" not in P.CHARGE_K
 _gp, _gd = P.gst_check(_after["net_total"])
 check("carry: GST attribution still valid (base excludes carry)", _gp is True, (_gp, _gd))
 
+# ===== SPLIT charges block (older Upstox: brokerage in a separate fragment) — SYNTHETIC, no PII =====
+# pdfplumber splits ONE ruled charges block into two same-header fragments: PAY-IN + Brokerage +
+# IGST-on-brokerage in the first, the rest + Net Amount in the second. Parsed apart, the first
+# fragment isn't a charges table (no Net-Amount, <3 charge rows) so brokerage + its IGST are DROPPED
+# (residual == brokerage + its GST). _merge_split_charge_tables rejoins them so nothing is lost and
+# the two IGST lines SUM; pay_in becomes the obligation (carry is then NOT double-added).
+print("[split] brokerage in a split-off charges fragment is rejoined (not dropped):")
+frag1 = [
+    ["", "FO-EQ (Rs.)", "TOTAL (Net) (Rs.)"],
+    ["", "", ""],
+    ["PAY IN / ( PAY OUT ) OBLIGATION", "26000.00", "26000.00"],
+    ["", "", ""],
+    ["Brokerage Charges", "30.00", "30.00"],
+    ["", "", ""],
+    ["[IGST 18% On Brokerage]", "5.40", "5.40"],
+]
+frag2 = [
+    ["", "FO-EQ (Rs.)", "TOTAL (Net) (Rs.)"],
+    ["", "", ""],
+    ["[IGST 18% On Charges]", "2.48", "2.48"],
+    ["[TRANSACTION CHARGES]", "12.34", "12.34"],
+    ["[SEBI FEES]", "0.71", "0.71"],
+    ["[OLD SPANMG]", "-100000.00", "-100000.00"],
+    ["[NEW SPANMG]", "60000.00", "60000.00"],
+    ["Net amount (-) receivable by Client / (+) payable by Client (Rs.)", "-13949.07", "-13949.07"],
+]
+merged = P._merge_split_charge_tables([frag1, frag2])
+check("split: two same-header charge fragments concatenated into one", len(merged) == 1, len(merged))
+sch = P.parse_charges_from_tables([frag1, frag2])
+snt = sch["net_total"]
+check("split: brokerage captured from the split-off fragment (was dropped -> residual)", snt.get("brokerage") == 30.0, snt.get("brokerage"))
+check("split: the two IGST lines SUM (on-brokerage 5.40 + on-charges 2.48 = 7.88)", snt.get("igst") == 7.88, snt.get("igst"))
+check("split: pay_in captured from the same fragment", snt.get("pay_in") == 26000.0, snt.get("pay_in"))
+check("split: margin summed across the fragment (-40000)", snt.get("margin") == -40000.0, snt.get("margin"))
+
+# full reconciliation (Upstox flip + a carry present): pay_in is the obligation, carry NOT double-added.
+_split_carry = P.carry_from_tables([carry_summary])           # {"fno": 20000.0} from the carry fixture above
+sch["net_total"]["carry"] = round(sch["net_total"].get("carry", 0.0) + sum(_split_carry.values()), 4)
+for _seg, _d in sch["by_clearing_segment"].items():
+    if P._seg_to_fill(_seg) in _split_carry:
+        _d["carry"] = round(_d.get("carry", 0.0) + _split_carry[P._seg_to_fill(_seg)], 4)
+_sflip = _flip(sch)
+_sfills = [{"instrument": "OPTSTK FAKECO 25AUG26 PE", "segment": "fno", "side": "BUY", "qty": 2000, "net_total": -6000.0}]
+sp, sr = P.checksum(_sflip["net_total"], _sfills)
+check("split: total CHECKSUM PASS via pay_in (carry NOT double-counted)", sp is True, (sp, sr))
+check("split: residual ~0", abs(sr) <= 0.01, sr)
+_spsc = P.per_segment_checksum(_sflip, _sfills)
+check("split: per-segment FO-EQ closes on pay_in (carry gated off)", _spsc.get("FO-EQ (Rs.)", {}).get("pass") is True, _spsc)
+
+# GATING proof: pay_in present => carry ignored (it's already inside pay_in). If it were added on
+# top, the checksum would be off by exactly the carry (-20000).
+_gate = {"pay_in": -26000.0, "net_amount": 13949.07, "brokerage": -30.0, "exchange_txn": -12.34,
+         "sebi_turnover": -0.71, "igst": -7.88, "margin": 40000.0, "carry": -20000.0}
+gp, gr = P.checksum(_gate, _sfills)
+check("gate: pay_in present -> carry ignored (obligation = pay_in alone)", gp is True and abs(gr) <= 0.01, (gp, gr))
+
+# REGRESSION guards: a pay-in/net-amount-ONLY obligation table is NOT a merge anchor (kept separate,
+# so its pay_in is NOT captured -> the fills+carry path for non-split notes is preserved); and a lone
+# (non-split) charges table is returned unchanged.
+oblig_only = [["", "FO-EQ (Rs.)", "TOTAL (Net) (Rs.)"], ["", "", ""], ["PAY IN / ( PAY OUT ) OBLIGATION", "29125.00", "29125.00"]]
+kept = P._merge_split_charge_tables([oblig_only, carry_charges_tbl])
+check("split: pay-in-only obligation table NOT merged (fills+carry path preserved)", len(kept) == 2, len(kept))
+check("split: a lone charges table is returned unchanged", P._merge_split_charge_tables([carry_charges_tbl]) == [carry_charges_tbl], None)
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)

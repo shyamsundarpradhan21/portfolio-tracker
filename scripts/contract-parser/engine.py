@@ -317,10 +317,43 @@ def parse_charges_from_text(text):
         return None                                 # no reconcilable charges block found in text
     return {"by_clearing_segment": {}, "net_total": net_total, "unmapped_labels": unmapped}
 
+# pdfplumber sometimes splits ONE ruled charges block into CONSECUTIVE fragments that share the
+# IDENTICAL header row. An older Upstox F&O layout puts PAY-IN + Brokerage + IGST-on-brokerage in
+# the first fragment and the remaining levies + Net Amount in the next - parsed apart, the first
+# fragment isn't recognised as a charges table (no Net-Amount row, <3 charge rows), so brokerage
+# AND its split-out IGST are DROPPED (residual == brokerage + its GST). Concatenate adjacent
+# fragments carrying the same header so the split lines rejoin ONE table and within-table
+# accumulation sums the two IGST lines. The merge ANCHOR must itself carry a real charge row, so a
+# pay-in/net-amount-only obligation table is never pulled in (that would capture a pay_in the
+# fills+carry path doesn't want) - only a genuine split of the charge block is rejoined. Non-split
+# notes have no adjacent same-header charge fragment -> returned unchanged.
+def _has_charge_row(tbl):
+    return bool(tbl) and any(r and label_key(r[0]) in CHARGE_KEYS
+                             and any(pnum(c) is not None for c in r[1:]) for r in tbl)
+
+def _merge_split_charge_tables(tables):
+    def hdr(t):
+        return tuple(_nh(c) for c in t[0]) if (t and t[0]) else None
+    out, i = [], 0
+    while i < len(tables):
+        t = tables[i]
+        if t and _has_charge_row(t) and hdr(t):
+            merged, j = list(t), i + 1
+            while (j < len(tables) and tables[j] and hdr(tables[j]) == hdr(t) and _has_charge_row(tables[j])):
+                merged += tables[j][1:]          # drop the duplicate header row
+                j += 1
+            out.append(merged)
+            i = j
+        else:
+            out.append(t)
+            i += 1
+    return out
+
 def parse_charges_from_tables(tables):
     # A combined (equity+F&O) note splits charges across tables - notably a separate IGST-rate
     # table. Take the RICHEST charge table as primary and SUPPLEMENT only missing/zero keys from
     # the others (so a split-out IGST is picked up without double-counting a charge listed twice).
+    tables = _merge_split_charge_tables(tables)   # rejoin a charges block pdfplumber split (see above)
     parsed = []
     for tbl in tables:
         if is_charges_table(tbl):
@@ -354,16 +387,16 @@ def checksum(net_total, fills=None):
     if net_amt is None:
         return (None, None)
     pay_in = net_total.get("pay_in")
+    carry = net_total.get("carry", 0.0)     # BF/CF carry-forward MTM (open F&O held overnight)
     if pay_in is not None:
-        obligation = pay_in
+        obligation = pay_in                 # the note's own pay-in/pay-out total ALREADY includes any carry MTM
     elif fills:
-        obligation = sum((f.get("net_total") or 0.0) for f in fills)   # no pay-in row -> sum fills
+        obligation = sum((f.get("net_total") or 0.0) for f in fills) + carry   # no pay-in row -> sum fills; fills MISS the carry, fold it in
     else:
         return (None, None)
     csum = sum(net_total.get(k, 0.0) for k in CHARGE_KEYS)
     margin = net_total.get("margin", 0.0)   # collateral movement (SPAN/EXP/DEL) is in the NET cash but is
-    carry = net_total.get("carry", 0.0)     # BF/CF carry-forward MTM (open F&O held overnight): part of the
-    residual = round(net_amt - (obligation + csum + margin + carry), 4)   # pay-in obligation, NOT a fill and NOT a charge - balances the checksum, excluded from cost
+    residual = round(net_amt - (obligation + csum + margin), 4)   # NOT a charge - balances the checksum, excluded from cost
     return (abs(residual) <= 0.01, residual)
 
 # Map a clearing-segment LABEL to a fill segment. Handles every broker's naming: NCLCM/NCLCD->cash,
@@ -393,10 +426,12 @@ def per_segment_checksum(charges, fills):
         # the detail carries it and the charges table doesn't) or listed as a charge). Falling back
         # to sum-of-fills only when there's no per-segment pay-in keeps combined-note behaviour.
         seg_payin = d.get("pay_in")
-        obl = seg_payin if seg_payin is not None else sum(
-            (f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg)
+        if seg_payin is not None:
+            obl = seg_payin                 # segment pay-in already includes any BF/CF carry MTM
+        else:
+            obl = sum((f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg) + d.get("carry", 0.0)
         chg = sum(d.get(k, 0.0) for k in CHARGE_KEYS)
-        resid = round(net - (obl + chg + d.get("margin", 0.0) + d.get("carry", 0.0)), 4)   # margin + BF/CF carry MTM balance the net, not charges
+        resid = round(net - (obl + chg + d.get("margin", 0.0)), 4)   # margin balances the net, not a charge
         out[seg] = {"pass": abs(resid) <= 0.02, "residual": resid}
     return out
 
