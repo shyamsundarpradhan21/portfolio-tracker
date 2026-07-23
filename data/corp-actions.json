@@ -1,165 +1,165 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-16T16:51:03.245Z",
+  "capturedAt": "2026-07-23T11:39:24.643Z",
   "actions": [
     {
-      "sym": "COROMANDEL",
-      "name": "Coromandel International Limited",
-      "exDate": "16-Jul-2026",
+      "sym": "ESABINDIA",
+      "name": "Esab India Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
-      "amount": 2,
+      "amount": 25,
       "ratio": null
     },
     {
-      "sym": "ADOR",
-      "name": "Ador Welding Limited",
-      "exDate": "16-Jul-2026",
+      "sym": "SUDEEPPHRM",
+      "name": "Sudeep Pharma Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
-      "amount": 23,
+      "amount": 1.5,
       "ratio": null
     },
     {
-      "sym": "CRAMC",
-      "name": "Canara Robeco Asset Management Company Limited",
-      "exDate": "16-Jul-2026",
+      "sym": "PAUSHAKLTD",
+      "name": "Paushak Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": 2.5,
       "ratio": null
     },
     {
-      "sym": "CRAFTSMAN",
-      "name": "Craftsman Automation Limited",
-      "exDate": "16-Jul-2026",
+      "sym": "AFCONS",
+      "name": "Afcons Infrastructure Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
-      "amount": 11.25,
+      "amount": 2,
       "ratio": null
     },
     {
-      "sym": "WINDLAS",
-      "name": "Windlas Biotech Limited",
-      "exDate": "16-Jul-2026",
+      "sym": "ABMKNO",
+      "name": "ABM Knowledgeware Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
-      "amount": 6.3,
+      "amount": 1.25,
       "ratio": null
     },
     {
-      "sym": "ASPINWALL",
-      "name": "Aspinwall and Company Limited",
-      "exDate": "16-Jul-2026",
-      "type": "dividend",
-      "amount": 6.5,
-      "ratio": null
-    },
-    {
-      "sym": "GRPLTD",
-      "name": "GRP Limited",
-      "exDate": "16-Jul-2026",
-      "type": "dividend",
-      "amount": 3.5,
-      "ratio": null
-    },
-    {
-      "sym": "WEIZMANIND",
-      "name": "Weizmann Limited",
-      "exDate": "16-Jul-2026",
-      "type": "dividend",
-      "amount": 0.5,
-      "ratio": null
-    },
-    {
-      "sym": "LUPIN",
-      "name": "Lupin Limited",
-      "exDate": "17-Jul-2026",
-      "type": "dividend",
-      "amount": 18,
-      "ratio": null
-    },
-    {
-      "sym": "PUNJABCHEM",
-      "name": "Punjab Chemicals & Crop Protection Limited",
-      "exDate": "17-Jul-2026",
-      "type": "dividend",
-      "amount": 3,
-      "ratio": null
-    },
-    {
-      "sym": "JKLAKSHMI",
-      "name": "JK Lakshmi Cement Limited",
-      "exDate": "17-Jul-2026",
-      "type": "dividend",
-      "amount": 6.5,
-      "ratio": null
-    },
-    {
-      "sym": "PFIZER",
-      "name": "Pfizer Limited",
-      "exDate": "17-Jul-2026",
-      "type": "dividend",
-      "amount": 75,
-      "ratio": null
-    },
-    {
-      "sym": "HONAUT",
-      "name": "Honeywell Automation India Limited",
-      "exDate": "17-Jul-2026",
-      "type": "dividend",
-      "amount": 110,
-      "ratio": null
-    },
-    {
-      "sym": "TCI",
-      "name": "Transport Corporation of India Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "MWL",
+      "name": "Mangalam Worldwide Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": null,
       "ratio": null
     },
     {
-      "sym": "BLUESTARCO",
-      "name": "Blue Star Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "BHAGCHEM",
+      "name": "Bhagiradha Chemicals & Industries Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
-      "amount": 8.5,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "KOTAKBANK",
-      "name": "Kotak Mahindra Bank Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "PRECAM",
+      "name": "Precision Camshafts Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "BANSWRAS",
+      "name": "Banswara Syntex Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "OBEROIRLTY",
+      "name": "Oberoi Realty Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "BEPL",
+      "name": "Bhansali Engineering Polymers Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "DBCORP",
+      "name": "D.B.Corp Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": 5,
+      "ratio": null
+    },
+    {
+      "sym": "ORIENTHOT",
+      "name": "Oriental Hotels Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": 0.65,
       "ratio": null
     },
     {
-      "sym": "SHREECEM",
-      "name": "SHREE CEMENT LIMITED",
-      "exDate": "17-Jul-2026",
+      "sym": "PIDILITIND",
+      "name": "Pidilite Industries Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": 11.5,
+      "ratio": null
+    },
+    {
+      "sym": "ICRA",
+      "name": "ICRA Limited",
+      "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": 70,
       "ratio": null
     },
     {
-      "sym": "JUBLFOOD",
-      "name": "Jubilant Foodworks Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "SASKEN",
+      "name": "Sasken Technologies Limited",
+      "exDate": "24-Jul-2026",
       "type": "dividend",
-      "amount": 1.2,
+      "amount": 13,
       "ratio": null
     },
     {
-      "sym": "BAJAJELEC",
-      "name": "Bajaj Electricals Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "FORTIS",
+      "name": "Fortis Healthcare Limited",
+      "exDate": "24-Jul-2026",
       "type": "dividend",
-      "amount": 3,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "ELGIEQUIP",
-      "name": "Elgi Equipments Limited",
-      "exDate": "17-Jul-2026",
+      "sym": "SIYSIL",
+      "name": "Siyaram Silk Mills Limited",
+      "exDate": "24-Jul-2026",
       "type": "dividend",
-      "amount": 2.7,
+      "amount": 5,
+      "ratio": null
+    },
+    {
+      "sym": "NAUKRI",
+      "name": "Info Edge (India) Limited",
+      "exDate": "24-Jul-2026",
+      "type": "dividend",
+      "amount": 3.6,
+      "ratio": null
+    },
+    {
+      "sym": "REFEX",
+      "name": "Refex Industries Limited",
+      "exDate": "24-Jul-2026",
+      "type": "dividend",
+      "amount": null,
       "ratio": null
     }
   ]

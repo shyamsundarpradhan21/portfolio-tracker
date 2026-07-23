@@ -1,6 +1,6 @@
 {
   "note": "Upcoming US dividends (announced ex-dates), from Yahoo. Written by scripts/capture-corp-actions-us.mjs. /api/dividends filters to your US holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-16T16:51:24.002Z",
+  "capturedAt": "2026-07-23T11:39:47.120Z",
   "actions": [
     {
       "sym": "PG",
@@ -11,11 +11,43 @@
       "market": "US"
     },
     {
+      "sym": "ASML",
+      "name": "ASML Holding N.V.",
+      "exDate": "2026-07-28",
+      "type": "dividend",
+      "amount": 3.18,
+      "market": "US"
+    },
+    {
       "sym": "MSFT",
       "name": "Microsoft Corporation",
       "exDate": "2026-08-20",
       "type": "dividend",
       "amount": 0.91,
+      "market": "US"
+    },
+    {
+      "sym": "SHW",
+      "name": "The Sherwin-Williams Company",
+      "exDate": "2026-08-21",
+      "type": "dividend",
+      "amount": 0.8,
+      "market": "US"
+    },
+    {
+      "sym": "PEP",
+      "name": "PepsiCo, Inc.",
+      "exDate": "2026-09-04",
+      "type": "dividend",
+      "amount": 1.48,
+      "market": "US"
+    },
+    {
+      "sym": "KO",
+      "name": "The Coca-Cola Company",
+      "exDate": "2026-09-15",
+      "type": "dividend",
+      "amount": 0.53,
       "market": "US"
     },
     {
