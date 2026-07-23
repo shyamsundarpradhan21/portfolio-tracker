@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-07-23T17:06:43+05:30",
+  "syncedAt": "2026-07-23T17:09:16+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -11,8 +11,8 @@
       "note": ""
     },
     "fyers": {
-      "ok": false,
-      "note": "funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"}"
+      "ok": true,
+      "note": ""
     },
     "kite": {
       "ok": true,
@@ -22,7 +22,7 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-07-23T17:07:10+05:30",
+      "syncedAt": "2026-07-23T17:09:17+05:30",
       "rows": [
         {
           "sym": "AVANTEL",
@@ -181,7 +181,7 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-07-23T17:07:10+05:30",
+      "syncedAt": "2026-07-23T17:09:17+05:30",
       "rows": [
         {
           "sym": "NIFTY-Jul2026-23550-PE",
@@ -275,7 +275,7 @@
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-23T17:07:10+05:30",
+      "syncedAt": "2026-07-23T17:09:17+05:30",
       "rows": [
         {
           "sym": "ANGELONE26JUL290PE",
@@ -314,7 +314,7 @@
     },
     "FYERS_FNO": {
       "source": "Fyers",
-      "syncedAt": "2026-06-29T00:34:19+05:30",
+      "syncedAt": "2026-07-23T17:09:18+05:30",
       "rows": []
     }
   },
