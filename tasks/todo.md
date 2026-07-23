@@ -55,7 +55,31 @@ independent latent change — NOT triggered here; it'll apply on the next real V
 
 ---
 
-# PLAN (ON HOLD — user paused 2026-07-23) — ViewTrade/Dhan-GIFT US trade-confirmation parser
+# Task (DONE) — ViewTrade/Dhan-GIFT US trade-confirmation parser + merge into the US book
+
+**Built (data model: MERGE into the combined us_trades.json + US[], per user):**
+- `us_viewtrade.py`: parse a decrypted ViewTrade/Raise-IFSC "US Stocks Segment" note → trades
+  (positional last-9-numbers rule, robust to wrapped security names; per-row reconcile: qty×price≈
+  net-before, net-before±fees=net-after). PII-safe (tickers + USD only). 10 unit tests.
+- Route: `engine.build_ledger` detects a US note → returns `kind:us_viewtrade`; `run.py` books the
+  trades into `data/dhan-us-trades.json` (append + dedup by trade fingerprint) → status `USTRADES`.
+- `contract-note.mjs`: `USTRADES` → PASS + rebuild the combined US book — `--holdings --write` (US[]
+  gets the 9 Dhan names w/ user-confirmed cats + GOOG combined across custodians) THEN `--write`
+  (us_trades.json flows, so the 9 are HELD → land in `flows` not `other`) THEN KV reseed.
+- `parse-vested.py`: `dhan_us_flows()` folds Dhan into us_trades.json flows; `dhan_us_holdings()` +
+  `merge_holdings()` fold Dhan positions into US[]; NEW_META carries the 9 categories. The Dhan store
+  is unioned on EVERY rebuild, so a Vested upload can't clobber it (same guarantee as the corpus).
+
+**Verified end-to-end (to temp, live data untouched):** real note → 10 trades reconciled ($200.66);
+store idempotent (re-drop = 0 new); us_trades.json → GOOG buy in flows + all 9 in flows (other 22/07
+empty); US[] 50→59 holdings, invested +$200.66, GOOG combined (qty 0.186231, blended cost). 311 engine +
+10 US + 18 vested tests green.
+
+**Pending:** trigger the LIVE capture (re-drop the note → daemon books it) + commit the data.
+
+---
+
+# (superseded plan) — ViewTrade/Dhan-GIFT US trade-confirmation parser
 
 **Why:** Dhan's GIFT-City US sleeve went live (first SIP 22/07/2026). Its trade confirmations arrive by
 email — a ViewTrade/Raise-IFSC "TRADE CONFIRMATION / CUM Tax Invoice" (USD, fractional qty, US fee columns,

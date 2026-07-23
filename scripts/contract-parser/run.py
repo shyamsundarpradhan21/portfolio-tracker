@@ -112,6 +112,55 @@ def is_unparsed(ledger):
     has_fills = any(f.get("side") in ("BUY", "SELL") for f in (ledger.get("fills") or []))
     return (not has_fills) and (not note_recognised(ledger))
 
+# ── Dhan-GIFT US (ViewTrade) trade store — a local append-corpus of parsed US trades, deduped by
+# a per-trade fingerprint (a re-dropped note never double-books). parse-vested.py folds these into
+# the combined us_trades.json US book. This is NOT KV — it's a git-tracked committed store.
+DHAN_US_STORE = os.environ.get("DHAN_US_STORE", os.path.join(HERE, "..", "..", "data", "dhan-us-trades.json"))
+
+
+def _us_trade_key(t):
+    return (t["date"], t["sym"], t["side"], round(t.get("qty") or 0, 6),
+            round(t.get("priceUsd") or 0, 4), round(t.get("netAfter") or 0, 2))
+
+
+def append_dhan_us(trades):
+    """Merge parsed ViewTrade US trades into data/dhan-us-trades.json (append + dedup). Returns the
+    count of genuinely-new trades added."""
+    try:
+        cur = (json.load(open(DHAN_US_STORE, encoding="utf-8")) or {}).get("trades", [])
+    except (OSError, ValueError):
+        cur = []
+    seen = {_us_trade_key(t) for t in cur}
+    new = [t for t in trades if _us_trade_key(t) not in seen]
+    allt = sorted(cur + new, key=lambda t: (t["date"], t["sym"]))
+    asof = max((t["date"] for t in allt), default=None)
+    os.makedirs(os.path.dirname(os.path.abspath(DHAN_US_STORE)), exist_ok=True)
+    with open(DHAN_US_STORE, "w", encoding="utf-8") as f:
+        json.dump({"asOf": asof, "trades": allt}, f, ensure_ascii=False, indent=1)
+    return len(new)
+
+
+def evaluate_us(ledger, base, dry):
+    """A ViewTrade US note -> USTRADES (append the trades to the Dhan-US store). A row that fails
+    per-row reconciliation REFUSES the whole note (quarantine for a fix), never a partial book."""
+    us = ledger["us_trades"]
+    sig = "|".join(sorted(f"{t['date']}:{t['sym']}:{t['qty']}:{t['netAfter']}" for t in us["trades"]))
+    cn = "dhanus-" + hashlib.sha1(sig.encode()).hexdigest()[:10]   # stable content id (re-drop = same key = DUP)
+    st = {"note": base, "broker": "dhan-us", "date": us.get("asOf"), "tax": ledger.get("tax_entity"),
+          "cn": cn, "unmapped": [], "reason": "", "us_trades": len(us["trades"])}
+    if not us.get("reconciled"):
+        st["status"] = "REFUSED"
+        st["reason"] = f"US note: {len(us.get('unreconciled') or [])} row(s) failed reconciliation"
+        return st
+    if dry:
+        st["status"], st["reason"] = "USTRADES", f"{len(us['trades'])} US trades (dry)"
+        return st
+    n = append_dhan_us(us["trades"])
+    st["status"] = "USTRADES"
+    st["reason"] = f"{len(us['trades'])} US trades ({n} new) -> data/dhan-us-trades.json"
+    return st
+
+
 def evaluate(path, dry, kv_url, kv_tok, verbose):
     """Parse one note -> a status dict for the batch tally. Push only if it reconciles AND has no
     unmapped charge labels (an unmapped label means the charge breakdown is incomplete -> HOLD for
@@ -120,6 +169,11 @@ def evaluate(path, dry, kv_url, kv_tok, verbose):
     base = os.path.basename(path)
     if ledger is None:
         return {"note": base, "status": "SKIP", "reason": "no CN_PW_* decrypts"}
+    if ledger.get("kind") == "us_viewtrade":        # ViewTrade / Dhan-GIFT US trade confirmation
+        if verbose:
+            import us_viewtrade
+            print(us_viewtrade.masked_summary(ledger["us_trades"]))
+        return evaluate_us(ledger, base, dry)
     if verbose:
         print(engine.masked_summary(ledger))
         print(f"  trade_date: {ledger.get('trade_date') or 'NONE (date not found)'}")

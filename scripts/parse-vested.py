@@ -76,6 +76,16 @@ HOLDINGS_IN = os.environ.get("VESTED_HOLDINGS_XLSX", os.path.join(REPORTS, "Vest
 # and this map FAILS the write (refuse to ship an uncategorised holding).
 NEW_META = {
     "BMNR": {"name": "Bitmine Immersion", "cat": "Crypto"},   # crypto miner (mirrors HUT/IREN/CIFR…)
+    # Dhan-GIFT US SIP names (ViewTrade) — first booked 2026-07-22; categories user-confirmed.
+    "TXN":  {"name": "Texas Instruments",      "cat": "Tech"},
+    "AMD":  {"name": "Advanced Micro Devices", "cat": "Tech"},
+    "AMAT": {"name": "Applied Materials",      "cat": "Tech"},
+    "LRCX": {"name": "Lam Research",           "cat": "Tech"},
+    "GEV":  {"name": "GE Vernova",             "cat": "Industrial"},
+    "CAT":  {"name": "Caterpillar",            "cat": "Industrial"},
+    "FDX":  {"name": "FedEx",                  "cat": "Industrial"},
+    "CVS":  {"name": "CVS Health",             "cat": "Healthcare"},
+    "UNH":  {"name": "UnitedHealth",           "cat": "Healthcare"},
 }
 
 _TIME_RE = re.compile(r"^\s*(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)\s*$", re.I)
@@ -262,6 +272,70 @@ def corpus_paths():
     return ps
 
 
+# Dhan-GIFT US book (ViewTrade notes, written by scripts/contract-parser/run.py) — a SEPARATE
+# custodian merged into the SAME combined us_trades.json US view (the locked data-model choice).
+DHAN_US_STORE = os.environ.get("DHAN_US_STORE", os.path.join("data", "dhan-us-trades.json"))
+
+
+def _dhan_us_trades():
+    try:
+        return (json.load(open(DHAN_US_STORE, encoding="utf-8")) or {}).get("trades", [])
+    except (OSError, ValueError):
+        return []
+
+
+def dhan_us_flows():
+    """Dhan-GIFT US trades as (sym, date, usd) flows — Buy = +usd deployed, Sell = -usd, matching
+    Vested's Trades convention so they sum into the same per-symbol flow series. [] if none yet."""
+    out = []
+    for t in _dhan_us_trades():
+        usd = round((t.get("netAfter") or 0.0) * (1 if t.get("side") == "BUY" else -1), 2)
+        if usd and t.get("sym") and t.get("date"):
+            out.append((t["sym"], t["date"], usd))
+    return out
+
+
+def dhan_us_holdings():
+    """Reconstruct Dhan-GIFT US positions from the trade store: per sym qty = Σ(buy−sell) shares,
+    inv = Σ(buy−sell) net USD, cost = inv/qty. Buy-only SIP today, but sell-aware. Drops closed
+    positions (qty<=0). [] if none — so an empty store leaves US[] exactly as Vested built it."""
+    agg = {}
+    for t in _dhan_us_trades():
+        s = t.get("sym")
+        if not s:
+            continue
+        sign = 1 if t.get("side") == "BUY" else -1
+        a = agg.setdefault(s, {"qty": 0.0, "inv": 0.0})
+        a["qty"] += sign * (t.get("qty") or 0.0)
+        a["inv"] += sign * (t.get("netAfter") or 0.0)
+    out = []
+    for s, a in agg.items():
+        if round(a["qty"], 6) <= 0:
+            continue
+        out.append({"sym": s, "name": None, "qty": round(a["qty"], 6),
+                    "inv": round(a["inv"], 2), "cost": round(a["inv"] / a["qty"], 2),
+                    "val": None, "_dhan": True})
+    return out
+
+
+def merge_holdings(vested, dhan):
+    """Union a Vested holdings snapshot with the Dhan-GIFT reconstruction into ONE combined US book.
+    A symbol held at BOTH custodians (e.g. GOOG) is COMBINED: qty/inv summed, cost = blended average.
+    A Dhan-only symbol is added. Returns the merged holdings list for build_us()."""
+    by = {h["sym"]: dict(h) for h in vested}
+    for d in dhan:
+        s = d["sym"]
+        if s in by:
+            b = by[s]
+            qty = round((b.get("qty") or 0.0) + d["qty"], 6)
+            inv = round((b.get("inv") or 0.0) + d["inv"], 2)
+            b["qty"], b["inv"] = qty, inv
+            b["cost"] = round(inv / qty, 2) if qty else b.get("cost")
+        else:
+            by[s] = {"sym": s, "name": d.get("name"), "qty": d["qty"], "cost": d["cost"], "inv": d["inv"], "val": None}
+    return list(by.values())
+
+
 def _reduce(c, held):
     """Aggregate the unioned corpus rows -> {asOf, cash, flows, other, cashflows,
     dividends}. Same reduction as the original single-file parse, over the union."""
@@ -276,6 +350,12 @@ def _reduce(c, held):
             continue
         v = num(cash) * (1 if str(act).lower().startswith("buy") else -1)
         (flows[tk] if tk in held else other)[day(date)] += v
+
+    # fold in the Dhan-GIFT US book (ViewTrade) — a separate custodian, same combined US view.
+    dhan = dhan_us_flows()
+    for sym, d, usd in dhan:
+        (flows[sym] if sym in held else other)[d] += usd
+    asof = max([c["asOf"]] + [d for _, d, _ in dhan]) if dhan else c["asOf"]
 
     # Income -> dividends (per-symbol) + withholding tax (Method A; ticker-less
     # "Balance" adjustment rows are NOT dividends and are excluded).
@@ -308,7 +388,7 @@ def _reduce(c, held):
             out_flows[s] = pts
     out_other = [[d, round(other[d], 2)] for d in sorted(other) if round(other[d], 2) != 0.0]
 
-    return {"asOf": c["asOf"], "cash": c["cash"], "flows": out_flows, "other": out_other,
+    return {"asOf": asof, "cash": c["cash"], "flows": out_flows, "other": out_other,
             "cashflows": cashflows, "dividends": build_dividends(div, tax_sum, c["asOf"])}
 
 
@@ -465,7 +545,8 @@ def _run_holdings():
     hp = parse_holdings(HOLDINGS_IN)
     priv = json.load(open(PRIVATE, encoding="utf-8"))
     cur_us = priv.get("US", [])
-    rows, new_syms, dropped, uncat = build_us(hp["holdings"], cur_us)
+    combined = merge_holdings(hp["holdings"], dhan_us_holdings())   # Vested snapshot ∪ Dhan-GIFT reconstruction
+    rows, new_syms, dropped, uncat = build_us(combined, cur_us)
 
     # refuse to ship an uncategorised holding — a new ticker needs a name/cat in
     # US[] or NEW_META first (cat drives CAT_COLORS + the allocation mix).

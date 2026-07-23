@@ -1131,6 +1131,11 @@ def build_ledger(path):
         return None, None                          # no provided password decrypts this note
     with pdf:
         note_text = full_text(pdf)                  # captured once: broker + note-level metadata below
+        import us_viewtrade                          # lazy — a ViewTrade US note isn't a SEBI Indian note
+        us = us_viewtrade.parse_us_note(note_text)   # (USD, US tickers, no ISIN/STT/CN-no) so this engine can't
+        if us is not None:                           # reduce it; route to the US adapter, short-circuit here.
+            return {"kind": "us_viewtrade", "broker": "dhan-us", "account": entity, "tax_entity": entity,
+                    "trade_date": us.get("asOf"), "note_file": os.path.basename(path), "us_trades": us}, entity
         broker = detect_broker(note_text)           # text-based; chosen BEFORE extraction (Upstox/old-Dhan need
         # Groww notes carry NO broker string in the extractable text (the brand is a
         # logo image only) — fall back to Groww's distinctive attachment name
