@@ -1,4 +1,106 @@
-# Task (APPROVED — in progress) — reconcile BF/CF carry MTM in contract-note engine
+# Task (DONE) — make the Vested (US) fetcher CUMULATIVE
+
+**Why:** `parse-vested.py --write` rebuilds `us_trades.json` + `US_DIVIDENDS` + `US_CASHFLOWS` ENTIRELY from
+ONE canonical `Vested_Transactions.xlsx` (no merge with prior state). It assumes every upload is the full
+cumulative history. The user uploads only the MONTH → a month-only export would wipe all prior history.
+Fix: accumulate uploads (append-corpus, like payslips) and rebuild from the UNION of all rows, deduped —
+so month-only uploads accumulate and full/overlapping uploads stay idempotent.
+
+**Design (append-corpus + union-parse):**
+- `vested.mjs`: save each upload to `data/reports/vested/<naturalKey>.xlsx` (KEEP all; dir is gitignored),
+  instead of replacing the single canonical file. naturalKey stays the export's latest activity date.
+- `parse-vested.py`: read EVERY `*.xlsx` in `data/reports/vested/`; per sheet (Trades / All Transactions /
+  Transfers / Income) UNION the rows with a full-row content fingerprint dedup (identical row across
+  overlapping uploads = the SAME txn → collapse; distinct rows accumulate); THEN run the existing
+  flows/cash/dividends/cashflows reduction over the union. Cash EOD per date = latest (time, newest-upload)
+  balance. `asOf` = max date across the corpus. Back-compat: single-file corpus → byte-identical output.
+- Idempotent: re-dropping the same/overlapping export changes nothing (dedup). Month-only adds its rows.
+
+**Migration wrinkle (canonical xlsx is GONE; only the aggregated `us_trades.json` survives):** the new corpus
+starts EMPTY, so the FIRST upload after the change seeds it. If that first upload is month-only, history is
+lost. → the first upload must be the FULL history (Vested exports are cumulative by default), which seeds the
+corpus; month-only uploads thereafter accumulate. (Alt: baseline off the current us_trades.json — rejected:
+dividends' allTime/FY can't re-aggregate without raw rows, so it would drift.)
+
+## Steps
+- [x] V1. `parse-vested.py`: `collect(paths)` unions+dedups rows across N exports (full-row fingerprint,
+      per-file multiplicity=max); `_reduce()` runs the same reduction; `parse()` kept back-compat. `corpus_paths()`
+      = VESTED_DIR/*.xlsx PLUS the VESTED_XLSX baseline (always). `--write`/review use the corpus; empty-guard added.
+- [x] V2. `vested.mjs`: append each upload to `data/reports/vested/<asOf>-<sha8>.xlsx` (keep all); `--write` unions.
+- [x] V3. `scripts/parse-vested.test.py` (18 asserts): single-file baseline; overlap dedup (no double-count);
+      non-overlap union; within-file multiplicity kept + re-upload doesn't inflate; cash newest-file-wins.
+- [x] V4. Verify: rebuild from the real canonical == committed `us_trades.json` BYTE-IDENTICAL (asOf/cash/flows/
+      other) with held frozen — faithful no-op, zero regression. E2E `--write` over a synthetic corpus OK; empty
+      guard refuses. No live data files touched (temp outputs only).
+- [x] V5. Docs: vested.mjs header + parse-vested.py docstring rewritten (append-corpus, no seed step needed).
+
+## Review
+**What shipped:** the Vested/US fetcher is now CUMULATIVE. `parse-vested.py` keeps every uploaded export in an
+append-corpus (`data/reports/vested/`) and rebuilds `us_trades.json` + `US_DIVIDENDS` + `US_CASHFLOWS` from the
+UNION of all rows — deduped by full-row fingerprint (identical row across overlapping exports = ONE txn; a
+genuinely repeated row within one export is preserved). So month-only uploads accumulate; a month-only drop can
+no longer wipe history. Cash EOD per date = the newest export's balance.
+
+**Migration (corrected mid-task):** the canonical `Vested_Transactions.xlsx` (full history, 1695 trades,
+2024-03→2026-07) is STILL on disk (my earlier "it's gone" was a truncated-`ls` mistake). `corpus_paths()` always
+unions it as the permanent baseline, so **no re-upload / seed step is needed** — the next month-only upload just
+accumulates on top of it. (Told the user "re-upload full history once" earlier — that turned out unnecessary.)
+
+**Verification:** rebuild from the real canonical is byte-identical to the committed `us_trades.json` (held frozen)
+→ faithful no-op. 18 new unit tests green. Live `us_trades.json` / `portfolio.private.json` untouched (all runs to
+temp). The pending BMNR `other`→`flows` move (BMNR added to US[] since the file was last generated) is a correct,
+independent latent change — NOT triggered here; it'll apply on the next real Vested upload/regen.
+
+**Note:** a real Vested upload now also writes `data/reports/vested/<asOf>-<sha8>.xlsx` (kept; dir is gitignored).
+
+---
+
+# PLAN (ON HOLD — user paused 2026-07-23) — ViewTrade/Dhan-GIFT US trade-confirmation parser
+
+**Why:** Dhan's GIFT-City US sleeve went live (first SIP 22/07/2026). Its trade confirmations arrive by
+email — a ViewTrade/Raise-IFSC "TRADE CONFIRMATION / CUM Tax Invoice" (USD, fractional qty, US fee columns,
+no Indian ISIN/STT/CN-no). The Indian engine can't read it; it's currently quarantined UNPARSED in
+inbox/failed (safety fix already prevents silent loss). The DhanHQ API does NOT expose this book (verified
+live 2026-07-23), so the email note is the only automated feed. These ~$200 of holdings are captured NOWHERE.
+
+**Format (confirmed from the real PDF):** clean tabular/text. Columns: TradeDate | SettleDate | Symbol |
+SecurityName | B/S | Qty | PricePerUnit($) | NetBeforeLevies($) | Commission($) | TxnFee($) | TurnoverFee($) |
+OtherFee($) | IGST($) | NetAfterLevies($). 10 BUYs 22/07/2026. Reconciles: qty×price ≈ net-before; +fees ≈ after.
+
+**Data model (DECISION 1 — recommend NEW sleeve):** the existing `data/us_trades.json` is the Vested/
+DriveWealth book (`{cash, flows:{SYM:[[date,qtyΔ]]}, other}`), owned+overwritten by the `vested` parser.
+Dhan-GIFT is a SEPARATE custodian (ViewTrade IFSC) per the locked stance → write to a NEW
+`data/dhan-us-trades.json` (own file, can't be clobbered by the vested rewrite). Merge = mixes custodians +
+fights the vested parser. Recommend NEW sleeve.
+
+**Architecture (DECISION 2 — recommend reuse-decrypt):** the note decrypts with the SAME Dhan PAN via the
+existing contract-parser probe, and is claimed by contract-note (filename has "Contract_Note"). Two ways:
+ (a) REUSE: `run.py`/`engine.build_ledger` detects a ViewTrade US note (text: "US Stocks Segment"/"ViewTrade"/
+     "TRADE CONFIRMATION") and routes to a new `us_viewtrade.py` adapter; emits porcelain status `USTRADES`
+     with the parsed trades → contract-note.mjs writes `data/dhan-us-trades.json`. Reuses decrypt+probe+
+     manifest+PII discipline; keeps US logic in its own module (Indian engine untouched). ← recommend
+ (b) SEPARATE registry parser `dhan-us` ordered before contract-note (claims by filename /us.?stocks/i),
+     duplicating the decrypt. More separation, more duplication.
+
+## Steps (Phase 1–2 = the "parser build"; Phase 3 display = follow-on)
+- [ ] P1. `us_viewtrade.py`: parse decrypted ViewTrade note → trades [{date,symbol,name,side,qty,priceUsd,
+      fees{commission,txn,turnover,other,igst},netBefore,netAfter}]; reconcile per-row (qty×price≈netBefore;
+      +fees≈netAfter) + a note-total checksum. PII-safe masked summary (no name/PAN/address).
+- [ ] P2. Route in `run.py`: detect US note → us_viewtrade; porcelain status `USTRADES` (trades, PII-free).
+- [ ] P3. `contract-note.mjs mapCnStatus`: `USTRADES` → PASS, writes/append `data/dhan-us-trades.json`
+      (idempotent, keyed on date+symbol+qty), naturalKey = the note's settlement/date signature.
+- [ ] P4. Tests: synthetic ViewTrade note (fake tickers/amounts, no PII) → 10 trades parsed + reconciled;
+      idempotent re-ingest = no dupes; a genuine Indian note still routes to the Indian engine (no regression).
+- [ ] P5. Verify: re-drop the real note → PASS → `data/dhan-us-trades.json` has the 10 buys; full suite green.
+- [ ] P6 (FOLLOW-ON, separate approval). App wiring: show the Dhan-GIFT US sleeve (appData/portfolio route/
+      US components), separate from Vested. certify green. NOT in this build unless you say so.
+
+## Review
+(to fill in)
+
+---
+
+# Task (DONE) — reconcile BF/CF carry MTM in contract-note engine
 
 ## Problem
 Upstox note `CW_T_7BB93B_20260722_FON` (2026-07-22) fails reconciliation with a clean

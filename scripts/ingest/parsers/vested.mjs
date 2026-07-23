@@ -9,10 +9,12 @@
 // naturalKey = the export's latest activity date (a re-download with newer trades
 // advances it → a genuinely new document; the same export re-dropped is a DUP).
 // PASS flow mirrors broker-tax's same-name convention + payslip's seed-chain:
-//   1. copy the export into data/reports/ as the canonical Vested_Transactions.xlsx
-//      (a newer download REPLACES it — the file is a full cumulative history, not
-//      an append-corpus like the payslips, so we keep exactly one);
-//   2. run parse-vested.py --write → regenerates us_trades.json in place AND
+//   1. APPEND the export into data/reports/vested/ as <asOf>-<sha8>.xlsx — every
+//      month's export is KEPT (append-corpus like the payslips). The export is
+//      uploaded month-by-month, NOT as one cumulative file, so parse-vested rebuilds
+//      from the UNION of all exports (deduped) — a month-only upload can no longer
+//      wipe prior history;
+//   2. run parse-vested.py --write → rebuilds us_trades.json from the corpus union AND
 //      full-replaces US_DIVIDENDS in the private seed;
 //   3. AUTO-CHAIN the guarded seed: node scripts/seed-portfolio-kv.mjs (US_DIVIDENDS
 //      only reaches the app via KV — its near-empty sanity guard stands, a refusal
@@ -26,7 +28,7 @@ import { runPy, lastJsonLine, ROOT } from './py.mjs';
 const SCRIPT = join(ROOT, 'scripts', 'parse-vested.py');
 const SEED = join(ROOT, 'scripts', 'seed-portfolio-kv.mjs');
 const REPORTS = join(ROOT, 'data', 'reports');
-const CANON = 'Vested_Transactions.xlsx';   // parse-vested.py --write reads this path
+const VESTED_DIR = join(REPORTS, 'vested');   // append-corpus of every export; parse-vested --write unions them
 
 export const VESTED_NAME = /^(?:[0-9a-f]{8}-)?Vested_Transactions.*\.xlsx$/i;
 
@@ -59,19 +61,19 @@ export const vestedParser = {
     const naturalKey = st.key || st.asOf;                            // latest activity date
     if (dry) return { status: 'PASS', naturalKey, target: 'data/us_trades.json + US_DIVIDENDS (dry)', parserVersion: 'parse-vested' };
 
-    mkdirSync(REPORTS, { recursive: true });
-    const dest = join(REPORTS, CANON);
-    copyFileSync(file.path, dest);                                   // canonical corpus copy; router deletes the inbox clone
-    const meta = { asOf: st.asOf, savedAs: CANON };
+    mkdirSync(VESTED_DIR, { recursive: true });
+    const savedAs = `${st.asOf}-${file.sha256.slice(0, 8)}.xlsx`;    // KEEP every export (append-corpus)
+    copyFileSync(file.path, join(VESTED_DIR, savedAs));             // router deletes the inbox clone; the corpus persists
+    const meta = { asOf: st.asOf, savedAs };
 
-    const wrote = await runPy('python', SCRIPT, ['--write']);        // us_trades.json + US_DIVIDENDS from the canonical copy
+    const wrote = await runPy('python', SCRIPT, ['--write']);       // us_trades.json + US_DIVIDENDS from the corpus UNION
     if (wrote.code !== 0) {
-      return { status: 'FAIL', naturalKey, meta, reason: `parse-vested --write exit ${wrote.code} (export already copied as ${CANON}): ${(wrote.stderr || wrote.stdout).slice(0, 200)}` };
+      return { status: 'FAIL', naturalKey, meta, reason: `parse-vested --write exit ${wrote.code} (export saved to corpus as ${savedAs}): ${(wrote.stderr || wrote.stdout).slice(0, 200)}` };
     }
     const seed = await runSeed();                                    // guarded — refusal = FAIL (US_DIVIDENDS reaches the app only via KV)
     if (seed.code !== 0) {
       return { status: 'FAIL', naturalKey, meta, reason: `seed-portfolio-kv refused/failed (exit ${seed.code}) — us_trades.json + US_DIVIDENDS written, KV NOT updated` };
     }
-    return { status: 'PASS', naturalKey, meta, target: `data/reports/${CANON} · data/us_trades.json (regenerated) · US_DIVIDENDS → KV portfolio:v1 (seeded)`, parserVersion: 'parse-vested' };
+    return { status: 'PASS', naturalKey, meta, target: `data/reports/vested/${savedAs} (corpus) · data/us_trades.json (rebuilt from union) · US_DIVIDENDS → KV portfolio:v1 (seeded)`, parserVersion: 'parse-vested' };
   },
 };

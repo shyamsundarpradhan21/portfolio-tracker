@@ -14,11 +14,20 @@ Mirrors scripts/parse-payslip.py's CLI:
   --one <file> [--porc.] single-file probe for the ingest registry wrapper
                          (scripts/ingest/parsers/vested.mjs); prints JSON status
                          + naturalKey (the export's latest activity date)
-  --write                regenerate BOTH stores from the canonical export at
-                         data/reports/Vested_Transactions.xlsx
+  --write                rebuild BOTH stores from the UNION of every export in the
+                         append-corpus (data/reports/vested/*.xlsx)
+
+CUMULATIVE (append-corpus): the export is uploaded MONTH-BY-MONTH, not as one cumulative
+file, so we KEEP every upload and rebuild from the union of all rows — deduped by full-row
+fingerprint (an identical row in two overlapping exports counts ONCE; a genuinely repeated
+row within one export is preserved). A month-only upload therefore accumulates instead of
+wiping prior history. Cash EOD per date = the newest export's balance for that date.
 
 ENV OVERRIDES (for testing to copies, live untouched):
-  VESTED_XLSX     input export path         (default data/reports/Vested_Transactions.xlsx)
+  VESTED_DIR      append-corpus dir         (default data/reports/vested/) — all *.xlsx unioned
+  VESTED_XLSX     legacy single export      (default data/reports/Vested_Transactions.xlsx) —
+                  ALWAYS unioned as the permanent historical baseline when present (so the
+                  pre-migration full history survives the first month-only upload)
   US_TRADES_OUT   us_trades.json out path   (default data/us_trades.json)
   VESTED_PRIVATE  portfolio.private.json    (default data/portfolio.private.json) —
                   read for the flows/other split AND patched with US_DIVIDENDS
@@ -156,41 +165,68 @@ def build_dividends(div, tax_sum, asof, topn=6):
     }
 
 
-def parse(path, held):
-    """Reduce a Vested export to {asOf, cash, flows, other, dividends}. `held` may
-    be None (then every symbol lands in `other`; --write refuses that upstream)."""
+# ── cumulative append-corpus (union of ALL exports, deduped) ──────────────────
+# The Vested export is uploaded MONTH-BY-MONTH, not as one cumulative file, so
+# rebuilding from a single xlsx would wipe prior history. Instead we KEEP every
+# export in the corpus dir (VESTED_DIR) and rebuild us_trades.json from the UNION
+# of all rows — deduped by a full-row fingerprint so an identical row in two
+# overlapping exports counts ONCE (same txn), while a genuinely repeated row within
+# a single export is preserved (multiplicity = the max count seen in any one file).
+_NCOLS = {"Trades": 10, "Income": 5, "Transfers": 4}   # row widths read below (for the fingerprint)
+
+
+def _norm_cell(c):
+    if c is None:
+        return ""
+    if isinstance(c, bool):
+        return str(c)
+    if isinstance(c, (int, float)):
+        return f"{float(c):.6f}"                        # stable numeric key (avoids repr drift)
+    return str(c).strip()
+
+
+def _fp(row, ncols):
+    """Full-row fingerprint: two byte-identical rows across overlapping exports collapse
+    to one txn; any differing field (time/qty/price/amount) keeps them distinct."""
+    return tuple(_norm_cell(c) for c in row[:ncols])
+
+
+def _data_rows(wb, sheet):
+    """(index, row) for data rows — skip the header (row 0) and fully-blank rows."""
+    if sheet not in wb.sheetnames:
+        return
+    for i, r in enumerate(wb[sheet].iter_rows(values_only=True)):
+        if i == 0 or not any(c is not None for c in r):
+            continue
+        yield i, r
+
+
+def collect(paths):
+    """Union the transaction rows across ALL corpus exports (append-corpus, like the
+    payslips). Row-union sheets (Trades/Income/Transfers) dedupe by fingerprint keeping
+    per-file multiplicity (max across files). Cash EOD is computed PER FILE with the
+    original latest-time / top-most-on-tie rule, then merged newest-file-wins per date
+    (a later upload is the freshest balance for a shared date). Empty corpus -> empty."""
     import openpyxl  # lazy — only --one/--write need it, keeps import errors local
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    held = held or set()
-
-    flows = defaultdict(lambda: defaultdict(float))   # sym -> date -> usd
-    other = defaultdict(float)                         # date -> usd
-    div = []                                           # [(date, sym, usd)] Dividend rows
-    tax_sum = 0.0                                      # summed Tax rows (negative)
+    union = {sh: {} for sh in _NCOLS}                  # sh -> {fp: (count, rep_row)}
+    cash = {}                                          # date -> (file_rank, within_key, balance)
     maxd = ""
-
-    # Trades -> per-symbol / other net USD (Buy +, Sell -)
-    if "Trades" in wb.sheetnames:
-        for i, r in enumerate(wb["Trades"].iter_rows(values_only=True)):
-            if i == 0:
-                continue
-            date, _tm, _name, tk, act, _ot, _qty, _pps, cash, _comm = r[:10]
-            if tk is None or cash is None:
-                continue
-            d = day(date)
-            maxd = max(maxd, d)
-            v = num(cash) * (1 if str(act).lower().startswith("buy") else -1)
-            (flows[tk] if tk in held else other)[d] += v
-
-    # All Transactions -> end-of-day cash balance. The sheet is newest-first, so
-    # per date the row with the latest time is the day's close; ties (same-second
-    # batches) break by sheet order (the top-most, i.e. smallest index, is the
-    # last executed). Track the max (time, -index) per date.
-    best = {}  # date -> (sortkey, balance)
-    if "All Transactions" in wb.sheetnames:
-        for i, r in enumerate(wb["All Transactions"].iter_rows(values_only=True)):
-            if i == 0:
-                continue
+    for rank, p in enumerate(sorted(paths)):           # sorted => later filename (later asOf) is newer
+        wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
+        for sh, nc in _NCOLS.items():
+            local = {}                                 # per-file counts (so overlaps don't inflate)
+            for _i, r in _data_rows(wb, sh):
+                d = day(r[0])
+                if d:
+                    maxd = max(maxd, d)
+                k = _fp(r, nc)
+                local[k] = (local.get(k, (0, r))[0] + 1, r)
+            cur = union[sh]
+            for k, (cnt, r) in local.items():
+                if k not in cur or cnt > cur[k][0]:    # keep the MAX multiplicity across files
+                    cur[k] = (cnt, r)
+        best = {}                                      # this file's EOD cash (original tie-break)
+        for i, r in _data_rows(wb, "All Transactions"):
             date, tm, _typ, _amt, bal, _comment = r[:6]
             if bal is None:
                 continue
@@ -199,43 +235,68 @@ def parse(path, held):
             key = (_secs(tm) if _secs(tm) is not None else -1, -i)
             if d not in best or key > best[d][0]:
                 best[d] = (key, num(bal))
-    cash = {d: round(best[d][1], 2) for d in sorted(best)}
+        for d, (wk, bal) in best.items():
+            if d not in cash or rank >= cash[d][0]:    # newer file wins a shared date
+                cash[d] = (rank, wk, bal)
+        wb.close()
+    rows = {sh: [] for sh in _NCOLS}
+    for sh in _NCOLS:
+        for _k, (cnt, r) in union[sh].items():
+            rows[sh].extend([r] * cnt)
+    return {"trades": rows["Trades"], "income": rows["Income"], "transfers": rows["Transfers"],
+            "cash": {d: round(v[2], 2) for d, v in sorted(cash.items())}, "asOf": maxd}
 
-    # Income -> dividends (per-symbol) + withholding tax. Method A: Tax rows feed
-    # taxAllTime; the ticker-less "Balance" adjustment rows are NOT dividends and
-    # are excluded (they don't tie to any symbol/FY).
-    if "Income" in wb.sheetnames:
-        for i, r in enumerate(wb["Income"].iter_rows(values_only=True)):
-            if i == 0:
-                continue
-            date, _tm, act, tk, amt = r[:5]
-            if amt is None:
-                continue
-            d = day(date)
-            maxd = max(maxd, d)
-            if "tax" in str(act).lower():
-                tax_sum += num(amt)
-            elif tk is not None:                       # Dividend row (Balance rows have no ticker)
-                div.append((d, tk, num(amt)))
 
-    # Transfers -> US_CASHFLOWS, the dated deposit/withdrawal ledger the Capital
-    # Deployment card reads (app/components/shared/SipCard.js via US_CASHFLOWS).
-    # Deposit -> +usd, Withdrawal -> -usd; USD kept raw (the card converts at each
-    # date's USD/INR close). This sheet IS that ledger — verified to reproduce the
-    # previously hand-maintained US_CASHFLOWS exactly, so the parser can own it and
-    # a skipped month (the bug this fixes) can no longer happen. Same-day transfers
-    # net; a net-zero day is dropped.
-    cf = defaultdict(float)                            # date -> net usd
-    if "Transfers" in wb.sheetnames:
-        for i, r in enumerate(wb["Transfers"].iter_rows(values_only=True)):
-            if i == 0:
-                continue
-            date, _tm, act, amt = r[:4]
-            if amt is None:
-                continue
-            d = day(date)
-            maxd = max(maxd, d)
-            cf[d] += num(amt) * (1 if str(act).lower().startswith("dep") else -1)
+def corpus_paths():
+    """The full append-corpus: every export in VESTED_DIR PLUS the legacy single
+    VESTED_XLSX baseline when present. The legacy file is ALWAYS included (not just as
+    an empty-dir fallback) so the pre-migration full history stays in the union once the
+    corpus dir gets its first month-only upload — otherwise that upload would drop it.
+    Dedup collapses any overlap between the baseline and a re-uploaded month."""
+    d = os.environ.get("VESTED_DIR", os.path.join(REPORTS, "vested"))
+    ps = []
+    if os.path.isdir(d):
+        ps = sorted(os.path.join(d, f) for f in os.listdir(d) if f.lower().endswith(".xlsx"))
+    if os.path.exists(DEFAULT_IN) and DEFAULT_IN not in ps:
+        ps.append(DEFAULT_IN)                          # permanent historical baseline
+    return ps
+
+
+def _reduce(c, held):
+    """Aggregate the unioned corpus rows -> {asOf, cash, flows, other, cashflows,
+    dividends}. Same reduction as the original single-file parse, over the union."""
+    held = held or set()
+    flows = defaultdict(lambda: defaultdict(float))    # sym -> date -> usd
+    other = defaultdict(float)                          # date -> usd
+
+    # Trades -> per-symbol / other net USD (Buy +, Sell -)
+    for r in c["trades"]:
+        date, _tm, _name, tk, act, _ot, _qty, _pps, cash, _comm = r[:10]
+        if tk is None or cash is None:
+            continue
+        v = num(cash) * (1 if str(act).lower().startswith("buy") else -1)
+        (flows[tk] if tk in held else other)[day(date)] += v
+
+    # Income -> dividends (per-symbol) + withholding tax (Method A; ticker-less
+    # "Balance" adjustment rows are NOT dividends and are excluded).
+    div = []
+    tax_sum = 0.0
+    for r in c["income"]:
+        date, _tm, act, tk, amt = r[:5]
+        if amt is None:
+            continue
+        if "tax" in str(act).lower():
+            tax_sum += num(amt)
+        elif tk is not None:
+            div.append((day(date), tk, num(amt)))
+
+    # Transfers -> US_CASHFLOWS deposit/withdrawal ledger (Deposit +, Withdrawal -).
+    cf = defaultdict(float)
+    for r in c["transfers"]:
+        date, _tm, act, amt = r[:4]
+        if amt is None:
+            continue
+        cf[day(date)] += num(amt) * (1 if str(act).lower().startswith("dep") else -1)
     cashflows = [{"date": d, "invested": round(cf[d], 2)}
                  for d in sorted(cf) if round(cf[d], 2) != 0.0]
 
@@ -247,9 +308,13 @@ def parse(path, held):
             out_flows[s] = pts
     out_other = [[d, round(other[d], 2)] for d in sorted(other) if round(other[d], 2) != 0.0]
 
-    return {"asOf": maxd, "cash": cash, "flows": out_flows, "other": out_other,
-            "cashflows": cashflows,
-            "dividends": build_dividends(div, tax_sum, maxd)}
+    return {"asOf": c["asOf"], "cash": c["cash"], "flows": out_flows, "other": out_other,
+            "cashflows": cashflows, "dividends": build_dividends(div, tax_sum, c["asOf"])}
+
+
+def parse(path, held):
+    """Back-compat single-file parse (one export) — used by review of a lone file / tests."""
+    return _reduce(collect([path]), held)
 
 
 def write_json(obj, path, compact):
@@ -453,13 +518,20 @@ def main():
             print("FAIL: could not load US holdings from " + PRIVATE
                   + " (needed for the flows/other split) — refusing to write")
             sys.exit(1)
-        data = parse(DEFAULT_IN, held)
+        paths = corpus_paths()                          # union of ALL exports in the append-corpus
+        if not paths:
+            print("FAIL: no Vested exports in the corpus (VESTED_DIR / VESTED_XLSX) — nothing to write")
+            sys.exit(1)
+        data = _reduce(collect(paths), held)
+        if not data["asOf"]:                            # empty/no-activity corpus — don't clobber us_trades.json
+            print(f"FAIL: {len(paths)} export(s) but no dated activity — refusing to overwrite {DEFAULT_OUT}")
+            sys.exit(1)
 
         # 1) us_trades.json — asOf/cash/flows/other ONLY (never the dividends key)
         us = {"asOf": data["asOf"], "cash": data["cash"], "flows": data["flows"], "other": data["other"]}
         write_json(us, DEFAULT_OUT, compact=True)
-        print(f"wrote us_trades.json: {len(us['flows'])} held symbols, {len(us['other'])} other pts, "
-              f"{len(us['cash'])} cash days, asOf {us['asOf']} -> {DEFAULT_OUT}")
+        print(f"wrote us_trades.json: {len(paths)} export(s) in corpus, {len(us['flows'])} held symbols, "
+              f"{len(us['other'])} other pts, {len(us['cash'])} cash days, asOf {us['asOf']} -> {DEFAULT_OUT}")
 
         # 2) US_DIVIDENDS + US_CASHFLOWS -> portfolio.private.json (full-replace
         #    blocks, like BASIC_PAY). US_CASHFLOWS = the Transfers ledger (deposits/
@@ -479,9 +551,13 @@ def main():
         return
 
     # review mode — parse + PII-free summary, no writes
-    data = parse(DEFAULT_IN, held or set())
+    paths = corpus_paths()
+    if not paths:
+        print("(no Vested exports in the corpus — upload one to seed VESTED_DIR)")
+        return
+    data = _reduce(collect(paths), held or set())
     dv = data["dividends"]
-    print(f"input: {DEFAULT_IN}")
+    print(f"corpus: {len(paths)} export(s) in {os.environ.get('VESTED_DIR', os.path.join(REPORTS, 'vested'))}")
     print(f"asOf (latest activity): {data['asOf']}")
     print(f"us_trades: {len(data['flows'])} held symbols in flows"
           + ("" if held else "  [WARN: no holdings list -> everything in 'other']")
