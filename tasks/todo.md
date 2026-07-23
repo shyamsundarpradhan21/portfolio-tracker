@@ -1,3 +1,52 @@
+# Task (APPROVED — in progress) — reconcile BF/CF carry MTM in contract-note engine
+
+## Problem
+Upstox note `CW_T_7BB93B_20260722_FON` (2026-07-22) fails reconciliation with a clean
+−₹21,500 residual. HYBRID note: a carried futures position (FUTSTK ANGEL ONE, shown as
+BF/CF legs netting to qty 0 = daily MTM, not a trade) PLUS one executed trade (OPTSTK
+ANGEL ONE PE 280 BUY). Fills-based checksum `net_amount == Σfills + Σcharges` can't include
+the futures MTM, so it's left over → REFUSED → quarantined to inbox/failed. `is_carry_note`
+only catches PURE carry notes (no fill + no levy), so the mixed case slips through.
+
+## Plan (Option 1 — fold carry MTM into the reconciliation obligation)
+- [x] Read engine: checksum(), per_segment_checksum(), summary/WAP table detection, build_ledger()
+- [x] Extract BF/CF carry MTM from the WAP summary table (`carry_from_tables`), keyed by fill-segment
+- [x] Fold carry MTM into the obligation so Σfills + carryMTM + Σcharges == net_amount
+- [x] Keep carry legs OUT of fills (not trades); surfaced in masked_summary + net_total["carry"]
+- [x] Per-segment checksum accounts for the carry MTM too
+- [x] Add test (synthetic PII-free tables mirroring this note): 11 new asserts, was FAIL now reconciles
+- [x] Full test_engine.py green (293/293); re-ran run.py on the real note → OK (residual 0.0)
+
+## Review
+**Fix (engine.py):** BF/CF carry-forward MTM (an F&O position held overnight, shown in the WAP
+summary table as a Brought-Forward + Carried-Forward pair netting to qty 0 — a daily mark-to-market,
+not a trade) is now folded into the reconciliation obligation.
+- `carry_from_tables()` sums the BF/CF Net-Totals per fill-segment (note convention). Returns `{}`
+  for every note with no BF/CF rows → **zero impact on non-carry notes** (regression-free by construction).
+- `build_ledger()` injects the carry into `charges` (net_total + per clearing-segment) BEFORE the
+  Upstox client→cashflow sign-flip, so it inherits the same sign-normalisation as the charges.
+- `checksum()` / `per_segment_checksum()` add a `carry` term to the obligation (defaults 0.0).
+- `masked_summary()` surfaces "carry folded" + adds carry/margin to the FAIL component breakdown.
+
+**Verification:** target note `CW_T_7BB93B_20260722_FON` (cn 6335550) went REFUSED → **OK, total &
+per-segment residual 0.0**. 293/293 unit tests pass (11 new). On other historical carry notes,
+`fills + carry` matches the note's own PAY-IN/PAY-OUT obligation line to the paisa (carry is exact).
+
+**Blast radius:** 3 more quarantined Upstox notes fully reconcile now. NO regression (every affected
+note was already in inbox/failed; nothing that previously PASSed changed).
+
+**Separate pre-existing bug REVEALED (out of scope — flagged, not fixed):** ~30 older Upstox F&O
+notes still fail by a small residual (−₹35.40 / −₹23.60 / …). Root cause is unrelated to carry: a
+`Brokerage Charges 30.00` + its `IGST 5.40` line isn't captured (`brokerage` missing from net_total)
+in certain older Upstox layouts (brokerage rendered as a pseudo-fill row in the detail table). Deserves
+its own propose-verify cycle.
+
+**Operational follow-through (NOT done — needs user OK, writes to KV):** the note is still in
+inbox/failed/. The pipeline doesn't rescan failed/; dedup anchors on PASS rows only, so re-dropping
+the file into the inbox root re-parses it → PASS → KV push (+ a manifest PASS row). Offered to the user.
+
+---
+
 # PLAN (PROPOSED — awaiting approval) — heatmap stock click → full snapshot detail panel
 
 **Goal:** clicking a stock tile in the market heatmap opens a detail panel replicating the

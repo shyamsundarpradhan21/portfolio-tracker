@@ -362,7 +362,8 @@ def checksum(net_total, fills=None):
         return (None, None)
     csum = sum(net_total.get(k, 0.0) for k in CHARGE_KEYS)
     margin = net_total.get("margin", 0.0)   # collateral movement (SPAN/EXP/DEL) is in the NET cash but is
-    residual = round(net_amt - (obligation + csum + margin), 4)   # NOT a charge - balances the checksum, excluded from cost
+    carry = net_total.get("carry", 0.0)     # BF/CF carry-forward MTM (open F&O held overnight): part of the
+    residual = round(net_amt - (obligation + csum + margin + carry), 4)   # pay-in obligation, NOT a fill and NOT a charge - balances the checksum, excluded from cost
     return (abs(residual) <= 0.01, residual)
 
 # Map a clearing-segment LABEL to a fill segment. Handles every broker's naming: NCLCM/NCLCD->cash,
@@ -395,7 +396,7 @@ def per_segment_checksum(charges, fills):
         obl = seg_payin if seg_payin is not None else sum(
             (f.get("net_total") or 0.0) for f in fills if f.get("segment") == fill_seg)
         chg = sum(d.get(k, 0.0) for k in CHARGE_KEYS)
-        resid = round(net - (obl + chg + d.get("margin", 0.0)), 4)   # margin balances the net, not a charge
+        resid = round(net - (obl + chg + d.get("margin", 0.0) + d.get("carry", 0.0)), 4)   # margin + BF/CF carry MTM balance the net, not charges
         out[seg] = {"pass": abs(resid) <= 0.02, "residual": resid}
     return out
 
@@ -616,6 +617,51 @@ def parse_trades_from_tables(tables, broker=""):
                  for r in tbl[:3] for c in r):
             n_summary += 1                           # aggregate/WAP table - counted, NOT a fill source
     return fills, {"detail_tables": n_detail, "summary_tables": n_summary}
+
+# BF/CF carry-forward MTM. When an F&O position is held OVERNIGHT, the note carries it in the
+# WAP/summary table as a Brought-Forward (BF) + Carried-Forward (CF) pair: same contract, qty
+# +N then -N (nets to 0 -> NOT a trade executed today), whose Net-Total difference is the day's
+# mark-to-market. That MTM is part of the note's PAY-IN obligation but is NOT a fill, so a
+# fills-only obligation UNDER-reconciles a HYBRID note (a carry PLUS a real trade) by exactly
+# the carry - the note fails the checksum with a clean residual and lands in inbox/failed. Sum
+# the BF/CF Net-Totals per fill-segment, in the NOTE's convention (the caller folds this into
+# `charges` BEFORE any per-broker sign-flip, so it inherits the same normalisation as charges).
+# Returns {} for every note WITHOUT BF/CF rows -> zero reconciliation impact on non-carry notes.
+def carry_from_tables(tables):
+    out = {}
+    for tbl in tables or []:
+        if not tbl or len(tbl) < 2:
+            continue
+        # summary headers wrap across rows ("Buy (B)/ Sell (S)/BF" + "/CF"); merge the first
+        # rows per column so the side / net-total / contract columns resolve by NAME, not position.
+        ncol = max((len(r) for r in tbl[:3]), default=0)
+        hdr = [" ".join((tbl[r][c] or "").replace("\n", " ")
+                        for r in range(min(3, len(tbl))) if c < len(tbl[r])).lower()
+               for c in range(ncol)]
+        def find(*names):
+            for n in names:
+                for i, h in enumerate(hdr):
+                    if n in h:
+                        return i
+            return None
+        sc = find("buy (b", "b)/ sell", "/bf", "/cf", "b/s")   # side column (holds BF/CF)
+        nc = find("net total", "net amount")
+        ic = find("contract description", "security", "description", "contract")
+        if sc is None or nc is None:
+            continue
+        for row in tbl:
+            if sc >= len(row) or nc >= len(row):
+                continue
+            side = re.sub(r"[^a-z]", "", (row[sc] or "").lower())
+            if side not in ("bf", "cf"):            # only carried legs; *NET*/blank/B/S rows skipped
+                continue
+            val = pnum(row[nc])
+            if val is None:
+                continue
+            instr = row[ic] if (ic is not None and ic < len(row)) else ""
+            seg = infer_segment({"instrument": instr, "isin": ""}) or "fno"
+            out[seg] = round(out.get(seg, 0.0) + val, 4)
+    return out
 
 # WAP often lives in a per-symbol/ISIN SUMMARY (net qty + weighted-avg rate), not the trade
 # rows. Header may not be row 0 (a title row can precede it); the WAP header reads
@@ -1076,6 +1122,13 @@ def build_ledger(path):
             fills, charges, source = d_fills, d_charges, "dhan2025-text"
             tbl_counts = {"detail_tables": 0, "summary_tables": 0}
             waps = {"buy": {}, "sell": {}, "any": {}}
+    carry = carry_from_tables(all_tables)           # BF/CF carry-forward MTM by fill-segment (note convention)
+    if charges and any(abs(v) > 0 for v in carry.values()):   # fold into `charges` BEFORE the flip below,
+        charges["net_total"]["carry"] = round(charges["net_total"].get("carry", 0.0) + sum(carry.values()), 4)
+        for seg, d in charges.get("by_clearing_segment", {}).items():   # so carry rides the same sign
+            fs = _seg_to_fill(seg)                                       # normalisation as the charges do
+            if fs and fs in carry:
+                d["carry"] = round(d.get("carry", 0.0) + carry[fs], 4)
     if broker == "upstox" and charges:              # Trap 4: Upstox charges table is CLIENT-perspective
         # ((+) payable / (-) receivable) - INVERTED vs our cashflow convention. Flip into ours so a
         # charge/payable is negative and a receivable is positive. Obligation still comes from SIGNED fills.
@@ -1165,6 +1218,8 @@ def masked_summary(ledger):
         L.append(f"  GST split -> {gst}   (expect exactly one of igst / (cgst&sgst) non-zero)")
         seg = sorted(ch["by_clearing_segment"].keys())
         L.append(f"  clearing segments keyed: {seg or '(none)'}")
+        if nt.get("carry"):
+            L.append("  BF/CF carry-forward MTM folded into obligation: present (amount redacted)")
 
     cs = ledger["checksum"]
     verdict = "PASS" if cs["pass"] else ("FAIL" if cs["pass"] is False else "N/A (pay_in/net_amount not found)")
@@ -1174,8 +1229,12 @@ def masked_summary(ledger):
         nt = (ledger.get("charges") or {}).get("net_total", {})
         obl = sum((f.get("net_total") or 0.0) for f in fills)
         csum = sum(nt.get(k, 0.0) for k in CHARGE_KEYS)
+        marg, cary = nt.get("margin", 0.0), nt.get("carry", 0.0)
         L.append(f"  components (reconciliation aggregates, not holdings): "
-                 f"obligation(sum fills)={round(obl,2)} | charge_sum={round(csum,2)} | net_amount={nt.get('net_amount')}")
+                 f"obligation(sum fills)={round(obl,2)} | charge_sum={round(csum,2)}"
+                 + (f" | margin={round(marg,2)}" if marg else "")
+                 + (f" | carry(BF/CF MTM)={round(cary,2)}" if cary else "")
+                 + f" | net_amount={nt.get('net_amount')}")
 
     ps = ledger.get("per_segment_checksum", {})
     if ps:

@@ -972,5 +972,78 @@ check("dhan2025 ruled: brokerage kept", rnt.get("brokerage") == -20.00, rnt.get(
 rpass, rresid = P.checksum(rnt, P.parse_dhan2025_fills_from_text(dhan2025_ruled))
 check("dhan2025 ruled: total CHECKSUM PASS", rpass is True, (rpass, rresid))
 
+# ===== HYBRID carry+trade note (Upstox BF/CF MTM folded into the obligation) — SYNTHETIC, no PII =====
+# Repro of the real 2026-07-22 Upstox F&O note that failed with a clean residual: an OPEN futures
+# position carried overnight (FUTSTK BF/CF, qty nets to 0 = daily mark-to-market, NOT a trade today)
+# PLUS one executed option BUY. A fills-only obligation misses the carry -> checksum FAILS by exactly
+# the MTM -> the note is REFUSED and parked in inbox/failed. carry_from_tables() reads the BF/CF MTM;
+# build_ledger folds it into the obligation (BEFORE the Upstox sign-flip) so the note reconciles.
+print("[carry] BF/CF carry-forward MTM folded into the reconciliation obligation:")
+carry_summary = [
+    ["", "Buy (B)/ Sell (S)/BF", "", "WAP Per Unit", "Brokerage per unit", "WAP Per unit after brokerage", "Closing Rate per", "Net Total (Before Levies)", ""],
+    ["Contract description", "/CF", "Quantity", "(Rs.)", "(Rs.)", "(Rs.)", "Unit", "(Rs.)", "Remarks"],
+    ["", "", "", "", "", "", "", "", ""],
+    ["FUTSTK FAKECO LIMITED 25AUG26", "BF", "2000", "400.0000", "", "400.0000", "400.0000", "800000.00", ""],
+    ["FUTSTK FAKECO LIMITED 25AUG26", "CF", "-2000", "390.0000", "", "390.0000", "390.0000", "-780000.00", ""],
+    ["*NET*", "", "0", "", "", "", "", "20000.00", ""],
+    ["OPTSTK FAKECO LIMITED 25AUG26 PE", "B", "2000", "3.0000", "", "3.0000", "", "6000.00", ""],
+    ["280.00", "", "", "", "", "", "", "", ""],
+    ["*NET*", "", "2000", "", "", "", "", "6000.00", ""],
+]
+cy = P.carry_from_tables([carry_summary])
+check("carry: BF+CF Net-Total summed per fill-segment (note convention)", cy == {"fno": 20000.0}, cy)
+check("carry: *NET*/blank/executed-B rows NOT counted (only BF & CF legs)", cy.get("fno") == 20000.0, cy)
+
+# charges table as the PDF renders it (Upstox CLIENT-perspective: payable +, receivable -), FO-EQ seg.
+carry_charges_tbl = [
+    ["", "FO-EQ (Rs.)", "TOTAL (Net) (Rs.)"],
+    ["Brokerage Charges", "25.00", "25.00"],
+    ["[IGST 18% On Brokerage]", "4.50", "4.50"],
+    ["[NEW EXP.MG]", "25000.00", "25000.00"],
+    ["[NEW SPANMG]", "50000.00", "50000.00"],
+    ["[OLD EXP.MG]", "-25000.00", "-25000.00"],
+    ["[OLD SPANMG]", "-90000.00", "-90000.00"],
+    ["[SEBI FEES]", "0.01", "0.01"],
+    ["[TRANSACTION CHARGES]", "2.00", "2.00"],
+    ["Net amount (-) receivable by Client / (+) payable by Client (Rs.)", "-13968.49", "-13968.49"],
+]
+# a table with NO BF/CF rows -> empty carry: every non-carry note is untouched (zero regression).
+check("carry: no BF/CF rows -> {} (non-carry notes untouched)", P.carry_from_tables([carry_charges_tbl]) == {}, P.carry_from_tables([carry_charges_tbl]))
+
+carry_fills = [{"instrument": "OPTSTK FAKECO LIMITED 25AUG26 PE", "segment": "fno", "side": "BUY", "qty": 2000, "net_total": -6000.0}]
+_carry_ch = P.parse_charges_from_tables([carry_charges_tbl])
+check("carry: charges parsed with FO-EQ clearing segment + margin/net_amount", _carry_ch is not None
+      and "FO-EQ (Rs.)" in _carry_ch["by_clearing_segment"] and _carry_ch["net_total"].get("margin") == -40000.0,
+      _carry_ch and (sorted(_carry_ch["by_clearing_segment"]), _carry_ch["net_total"].get("margin")))
+
+# replicate build_ledger's Upstox client->cashflow flip (engine.py: net_total/by_clearing_segment *-1)
+def _flip(ch):
+    return {"net_total": {k: -v for k, v in ch["net_total"].items()},
+            "by_clearing_segment": {s: {k: -v for k, v in d.items()} for s, d in ch["by_clearing_segment"].items()}}
+
+# WITHOUT the fold: fills-only obligation misses the carry -> FAILS by exactly the MTM (-20000).
+_before = _flip({"net_total": dict(_carry_ch["net_total"]),
+                 "by_clearing_segment": {s: dict(d) for s, d in _carry_ch["by_clearing_segment"].items()}})
+nc_pass, nc_resid = P.checksum(_before["net_total"], carry_fills)
+check("carry: WITHOUT the fold the note FAILS by exactly the carry (residual -20000)",
+      nc_pass is False and abs(nc_resid + 20000.0) <= 0.01, (nc_pass, nc_resid))
+
+# WITH the fold (build_ledger path): inject carry into charges in NOTE convention, then flip.
+_carry_ch["net_total"]["carry"] = round(_carry_ch["net_total"].get("carry", 0.0) + sum(cy.values()), 4)
+for _seg, _d in _carry_ch["by_clearing_segment"].items():
+    if P._seg_to_fill(_seg) in cy:
+        _d["carry"] = round(_d.get("carry", 0.0) + cy[P._seg_to_fill(_seg)], 4)
+_after = _flip(_carry_ch)
+check("carry: rides the Upstox sign-flip (note +20000 -> cashflow -20000)", _after["net_total"].get("carry") == -20000.0, _after["net_total"].get("carry"))
+c_pass, c_resid = P.checksum(_after["net_total"], carry_fills)
+check("carry: WITH the fold total CHECKSUM PASS (net == obligation + carry + charges)", c_pass is True, (c_pass, c_resid))
+check("carry: residual ~0 after folding the MTM", abs(c_resid) <= 0.01, c_resid)
+_psc = P.per_segment_checksum(_after, carry_fills)
+check("carry: per-segment FO-EQ closes with the carry attributed to fno", _psc.get("FO-EQ (Rs.)", {}).get("pass") is True, _psc)
+# the carry is reconciliation-only: never a charge/cost, never part of the GST base.
+check("carry: excluded from CHARGE_KEYS (not a cost)", "carry" not in P.CHARGE_KEYS, None)
+_gp, _gd = P.gst_check(_after["net_total"])
+check("carry: GST attribution still valid (base excludes carry)", _gp is True, (_gp, _gd))
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
