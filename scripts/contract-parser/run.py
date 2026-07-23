@@ -88,11 +88,29 @@ def kv_cmd(url, tok, cmd):
 # to EXCLUDE, not a parse failure or a refusal. A note with 0 trades but a real charge is NOT carry
 # (it falls through to be flagged in scope).
 _TRADE_LEVY = ("brokerage", "stt", "ctt", "exchange_txn", "igst", "cgst", "sgst", "sebi_turnover", "ipft", "clearing", "stamp_duty")
+
+def note_recognised(ledger):
+    """Did the (Indian) engine actually parse this as a SEBI contract note? True iff it found a
+    contract-note number OR a charges/net-amount table. A note with NEITHER wasn't understood at all
+    (e.g. a Dhan US/GIFT-City note: USD, US tickers, no Indian ISIN/charges) - so 'no trades' there
+    means 'couldn't read it', NOT 'inert carry'."""
+    nt = (ledger.get("charges") or {}).get("net_total") or {}
+    return bool(ledger.get("contract_note_no")) or bool(nt)
+
 def is_carry_note(ledger):
     real = [f for f in (ledger.get("fills") or []) if f.get("side") in ("BUY", "SELL") and f.get("qty")]
     nt = (ledger.get("charges") or {}).get("net_total") or {}
     has_levy = any(abs(nt.get(k) or 0) > 0 for k in _TRADE_LEVY)
-    return (not real) and (not has_levy)
+    # Gate on note_recognised: an UNPARSED foreign note (no fills, no levy) must NOT be swallowed as carry.
+    return note_recognised(ledger) and (not real) and (not has_levy)
+
+def is_unparsed(ledger):
+    """Decrypted (our password opened it) but the engine recognised NO note structure - no executed
+    fills, no charges table, no contract-note number. Not carry, not a reconciliation failure: a note
+    format this Indian engine can't parse (Dhan US/GIFT-City). Flag it so it's QUARANTINED for a
+    parser, never silently PASSed as inert - the US sleeve's first note was lost exactly this way."""
+    has_fills = any(f.get("side") in ("BUY", "SELL") for f in (ledger.get("fills") or []))
+    return (not has_fills) and (not note_recognised(ledger))
 
 def evaluate(path, dry, kv_url, kv_tok, verbose):
     """Parse one note -> a status dict for the batch tally. Push only if it reconciles AND has no
@@ -111,6 +129,9 @@ def evaluate(path, dry, kv_url, kv_tok, verbose):
           "tax": ledger.get("tax_entity"), "cn": cn_no, "unmapped": unmapped, "reason": ""}
     if is_carry_note(ledger):
         st["status"], st["reason"] = "CARRY", "carried position / MTM - no trades, no charges (inert)"; return st
+    if is_unparsed(ledger):
+        st["status"], st["reason"] = "UNPARSED", ("decrypted but no fills / no charges table / no contract-note "
+                                                  "number - unrecognised structure (foreign/US note this Indian engine can't parse)"); return st
     if not reconciles(ledger):
         st["status"], st["reason"] = "REFUSED", "checksum FAIL"; return st
     if unmapped and not unmapped_benign(unmapped):
@@ -174,7 +195,7 @@ def main():
     tally = Counter(s["status"] for s in stats)
     print(f"\n===== BATCH TALLY ({'DRY-RUN' if dry else 'LIVE'}) =====")
     print(f"  attempted: {len(stats)}  |  " + "  ".join(f"{k}: {v}" for k, v in sorted(tally.items())))
-    fails = [s for s in stats if s["status"] in ("REFUSED", "HELD", "KVFAIL", "KVERR", "SKIP")]
+    fails = [s for s in stats if s["status"] in ("REFUSED", "HELD", "UNPARSED", "KVFAIL", "KVERR", "SKIP")]
     if fails:
         print(f"  --- {len(fails)} not pushed (fix + re-run) ---")
         for s in fails:

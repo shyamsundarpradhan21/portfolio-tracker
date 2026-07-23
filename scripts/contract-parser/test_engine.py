@@ -1109,5 +1109,25 @@ kept = P._merge_split_charge_tables([oblig_only, carry_charges_tbl])
 check("split: pay-in-only obligation table NOT merged (fills+carry path preserved)", len(kept) == 2, len(kept))
 check("split: a lone charges table is returned unchanged", P._merge_split_charge_tables([carry_charges_tbl]) == [carry_charges_tbl], None)
 
+# ===== SAFETY: an UNPARSED foreign/US note must NOT be silently classed inert CARRY =====
+# A Dhan US/GIFT-City note (USD, US tickers, no Indian ISIN/charges) yields ZERO fills through the
+# Indian engine. The OLD is_carry_note ((not fills) and (not levy)) mislabelled it 'inert carry' ->
+# PASS/target=null -> the US sleeve's first note was silently DROPPED. Now it's gated on
+# note_recognised (a CN number OR a charges table) -> unrecognised => flagged UNPARSED => FAIL ->
+# quarantined to inbox/failed for a parser, never swallowed.
+print("[safety] unparsed foreign/US note flagged, not swallowed as inert carry:")
+import run as R
+_us   = {"fills": [], "contract_note_no": None, "charges": None}                      # US note: nothing parsed
+_us2  = {"fills": [], "contract_note_no": None, "charges": {"net_total": {}}}         # empty charges too
+_cry  = {"fills": [], "contract_note_no": "18415573", "charges": {"net_total": {"net_amount": -250.0, "margin": 40000.0}}}  # genuine MTM carry
+_trd  = {"fills": [{"side": "BUY", "qty": 50, "net_total": -1000.0}], "contract_note_no": "999", "charges": {"net_total": {"brokerage": -20.0, "net_amount": -1020.0}}}
+check("safety: US-like note (no CN, no charges) is NOT recognised", R.note_recognised(_us) is False and R.note_recognised(_us2) is False, None)
+check("safety: genuine carry note IS recognised (CN + net_amount)", R.note_recognised(_cry) is True, None)
+check("safety: US-like note NOT classed carry (was the silent-drop bug)", R.is_carry_note(_us) is False and R.is_carry_note(_us2) is False, None)
+check("safety: US-like note flagged UNPARSED (-> FAIL -> inbox/failed)", R.is_unparsed(_us) is True and R.is_unparsed(_us2) is True, None)
+check("safety: genuine MTM carry note STILL classed carry (no regression)", R.is_carry_note(_cry) is True, None)
+check("safety: genuine carry note NOT flagged unparsed", R.is_unparsed(_cry) is False, None)
+check("safety: a note WITH executed fills is neither carry nor unparsed", R.is_carry_note(_trd) is False and R.is_unparsed(_trd) is False, None)
+
 print(f"\n{ok} passed, {bad} failed")
 import sys; sys.exit(1 if bad else 0)
