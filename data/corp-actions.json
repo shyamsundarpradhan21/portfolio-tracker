@@ -1,6 +1,6 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-23T11:39:24.643Z",
+  "capturedAt": "2026-07-23T13:10:10.852Z",
   "actions": [
     {
       "sym": "ESABINDIA",
@@ -8,6 +8,22 @@
       "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": 25,
+      "ratio": null
+    },
+    {
+      "sym": "ABMKNO",
+      "name": "ABM Knowledgeware Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": 1.25,
+      "ratio": null
+    },
+    {
+      "sym": "AFCONS",
+      "name": "Afcons Infrastructure Limited",
+      "exDate": "23-Jul-2026",
+      "type": "dividend",
+      "amount": 2,
       "ratio": null
     },
     {
@@ -24,22 +40,6 @@
       "exDate": "23-Jul-2026",
       "type": "dividend",
       "amount": 2.5,
-      "ratio": null
-    },
-    {
-      "sym": "AFCONS",
-      "name": "Afcons Infrastructure Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "ABMKNO",
-      "name": "ABM Knowledgeware Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": 1.25,
       "ratio": null
     },
     {
