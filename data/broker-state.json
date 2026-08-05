@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-02T19:48:11+05:30",
+  "syncedAt": "2026-08-06T02:45:10+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,51 +181,95 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-02T19:48:57+05:30",
+      "syncedAt": "2026-08-06T02:45:13+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Aug2026-23950-PE",
+          "sym": "NIFTY-Aug2026-24200-PE",
           "type": "PUT",
-          "strike": 23950,
-          "expiry": "2026-08-04",
+          "strike": 24200,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 21.5,
+          "realized": 5590,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24600-PE",
+          "type": "PUT",
+          "strike": 24600,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 171.6,
+          "realized": -19613.75,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-25000-CE",
+          "type": "CALL",
+          "strike": 25000,
+          "expiry": "2026-08-11",
           "status": "LONG",
           "netQty": 325,
-          "avg": 12.65,
+          "avg": 25.05,
           "realized": 0,
-          "unrealized": -1202.5
+          "unrealized": -975
         },
         {
-          "sym": "NIFTY-Aug2026-24350-CE",
+          "sym": "NIFTY-Aug2026-24600-CE",
           "type": "CALL",
-          "strike": 24350,
-          "expiry": "2026-08-04",
+          "strike": 24600,
+          "expiry": "2026-08-11",
           "status": "SHORT",
           "netQty": -325,
-          "avg": 90.925,
-          "realized": 0,
-          "unrealized": -4590.63
+          "avg": 156.05,
+          "realized": -7.275957614183426e-12,
+          "unrealized": 7507.5
         },
         {
-          "sym": "NIFTY-Aug2026-24350-PE",
+          "sym": "NIFTY-Aug2026-24150-PE",
           "type": "PUT",
-          "strike": 24350,
-          "expiry": "2026-08-04",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 97.6,
-          "realized": 0,
-          "unrealized": 8271.25
-        },
-        {
-          "sym": "NIFTY-Aug2026-24750-CE",
-          "type": "CALL",
-          "strike": 24750,
-          "expiry": "2026-08-04",
+          "strike": 24150,
+          "expiry": "2026-08-11",
           "status": "LONG",
           "netQty": 325,
-          "avg": 4.475,
+          "avg": 33.5,
           "realized": 0,
-          "unrealized": -105.62
+          "unrealized": -4550
+        },
+        {
+          "sym": "NIFTY-Aug2026-24550-PE",
+          "type": "PUT",
+          "strike": 24550,
+          "expiry": "2026-08-11",
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 148.14,
+          "realized": 7.275957614183426e-12,
+          "unrealized": 10445.5
+        },
+        {
+          "sym": "NIFTY-Aug2026-24950-CE",
+          "type": "CALL",
+          "strike": 24950,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 30.4,
+          "realized": 650,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24550-CE",
+          "type": "CALL",
+          "strike": 24550,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 161.15,
+          "realized": -1212.25,
+          "unrealized": 0
         }
       ]
     },
@@ -279,8 +323,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 360494.72,
-      "utilized": 439105
+      "available": 482778.7,
+      "utilized": 471805
     },
     "upstox": {
       "available": 100886.1,
