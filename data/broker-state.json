@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-06T02:45:10+05:30",
+  "syncedAt": "2026-08-06T18:54:47+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,28 +181,39 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-06T02:45:13+05:30",
+      "syncedAt": "2026-08-06T18:55:00+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Aug2026-24200-PE",
+          "sym": "NIFTY-Aug2026-24150-PE",
           "type": "PUT",
-          "strike": 24200,
+          "strike": 24150,
           "expiry": "2026-08-11",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 21.5,
-          "realized": 5590,
+          "avg": 33.5,
+          "realized": -7114.25,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24600-PE",
+          "sym": "NIFTY-Aug2026-24550-PE",
           "type": "PUT",
+          "strike": 24550,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 77.4,
+          "realized": 22990.499999999993,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24600-CE",
+          "type": "CALL",
           "strike": 24600,
           "expiry": "2026-08-11",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 171.6,
-          "realized": -19613.75,
+          "avg": 169.16,
+          "realized": -4260.749999999993,
           "unrealized": 0
         },
         {
@@ -210,65 +221,32 @@
           "type": "CALL",
           "strike": 25000,
           "expiry": "2026-08-11",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 25.05,
-          "realized": 0,
-          "unrealized": -975
-        },
-        {
-          "sym": "NIFTY-Aug2026-24600-CE",
-          "type": "CALL",
-          "strike": 24600,
-          "expiry": "2026-08-11",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 156.05,
-          "realized": -7.275957614183426e-12,
-          "unrealized": 7507.5
-        },
-        {
-          "sym": "NIFTY-Aug2026-24150-PE",
-          "type": "PUT",
-          "strike": 24150,
-          "expiry": "2026-08-11",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 33.5,
-          "realized": 0,
-          "unrealized": -4550
-        },
-        {
-          "sym": "NIFTY-Aug2026-24550-PE",
-          "type": "PUT",
-          "strike": 24550,
-          "expiry": "2026-08-11",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 148.14,
-          "realized": 7.275957614183426e-12,
-          "unrealized": 10445.5
-        },
-        {
-          "sym": "NIFTY-Aug2026-24950-CE",
-          "type": "CALL",
-          "strike": 24950,
-          "expiry": "2026-08-11",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 30.4,
-          "realized": 650,
+          "avg": 25.05,
+          "realized": 341.25,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24550-CE",
-          "type": "CALL",
-          "strike": 24550,
+          "sym": "NIFTY-Aug2026-24250-PE",
+          "type": "PUT",
+          "strike": 24250,
           "expiry": "2026-08-11",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 161.15,
-          "realized": -1212.25,
+          "avg": 24.45,
+          "realized": -1946.75,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24650-PE",
+          "type": "PUT",
+          "strike": 24650,
+          "expiry": "2026-08-11",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 116.4,
+          "realized": 4842.5,
           "unrealized": 0
         }
       ]
@@ -323,8 +301,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 482778.7,
-      "utilized": 471805
+      "available": 869543.7,
+      "utilized": 281
     },
     "upstox": {
       "available": 100886.1,
