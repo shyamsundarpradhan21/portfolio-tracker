@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-08-06T18:55:00+05:30",
+  "updatedAt": "2026-08-07T18:55:54+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -4291,6 +4291,156 @@
       "qty": 130,
       "price": 11.6,
       "value": 1508
+    },
+    {
+      "broker": "Dhan",
+      "id": "978795",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 325,
+      "price": 19.6,
+      "value": 6370
+    },
+    {
+      "broker": "Dhan",
+      "id": "1392537",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 195,
+      "price": 135.85,
+      "value": 26490.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1392538",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 130,
+      "price": 135.85,
+      "value": 17660.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "3042456",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 130,
+      "price": 11.5,
+      "value": 1495
+    },
+    {
+      "broker": "Dhan",
+      "id": "3042457",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 195,
+      "price": 11.45,
+      "value": 2232.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1389292",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 130,
+      "price": 136.7,
+      "value": 17771
+    },
+    {
+      "broker": "Dhan",
+      "id": "1389293",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 195,
+      "price": 136.55,
+      "value": 26627.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "831059",
+      "sym": "NIFTY-Aug2026-24200-PE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 325,
+      "price": 18.6,
+      "value": 6045
+    },
+    {
+      "broker": "Dhan",
+      "id": "1421965",
+      "sym": "NIFTY-Aug2026-24600-PE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 65,
+      "price": 122.5,
+      "value": 7962.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1421966",
+      "sym": "NIFTY-Aug2026-24600-PE",
+      "date": "2026-08-07",
+      "side": "SELL",
+      "qty": 260,
+      "price": 122.45,
+      "value": 31837
+    },
+    {
+      "broker": "Dhan",
+      "id": "4847839",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 65,
+      "price": 105.25,
+      "value": 6841.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "4847840",
+      "sym": "NIFTY-Aug2026-24600-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 260,
+      "price": 105.25,
+      "value": 27365
+    },
+    {
+      "broker": "Dhan",
+      "id": "976606",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 195,
+      "price": 19.65,
+      "value": 3831.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "976607",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 65,
+      "price": 19.65,
+      "value": 1277.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "976608",
+      "sym": "NIFTY-Aug2026-25000-CE",
+      "date": "2026-08-07",
+      "side": "BUY",
+      "qty": 65,
+      "price": 19.65,
+      "value": 1277.25
     }
   ]
 }
