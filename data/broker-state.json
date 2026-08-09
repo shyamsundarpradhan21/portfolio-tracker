@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-07T18:55:46+05:30",
+  "syncedAt": "2026-08-09T19:47:34+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -22,22 +22,22 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-08-02T19:48:49+05:30",
+      "syncedAt": "2026-08-09T19:48:43+05:30",
       "rows": [
-        {
-          "sym": "AVANTEL",
-          "qty": 52,
-          "avg": 153.04
-        },
-        {
-          "sym": "BANKBARODA",
-          "qty": 28,
-          "avg": 291.8
-        },
         {
           "sym": "TDPOWERSYS",
           "qty": 10,
           "avg": 796.43
+        },
+        {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5
+        },
+        {
+          "sym": "AVANTEL",
+          "qty": 52,
+          "avg": 153.04
         },
         {
           "sym": "LAURUSLABS",
@@ -45,9 +45,9 @@
           "avg": 986.86
         },
         {
-          "sym": "HAPPSTMNDS",
-          "qty": 20,
-          "avg": 393.5
+          "sym": "BANKBARODA",
+          "qty": 28,
+          "avg": 291.8
         }
       ]
     },
@@ -181,18 +181,18 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-07T18:55:54+05:30",
+      "syncedAt": "2026-08-09T19:48:46+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Aug2026-25000-CE",
-          "type": "CALL",
-          "strike": 25000,
+          "sym": "NIFTY-Aug2026-24200-PE",
+          "type": "PUT",
+          "strike": 24200,
           "expiry": "2026-08-11",
           "status": "LONG",
           "netQty": 325,
-          "avg": 19.625,
-          "realized": -2650.375,
-          "unrealized": -2933.12
+          "avg": 18.6,
+          "realized": 0,
+          "unrealized": -2730
         },
         {
           "sym": "NIFTY-Aug2026-24600-CE",
@@ -202,19 +202,8 @@
           "status": "SHORT",
           "netQty": -325,
           "avg": 136.23,
-          "realized": 10068.5,
+          "realized": 0,
           "unrealized": 8638.5
-        },
-        {
-          "sym": "NIFTY-Aug2026-24200-PE",
-          "type": "PUT",
-          "strike": 24200,
-          "expiry": "2026-08-11",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 18.6,
-          "realized": 9.094947017729282e-13,
-          "unrealized": -2730
         },
         {
           "sym": "NIFTY-Aug2026-24600-PE",
@@ -226,45 +215,45 @@
           "avg": 122.46,
           "realized": 0,
           "unrealized": 5837
+        },
+        {
+          "sym": "NIFTY-Aug2026-25000-CE",
+          "type": "CALL",
+          "strike": 25000,
+          "expiry": "2026-08-11",
+          "status": "LONG",
+          "netQty": 325,
+          "avg": 19.625,
+          "realized": 0,
+          "unrealized": -2933.12
         }
       ]
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-07-28T22:08:22+05:30",
+      "syncedAt": "2026-08-09T19:48:43+05:30",
       "rows": [
         {
-          "sym": "ANGELONE26JUL290PE",
+          "sym": "M&M26AUG3350PE",
           "type": "PUT",
           "strike": null,
           "expiry": null,
           "status": "LONG",
-          "netQty": 2500,
-          "avg": 2.85,
+          "netQty": 200,
+          "avg": 61.35,
           "realized": 0,
-          "unrealized": -7000
+          "unrealized": -7760
         },
         {
-          "sym": "ANGELONE26AUG280PE",
-          "type": "PUT",
-          "strike": null,
-          "expiry": null,
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 3.05,
-          "realized": 1500,
-          "unrealized": 0
-        },
-        {
-          "sym": "ANGELONE26AUGFUT",
+          "sym": "M&M26OCTFUT",
           "type": "FUT",
           "strike": null,
           "expiry": null,
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 346.45,
-          "realized": -101000,
-          "unrealized": 0
+          "status": "LONG",
+          "netQty": 200,
+          "avg": 3436.3,
+          "realized": 0,
+          "unrealized": 21740
         }
       ]
     },
@@ -279,12 +268,12 @@
       "available": 0
     },
     "dhan": {
-      "available": 498202.38,
-      "utilized": 462753
+      "available": 498384.1,
+      "utilized": 449681
     },
     "upstox": {
-      "available": 100886.1,
-      "utilized": 0
+      "available": 35732.28,
+      "utilized": 74238.2
     }
   }
 }
