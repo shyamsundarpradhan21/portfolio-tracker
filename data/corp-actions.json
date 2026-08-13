@@ -1,165 +1,157 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-23T13:10:10.852Z",
+  "capturedAt": "2026-08-13T14:55:40.642Z",
   "actions": [
     {
-      "sym": "ESABINDIA",
-      "name": "Esab India Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "USHAMART",
+      "name": "Usha Martin Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
-      "amount": 25,
+      "amount": 3.75,
       "ratio": null
     },
     {
-      "sym": "ABMKNO",
-      "name": "ABM Knowledgeware Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "BIRET",
+      "name": "Brookfield India Real Estate Trust",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": 5.6,
+      "ratio": null
+    },
+    {
+      "sym": "AWHCL",
+      "name": "Antony Waste Handling Cell Limited",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "RAILTEL",
+      "name": "Railtel Corporation Of India Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": 1.25,
       "ratio": null
     },
     {
-      "sym": "AFCONS",
-      "name": "Afcons Infrastructure Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "NEOGEN",
+      "name": "Neogen Chemicals Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
-      "amount": 2,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "SUDEEPPHRM",
-      "name": "Sudeep Pharma Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": 1.5,
-      "ratio": null
-    },
-    {
-      "sym": "PAUSHAKLTD",
-      "name": "Paushak Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "NDGL",
+      "name": "Naga Dhunseri Group Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": 2.5,
       "ratio": null
     },
     {
-      "sym": "MWL",
-      "name": "Mangalam Worldwide Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "RAMCOCEM",
+      "name": "The Ramco Cements Limited",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": 2.5,
+      "ratio": null
+    },
+    {
+      "sym": "VISAKAIND",
+      "name": "Visaka Industries Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": null,
       "ratio": null
     },
     {
-      "sym": "BHAGCHEM",
-      "name": "Bhagiradha Chemicals & Industries Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "PRECAM",
-      "name": "Precision Camshafts Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "BANSWRAS",
-      "name": "Banswara Syntex Limited",
-      "exDate": "23-Jul-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "OBEROIRLTY",
-      "name": "Oberoi Realty Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "PRESTIGE",
+      "name": "Prestige Estates Projects Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": 2,
       "ratio": null
     },
     {
-      "sym": "BEPL",
-      "name": "Bhansali Engineering Polymers Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "DHUNINV",
+      "name": "Dhunseri Investments Limited",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": 3,
+      "ratio": null
+    },
+    {
+      "sym": "POWERGRID",
+      "name": "Power Grid Corporation of India Limited",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": 1.25,
+      "ratio": null
+    },
+    {
+      "sym": "BEL",
+      "name": "Bharat Electronics Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": null,
       "ratio": null
     },
     {
-      "sym": "DBCORP",
-      "name": "D.B.Corp Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "SOUTHBANK",
+      "name": "The South Indian Bank Limited",
+      "exDate": "13-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "GODREJCP",
+      "name": "Godrej Consumer Products Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
       "amount": 5,
       "ratio": null
     },
     {
-      "sym": "ORIENTHOT",
-      "name": "Oriental Hotels Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "RAMCOIND",
+      "name": "Ramco Industries Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
-      "amount": 0.65,
+      "amount": 1.25,
       "ratio": null
     },
     {
-      "sym": "PIDILITIND",
-      "name": "Pidilite Industries Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "PRECOT",
+      "name": "Precot Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
-      "amount": 11.5,
+      "amount": 4,
       "ratio": null
     },
     {
-      "sym": "ICRA",
-      "name": "ICRA Limited",
-      "exDate": "23-Jul-2026",
+      "sym": "CENTENKA",
+      "name": "Century Enka Limited",
+      "exDate": "13-Aug-2026",
       "type": "dividend",
-      "amount": 70,
+      "amount": 11,
       "ratio": null
     },
     {
-      "sym": "SASKEN",
-      "name": "Sasken Technologies Limited",
-      "exDate": "24-Jul-2026",
+      "sym": "FEDERALBNK",
+      "name": "The Federal Bank  Limited",
+      "exDate": "14-Aug-2026",
       "type": "dividend",
-      "amount": 13,
+      "amount": 1.2,
       "ratio": null
     },
     {
-      "sym": "FORTIS",
-      "name": "Fortis Healthcare Limited",
-      "exDate": "24-Jul-2026",
+      "sym": "HINDPETRO",
+      "name": "Hindustan Petroleum Corporation Limited",
+      "exDate": "14-Aug-2026",
       "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "SIYSIL",
-      "name": "Siyaram Silk Mills Limited",
-      "exDate": "24-Jul-2026",
-      "type": "dividend",
-      "amount": 5,
-      "ratio": null
-    },
-    {
-      "sym": "NAUKRI",
-      "name": "Info Edge (India) Limited",
-      "exDate": "24-Jul-2026",
-      "type": "dividend",
-      "amount": 3.6,
-      "ratio": null
-    },
-    {
-      "sym": "REFEX",
-      "name": "Refex Industries Limited",
-      "exDate": "24-Jul-2026",
-      "type": "dividend",
-      "amount": null,
+      "amount": 19.25,
       "ratio": null
     }
   ]

@@ -1,21 +1,13 @@
 {
   "note": "Upcoming US dividends (announced ex-dates), from Yahoo. Written by scripts/capture-corp-actions-us.mjs. /api/dividends filters to your US holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-07-23T13:10:31.955Z",
+  "capturedAt": "2026-08-13T14:56:19.353Z",
   "actions": [
     {
-      "sym": "PG",
-      "name": "The Procter & Gamble Company",
-      "exDate": "2026-07-24",
+      "sym": "MCO",
+      "name": "Moody's Corporation",
+      "exDate": "2026-08-14",
       "type": "dividend",
-      "amount": 1.09,
-      "market": "US"
-    },
-    {
-      "sym": "ASML",
-      "name": "ASML Holding N.V.",
-      "exDate": "2026-07-28",
-      "type": "dividend",
-      "amount": 3.18,
+      "amount": 1.03,
       "market": "US"
     },
     {
@@ -27,6 +19,14 @@
       "market": "US"
     },
     {
+      "sym": "AMAT",
+      "name": "Applied Materials, Inc.",
+      "exDate": "2026-08-20",
+      "type": "dividend",
+      "amount": 0.53,
+      "market": "US"
+    },
+    {
       "sym": "SHW",
       "name": "The Sherwin-Williams Company",
       "exDate": "2026-08-21",
@@ -35,11 +35,35 @@
       "market": "US"
     },
     {
+      "sym": "GOOG",
+      "name": "Alphabet Inc.",
+      "exDate": "2026-09-04",
+      "type": "dividend",
+      "amount": 0.22,
+      "market": "US"
+    },
+    {
+      "sym": "PYPL",
+      "name": "PayPal Holdings, Inc.",
+      "exDate": "2026-09-04",
+      "type": "dividend",
+      "amount": 0.14,
+      "market": "US"
+    },
+    {
       "sym": "PEP",
       "name": "PepsiCo, Inc.",
       "exDate": "2026-09-04",
       "type": "dividend",
       "amount": 1.48,
+      "market": "US"
+    },
+    {
+      "sym": "UNH",
+      "name": "UnitedHealth Group Incorporated",
+      "exDate": "2026-09-14",
+      "type": "dividend",
+      "amount": 2.32,
       "market": "US"
     },
     {
