@@ -1,6 +1,6 @@
 {
   "note": "Intraday US-equity day-change tape in INR (Σ qty×(price−prevClose)×USD/INR). Written by SESSION=us scripts/capture-daemon.mjs during US hours (overnight IST) via keyless Yahoo. Non-personal aggregate; safe to commit.",
-  "updatedAt": "2026-08-11T02:30:04+05:30",
+  "updatedAt": "2026-08-13T20:28:45+05:30",
   "days": {
     "2026-06-24": [
       {
@@ -93417,6 +93417,83 @@
       {
         "t": "02:30",
         "net": -4225.81,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      }
+    ],
+    "2026-08-13": [
+      {
+        "t": "20:24",
+        "net": 1962.02,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "20:25",
+        "net": 1847.77,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "20:26",
+        "net": 1487.69,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "20:27",
+        "net": 1483.08,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "20:28",
+        "net": 1555.7,
         "realised": null,
         "mtm": null,
         "dhan": null,
