@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-10T18:56:00+05:30",
+  "syncedAt": "2026-08-13T20:24:46+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -22,18 +22,8 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-08-09T19:48:43+05:30",
+      "syncedAt": "2026-08-13T20:25:17+05:30",
       "rows": [
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
-        },
-        {
-          "sym": "HAPPSTMNDS",
-          "qty": 20,
-          "avg": 393.5
-        },
         {
           "sym": "AVANTEL",
           "qty": 52,
@@ -48,6 +38,16 @@
           "sym": "BANKBARODA",
           "qty": 28,
           "avg": 291.8
+        },
+        {
+          "sym": "HAPPSTMNDS",
+          "qty": 20,
+          "avg": 393.5
+        },
+        {
+          "sym": "TDPOWERSYS",
+          "qty": 10,
+          "avg": 796.43
         }
       ]
     },
@@ -181,79 +181,79 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-10T18:56:08+05:30",
+      "syncedAt": "2026-08-13T20:25:18+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Aug2026-24200-PE",
+          "sym": "NIFTY-Aug2026-24000-PE",
           "type": "PUT",
-          "strike": 24200,
-          "expiry": "2026-08-11",
+          "strike": 24000,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 18.6,
-          "realized": -4891.250000000001,
+          "avg": 14.9,
+          "realized": -2421.25,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24600-CE",
+          "sym": "NIFTY-Aug2026-24400-CE",
           "type": "CALL",
-          "strike": 24600,
-          "expiry": "2026-08-11",
+          "strike": 24400,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 75,
-          "realized": 19899.75,
+          "avg": 120.6,
+          "realized": 7312.5,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24600-PE",
+          "sym": "NIFTY-Aug2026-24400-PE",
           "type": "PUT",
-          "strike": 24600,
-          "expiry": "2026-08-11",
+          "strike": 24400,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 77.8,
-          "realized": 14514.5,
+          "avg": 87.725,
+          "realized": 801.125,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-25000-CE",
+          "sym": "NIFTY-Aug2026-24800-CE",
           "type": "CALL",
-          "strike": 25000,
-          "expiry": "2026-08-11",
+          "strike": 24800,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 19.625,
-          "realized": -5581.875,
+          "avg": 20.05,
+          "realized": -3965,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24150-PE",
-          "type": "PUT",
-          "strike": 24150,
-          "expiry": "2026-08-11",
+          "sym": "NIFTY-Aug2026-24750-CE",
+          "type": "CALL",
+          "strike": 24750,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 4.95,
-          "realized": -611,
+          "avg": 12.55,
+          "realized": 1868.75,
           "unrealized": 0
         },
         {
-          "sym": "NIFTY-Aug2026-24550-PE",
-          "type": "PUT",
-          "strike": 24550,
-          "expiry": "2026-08-11",
+          "sym": "NIFTY-Aug2026-24350-CE",
+          "type": "CALL",
+          "strike": 24350,
+          "expiry": "2026-08-18",
           "status": "CLOSED",
           "netQty": 0,
-          "avg": 57.35,
-          "realized": 5499,
+          "avg": 172.86,
+          "realized": -14270.75,
           "unrealized": 0
         }
       ]
     },
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-08-09T19:48:43+05:30",
+      "syncedAt": "2026-08-13T20:25:17+05:30",
       "rows": [
         {
           "sym": "M&M26AUG3350PE",
@@ -264,7 +264,7 @@
           "netQty": 200,
           "avg": 61.35,
           "realized": 0,
-          "unrealized": -7760
+          "unrealized": -7370
         },
         {
           "sym": "M&M26OCTFUT",
@@ -275,7 +275,7 @@
           "netQty": 200,
           "avg": 3436.3,
           "realized": 0,
-          "unrealized": 21740
+          "unrealized": 5500
         }
       ]
     },
@@ -290,12 +290,12 @@
       "available": 0
     },
     "dhan": {
-      "available": 905037.75,
-      "utilized": 206
+      "available": 906128.44,
+      "utilized": 402
     },
     "upstox": {
-      "available": 35732.28,
-      "utilized": 74238.2
+      "available": 43024.18,
+      "utilized": 52206.3
     }
   }
 }
