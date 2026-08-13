@@ -1,6 +1,6 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-13T14:55:40.642Z",
+  "capturedAt": "2026-08-13T15:01:47.487Z",
   "actions": [
     {
       "sym": "USHAMART",
