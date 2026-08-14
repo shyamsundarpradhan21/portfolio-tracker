@@ -1,143 +1,7 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-13T15:01:47.487Z",
+  "capturedAt": "2026-08-14T13:12:06.722Z",
   "actions": [
-    {
-      "sym": "USHAMART",
-      "name": "Usha Martin Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 3.75,
-      "ratio": null
-    },
-    {
-      "sym": "BIRET",
-      "name": "Brookfield India Real Estate Trust",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 5.6,
-      "ratio": null
-    },
-    {
-      "sym": "AWHCL",
-      "name": "Antony Waste Handling Cell Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "RAILTEL",
-      "name": "Railtel Corporation Of India Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 1.25,
-      "ratio": null
-    },
-    {
-      "sym": "NEOGEN",
-      "name": "Neogen Chemicals Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "NDGL",
-      "name": "Naga Dhunseri Group Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 2.5,
-      "ratio": null
-    },
-    {
-      "sym": "RAMCOCEM",
-      "name": "The Ramco Cements Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 2.5,
-      "ratio": null
-    },
-    {
-      "sym": "VISAKAIND",
-      "name": "Visaka Industries Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "PRESTIGE",
-      "name": "Prestige Estates Projects Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "DHUNINV",
-      "name": "Dhunseri Investments Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 3,
-      "ratio": null
-    },
-    {
-      "sym": "POWERGRID",
-      "name": "Power Grid Corporation of India Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 1.25,
-      "ratio": null
-    },
-    {
-      "sym": "BEL",
-      "name": "Bharat Electronics Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "SOUTHBANK",
-      "name": "The South Indian Bank Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "GODREJCP",
-      "name": "Godrej Consumer Products Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 5,
-      "ratio": null
-    },
-    {
-      "sym": "RAMCOIND",
-      "name": "Ramco Industries Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 1.25,
-      "ratio": null
-    },
-    {
-      "sym": "PRECOT",
-      "name": "Precot Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 4,
-      "ratio": null
-    },
-    {
-      "sym": "CENTENKA",
-      "name": "Century Enka Limited",
-      "exDate": "13-Aug-2026",
-      "type": "dividend",
-      "amount": 11,
-      "ratio": null
-    },
     {
       "sym": "FEDERALBNK",
       "name": "The Federal Bank  Limited",
@@ -147,11 +11,155 @@
       "ratio": null
     },
     {
-      "sym": "HINDPETRO",
-      "name": "Hindustan Petroleum Corporation Limited",
+      "sym": "XCHANGING",
+      "name": "Xchanging Solutions Limited",
       "exDate": "14-Aug-2026",
       "type": "dividend",
-      "amount": 19.25,
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "ASTRAL",
+      "name": "Astral Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 2.5,
+      "ratio": null
+    },
+    {
+      "sym": "NCC",
+      "name": "NCC Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 2.2,
+      "ratio": null
+    },
+    {
+      "sym": "RESPONIND",
+      "name": "Responsive Industries Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "KICL",
+      "name": "Kalyani Investment Company Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 10,
+      "ratio": null
+    },
+    {
+      "sym": "SONATSOFTW",
+      "name": "Sonata Software Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 1.25,
+      "ratio": null
+    },
+    {
+      "sym": "SARDAEN",
+      "name": "Sarda Energy & Minerals Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "GPIL",
+      "name": "Godawari Power And Ispat limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "MINDACORP",
+      "name": "Minda Corporation Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "TFCILTD",
+      "name": "Tourism Finance Corporation of India Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "ELECTCAST",
+      "name": "Electrosteel Castings Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "DYNAMATECH",
+      "name": "Dynamatic Technologies Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 3,
+      "ratio": null
+    },
+    {
+      "sym": "MANGLMCEM",
+      "name": "Mangalam Cement Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 1.5,
+      "ratio": null
+    },
+    {
+      "sym": "APOLLOHOSP",
+      "name": "Apollo Hospitals Enterprise Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 10,
+      "ratio": null
+    },
+    {
+      "sym": "ALKALI",
+      "name": "Alkali Metals Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "SANGHVIMOV",
+      "name": "Sanghvi Movers Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "SANDESH",
+      "name": "The Sandesh Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 5,
+      "ratio": null
+    },
+    {
+      "sym": "RECLTD",
+      "name": "REC Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 1.55,
+      "ratio": null
+    },
+    {
+      "sym": "IOC",
+      "name": "Indian Oil Corporation Limited",
+      "exDate": "14-Aug-2026",
+      "type": "dividend",
+      "amount": 1.25,
       "ratio": null
     }
   ]
