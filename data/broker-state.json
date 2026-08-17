@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-14T19:16:36+05:30",
+  "syncedAt": "2026-08-17T18:50:24+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,29 +181,29 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-14T19:16:45+05:30",
+      "syncedAt": "2026-08-17T18:50:27+05:30",
       "rows": [
-        {
-          "sym": "NIFTY-Aug2026-24750-CE",
-          "type": "CALL",
-          "strike": 24750,
-          "expiry": "2026-08-18",
-          "status": "LONG",
-          "netQty": 585,
-          "avg": 7.2388887,
-          "realized": -0.00011050000011891825,
-          "unrealized": -227.5
-        },
         {
           "sym": "NIFTY-Aug2026-24350-CE",
           "type": "CALL",
           "strike": 24350,
           "expiry": "2026-08-18",
-          "status": "SHORT",
-          "netQty": -585,
-          "avg": 102.505554,
-          "realized": 0.0009099999952013604,
-          "unrealized": -13305.5
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 71.683334,
+          "realized": 18030.99675,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24750-CE",
+          "type": "CALL",
+          "strike": 24750,
+          "expiry": "2026-08-18",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 7.23889,
+          "realized": -3032.25065,
+          "unrealized": 0
         }
       ]
     },
@@ -246,8 +246,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 437697.97,
-      "utilized": 514981
+      "available": 920724.44,
+      "utilized": 82
     },
     "upstox": {
       "available": 35732.28,
