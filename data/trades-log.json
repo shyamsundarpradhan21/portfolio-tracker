@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-08-14T17:53:11+05:30",
+  "updatedAt": "2026-08-18T00:26:12+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -4871,6 +4871,76 @@
       "qty": 195,
       "price": 7.1,
       "value": 1384.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "5429304",
+      "sym": "NIFTY-Aug2026-24350-CE",
+      "date": "2026-08-17",
+      "side": "BUY",
+      "qty": 325,
+      "price": 70.95,
+      "value": 23058.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "4981215",
+      "sym": "NIFTY-Aug2026-24750-CE",
+      "date": "2026-08-17",
+      "side": "SELL",
+      "qty": 325,
+      "price": 2.1,
+      "value": 682.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "5438988",
+      "sym": "NIFTY-Aug2026-24350-CE",
+      "date": "2026-08-17",
+      "side": "BUY",
+      "qty": 130,
+      "price": 72.6,
+      "value": 9438
+    },
+    {
+      "broker": "Dhan",
+      "id": "5438989",
+      "sym": "NIFTY-Aug2026-24350-CE",
+      "date": "2026-08-17",
+      "side": "BUY",
+      "qty": 65,
+      "price": 72.6,
+      "value": 4719
+    },
+    {
+      "broker": "Dhan",
+      "id": "5438990",
+      "sym": "NIFTY-Aug2026-24350-CE",
+      "date": "2026-08-17",
+      "side": "BUY",
+      "qty": 65,
+      "price": 72.6,
+      "value": 4719
+    },
+    {
+      "broker": "Dhan",
+      "id": "4990803",
+      "sym": "NIFTY-Aug2026-24750-CE",
+      "date": "2026-08-17",
+      "side": "SELL",
+      "qty": 195,
+      "price": 2,
+      "value": 390
+    },
+    {
+      "broker": "Dhan",
+      "id": "4990804",
+      "sym": "NIFTY-Aug2026-24750-CE",
+      "date": "2026-08-17",
+      "side": "SELL",
+      "qty": 65,
+      "price": 2,
+      "value": 130
     }
   ]
 }
