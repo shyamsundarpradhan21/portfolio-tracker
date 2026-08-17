@@ -1,165 +1,141 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-14T13:12:06.722Z",
+  "capturedAt": "2026-08-17T18:53:55.035Z",
   "actions": [
     {
-      "sym": "FEDERALBNK",
-      "name": "The Federal Bank  Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 1.2,
-      "ratio": null
-    },
-    {
-      "sym": "XCHANGING",
-      "name": "Xchanging Solutions Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "ASTRAL",
-      "name": "Astral Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 2.5,
-      "ratio": null
-    },
-    {
-      "sym": "NCC",
-      "name": "NCC Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 2.2,
-      "ratio": null
-    },
-    {
-      "sym": "RESPONIND",
-      "name": "Responsive Industries Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "KICL",
-      "name": "Kalyani Investment Company Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 10,
-      "ratio": null
-    },
-    {
-      "sym": "SONATSOFTW",
-      "name": "Sonata Software Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 1.25,
-      "ratio": null
-    },
-    {
-      "sym": "SARDAEN",
-      "name": "Sarda Energy & Minerals Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "GPIL",
-      "name": "Godawari Power And Ispat limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "MINDACORP",
-      "name": "Minda Corporation Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "TFCILTD",
-      "name": "Tourism Finance Corporation of India Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "ELECTCAST",
-      "name": "Electrosteel Castings Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "DYNAMATECH",
-      "name": "Dynamatic Technologies Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 3,
-      "ratio": null
-    },
-    {
-      "sym": "MANGLMCEM",
-      "name": "Mangalam Cement Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 1.5,
-      "ratio": null
-    },
-    {
-      "sym": "APOLLOHOSP",
-      "name": "Apollo Hospitals Enterprise Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 10,
-      "ratio": null
-    },
-    {
-      "sym": "ALKALI",
-      "name": "Alkali Metals Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "SANGHVIMOV",
-      "name": "Sanghvi Movers Limited",
-      "exDate": "14-Aug-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "SANDESH",
-      "name": "The Sandesh Limited",
-      "exDate": "14-Aug-2026",
+      "sym": "SUNTV",
+      "name": "Sun TV Network Limited",
+      "exDate": "18-Aug-2026",
       "type": "dividend",
       "amount": 5,
       "ratio": null
     },
     {
-      "sym": "RECLTD",
-      "name": "REC Limited",
-      "exDate": "14-Aug-2026",
+      "sym": "ECOSMOBLTY",
+      "name": "Ecos (India) Mobility & Hospitality Limited",
+      "exDate": "18-Aug-2026",
       "type": "dividend",
-      "amount": 1.55,
+      "amount": 2.38,
       "ratio": null
     },
     {
-      "sym": "IOC",
-      "name": "Indian Oil Corporation Limited",
-      "exDate": "14-Aug-2026",
+      "sym": "STYL",
+      "name": "Seshaasai Technologies Limited",
+      "exDate": "18-Aug-2026",
       "type": "dividend",
-      "amount": 1.25,
+      "amount": 2.5,
+      "ratio": null
+    },
+    {
+      "sym": "SYRMA",
+      "name": "Syrma SGS Technology Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 1.5,
+      "ratio": null
+    },
+    {
+      "sym": "ROUTE",
+      "name": "ROUTE MOBILE LIMITED",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "KIRLPNU",
+      "name": "Kirloskar Pneumatic Company Limited",
+      "exDate": "18-Aug-2026",
+      "type": "split",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "NGLFINE",
+      "name": "NGL Fine-Chem Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 1.75,
+      "ratio": null
+    },
+    {
+      "sym": "MGL",
+      "name": "Mahanagar Gas Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 18,
+      "ratio": null
+    },
+    {
+      "sym": "RVNL",
+      "name": "Rail Vikas Nigam Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "JMA",
+      "name": "Jullundur Motor Agency (Delhi) Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "ROSSELLIND",
+      "name": "Rossell India Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "THEJO",
+      "name": "Thejo Engineering Limited",
+      "exDate": "18-Aug-2026",
+      "type": "dividend",
+      "amount": 5,
+      "ratio": null
+    },
+    {
+      "sym": "JKPAPER",
+      "name": "JK Paper Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": 4,
+      "ratio": null
+    },
+    {
+      "sym": "JAYBARMARU",
+      "name": "Jay Bharat Maruti Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "KOVAI",
+      "name": "Kovai Medical Center & Hospital Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": 15,
+      "ratio": null
+    },
+    {
+      "sym": "LGBBROSLTD",
+      "name": "LG Balakrishnan & Bros Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": 22,
+      "ratio": null
+    },
+    {
+      "sym": "PAGEIND",
+      "name": "Page Industries Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": 200,
       "ratio": null
     }
   ]
