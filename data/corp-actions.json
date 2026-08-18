@@ -1,6 +1,6 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-17T18:53:55.035Z",
+  "capturedAt": "2026-08-18T14:51:24.416Z",
   "actions": [
     {
       "sym": "SUNTV",
@@ -99,19 +99,11 @@
       "ratio": null
     },
     {
-      "sym": "JKPAPER",
-      "name": "JK Paper Limited",
+      "sym": "HONDAPOWER",
+      "name": "Honda India Power Products Limited",
       "exDate": "19-Aug-2026",
       "type": "dividend",
-      "amount": 4,
-      "ratio": null
-    },
-    {
-      "sym": "JAYBARMARU",
-      "name": "Jay Bharat Maruti Limited",
-      "exDate": "19-Aug-2026",
-      "type": "dividend",
-      "amount": null,
+      "amount": 23,
       "ratio": null
     },
     {
@@ -136,6 +128,14 @@
       "exDate": "19-Aug-2026",
       "type": "dividend",
       "amount": 200,
+      "ratio": null
+    },
+    {
+      "sym": "CESC",
+      "name": "CESC Limited",
+      "exDate": "19-Aug-2026",
+      "type": "dividend",
+      "amount": 6,
       "ratio": null
     }
   ]
