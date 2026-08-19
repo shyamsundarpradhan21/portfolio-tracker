@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-08-18T18:48:34+05:30",
+  "updatedAt": "2026-08-19T18:46:59+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -5411,6 +5411,76 @@
       "qty": 195,
       "price": 0.2,
       "value": 39
+    },
+    {
+      "broker": "Dhan",
+      "id": "1376904",
+      "sym": "NIFTY-Aug2026-24100-CE",
+      "date": "2026-08-19",
+      "side": "SELL",
+      "qty": 195,
+      "price": 128.25,
+      "value": 25008.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1376905",
+      "sym": "NIFTY-Aug2026-24100-CE",
+      "date": "2026-08-19",
+      "side": "SELL",
+      "qty": 65,
+      "price": 128.25,
+      "value": 8336.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "1376906",
+      "sym": "NIFTY-Aug2026-24100-CE",
+      "date": "2026-08-19",
+      "side": "SELL",
+      "qty": 65,
+      "price": 128.25,
+      "value": 8336.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "1446094",
+      "sym": "NIFTY-Aug2026-24050-PE",
+      "date": "2026-08-19",
+      "side": "SELL",
+      "qty": 130,
+      "price": 93.15,
+      "value": 12109.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1446095",
+      "sym": "NIFTY-Aug2026-24050-PE",
+      "date": "2026-08-19",
+      "side": "SELL",
+      "qty": 130,
+      "price": 93.15,
+      "value": 12109.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1054278",
+      "sym": "NIFTY-Aug2026-24500-CE",
+      "date": "2026-08-19",
+      "side": "BUY",
+      "qty": 325,
+      "price": 18,
+      "value": 5850
+    },
+    {
+      "broker": "Dhan",
+      "id": "1315877",
+      "sym": "NIFTY-Aug2026-23650-PE",
+      "date": "2026-08-19",
+      "side": "BUY",
+      "qty": 260,
+      "price": 13.3,
+      "value": 3458
     }
   ]
 }

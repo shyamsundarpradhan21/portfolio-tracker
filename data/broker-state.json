@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-18T18:48:31+05:30",
+  "syncedAt": "2026-08-19T18:46:57+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,51 +181,51 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-18T18:48:34+05:30",
+      "syncedAt": "2026-08-19T18:46:59+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Aug2026-24600-CE",
+          "sym": "NIFTY-Aug2026-24500-CE",
           "type": "CALL",
-          "strike": 24600,
-          "expiry": "2026-08-18",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 1.05,
-          "realized": -165.75,
-          "unrealized": 0
+          "strike": 24500,
+          "expiry": "2026-08-25",
+          "status": "LONG",
+          "netQty": 325,
+          "avg": 18,
+          "realized": 0,
+          "unrealized": -81.25
         },
         {
-          "sym": "NIFTY-Aug2026-24200-CE",
+          "sym": "NIFTY-Aug2026-24100-CE",
           "type": "CALL",
-          "strike": 24200,
-          "expiry": "2026-08-18",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 32.933334,
-          "realized": 2187.25,
-          "unrealized": 0
+          "strike": 24100,
+          "expiry": "2026-08-25",
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 128.25,
+          "realized": 0,
+          "unrealized": 1673.75
         },
         {
-          "sym": "NIFTY-Aug2026-23800-PE",
+          "sym": "NIFTY-Aug2026-23650-PE",
           "type": "PUT",
-          "strike": 23800,
-          "expiry": "2026-08-18",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 0.4,
-          "realized": -48.75,
-          "unrealized": 0
+          "strike": 23650,
+          "expiry": "2026-08-25",
+          "status": "LONG",
+          "netQty": 260,
+          "avg": 13.3,
+          "realized": 0,
+          "unrealized": -520
         },
         {
-          "sym": "NIFTY-Aug2026-24200-PE",
+          "sym": "NIFTY-Aug2026-24050-PE",
           "type": "PUT",
-          "strike": 24200,
-          "expiry": "2026-08-18",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 10.45,
-          "realized": 2613,
-          "unrealized": 0
+          "strike": 24050,
+          "expiry": "2026-08-25",
+          "status": "SHORT",
+          "netQty": -260,
+          "avg": 93.15,
+          "realized": 0,
+          "unrealized": 1274
         }
       ]
     },
@@ -268,8 +268,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 925090.4,
-      "utilized": 186
+      "available": 566748,
+      "utilized": 424211
     },
     "upstox": {
       "available": 35732.28,
