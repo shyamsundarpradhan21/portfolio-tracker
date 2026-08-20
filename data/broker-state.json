@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-08-19T18:46:57+05:30",
+  "syncedAt": "2026-08-20T18:49:58+05:30",
   "note": "Live broker read-snapshot. Refreshed daily by the Claude reconcile routine (see SCHEDULE.md) and committed so the deployed app reads it like data/snapshot-sleeves.json. Broker is source-of-truth for live qty/avg/MTM; app/portfolio.js stays the curated metadata+history layer. Read-only; no account IDs or tokens.",
   "brokers": {
     "upstox": {
@@ -181,51 +181,95 @@
   "positions": {
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-19T18:46:59+05:30",
+      "syncedAt": "2026-08-20T18:50:01+05:30",
       "rows": [
-        {
-          "sym": "NIFTY-Aug2026-24500-CE",
-          "type": "CALL",
-          "strike": 24500,
-          "expiry": "2026-08-25",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 18,
-          "realized": 0,
-          "unrealized": -81.25
-        },
-        {
-          "sym": "NIFTY-Aug2026-24100-CE",
-          "type": "CALL",
-          "strike": 24100,
-          "expiry": "2026-08-25",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 128.25,
-          "realized": 0,
-          "unrealized": 1673.75
-        },
         {
           "sym": "NIFTY-Aug2026-23650-PE",
           "type": "PUT",
           "strike": 23650,
           "expiry": "2026-08-25",
-          "status": "LONG",
-          "netQty": 260,
+          "status": "CLOSED",
+          "netQty": 0,
           "avg": 13.3,
-          "realized": 0,
-          "unrealized": -520
+          "realized": -2392,
+          "unrealized": 0
         },
         {
           "sym": "NIFTY-Aug2026-24050-PE",
           "type": "PUT",
           "strike": 24050,
           "expiry": "2026-08-25",
-          "status": "SHORT",
-          "netQty": -260,
-          "avg": 93.15,
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 23.3,
+          "realized": 18161,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24100-CE",
+          "type": "CALL",
+          "strike": 24100,
+          "expiry": "2026-08-25",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 197.8,
+          "realized": -22603.75,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24500-CE",
+          "type": "CALL",
+          "strike": 24500,
+          "expiry": "2026-08-25",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 18,
+          "realized": 2356.25,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-23800-PE",
+          "type": "PUT",
+          "strike": 23800,
+          "expiry": "2026-08-25",
+          "status": "LONG",
+          "netQty": 325,
+          "avg": 7.85,
           "realized": 0,
-          "unrealized": 1274
+          "unrealized": -211.25
+        },
+        {
+          "sym": "NIFTY-Aug2026-24200-PE",
+          "type": "PUT",
+          "strike": 24200,
+          "expiry": "2026-08-25",
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 64.2,
+          "realized": 0,
+          "unrealized": 2015
+        },
+        {
+          "sym": "NIFTY-Aug2026-24650-CE",
+          "type": "CALL",
+          "strike": 24650,
+          "expiry": "2026-08-25",
+          "status": "LONG",
+          "netQty": 325,
+          "avg": 8.1,
+          "realized": 0,
+          "unrealized": -585
+        },
+        {
+          "sym": "NIFTY-Aug2026-24250-CE",
+          "type": "CALL",
+          "strike": 24250,
+          "expiry": "2026-08-25",
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 137.55,
+          "realized": -7.275957614183426e-12,
+          "unrealized": 6028.75
         }
       ]
     },
@@ -268,8 +312,8 @@
       "available": 0
     },
     "dhan": {
-      "available": 566748,
-      "utilized": 424211
+      "available": 547243.44,
+      "utilized": 438680
     },
     "upstox": {
       "available": 35732.28,
