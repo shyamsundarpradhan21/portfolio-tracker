@@ -1,6 +1,6 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-21T08:46:58.516Z",
+  "capturedAt": "2026-08-21T15:18:28.156Z",
   "actions": [
     {
       "sym": "ECLERX",
@@ -136,7 +136,7 @@
       "exDate": "21-Aug-2026",
       "type": "bonus",
       "amount": null,
-      "ratio": "3:1"
+      "ratio": "4:1"
     },
     {
       "sym": "SIYSIL",
@@ -144,7 +144,7 @@
       "exDate": "21-Aug-2026",
       "type": "bonus",
       "amount": null,
-      "ratio": "4:1"
+      "ratio": "3:1"
     },
     {
       "sym": "LICHSGFIN",
