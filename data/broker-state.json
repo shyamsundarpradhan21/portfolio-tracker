@@ -14,7 +14,7 @@
     },
     "fyers": {
       "ok": false,
-      "note": "mint failed (funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"})"
+      "note": "funds: {\"code\":-16,\"message\":\"Could not authenticate the user\",\"s\":\"error\"}"
     }
   },
   "holdings": {
