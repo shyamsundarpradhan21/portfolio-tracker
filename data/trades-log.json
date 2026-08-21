@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-08-18T00:26:12+05:30",
+  "updatedAt": "2026-08-21T14:16:51+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -4941,6 +4941,26 @@
       "qty": 65,
       "price": 2,
       "value": 130
+    },
+    {
+      "broker": "Dhan",
+      "id": "1286525",
+      "sym": "NIFTY-Aug2026-24650-CE",
+      "date": "2026-08-21",
+      "side": "BUY",
+      "qty": 260,
+      "price": 5.2,
+      "value": 1352
+    },
+    {
+      "broker": "Dhan",
+      "id": "1282038",
+      "sym": "NIFTY-Aug2026-24250-CE",
+      "date": "2026-08-21",
+      "side": "SELL",
+      "qty": 260,
+      "price": 103,
+      "value": 26780
     }
   ]
 }
