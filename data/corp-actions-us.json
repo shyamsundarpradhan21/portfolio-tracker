@@ -1,23 +1,7 @@
 {
   "note": "Upcoming US dividends (announced ex-dates), from Yahoo. Written by scripts/capture-corp-actions-us.mjs. /api/dividends filters to your US holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-18T14:52:04.845Z",
+  "capturedAt": "2026-08-21T08:47:32.464Z",
   "actions": [
-    {
-      "sym": "MSFT",
-      "name": "Microsoft Corporation",
-      "exDate": "2026-08-20",
-      "type": "dividend",
-      "amount": 0.91,
-      "market": "US"
-    },
-    {
-      "sym": "AMAT",
-      "name": "Applied Materials, Inc.",
-      "exDate": "2026-08-20",
-      "type": "dividend",
-      "amount": 0.53,
-      "market": "US"
-    },
     {
       "sym": "SHW",
       "name": "The Sherwin-Williams Company",
@@ -44,7 +28,7 @@
     },
     {
       "sym": "PEP",
-      "name": "PepsiCo, Inc.",
+      "name": "PepsiCo, Inc. Common Stock",
       "exDate": "2026-09-04",
       "type": "dividend",
       "amount": 1.48,

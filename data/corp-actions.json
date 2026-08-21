@@ -1,141 +1,157 @@
 {
   "note": "Upcoming NSE corp actions (dividend/bonus/split/rights, market-wide). Written by scripts/capture-corp-actions.mjs. /api/dividends filters to your holdings at serve time. Non-personal public market data.",
-  "capturedAt": "2026-08-18T14:51:24.416Z",
+  "capturedAt": "2026-08-21T08:46:58.516Z",
   "actions": [
     {
-      "sym": "SUNTV",
-      "name": "Sun TV Network Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "ECLERX",
+      "name": "eClerx Services Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 5,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "ECOSMOBLTY",
-      "name": "Ecos (India) Mobility & Hospitality Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "ZENTEC",
+      "name": "Zen Technologies Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 2.38,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "STYL",
-      "name": "Seshaasai Technologies Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "VISHNU",
+      "name": "Vishnu Chemicals Limited",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "SHRADHA",
+      "name": "Shradha Realty Limited",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": null,
+      "ratio": null
+    },
+    {
+      "sym": "GOODLUCK",
+      "name": "Goodluck India Limited",
+      "exDate": "21-Aug-2026",
+      "type": "bonus",
+      "amount": null,
+      "ratio": "2:1"
+    },
+    {
+      "sym": "MAYURUNIQ",
+      "name": "Mayur Uniquoters Ltd",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": 6,
+      "ratio": null
+    },
+    {
+      "sym": "VADILALIND",
+      "name": "Vadilal Industries Limited",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": 17,
+      "ratio": null
+    },
+    {
+      "sym": "SEAMECLTD",
+      "name": "Seamec Limited",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "JINDALSTEL",
+      "name": "JINDAL STEEL LIMITED",
+      "exDate": "21-Aug-2026",
+      "type": "dividend",
+      "amount": 2,
+      "ratio": null
+    },
+    {
+      "sym": "OMAXAUTO",
+      "name": "Omax Autos Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
       "amount": 2.5,
       "ratio": null
     },
     {
-      "sym": "SYRMA",
-      "name": "Syrma SGS Technology Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "KSE",
+      "name": "KSE Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 1.5,
+      "amount": 7.5,
       "ratio": null
     },
     {
-      "sym": "ROUTE",
-      "name": "ROUTE MOBILE LIMITED",
-      "exDate": "18-Aug-2026",
+      "sym": "JSL",
+      "name": "Jindal Stainless Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 2,
+      "amount": 3,
       "ratio": null
     },
     {
-      "sym": "KIRLPNU",
-      "name": "Kirloskar Pneumatic Company Limited",
-      "exDate": "18-Aug-2026",
-      "type": "split",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "NGLFINE",
-      "name": "NGL Fine-Chem Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "SURYAROSNI",
+      "name": "Surya Roshni Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 1.75,
+      "amount": 2.5,
       "ratio": null
     },
     {
-      "sym": "MGL",
-      "name": "Mahanagar Gas Limited",
-      "exDate": "18-Aug-2026",
-      "type": "dividend",
-      "amount": 18,
-      "ratio": null
-    },
-    {
-      "sym": "RVNL",
-      "name": "Rail Vikas Nigam Limited",
-      "exDate": "18-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "JMA",
-      "name": "Jullundur Motor Agency (Delhi) Limited",
-      "exDate": "18-Aug-2026",
-      "type": "dividend",
-      "amount": 2,
-      "ratio": null
-    },
-    {
-      "sym": "ROSSELLIND",
-      "name": "Rossell India Limited",
-      "exDate": "18-Aug-2026",
-      "type": "dividend",
-      "amount": null,
-      "ratio": null
-    },
-    {
-      "sym": "THEJO",
-      "name": "Thejo Engineering Limited",
-      "exDate": "18-Aug-2026",
+      "sym": "SOTL",
+      "name": "Savita Oil Technologies Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
       "amount": 5,
       "ratio": null
     },
     {
-      "sym": "HONDAPOWER",
-      "name": "Honda India Power Products Limited",
-      "exDate": "19-Aug-2026",
+      "sym": "AMARJOTHI",
+      "name": "Amarjothi Spinning Mills Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 23,
+      "amount": 2.2,
       "ratio": null
     },
     {
-      "sym": "KOVAI",
-      "name": "Kovai Medical Center & Hospital Limited",
-      "exDate": "19-Aug-2026",
+      "sym": "RAJPALAYAM",
+      "name": "Rajapalayam Mills Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 15,
+      "amount": null,
       "ratio": null
     },
     {
-      "sym": "LGBBROSLTD",
-      "name": "LG Balakrishnan & Bros Limited",
-      "exDate": "19-Aug-2026",
-      "type": "dividend",
-      "amount": 22,
-      "ratio": null
+      "sym": "SIYSIL",
+      "name": "Siyaram Silk Mills Limited",
+      "exDate": "21-Aug-2026",
+      "type": "bonus",
+      "amount": null,
+      "ratio": "3:1"
     },
     {
-      "sym": "PAGEIND",
-      "name": "Page Industries Limited",
-      "exDate": "19-Aug-2026",
-      "type": "dividend",
-      "amount": 200,
-      "ratio": null
+      "sym": "SIYSIL",
+      "name": "Siyaram Silk Mills Limited",
+      "exDate": "21-Aug-2026",
+      "type": "bonus",
+      "amount": null,
+      "ratio": "4:1"
     },
     {
-      "sym": "CESC",
-      "name": "CESC Limited",
-      "exDate": "19-Aug-2026",
+      "sym": "LICHSGFIN",
+      "name": "LIC Housing Finance Limited",
+      "exDate": "21-Aug-2026",
       "type": "dividend",
-      "amount": 6,
+      "amount": 10,
       "ratio": null
     }
   ]
