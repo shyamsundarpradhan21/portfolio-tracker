@@ -356,6 +356,37 @@ AND `data/dhan-us-trades.json`'s `asOf`; (b) before trusting the US book, grep t
 + the allocation mix) — the FAIL still copies the export to `data/reports/Vested_Holdings.xlsx`, so
 after curating, ANY chained rebuild (incl. a US contract-note ingest) will pick it up and write US[].
 
+### A KV-seeded datum can have TWO writers — check `seed-portfolio-kv.mjs`'s OVERLAYS before "fixing" a stale value
+Caught 2026-08-23 updating US_REALIZED. The block in `portfolio.private.json` read `asOf 08 Jun 2026`,
+so the obvious fix was "write a fresher block into the private JSON and re-seed". That would have
+changed NOTHING: `seed-portfolio-kv.mjs` overlays `INDIAN_REALIZED` / `US_REALIZED` from
+`data/broker-tax.json` **unconditionally** on the way to KV, so the app was serving the broker-tax
+copy all along and every private-side edit was silently reverted on the next seed. The two copies had
+even drifted (`n` = 44/66/5 in the private block vs 71/94/5 in broker-tax's) without anyone noticing.
+Fixed: the overlay now compares each block's own `asOf` and **keeps the newer one** (logged per key,
+`US_REALIZED KEPT seed(19 Aug 2026 > 08 Jun 2026)`), so whichever writer ran last wins.
+
+**Why:** "private JSON → KV → app" is only true for keys the seed doesn't rewrite; an overlay makes
+the private file a *suggestion*. **How to apply:** before editing any datum destined for KV, grep the
+seed for that key — if it's overlaid, fix the OVERLAY SOURCE or make the overlay conditional, and
+verify by reading the seed's own log line rather than the private JSON. Pairs with [[Durable-data jobs
+fail SILENTLY]] — same shape: the write "succeeded" and the value still didn't move.
+
+### Check for the official EXPORT before reconstructing a figure — and check whether it still covers the whole book
+Same session, the standing "check for the easy/official path" rule caught late. I built a split-aware
+FIFO to reconstruct US realised P&L, and only afterwards found that Vested publishes a
+**`Profit-Loss Statement*.xlsx`** with a `Realized P&L - Breakdown` sheet (Security · Quantity · Date
+Sold · Profit/Loss USD · **P/L INR**) that `scripts/parse-broker-tax.py::parse_vested` already parses
+into `broker-tax.json → us_realized`. Dropping a fresh one in `inbox/` is the one-step official path,
+and it carries per-FY INR the reconstruction cannot derive.
+
+The reconstruction still earns its place — but for a reason worth naming: the official export covers
+**one custodian**. The US book is now Vested ∪ Dhan-GIFT, so the statement alone is structurally
+incomplete, and it only moves when a human downloads it. **How to apply:** look for the vendor's own
+report FIRST (grep `scripts/parse-broker-tax.py`'s dispatch for what's already wired), then ask the
+separate question — does that report still span the whole book? If not, say so explicitly rather than
+letting the official file look authoritative. Pairs with [[The US book has TWO custodians]].
+
 ---
 
 ## Git Workflow
