@@ -1,6 +1,6 @@
 {
   "note": "Intraday EQUITY day-change tape (Σ qty×(price−prevClose), INDIAN + SWING). Written by scripts/capture-daemon.mjs during market hours via keyless Yahoo quotes. Non-personal aggregate; safe to commit.",
-  "updatedAt": "2026-08-07T15:25:38+05:30",
+  "updatedAt": "2026-08-21T14:19:17+05:30",
   "days": {
     "2026-06-25": [
       {
@@ -70123,6 +70123,68 @@
       {
         "t": "15:25",
         "net": 4015.16,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      }
+    ],
+    "2026-08-21": [
+      {
+        "t": "14:16",
+        "net": 532.28,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "14:17",
+        "net": 529.88,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "14:18",
+        "net": 551.68,
+        "realised": null,
+        "mtm": null,
+        "dhan": null,
+        "upstox": null,
+        "fyers": null,
+        "dhanRealised": null,
+        "upstoxRealised": null,
+        "fyersRealised": null,
+        "dhanMtm": null,
+        "upstoxMtm": null,
+        "fyersMtm": null
+      },
+      {
+        "t": "14:19",
+        "net": 532.72,
         "realised": null,
         "mtm": null,
         "dhan": null,

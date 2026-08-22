@@ -20566,9 +20566,197 @@
           }
         ]
       }
+    ],
+    "2026-08-21": [
+      {
+        "t": "14:16",
+        "net": 6757.83,
+        "realised": -4571.67,
+        "mtm": 11329.5,
+        "dhan": 12087.83,
+        "upstox": -5330,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 16659.5,
+        "upstoxMtm": -5330,
+        "fyersMtm": null
+      },
+      {
+        "t": "14:17",
+        "net": 6498.08,
+        "realised": -4571.67,
+        "mtm": 11069.75,
+        "dhan": 11818.08,
+        "upstox": -5320,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 16389.75,
+        "upstoxMtm": -5320,
+        "fyersMtm": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Aug2026-23800-PE",
+            "pnl": -1170,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24200-PE",
+            "pnl": 6158.75,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24250-CE",
+            "pnl": 8168.7,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24650-CE",
+            "pnl": -1050.11,
+            "broker": "dhan"
+          },
+          {
+            "sym": "M&M26AUG3350PE",
+            "pnl": -11160,
+            "broker": "upstox"
+          },
+          {
+            "sym": "M&M26OCTFUT",
+            "pnl": 5840,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "14:18",
+        "net": 6458.33,
+        "realised": -4571.67,
+        "mtm": 11030,
+        "dhan": 11808.33,
+        "upstox": -5350,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 16380,
+        "upstoxMtm": -5350,
+        "fyersMtm": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Aug2026-23800-PE",
+            "pnl": -1186.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24200-PE",
+            "pnl": 6256.25,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24250-CE",
+            "pnl": 8051.7,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24650-CE",
+            "pnl": -1050.11,
+            "broker": "dhan"
+          },
+          {
+            "sym": "M&M26AUG3350PE",
+            "pnl": -11210,
+            "broker": "upstox"
+          },
+          {
+            "sym": "M&M26OCTFUT",
+            "pnl": 5840,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "14:19",
+        "net": 6744.33,
+        "realised": -4571.67,
+        "mtm": 11316,
+        "dhan": 12094.33,
+        "upstox": -5350,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 16666,
+        "upstoxMtm": -5350,
+        "fyersMtm": null,
+        "legs": [
+          {
+            "sym": "NIFTY-Aug2026-23800-PE",
+            "pnl": -1153.75,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24200-PE",
+            "pnl": 6175,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24250-CE",
+            "pnl": 8022.45,
+            "broker": "dhan"
+          },
+          {
+            "sym": "NIFTY-Aug2026-24650-CE",
+            "pnl": -1108.61,
+            "broker": "dhan"
+          },
+          {
+            "sym": "M&M26AUG3350PE",
+            "pnl": -11190,
+            "broker": "upstox"
+          },
+          {
+            "sym": "M&M26OCTFUT",
+            "pnl": 5840,
+            "broker": "upstox"
+          }
+        ]
+      },
+      {
+        "t": "14:21",
+        "net": 6019.83,
+        "realised": -4571.67,
+        "mtm": 10591.5,
+        "dhan": 11359.83,
+        "upstox": -5340,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 15931.5,
+        "upstoxMtm": -5340,
+        "fyersMtm": null
+      },
+      {
+        "t": "14:22",
+        "net": 6042.83,
+        "realised": -4571.67,
+        "mtm": 10614.5,
+        "dhan": 11372.83,
+        "upstox": -5330,
+        "fyers": null,
+        "dhanRealised": -4571.67,
+        "upstoxRealised": 0,
+        "fyersRealised": null,
+        "dhanMtm": 15944.5,
+        "upstoxMtm": -5330,
+        "fyersMtm": null
+      }
     ]
   },
-  "updatedAt": "2026-08-07T15:25:45+05:30",
+  "updatedAt": "2026-08-21T14:22:08+05:30",
   "note": "Intraday F&O P&L tape (realised + open MTM). Non-personal aggregate; safe to commit.",
   "fills": {
     "2026-07-15": [
@@ -20844,6 +21032,26 @@
         "sym": "NIFTY-Aug2026-24600-CE",
         "qty": 325,
         "price": 105.25,
+        "broker": "dhan"
+      }
+    ],
+    "2026-08-21": [
+      {
+        "id": "34226082124013",
+        "t": "10:18",
+        "side": "SELL",
+        "sym": "NIFTY-Aug2026-24250-CE",
+        "qty": 260,
+        "price": 103,
+        "broker": "dhan"
+      },
+      {
+        "id": "34226082123813",
+        "t": "10:18",
+        "side": "BUY",
+        "sym": "NIFTY-Aug2026-24650-CE",
+        "qty": 260,
+        "price": 5.2,
         "broker": "dhan"
       }
     ]
