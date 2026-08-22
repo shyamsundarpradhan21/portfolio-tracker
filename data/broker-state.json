@@ -20,17 +20,12 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-08-21T14:16:33+05:30",
+      "syncedAt": "2026-08-22T22:45:36+05:30",
       "rows": [
         {
           "sym": "HAPPSTMNDS",
           "qty": 20,
           "avg": 393.5
-        },
-        {
-          "sym": "TDPOWERSYS",
-          "qty": 10,
-          "avg": 796.43
         },
         {
           "sym": "LAURUSLABS",
@@ -53,7 +48,7 @@
   "positions": {
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-08-21T14:16:33+05:30",
+      "syncedAt": "2026-08-22T22:45:36+05:30",
       "rows": [
         {
           "sym": "M&M26AUG3350PE",
@@ -64,7 +59,7 @@
           "netQty": 200,
           "avg": 61.35,
           "realized": 0,
-          "unrealized": -11160
+          "unrealized": -11390
         },
         {
           "sym": "M&M26OCTFUT",
@@ -75,36 +70,14 @@
           "netQty": 200,
           "avg": 3436.3,
           "realized": 0,
-          "unrealized": 5840
+          "unrealized": 4800
         }
       ]
     },
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-21T14:16:33+05:30",
+      "syncedAt": "2026-08-22T22:45:37+05:30",
       "rows": [
-        {
-          "sym": "NIFTY-Aug2026-23800-PE",
-          "type": "PUT",
-          "strike": 23800,
-          "expiry": "2026-08-25",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 7.85,
-          "realized": 0,
-          "unrealized": -1170
-        },
-        {
-          "sym": "NIFTY-Aug2026-24200-PE",
-          "type": "PUT",
-          "strike": 24200,
-          "expiry": "2026-08-25",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 64.2,
-          "realized": 0,
-          "unrealized": 6110
-        },
         {
           "sym": "NIFTY-Aug2026-24250-CE",
           "type": "CALL",
@@ -113,8 +86,8 @@
           "status": "SHORT",
           "netQty": -585,
           "avg": 122.19444,
-          "realized": -4990.554400000001,
-          "unrealized": 13334.75
+          "realized": 0,
+          "unrealized": 15177.5
         },
         {
           "sym": "NIFTY-Aug2026-24650-CE",
@@ -123,22 +96,22 @@
           "expiry": "2026-08-25",
           "status": "LONG",
           "netQty": 585,
-          "avg": 6.811111,
-          "realized": 418.88886,
-          "unrealized": -1498.25
+          "avg": 6.81111,
+          "realized": 0,
+          "unrealized": -1761.5
         }
       ]
     }
   },
   "funds": {
     "upstox": {
-      "available": 43128.08,
-      "utilized": 53962.4
+      "available": 48408.38,
+      "utilized": 45702.1
     },
     "dhan": {
-      "available": 344078.1,
-      "utilized": 663076
+      "available": 482643.1,
+      "utilized": 509581
     }
   },
-  "syncedAt": "2026-08-21T14:16:01+05:30"
+  "syncedAt": "2026-08-22T22:45:21+05:30"
 }
