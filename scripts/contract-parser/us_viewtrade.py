@@ -74,14 +74,18 @@ def parse_us_note(text):
         net_after = vals[8]
         # per-row reconciliation (fractional-share rounding -> small tolerance). Levies ADD to a
         # buy's cost and DEDUCT from a sell's proceeds, so net-after moves by side.
-        gross_ok = abs((qty * price) - net_before) <= max(0.02, 0.005 * net_before)
+        # A SELL prints qty NEGATIVE on the note while net-before stays positive, so the gross
+        # check compares MAGNITUDES -- direction is carried by `side`, never by the qty sign.
+        gross_ok = abs((abs(qty) * price) - net_before) <= max(0.02, 0.005 * net_before)
         expect_after = net_before + (sum(fees) if side == "B" else -sum(fees))
         levy_ok = abs(expect_after - net_after) <= 0.02
         if not (gross_ok and levy_ok):
             bad.append({"sym": sym, "date": _iso(toks[0]), "gross_ok": gross_ok, "levy_ok": levy_ok})
         trades.append({
             "date": _iso(toks[0]), "settle": _iso(toks[1]), "sym": sym, "name": name or None,
-            "side": "BUY" if side == "B" else "SELL", "qty": round(qty, 6),
+            # qty is stored as a MAGNITUDE (see the gross check above): dhan_us_holdings()
+            # signs it by `side`, so a negative here would ADD shares on a sell.
+            "side": "BUY" if side == "B" else "SELL", "qty": round(abs(qty), 6),
             "priceUsd": round(price, 4), "netBefore": round(net_before, 2),
             "netAfter": round(net_after, 2), "fees": round(sum(fees), 2),
             # signed cash flow after levies (Buy debits cash -> negative; Sell credits -> positive)

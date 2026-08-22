@@ -86,6 +86,9 @@ NEW_META = {
     "FDX":  {"name": "FedEx",                  "cat": "Industrial"},
     "CVS":  {"name": "CVS Health",             "cat": "Healthcare"},
     "UNH":  {"name": "UnitedHealth",           "cat": "Healthcare"},
+    # First seen in the Vested 2026-08-22 positions snapshot.
+    "CSCO": {"name": "Cisco Systems",          "cat": "Tech"},
+    "MRK":  {"name": "Merck & Co",             "cat": "Healthcare"},
 }
 
 _TIME_RE = re.compile(r"^\s*(\d{1,2}):(\d{2}):(\d{2})\s*([AP]M)\s*$", re.I)

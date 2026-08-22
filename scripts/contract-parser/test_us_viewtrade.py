@@ -15,18 +15,24 @@ note = "\n".join([
     "22/07/2026 23/07/2026 WRAP B 0.2 50.00 10.00 0.02 0.01 0.01 0.01 0.00 10.05",
     "INC COM",                                                # ... and below
     "23/07/2026 24/07/2026 SELLR SELL CO INC S 0.5 40.00 20.00 0.02 0.01 0.01 0.01 0.00 19.95",
+    # a real ViewTrade sell prints qty NEGATIVE (net-before stays positive)
+    "23/07/2026 24/07/2026 NEGQ NEG QTY CO INC S -0.25 60.00 15.00 0.02 0.01 0.01 0.01 0.00 14.95",
     "Account Type: Cash",
 ])
 us = U.parse_us_note(note)
 check("detects US note", U.is_us_note(note) is True)
 check("plain text is NOT a US note", U.parse_us_note("random contract note text") is None)
-check("3 trades parsed (incl the name-wrapped row)", us and len(us["trades"]) == 3, us and len(us["trades"]))
+check("4 trades parsed (incl the name-wrapped row)", us and len(us["trades"]) == 4, us and len(us["trades"]))
 syms = [t["sym"] for t in us["trades"]]
-check("symbols FAKE/WRAP/SELLR", syms == ["FAKE", "WRAP", "SELLR"], syms)
+check("symbols FAKE/WRAP/SELLR/NEGQ", syms == ["FAKE", "WRAP", "SELLR", "NEGQ"], syms)
 check("wrapped-name row: symbol still captured, name empty", us["trades"][1]["name"] is None, us["trades"][1]["name"])
 check("BUY cost is a negative cash flow (-10.05)", us["trades"][0]["costUsd"] == -10.05, us["trades"][0]["costUsd"])
 check("SELL cost is a positive cash flow (+19.95)", us["trades"][2]["costUsd"] == 19.95, us["trades"][2]["costUsd"])
 check("SELL side + fees deducted (net-after 19.95)", us["trades"][2]["side"] == "SELL" and us["trades"][2]["netAfter"] == 19.95, us["trades"][2])
+check("negative-qty SELL still reconciles (gross compares magnitudes)",
+      us["reconciled"] is True, us["unreconciled"])
+check("negative-qty SELL stores qty as a MAGNITUDE (+0.25)", us["trades"][3]["qty"] == 0.25, us["trades"][3]["qty"])
+check("negative-qty SELL is a positive cash flow (+14.95)", us["trades"][3]["costUsd"] == 14.95, us["trades"][3]["costUsd"])
 check("all rows reconcile (gross + levy)", us["reconciled"] is True, us["unreconciled"])
 check("asOf = latest trade date", us["asOf"] == "2026-07-23", us["asOf"])
 print(f"\n{ok} passed, {bad} failed")

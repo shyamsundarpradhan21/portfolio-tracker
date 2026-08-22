@@ -1,5 +1,5 @@
 {
- "asOf": "2026-07-22",
+ "asOf": "2026-08-03",
  "trades": [
   {
    "date": "2026-07-22",
@@ -130,6 +130,84 @@
    "netAfter": 17.1,
    "fees": 0.06,
    "costUsd": -17.1
+  },
+  {
+   "date": "2026-07-28",
+   "settle": "2026-07-29",
+   "sym": "CSCO",
+   "name": "CISCO SYS INC COM",
+   "side": "BUY",
+   "qty": 0.15204,
+   "priceUsd": 113.93,
+   "netBefore": 17.32,
+   "netAfter": 17.38,
+   "fees": 0.06,
+   "costUsd": -17.38
+  },
+  {
+   "date": "2026-07-28",
+   "settle": "2026-07-29",
+   "sym": "LRCX",
+   "name": null,
+   "side": "SELL",
+   "qty": 0.05355,
+   "priceUsd": 276.38,
+   "netBefore": 14.8,
+   "netAfter": 14.72,
+   "fees": 0.08,
+   "costUsd": 14.72
+  },
+  {
+   "date": "2026-08-03",
+   "settle": "2026-08-04",
+   "sym": "AAPL",
+   "name": "APPLE INC COM",
+   "side": "BUY",
+   "qty": 0.05733,
+   "priceUsd": 305.24,
+   "netBefore": 17.5,
+   "netAfter": 17.56,
+   "fees": 0.06,
+   "costUsd": -17.56
+  },
+  {
+   "date": "2026-08-03",
+   "settle": "2026-08-04",
+   "sym": "AMAT",
+   "name": "APPLIED MATLS INC COM",
+   "side": "SELL",
+   "qty": 0.03213,
+   "priceUsd": 501.71,
+   "netBefore": 16.12,
+   "netAfter": 16.04,
+   "fees": 0.08,
+   "costUsd": 16.04
+  },
+  {
+   "date": "2026-08-03",
+   "settle": "2026-08-04",
+   "sym": "MRK",
+   "name": "MERCK & CO INC COM",
+   "side": "BUY",
+   "qty": 0.15221,
+   "priceUsd": 127.73,
+   "netBefore": 19.44,
+   "netAfter": 19.51,
+   "fees": 0.07,
+   "costUsd": -19.51
+  },
+  {
+   "date": "2026-08-03",
+   "settle": "2026-08-04",
+   "sym": "TXN",
+   "name": "TEXAS INSTRS INC COM",
+   "side": "SELL",
+   "qty": 0.07788,
+   "priceUsd": 268.04,
+   "netBefore": 20.87,
+   "netAfter": 20.78,
+   "fees": 0.09,
+   "costUsd": 20.78
   }
  ]
 }
