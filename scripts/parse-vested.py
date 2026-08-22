@@ -514,10 +514,10 @@ def _bottom(per, n=3):
             for s, v in sorted(per.items(), key=lambda kv: (kv[1], kv[0]))[:n] if v < 0]
 
 
-def build_realized(events, asof, custodians):
+def build_realized(events, custodians):
     """The US_REALIZED block. `n` = DISTINCT tickers closed in the FY — the panel labels it
     "positions closed" (reproduces Vested's own 44/66/5 exactly), not the sell-row count."""
-    if not events or not asof:
+    if not events:
         return {}
     per_fy = defaultdict(lambda: {"amt": 0.0, "syms": set(), "per": defaultdict(float)})
     alltime = defaultdict(float)
@@ -531,9 +531,14 @@ def build_realized(events, asof, custodians):
            "n": len(per_fy[y]["syms"]), "winners": _top(per_fy[y]["per"]),
            "losers": _bottom(per_fy[y]["per"])}
           for y in sorted(per_fy)]
-    cur = _fy_start(asof)
+    # asOf = the LAST REALISED EXIT, not the last trade of any kind. broker-tax's rival copy
+    # (parse_vested -> vested["lastExit"]) dates itself the same way, and seed-portfolio-kv
+    # picks between them on asOf — comparing "last exit" against "last buy" would hand the win
+    # to whichever source happened to see a recent PURCHASE, which says nothing about realised.
+    last_exit = max(d for d, _s, _p in events)
+    cur = _fy_start(last_exit)
     return {
-        "asOf": _dt.date.fromisoformat(asof).strftime("%d %b %Y"),
+        "asOf": _dt.date.fromisoformat(last_exit).strftime("%d %b %Y"),
         "source": "FIFO over " + " + ".join(custodians) + " trades, split-adjusted",
         "total": round(sum(p for _d, _s, p in events), 2),
         "ytdLabel": f"FY{str(cur)[2:]}-{str(cur + 1)[2:]}",
@@ -557,10 +562,9 @@ def _run_realized():
     splits = load_splits()
     unfetched = [s for s in universe if s not in splits]
     dhan = _dhan_us_trades()
-    asof = max([c["asOf"] or ""] + [t["date"] for t in dhan if t.get("date")])
     custodians = ["Vested"] + (["Dhan-GIFT"] if dhan else [])
     events, gaps = fifo_realised(rows, splits)
-    block = build_realized(events, asof, custodians)
+    block = build_realized(events, custodians)
     if not block:
         print("FAIL: no realised events - refusing to write an empty block.")
         sys.exit(1)
