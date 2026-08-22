@@ -70,10 +70,16 @@ export const vestedParser = {
     if (wrote.code !== 0) {
       return { status: 'FAIL', naturalKey, meta, reason: `parse-vested --write exit ${wrote.code} (export saved to corpus as ${savedAs}): ${(wrote.stderr || wrote.stdout).slice(0, 200)}` };
     }
+    // a new export = new trades = new realised closes; rebuild the block from the corpus
+    // (split-aware FIFO across Vested + Dhan-GIFT) BEFORE the seed so both land together.
+    const real = await runPy('python', SCRIPT, ['--realized', '--write']);
+    if (real.code !== 0) {
+      return { status: 'FAIL', naturalKey, meta, reason: `parse-vested --realized --write exit ${real.code} (us_trades.json + US_DIVIDENDS written): ${(real.stderr || real.stdout).slice(0, 200)}` };
+    }
     const seed = await runSeed();                                    // guarded — refusal = FAIL (US_DIVIDENDS reaches the app only via KV)
     if (seed.code !== 0) {
       return { status: 'FAIL', naturalKey, meta, reason: `seed-portfolio-kv refused/failed (exit ${seed.code}) — us_trades.json + US_DIVIDENDS written, KV NOT updated` };
     }
-    return { status: 'PASS', naturalKey, meta, target: `data/reports/vested/${savedAs} (corpus) · data/us_trades.json (rebuilt from union) · US_DIVIDENDS → KV portfolio:v1 (seeded)`, parserVersion: 'parse-vested' };
+    return { status: 'PASS', naturalKey, meta, target: `data/reports/vested/${savedAs} (corpus) · data/us_trades.json (rebuilt from union) · US_DIVIDENDS + US_REALIZED → KV portfolio:v1 (seeded)`, parserVersion: 'parse-vested' };
   },
 };

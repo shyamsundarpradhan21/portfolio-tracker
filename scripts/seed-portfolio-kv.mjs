@@ -37,11 +37,22 @@ const data = JSON.parse(readFileSync(SRC, 'utf8'));
 // committed canonical store exists, it owns INDIAN_REALIZED / US_REALIZED (regen
 // it with scripts/parse-broker-tax.py). Overlaid here so realized still reaches
 // the app via KV (never the client bundle), staying out of source-of-truth drift.
+//
+// FRESHER WINS. The overlay used to be unconditional, which made the private block
+// unreachable: parse-vested.py --realized rebuilds US_REALIZED from the trade corpus
+// (both custodians, continuously), while broker-tax's copy only moves when a NEW
+// broker export is dropped -- so a stale tax report silently reverted a current
+// reconstruction on every seed. Compare the block's own asOf and keep the newer one.
+const _asOfMs = (b) => { const t = Date.parse(b?.asOf || ''); return Number.isNaN(t) ? -Infinity : t; };
 try {
   const bt = JSON.parse(readFileSync(join(ROOT, 'data', 'broker-tax.json'), 'utf8'));
-  if (bt.indian_realized) data.INDIAN_REALIZED = bt.indian_realized;
-  if (bt.us_realized) data.US_REALIZED = bt.us_realized;
-  console.log(`overlay: data/broker-tax.json → INDIAN_REALIZED, US_REALIZED (derived, asOf ${bt.asOf})`);
+  const kept = [];
+  for (const [key, derived] of [['INDIAN_REALIZED', bt.indian_realized], ['US_REALIZED', bt.us_realized]]) {
+    if (!derived) continue;
+    if (_asOfMs(derived) >= _asOfMs(data[key])) { data[key] = derived; kept.push(`${key}←broker-tax(${derived.asOf})`); }
+    else kept.push(`${key} KEPT seed(${data[key].asOf} > ${derived.asOf})`);
+  }
+  console.log(`overlay: data/broker-tax.json — ${kept.join(', ')}`);
 } catch { /* no broker-tax.json yet — fall back to whatever is in the private seed */ }
 
 const keys = Object.keys(data);

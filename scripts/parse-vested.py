@@ -409,6 +409,184 @@ def write_json(obj, path, compact):
             json.dump(obj, f, indent=1, ensure_ascii=False)
 
 
+# ── Realised P&L (US_REALIZED) ────────────────────────────────────────────────
+# Neither Vested export carries realised P&L (Holdings has positions only; Transactions has
+# Trades/Income/Transfers), so the block is RECONSTRUCTED here by a split-aware FIFO over both
+# custodians' trades. Validated against the hand-maintained block it replaces (Vested's own
+# lot-level report, as of 08 Jun 2026): FY24-25 +10.53 vs +11.13, FY25-26 +317.67 vs +318.19,
+# FY26-27 +14.24 vs +14.24 — winner/loser tickers and every `n` matching exactly, a -1.12
+# residual on 343.56 (0.3%) that is commission/rounding, not method.
+#
+# The splits pass is what makes it work: Vested books a split as NOTHING (extra shares, no buy
+# row), so an unadjusted FIFO prices post-split sells against pre-split lots and reads FY24-25
+# as -31.26 instead of +10.53. See scripts/fetch-us-splits.mjs.
+
+US_SPLITS = os.environ.get("US_SPLITS", os.path.join("data", "us-splits.json"))
+
+
+def load_splits():
+    """{sym: [{date, factor}]} from data/us-splits.json. A symbol with NO key was never
+    fetched (vs [] = fetched, never split), so --realized can warn instead of guessing."""
+    try:
+        blob = json.load(open(US_SPLITS, encoding="utf-8")) or {}
+    except (OSError, ValueError):
+        return {}
+    return blob.get("splits") or {}
+
+
+def _write_splits_universe(syms):
+    """This module OWNS the symbol universe the fetcher walks: only the corpus knows the
+    EXITED tickers (us_trades.json's flows carry current holdings only)."""
+    try:
+        blob = json.load(open(US_SPLITS, encoding="utf-8")) or {}
+    except (OSError, ValueError):
+        blob = {"note": "splits written by scripts/fetch-us-splits.mjs", "splits": {}}
+    blob["symbols"] = sorted(syms)
+    write_json(blob, US_SPLITS, compact=False)
+
+
+def _realised_rows(trades):
+    """Both custodians' executions as (date, sym, side, qty, cash, commission, custodian),
+    oldest first. Same-day buys settle BEFORE sells so an intraday round trip has inventory."""
+    rows = []
+    for r in trades:
+        d = day(r[0])
+        act = str(r[4]).strip().lower()
+        if not d or act not in ("buy", "sell") or not r[3]:
+            continue
+        rows.append((d, r[3], "BUY" if act == "buy" else "SELL",
+                     abs(num(r[6])), abs(num(r[8])), abs(num(r[9])), "vested"))
+    for t in _dhan_us_trades():                    # Dhan-GIFT: netAfter is already net of levies
+        if t.get("sym") and t.get("date"):
+            rows.append((t["date"], t["sym"], t.get("side"),
+                         abs(t.get("qty") or 0.0), abs(t.get("netAfter") or 0.0), 0.0, "dhan"))
+    rows.sort(key=lambda x: (x[0], 0 if x[2] == "BUY" else 1))
+    return rows
+
+
+def fifo_realised(trades, splits):
+    """Split-aware FIFO. Returns (events, gaps): events = [(date, sym, pnl)]; gaps = {sym: qty}
+    for shares sold with no booked lot. A gap is booked at ZERO P&L — never a fabricated gain —
+    and reported, since it means a corporate action this pass doesn't model."""
+    lots = defaultdict(list)                       # (custodian, sym) -> [[qty, cost/share], ...]
+    done = defaultdict(set)                        # split dates already applied, per book
+    gaps = defaultdict(float)
+    events = []
+    for d, sym, side, qty, cash, comm, cust in trades:
+        if qty <= 0:
+            continue
+        key = (cust, sym)                          # SEPARATE inventories: a Dhan-GIFT sell must
+        for ev in splits.get(sym, []):             # not consume a Vested lot (different accounts)
+            if ev["date"] <= d and ev["date"] not in done[key]:
+                done[key].add(ev["date"])
+                f = ev.get("factor") or 1
+                for lot in lots[key]:
+                    lot[0] *= f
+                    lot[1] /= f
+        if side == "BUY":
+            lots[key].append([qty, (cash + comm) / qty])
+            continue
+        proceeds = cash - comm
+        left, basis, i = qty, 0.0, 0
+        book = lots[key]
+        while left > 1e-12 and i < len(book):
+            take = min(left, book[i][0])
+            basis += take * book[i][1]
+            book[i][0] -= take
+            left -= take
+            if book[i][0] <= 1e-12:
+                i += 1
+        del book[:i]
+        if left > 1e-9:                            # unbooked shares -> zero P&L, flagged
+            gaps[sym] += left
+            basis += left * (proceeds / qty)
+        events.append((d, sym, proceeds - basis))
+    return events, dict(gaps)
+
+
+def _top(per, n=3):
+    return [{"sym": s, "amt": round(v, 2)}
+            for s, v in sorted(per.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]
+
+
+def _bottom(per, n=3):
+    return [{"sym": s, "amt": round(v, 2)}
+            for s, v in sorted(per.items(), key=lambda kv: (kv[1], kv[0]))[:n] if v < 0]
+
+
+def build_realized(events, asof, custodians):
+    """The US_REALIZED block. `n` = DISTINCT tickers closed in the FY — the panel labels it
+    "positions closed" (reproduces Vested's own 44/66/5 exactly), not the sell-row count."""
+    if not events or not asof:
+        return {}
+    per_fy = defaultdict(lambda: {"amt": 0.0, "syms": set(), "per": defaultdict(float)})
+    alltime = defaultdict(float)
+    for d, sym, pnl in events:
+        b = per_fy[_fy_start(d)]
+        b["amt"] += pnl
+        b["syms"].add(sym)
+        b["per"][sym] += pnl
+        alltime[sym] += pnl
+    fy = [{"label": f"FY{str(y)[2:]}-{str(y + 1)[2:]}", "amt": round(per_fy[y]["amt"], 2),
+           "n": len(per_fy[y]["syms"]), "winners": _top(per_fy[y]["per"]),
+           "losers": _bottom(per_fy[y]["per"])}
+          for y in sorted(per_fy)]
+    cur = _fy_start(asof)
+    return {
+        "asOf": _dt.date.fromisoformat(asof).strftime("%d %b %Y"),
+        "source": "FIFO over " + " + ".join(custodians) + " trades, split-adjusted",
+        "total": round(sum(p for _d, _s, p in events), 2),
+        "ytdLabel": f"FY{str(cur)[2:]}-{str(cur + 1)[2:]}",
+        "ytdUsd": round(per_fy[cur]["amt"], 2) if cur in per_fy else 0,
+        "fy": fy,
+        "winners": _top(alltime),
+        "losers": _bottom(alltime),
+    }
+
+
+def _run_realized():
+    """--realized: review (default) or --write the US_REALIZED block into the private seed."""
+    paths = corpus_paths()
+    if not paths:
+        print("FAIL: no Vested export in the corpus - nothing to reconstruct from.")
+        sys.exit(1)
+    c = collect(paths)
+    rows = _realised_rows(c["trades"])
+    universe = sorted({r[1] for r in rows if r[1]})
+    _write_splits_universe(universe)               # keep the fetcher's worklist current
+    splits = load_splits()
+    unfetched = [s for s in universe if s not in splits]
+    dhan = _dhan_us_trades()
+    asof = max([c["asOf"] or ""] + [t["date"] for t in dhan if t.get("date")])
+    custodians = ["Vested"] + (["Dhan-GIFT"] if dhan else [])
+    events, gaps = fifo_realised(rows, splits)
+    block = build_realized(events, asof, custodians)
+    if not block:
+        print("FAIL: no realised events - refusing to write an empty block.")
+        sys.exit(1)
+
+    print(f"realised: {len(events)} closes across {len(universe)} tickers - asOf {block['asOf']}")
+    for f in block["fy"]:
+        print(f"   {f['label']}  ${f['amt']:>9,.2f}  n={f['n']}")
+    print(f"   TOTAL     ${block['total']:>9,.2f}   ({block['ytdLabel']} ytd ${block['ytdUsd']})")
+    if unfetched:
+        print(f"   WARN {len(unfetched)} ticker(s) have no split data - run scripts/fetch-us-splits.mjs: "
+              + " ".join(unfetched[:12]))
+    if gaps:
+        print("   WARN sold with no booked lot (unmodelled corp action, booked at zero P&L): "
+              + " ".join(f"{s}x{q:.4f}" for s, q in sorted(gaps.items(), key=lambda kv: -kv[1])[:8]))
+
+    if "--write" not in sys.argv:
+        print("(review only - pass --write to update US_REALIZED + re-seed KV)")
+        return
+    priv = json.load(open(PRIVATE, encoding="utf-8"))
+    prev = priv.get("US_REALIZED") or {}
+    priv["US_REALIZED"] = block
+    write_json(priv, PRIVATE, compact=False)
+    print(f"wrote US_REALIZED: total ${prev.get('total', 0)} -> ${block['total']} "
+          f"(asOf {prev.get('asOf', '?')} -> {block['asOf']}) -> {PRIVATE} (re-seed KV to publish)")
+
+
 # ── Holdings (positions) export → US[] composition ────────────────────────────
 
 def _hdr_index(row):
@@ -580,6 +758,10 @@ def _run_holdings():
 def main():
     if "--holdings" in sys.argv:
         _run_holdings()
+        return
+
+    if "--realized" in sys.argv:
+        _run_realized()
         return
 
     # --one <file> [--porcelain]: single-file probe for scripts/ingest/parsers/vested.mjs

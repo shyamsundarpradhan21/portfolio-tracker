@@ -1,0 +1,320 @@
+{
+ "note": "Split / ratio events per US ticker (Yahoo v8 chart). [] = fetched, no split. A symbol ABSENT from splits was never fetched. `symbols` is written by parse-vested.py --realized.",
+ "fetchedAt": "2026-08-22T18:49:32.535Z",
+ "symbols": [
+  "AAPL",
+  "ADBE",
+  "AMAT",
+  "AMD",
+  "AMZN",
+  "ANET",
+  "APLD",
+  "ASML",
+  "AVGO",
+  "BAC",
+  "BITO",
+  "BKKT",
+  "BMNR",
+  "BTBT",
+  "BTDR",
+  "CAN",
+  "CAT",
+  "CIFR",
+  "CLSK",
+  "COIN",
+  "CORZ",
+  "CPRT",
+  "CRM",
+  "CSCO",
+  "CVS",
+  "DDOG",
+  "DE",
+  "DIS",
+  "EEM",
+  "EFA",
+  "EXOD",
+  "FDX",
+  "FTNT",
+  "GEV",
+  "GLDM",
+  "GLXY",
+  "GOOG",
+  "GOOGL",
+  "GRMN",
+  "HEI",
+  "HIVE",
+  "HON",
+  "HOOD",
+  "HUT",
+  "HYDB",
+  "IAU",
+  "IBM",
+  "IEF",
+  "IJR",
+  "INTC",
+  "INTU",
+  "IRDM",
+  "IREN",
+  "IUSB",
+  "IVV",
+  "JPM",
+  "KEEL",
+  "KO",
+  "LHX",
+  "LMT",
+  "LRCX",
+  "LUNR",
+  "MA",
+  "MARA",
+  "MCO",
+  "META",
+  "MRK",
+  "MRVL",
+  "MSFT",
+  "MSTR",
+  "MU",
+  "NBIS",
+  "NFLX",
+  "NOW",
+  "NVDA",
+  "ORCL",
+  "PANW",
+  "PDBC",
+  "PEP",
+  "PG",
+  "PYPL",
+  "QCOM",
+  "QQQM",
+  "RIOT",
+  "RKLB",
+  "SCHD",
+  "SHOP",
+  "SHW",
+  "SNOW",
+  "SPOT",
+  "SQQQ",
+  "TDY",
+  "TIP",
+  "TLT",
+  "TMO",
+  "TRMB",
+  "TSLA",
+  "TSM",
+  "TXN",
+  "UNH",
+  "V",
+  "VEA",
+  "VGIT",
+  "VGT",
+  "VNQ",
+  "VOO",
+  "VTI",
+  "VWO",
+  "VYM",
+  "WULF",
+  "XMHQ",
+  "XYZ"
+ ],
+ "splits": {
+  "AAPL": [],
+  "ADBE": [],
+  "AMAT": [],
+  "AMD": [],
+  "AMZN": [],
+  "ANET": [
+   {
+    "date": "2024-12-04",
+    "factor": 4
+   }
+  ],
+  "APLD": [],
+  "ASML": [],
+  "AVGO": [
+   {
+    "date": "2024-07-15",
+    "factor": 10
+   }
+  ],
+  "BAC": [],
+  "BITO": [],
+  "BKKT": [
+   {
+    "date": "2024-04-29",
+    "factor": 0.04
+   }
+  ],
+  "BMNR": [],
+  "BTBT": [],
+  "BTDR": [],
+  "CAN": [],
+  "CAT": [],
+  "CIFR": [],
+  "CLSK": [],
+  "COIN": [],
+  "CORZ": [],
+  "CPRT": [
+   {
+    "date": "2023-08-22",
+    "factor": 2
+   }
+  ],
+  "CRM": [],
+  "CSCO": [],
+  "CVS": [],
+  "DDOG": [],
+  "DE": [],
+  "DIS": [],
+  "EEM": [],
+  "EFA": [],
+  "EXOD": [],
+  "FDX": [
+   {
+    "date": "2026-06-01",
+    "factor": 1.241
+   }
+  ],
+  "FTNT": [],
+  "GEV": [],
+  "GLDM": [],
+  "GLXY": [],
+  "GOOG": [],
+  "GOOGL": [],
+  "GRMN": [],
+  "HEI": [],
+  "HIVE": [],
+  "HON": [
+   {
+    "date": "2025-10-30",
+    "factor": 1.061
+   },
+   {
+    "date": "2026-06-29",
+    "factor": 0.9535
+   }
+  ],
+  "HOOD": [],
+  "HUT": [
+   {
+    "date": "2023-12-04",
+    "factor": 0.2
+   }
+  ],
+  "HYDB": [],
+  "IAU": [],
+  "IBM": [],
+  "IEF": [],
+  "IJR": [],
+  "INTC": [],
+  "INTU": [],
+  "IRDM": [],
+  "IREN": [],
+  "IUSB": [],
+  "IVV": [],
+  "JPM": [],
+  "KEEL": [],
+  "KO": [],
+  "LHX": [],
+  "LMT": [],
+  "LRCX": [
+   {
+    "date": "2024-10-03",
+    "factor": 10
+   }
+  ],
+  "LUNR": [],
+  "MA": [],
+  "MARA": [],
+  "MCO": [],
+  "META": [],
+  "MRK": [],
+  "MRVL": [],
+  "MSFT": [],
+  "MSTR": [
+   {
+    "date": "2024-08-08",
+    "factor": 10
+   }
+  ],
+  "MU": [],
+  "NBIS": [],
+  "NFLX": [
+   {
+    "date": "2025-11-17",
+    "factor": 10
+   }
+  ],
+  "NOW": [
+   {
+    "date": "2025-12-18",
+    "factor": 5
+   }
+  ],
+  "NVDA": [
+   {
+    "date": "2024-06-10",
+    "factor": 10
+   }
+  ],
+  "ORCL": [],
+  "PANW": [
+   {
+    "date": "2024-12-16",
+    "factor": 2
+   }
+  ],
+  "PDBC": [],
+  "PEP": [],
+  "PG": [],
+  "PYPL": [],
+  "QCOM": [],
+  "QQQM": [],
+  "RIOT": [],
+  "RKLB": [],
+  "SCHD": [
+   {
+    "date": "2024-10-11",
+    "factor": 3
+   }
+  ],
+  "SHOP": [],
+  "SHW": [],
+  "SNOW": [],
+  "SPOT": [],
+  "SQQQ": [
+   {
+    "date": "2024-11-07",
+    "factor": 0.2
+   },
+   {
+    "date": "2025-11-20",
+    "factor": 0.2
+   }
+  ],
+  "TDY": [],
+  "TIP": [],
+  "TLT": [],
+  "TMO": [],
+  "TRMB": [],
+  "TSLA": [],
+  "TSM": [],
+  "TXN": [],
+  "UNH": [],
+  "V": [],
+  "VEA": [],
+  "VGIT": [],
+  "VGT": [
+   {
+    "date": "2026-04-21",
+    "factor": 8
+   }
+  ],
+  "VNQ": [],
+  "VOO": [],
+  "VTI": [],
+  "VWO": [],
+  "VYM": [],
+  "WULF": [],
+  "XMHQ": [],
+  "XYZ": []
+ }
+}

@@ -31,8 +31,11 @@ async function rebuildUsBook() {
   // as HELD and books their flows under `flows` (per-symbol) rather than the `other` aggregate.
   const h = await py(['--holdings', '--write']);                                    // US[] composition
   const w = h.code === 0 ? await py(['--write']) : { code: -1 };                    // us_trades.json flows
-  const s = (h.code === 0 && w.code === 0) ? await seed() : { code: -1 };           // reseed KV
-  return { holdings: h.code, write: w.code, seed: s.code };
+  // realised LAST of the three writes: a split-aware FIFO over BOTH custodians' trades, so a
+  // newly-booked US note moves realised P&L in the same pass that moved the composition.
+  const rl = w.code === 0 ? await py(['--realized', '--write']) : { code: -1 };     // US_REALIZED
+  const s = (h.code === 0 && w.code === 0 && rl.code === 0) ? await seed() : { code: -1 };
+  return { holdings: h.code, write: w.code, realized: rl.code, seed: s.code };
 }
 
 // run.py statuses → pipeline statuses. CARRY (daily MTM note: no trades, no
@@ -84,6 +87,7 @@ export const contractNoteParser = {
       const rb = await rebuildUsBook();   // us_trades.json + US[] (Vested ∪ Dhan) + KV reseed
       if (rb.write !== 0) mapped.reason = `${mapped.reason} — WARN us_trades rebuild failed (code ${rb.write}); store written`;
       else if (rb.holdings !== 0) mapped.reason = `${mapped.reason} — WARN US[] holdings rebuild failed (code ${rb.holdings}); flows written`;
+      else if (rb.realized !== 0) mapped.reason = `${mapped.reason} — WARN US_REALIZED rebuild failed (code ${rb.realized}); composition + flows written`;
       else if (rb.seed !== 0) mapped.reason = `${mapped.reason} — book rebuilt; WARN KV reseed failed (code ${rb.seed})`;
     }
     return { ...mapped, parserVersion: 'contract-parser' };
