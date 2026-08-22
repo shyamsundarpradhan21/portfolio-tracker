@@ -331,6 +331,31 @@ deposits ≠ buys ("a 50% gain on actual buys of $200 is different from a 50% ga
 and a buy of $100"). **How to apply:** for any US deployed/return/XIRR figure, source `usBuyLedger`,
 pair it with securities-only value, and treat net sells as withdrawals; never reach for US_CASHFLOWS.
 
+### The US book has TWO custodians — Vested AND Dhan-GIFT; a REFUSED note silently freezes the Dhan leg
+User-corrected 2026-08-22: "us holdings is now dhan + vested". I framed the holdings refresh as
+"drop a Vested Holdings export" as though Vested were the whole US book. It isn't — `merge_holdings()`
+in `parse-vested.py` unions the **Vested positions snapshot** with a **Dhan-GIFT (ViewTrade IFSC)
+reconstruction** built from US contract notes (`data/dhan-us-trades.json`), COMBINING a symbol held at
+both (qty/inv summed, blended cost). So "refresh US holdings" = BOTH legs current, not one.
+
+The Dhan leg had been frozen at the 22-Jul SIP since 28-Jul, and nothing surfaced it: a ViewTrade note
+prints a **SELL with a NEGATIVE qty** while net-before stays positive, so the per-row gross check
+(`qty*price` vs `net_before`) failed on every sell and REFUSED the whole note (refuse-on-checksum-fail
+is deliberate — never a partial book). Two notes sat in `inbox/failed/`, so the reconstruction carried
+**phantom** LRCX/AMAT/TXN (sold) and missed CSCO/MRK/AAPL (bought). Fixed in `us_viewtrade.py`: the
+gross check compares MAGNITUDES and qty is stored as a magnitude (`dhan_us_holdings()` signs it by
+`side`, so a negative would have ADDED shares on a sell). The old test fixture used a positive-qty
+sell, which is why it never tripped.
+
+**Why:** the refusal is loud in the manifest but invisible on the dashboard — the sleeve just quietly
+stops moving, exactly like [[Durable-data jobs fail SILENTLY]].
+**How to apply:** (a) for any US-composition question, check BOTH legs — the Vested snapshot's `asOf`
+AND `data/dhan-us-trades.json`'s `asOf`; (b) before trusting the US book, grep the manifest for
+`REFUSED`/`FAIL` rows with `broker: dhan-us` — quarantined notes are a frozen sleeve, not a no-op;
+(c) a genuinely new ticker FAILs the holdings write until curated in `NEW_META` (cat drives CAT_COLORS
++ the allocation mix) — the FAIL still copies the export to `data/reports/Vested_Holdings.xlsx`, so
+after curating, ANY chained rebuild (incl. a US contract-note ingest) will pick it up and write US[].
+
 ---
 
 ## Git Workflow
@@ -901,6 +926,16 @@ browser/login isn't available, say the numbers are as-of the file's `asOf` and o
 **Why:** the user caught that a recommendation rested on a 3-day-stale (asOf 2026-06-29) snapshot.
 **How to apply:** treat "recommend / what would you pick" as implying a fresh harvest first;
 use `--dry` on the import so a recommendation run doesn't reseed KV. [[algo-screen-retail-tiers]]
+**Harvest needs NO login (verified 2026-08-16):** the snippet header says auth = httpOnly cookie + WAF,
+but `GET /api/web/algo/list` is effectively PUBLIC — driving `stratzy.in` in the MCP browser bounced the
+*page* to `/login` (not logged in) yet the bulk endpoint returned the FULL payload: 217 algos, 214 with
+daily `performance` curves, all with `liveSince`/`rollingReturns30Day`/`cagr`/`minimumCapital`. So the
+harvest works from any `stratzy.in`-origin tab regardless of session — don't block on "log in first".
+Flow that worked: `navigate stratzy.in` → `javascript_tool` runs the blob-download snippet → the file
+lands in Downloads as `stratzy-raw (1).json` (Chrome `(1)`-suffixes to avoid clobbering the old one — find
+it by newest-mtime, NOT by the bare name) → `cp` → `data/stratzy-raw.json`. Returning the ~1.4 MB JSON
+through the tool result is too big; the blob download is the right bridge. For the FULL monthly update
+(not a one-off rec) run the import WITHOUT `--dry` so KV `stratzy-daily:v1` + `algo-monthly:latest` refresh.
 
 ### Algo screen capital tiers are RETAIL-calibrated, not institutional
 The user is a retail F&O trader, not an institution — the `CAPITAL_TIERS` in

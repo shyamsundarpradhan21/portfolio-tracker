@@ -75,7 +75,13 @@ store idempotent (re-drop = 0 new); us_trades.json → GOOG buy in flows + all 9
 empty); US[] 50→59 holdings, invested +$200.66, GOOG combined (qty 0.186231, blended cost). 311 engine +
 10 US + 18 vested tests green.
 
-**Pending:** trigger the LIVE capture (re-drop the note → daemon books it) + commit the data.
+**LIVE (captured 2026-07-23):** re-dropped the note; run.py booked the 10 trades to
+data/dhan-us-trades.json. The running daemon still held the OLD contract-note.mjs in memory (mapped
+USTRADES→FAIL via the default branch, rebuild didn't fire), so completed the rebuild MANUALLY with the
+new code: US[] 50→59 (+$200.66), us_trades.json flows (9 + GOOG merged), KV portfolio:v1 reseeded (26
+keys). Committed data (5f547b7). **ACTION: restart the ingest daemon** so it loads the new JS and
+auto-PASSes future US notes; the inbox/failed copy is a stale artifact (data is captured; a re-drop
+post-restart is idempotent).
 
 ---
 
