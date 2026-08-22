@@ -11,6 +11,7 @@ import { venvPythonStrict, runPy, lastJsonLine, isPdf, ROOT } from './py.mjs';
 const SCRIPT = join(ROOT, 'scripts', 'contract-parser', 'run.py');
 const VESTED = join(ROOT, 'scripts', 'parse-vested.py');   // rebuilds the combined us_trades.json
 const SEED = join(ROOT, 'scripts', 'seed-portfolio-kv.mjs');
+const BROKER_TAX = join(ROOT, 'scripts', 'parse-broker-tax.py');   // folds the Dhan-GIFT leg into US_REALIZED
 
 // After a Dhan-GIFT US note books trades (USTRADES): rebuild the combined US book — us_trades.json
 // (Vested ∪ Dhan flows) AND US[] composition (Vested ∪ Dhan holdings) — then re-seed KV. Mirrors the
@@ -27,6 +28,10 @@ async function rebuildUsBook() {
     const c = spawn(process.execPath, [SEED], { cwd: ROOT, windowsHide: true });
     c.on('error', () => res({ code: -1 })); c.on('close', (code) => res({ code }));
   });
+  const brokerTax = () => new Promise((res) => {
+    const c = spawn('python', [BROKER_TAX], { cwd: ROOT, windowsHide: true });
+    c.on('error', () => res({ code: -1 })); c.on('close', (code) => res({ code }));
+  });
   // holdings FIRST: it adds the Dhan symbols to US[], so the subsequent us_trades --write sees them
   // as HELD and books their flows under `flows` (per-symbol) rather than the `other` aggregate.
   const h = await py(['--holdings', '--write']);                                    // US[] composition
@@ -34,8 +39,12 @@ async function rebuildUsBook() {
   // realised LAST of the three writes: a split-aware FIFO over BOTH custodians' trades, so a
   // newly-booked US note moves realised P&L in the same pass that moved the composition.
   const rl = w.code === 0 ? await py(['--realized', '--write']) : { code: -1 };     // US_REALIZED
-  const s = (h.code === 0 && w.code === 0 && rl.code === 0) ? await seed() : { code: -1 };
-  return { holdings: h.code, write: w.code, realized: rl.code, seed: s.code };
+  // ...and regenerate broker-tax.json, which folds this note's closes into Vested's
+  // lot-level realised book. That merged block is what the seed serves, so a US note that
+  // moved realised P&L would otherwise sit unpublished until the next broker-report drop.
+  const bt = rl.code === 0 ? await brokerTax() : { code: -1 };
+  const s = (h.code === 0 && w.code === 0 && rl.code === 0 && bt.code === 0) ? await seed() : { code: -1 };
+  return { holdings: h.code, write: w.code, realized: rl.code, brokerTax: bt.code, seed: s.code };
 }
 
 // run.py statuses → pipeline statuses. CARRY (daily MTM note: no trades, no
@@ -88,6 +97,7 @@ export const contractNoteParser = {
       if (rb.write !== 0) mapped.reason = `${mapped.reason} — WARN us_trades rebuild failed (code ${rb.write}); store written`;
       else if (rb.holdings !== 0) mapped.reason = `${mapped.reason} — WARN US[] holdings rebuild failed (code ${rb.holdings}); flows written`;
       else if (rb.realized !== 0) mapped.reason = `${mapped.reason} — WARN US_REALIZED rebuild failed (code ${rb.realized}); composition + flows written`;
+      else if (rb.brokerTax !== 0) mapped.reason = `${mapped.reason} — WARN broker-tax regen failed (code ${rb.brokerTax}); realised leg NOT folded`;
       else if (rb.seed !== 0) mapped.reason = `${mapped.reason} — book rebuilt; WARN KV reseed failed (code ${rb.seed})`;
     }
     return { ...mapped, parserVersion: 'contract-parser' };

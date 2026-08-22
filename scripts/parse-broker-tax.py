@@ -411,6 +411,65 @@ def parse_vested(path):
             last = sold
     return {"by_fy": by_fy, "lastExit": last}
 
+# ── Dhan-GIFT US leg (ViewTrade IFSC) ─────────────────────────────────────────
+# The US book has TWO custodians but Vested's Realized P&L report covers only its own,
+# so the statement is structurally incomplete on its own. The GIFT-City leg is
+# reconstructed from the parsed contract notes (data/dhan-us-trades.json) and folded into
+# the SAME per-FY buckets here, where the full Vested per-symbol breakdown still exists —
+# the stored block keeps only the top 3, so merging any later would blur `n` and the
+# winner/loser lists.
+#
+# The FIFO is parse-vested.py's, imported rather than re-implemented (hyphenated filename
+# -> importlib). Its rows carry a custodian tag; we take the dhan side only.
+
+def dhan_us_realised():
+    """Dhan-GIFT realised closes as [(iso_date, sym, usd_pnl)]. [] when no notes are booked
+    yet (or the module can't be loaded) — the Vested-only block stays valid either way."""
+    try:
+        import importlib.util
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "parse-vested.py")
+        spec = importlib.util.spec_from_file_location("_pv_fifo", path)
+        pv = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pv)
+        rows = [r for r in pv._realised_rows([]) if r[6] == "dhan"]   # [] = no Vested rows
+        if not rows:
+            return []
+        events, _gaps = pv.fifo_realised(rows, pv.load_splits())
+        return events
+    except Exception as e:                      # noqa: BLE001 — a missing leg must not fail the report
+        print(f"  WARN Dhan-GIFT US leg skipped: {type(e).__name__}: {e}")
+        return []
+
+
+def fold_dhan_us(by_fy, last_exit):
+    """Merge the Dhan-GIFT closes into Vested's per-FY buckets. Returns (n_folded, last_exit).
+
+    INR: the notes are USD-only, so each FY's dollars convert at the rate that FY's Vested
+    rows imply (its own realised inr/usd). A blended FY rate, not the exit-day rate — worth
+    ~1% on a leg currently under $7, against pulling a whole FX history into a tax-report
+    build. FYs with no Vested rows to imply a rate contribute USD only."""
+    events = dhan_us_realised()
+    if not events:
+        return 0, last_exit
+    rate = {}
+    for fy, b in by_fy.items():
+        if b["usd"]:
+            rate[fy] = b["inr"] / b["usd"]
+    for iso, sym, pnl in events:
+        d = dt.datetime.fromisoformat(iso)
+        fy = fy_of(d)
+        b = by_fy.setdefault(fy, {"usd": 0.0, "inr": 0.0, "exits": set(), "sym": {}})
+        b["usd"] += pnl
+        b["inr"] += pnl * rate.get(fy, 0.0)
+        b["sym"][sym] = b["sym"].get(sym, 0.0) + pnl
+        # a separate exit set: Vested's is keyed (sec, date), and the same ticker sold on
+        # the same day at BOTH custodians is two closes, not one
+        b.setdefault("dhan_exits", set()).add((sym, iso))
+        if last_exit is None or d > last_exit:
+            last_exit = d
+    return len(events), last_exit
+
+
 # ── Upstox realized P&L (zipped .xlsx, one per FY) — F&O trading (UCC 7BB93B) ──
 def parse_upstox_zip(path):
     import zipfile, io
@@ -636,14 +695,19 @@ def main():
     # ── US_REALIZED: Vested ──────────────────────────────────────────────────
     us_realized = None
     if vested:
+        n_dhan, last_exit = fold_dhan_us(vested["by_fy"], vested["lastExit"])
         us_per_fy = {}
         for fy, b in vested["by_fy"].items():
-            us_per_fy[fy] = {"amt": b["usd"], "n": len(b["exits"]), "by_sym": b["sym"]}
-        us_realized = realized_block(us_per_fy, vested["lastExit"],
-                                     "Vested realized P&L · lot-level", usd=True)
+            us_per_fy[fy] = {"amt": b["usd"],
+                             "n": len(b["exits"]) + len(b.get("dhan_exits") or ()),
+                             "by_sym": b["sym"]}
+        src = "Vested lot-level report + Dhan-GIFT notes" if n_dhan else "Vested realized P&L · lot-level"
+        us_realized = realized_block(us_per_fy, last_exit, src, usd=True)
         inr_by_fy = {fy: round(b["inr"]) for fy, b in vested["by_fy"].items()}
         for e in us_realized["fy"]:
             e["amtInr"] = inr_by_fy.get(e["label"])
+        if n_dhan:
+            print(f"  US: folded {n_dhan} Dhan-GIFT close(s) into the Vested realised book")
 
     # ── F&O realized: per-FY × broker (GROSS, like the equity panel) + all-time ─
     fno_by_fy = {}     # fy -> {broker: gross}

@@ -495,8 +495,8 @@
   },
   "us_realized": {
     "asOf": "03 Aug 2026",
-    "source": "Vested realized P&L · lot-level",
-    "total": 967.46,
+    "source": "Vested lot-level report + Dhan-GIFT notes",
+    "total": 960.72,
     "ytdLabel": "FY26-27",
     "fy": [
       {
@@ -569,8 +569,8 @@
       },
       {
         "label": "FY26-27",
-        "amt": 638.13,
-        "n": 90,
+        "amt": 631.39,
+        "n": 93,
         "winners": [
           {
             "sym": "QQQM",
@@ -599,7 +599,7 @@
             "amt": -12.6
           }
         ],
-        "amtInr": 60321
+        "amtInr": 59684
       }
     ],
     "winners": [
@@ -630,7 +630,7 @@
         "amt": -20.6
       }
     ],
-    "ytdUsd": 638.13
+    "ytdUsd": 631.39
   },
   "fno_realized": {
     "asOf": "03 Aug 2026",

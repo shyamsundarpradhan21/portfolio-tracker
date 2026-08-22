@@ -162,7 +162,7 @@ export default function USTab({
       </div>
 
       <div className="g2 sec">
-        <RealizedPanel data={US_REALIZED} currency="usd" fxRate={fxRate} note="Cost basis is FIFO within each custodian, with split ratios applied to the open lots." />
+        <RealizedPanel data={US_REALIZED} currency="usd" fxRate={fxRate} note="Covers both custodians — GIFT-City closes are FIFO-matched from the contract notes." />
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="fxc" style={{ marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
             <div>
