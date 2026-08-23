@@ -20,7 +20,7 @@
   "holdings": {
     "SWING": {
       "source": "Upstox",
-      "syncedAt": "2026-08-22T22:45:36+05:30",
+      "syncedAt": "2026-08-23T18:54:24+05:30",
       "rows": [
         {
           "sym": "HAPPSTMNDS",
@@ -48,7 +48,7 @@
   "positions": {
     "UPSTOX_FNO": {
       "source": "Upstox",
-      "syncedAt": "2026-08-22T22:45:36+05:30",
+      "syncedAt": "2026-08-23T18:54:24+05:30",
       "rows": [
         {
           "sym": "M&M26AUG3350PE",
@@ -76,7 +76,7 @@
     },
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-22T22:45:37+05:30",
+      "syncedAt": "2026-08-23T18:54:24+05:30",
       "rows": [
         {
           "sym": "NIFTY-Aug2026-24250-CE",
@@ -113,5 +113,5 @@
       "utilized": 509581
     }
   },
-  "syncedAt": "2026-08-22T22:45:21+05:30"
+  "syncedAt": "2026-08-23T18:54:05+05:30"
 }
