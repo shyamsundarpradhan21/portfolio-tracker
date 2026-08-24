@@ -76,7 +76,7 @@
     },
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-23T18:54:24+05:30",
+      "syncedAt": "2026-08-24T18:48:40+05:30",
       "rows": [
         {
           "sym": "NIFTY-Aug2026-24250-CE",
@@ -84,10 +84,10 @@
           "strike": 24250,
           "expiry": "2026-08-25",
           "status": "SHORT",
-          "netQty": -585,
+          "netQty": -325,
           "avg": 122.19444,
-          "realized": 0,
-          "unrealized": 15177.5
+          "realized": 20980.5544,
+          "unrealized": 27054.44
         },
         {
           "sym": "NIFTY-Aug2026-24650-CE",
@@ -95,10 +95,54 @@
           "strike": 24650,
           "expiry": "2026-08-25",
           "status": "LONG",
-          "netQty": 585,
+          "netQty": 325,
           "avg": 6.81111,
+          "realized": -1341.8886,
+          "unrealized": -1157.36
+        },
+        {
+          "sym": "NIFTY-Aug2026-23900-PE",
+          "type": "PUT",
+          "strike": 23900,
+          "expiry": "2026-08-25",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 2.65,
+          "realized": 390,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24300-PE",
+          "type": "PUT",
+          "strike": 24300,
+          "expiry": "2026-08-25",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 95.35,
+          "realized": -11635,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Aug2026-24600-CE",
+          "type": "CALL",
+          "strike": 24600,
+          "expiry": "2026-08-25",
+          "status": "LONG",
+          "netQty": 260,
+          "avg": 3.05,
           "realized": 0,
-          "unrealized": -1761.5
+          "unrealized": 169
+        },
+        {
+          "sym": "NIFTY-Aug2026-24200-CE",
+          "type": "CALL",
+          "strike": 24200,
+          "expiry": "2026-08-25",
+          "status": "SHORT",
+          "netQty": -260,
+          "avg": 93.25,
+          "realized": 0,
+          "unrealized": 9360
         }
       ]
     }
@@ -109,9 +153,9 @@
       "utilized": 45702.1
     },
     "dhan": {
-      "available": 482643.1,
-      "utilized": 509581
+      "available": 481365.25,
+      "utilized": 513498
     }
   },
-  "syncedAt": "2026-08-23T18:54:05+05:30"
+  "syncedAt": "2026-08-24T18:48:38+05:30"
 }
