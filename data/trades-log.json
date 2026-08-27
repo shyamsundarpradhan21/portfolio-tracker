@@ -1,6 +1,6 @@
 {
   "note": "Daily-accumulated tradebook. Each sync appends today's fills from each broker (deduped by broker+id) — broker APIs only return today's trades, so this is the only way to build durable cashflow history. The XIRR ledger (app/portfolio.js TRANSACTIONS) can be derived from this over time. Read-only capture; no account IDs or tokens.",
-  "updatedAt": "2026-08-26T18:51:49+05:30",
+  "updatedAt": "2026-08-27T18:48:44+05:30",
   "trades": [
     {
       "broker": "Dhan",
@@ -6031,6 +6031,166 @@
       "qty": 65,
       "price": 12.25,
       "value": 796.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "1356264",
+      "sym": "NIFTY-Sep2026-24300-PE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 260,
+      "price": 147.35,
+      "value": 38311
+    },
+    {
+      "broker": "Dhan",
+      "id": "1356265",
+      "sym": "NIFTY-Sep2026-24300-PE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 65,
+      "price": 147.35,
+      "value": 9577.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "1576025",
+      "sym": "NIFTY-Sep2026-24150-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 65,
+      "price": 160.2,
+      "value": 10413
+    },
+    {
+      "broker": "Dhan",
+      "id": "1576026",
+      "sym": "NIFTY-Sep2026-24150-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 65,
+      "price": 160.2,
+      "value": 10413
+    },
+    {
+      "broker": "Dhan",
+      "id": "1576027",
+      "sym": "NIFTY-Sep2026-24150-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 195,
+      "price": 160.2,
+      "value": 31239
+    },
+    {
+      "broker": "Dhan",
+      "id": "2514674",
+      "sym": "NIFTY-Sep2026-24300-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 195,
+      "price": 70.35,
+      "value": 13718.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "2514675",
+      "sym": "NIFTY-Sep2026-24300-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 130,
+      "price": 70.35,
+      "value": 9145.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1694191",
+      "sym": "NIFTY-Sep2026-24700-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 260,
+      "price": 6.2,
+      "value": 1612
+    },
+    {
+      "broker": "Dhan",
+      "id": "1694192",
+      "sym": "NIFTY-Sep2026-24700-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 65,
+      "price": 6.2,
+      "value": 403
+    },
+    {
+      "broker": "Dhan",
+      "id": "988820",
+      "sym": "NIFTY-Sep2026-24600-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 195,
+      "price": 12.65,
+      "value": 2466.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "988821",
+      "sym": "NIFTY-Sep2026-24600-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 130,
+      "price": 12.65,
+      "value": 1644.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1118821",
+      "sym": "NIFTY-Sep2026-24200-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 130,
+      "price": 119.35,
+      "value": 15515.5
+    },
+    {
+      "broker": "Dhan",
+      "id": "1118822",
+      "sym": "NIFTY-Sep2026-24200-CE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 195,
+      "price": 119.35,
+      "value": 23273.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "1174914",
+      "sym": "NIFTY-Sep2026-23900-PE",
+      "date": "2026-08-27",
+      "side": "SELL",
+      "qty": 325,
+      "price": 17.05,
+      "value": 5541.25
+    },
+    {
+      "broker": "Dhan",
+      "id": "2100441",
+      "sym": "NIFTY-Sep2026-24550-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 195,
+      "price": 18.65,
+      "value": 3636.75
+    },
+    {
+      "broker": "Dhan",
+      "id": "2100442",
+      "sym": "NIFTY-Sep2026-24550-CE",
+      "date": "2026-08-27",
+      "side": "BUY",
+      "qty": 130,
+      "price": 18.65,
+      "value": 2424.5
     }
   ]
 }
