@@ -76,73 +76,29 @@
     },
     "DHAN_FNO": {
       "source": "Dhan",
-      "syncedAt": "2026-08-27T18:48:43+05:30",
+      "syncedAt": "2026-08-28T18:47:47+05:30",
       "rows": [
         {
-          "sym": "NIFTY-Sep2026-23900-PE",
-          "type": "PUT",
-          "strike": 23900,
-          "expiry": "2026-09-01",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 12.25,
-          "realized": 1560,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Sep2026-24300-CE",
+          "sym": "NIFTY-Sep2026-24150-CE",
           "type": "CALL",
-          "strike": 24300,
+          "strike": 24150,
           "expiry": "2026-09-01",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 70.35,
-          "realized": 30160,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Sep2026-24300-PE",
-          "type": "PUT",
-          "strike": 24300,
-          "expiry": "2026-09-01",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 147.35,
-          "realized": -18736.25,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Sep2026-24700-CE",
-          "type": "CALL",
-          "strike": 24700,
-          "expiry": "2026-09-01",
-          "status": "CLOSED",
-          "netQty": 0,
-          "avg": 17.95,
-          "realized": -3818.75,
-          "unrealized": 0
-        },
-        {
-          "sym": "NIFTY-Sep2026-24600-CE",
-          "type": "CALL",
-          "strike": 24600,
-          "expiry": "2026-09-01",
-          "status": "LONG",
-          "netQty": 325,
-          "avg": 12.65,
+          "status": "SHORT",
+          "netQty": -325,
+          "avg": 160.2,
           "realized": 0,
-          "unrealized": -1462.5
+          "unrealized": 10627.5
         },
         {
           "sym": "NIFTY-Sep2026-24200-CE",
           "type": "CALL",
           "strike": 24200,
           "expiry": "2026-09-01",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 119.35,
-          "realized": 0,
-          "unrealized": 9733.75
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 95.25,
+          "realized": 7832.5,
+          "unrealized": 0
         },
         {
           "sym": "NIFTY-Sep2026-24550-CE",
@@ -152,19 +108,63 @@
           "status": "LONG",
           "netQty": 325,
           "avg": 18.65,
-          "realized": -9.094947017729282e-13,
-          "unrealized": -2600
+          "realized": 0,
+          "unrealized": -3737.5
         },
         {
-          "sym": "NIFTY-Sep2026-24150-CE",
+          "sym": "NIFTY-Sep2026-24600-CE",
           "type": "CALL",
+          "strike": 24600,
+          "expiry": "2026-09-01",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 12.65,
+          "realized": -2047.5,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Sep2026-23750-PE",
+          "type": "PUT",
+          "strike": 23750,
+          "expiry": "2026-09-01",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 6.4,
+          "realized": 1521,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Sep2026-24150-PE",
+          "type": "PUT",
           "strike": 24150,
           "expiry": "2026-09-01",
-          "status": "SHORT",
-          "netQty": -325,
-          "avg": 160.2,
-          "realized": 7.275957614183426e-12,
-          "unrealized": 14592.5
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 100.35,
+          "realized": -18908.5,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Sep2026-24500-CE",
+          "type": "CALL",
+          "strike": 24500,
+          "expiry": "2026-09-01",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 11,
+          "realized": 1267.5,
+          "unrealized": 0
+        },
+        {
+          "sym": "NIFTY-Sep2026-24100-CE",
+          "type": "CALL",
+          "strike": 24100,
+          "expiry": "2026-09-01",
+          "status": "CLOSED",
+          "netQty": 0,
+          "avg": 176.21,
+          "realized": -16513.25,
+          "unrealized": 0
         }
       ]
     }
@@ -175,9 +175,9 @@
       "utilized": 45702.1
     },
     "dhan": {
-      "available": 467046.97,
-      "utilized": 608085
+      "available": 718516.56,
+      "utilized": 284292
     }
   },
-  "syncedAt": "2026-08-27T18:48:41+05:30"
+  "syncedAt": "2026-08-28T18:47:45+05:30"
 }
